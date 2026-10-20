@@ -1,0 +1,16 @@
+HANK b35 DIGEST -- 2026-10-20 -- G needs Michael, H done, C confirmed landed by fourth
+CONTEXT 78.0% of 1,000,000 -- 779,840 tokens, measured.
+STATUS: LANDED on origin/main (re-derive the tip), NOT FORCED, zero overrides.
+CONCEPT (H): a key joins the known-audit list only with the measurement that proved it exists.
+G  snapshot re-export: needs the database -- Michael. Committed snapshot is still 13:13 UTC.
+H  SEN-AUDIT-2026 in KNOWN_AUDIT_KEYS: DONE, with its dated measurement.
+C  stonedesk patch: LANDED BY FOURTH (b45, 687d60360) -- anti-framing live on both pages, LAYER 4
+   gone, map toggle live. Not duplicated; I only moved the held test into api/ (8/0).
+SNAPSHOT: path db/schema_snapshot.json; build = run sql/schema_snapshot_query.sql in Supabase, save
+   the one JSON cell, python tools/load_schema_snapshot.py <file> then --write, commit.
+   Format: _generated_at, _constraints {table:{name:constraintdef}}, then table -> [columns].
+DECISION-NEEDED (Michael): re-export the snapshot; enable Static Maps on the Maps key.
+NEXT: handoff sec.5 (G, D, F).
+CHANGED: tools/audit_licence.py, api/b33-fieldmap-toggle.test.js (moved), manifest override.
+EVIDENCE-path: SAIRN-handoff-hank-b35.md
+UNVERIFIED: a Google-drawn map image; the checker's green state (needs the new snapshot).

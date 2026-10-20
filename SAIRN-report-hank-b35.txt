@@ -1,0 +1,27 @@
+HANK b35 REPORT -- 2026-10-20
+
+4. CONCEPT (before the code, item H): a key joins the known-audit list only with the measurement that
+   proved it exists.
+
+1. G -- re-export the schema snapshot: NOT DOABLE BY ME (needs the database). The committed snapshot is
+   still 13:13 UTC, before the widening, so audit_event_type_check.py still exits 1 until it is refreshed.
+   H -- DONE: SEN-AUDIT-2026 is in KNOWN_AUDIT_KEYS (tools/audit_licence.py) with its dated measurement.
+
+2. C -- CONFIRMED with fourth's record, not duplicated: fourth b45 (687d60360) applied the whole b33 patch.
+   Live now: anti-framing on /stonedesk and /stonedesk-hr, the LAYER 4 buster gone, the map toggle on
+   /stonedesk. The only piece left -- the held 8-arm test -- I moved into api/; it passes against the
+   landed page.
+
+3. SNAPSHOT FOR MICHAEL:
+   PATH    db/schema_snapshot.json (repo root, committed).
+   BUILD   run sql/schema_snapshot_query.sql in the Supabase SQL editor -> one JSON cell -> save it ->
+           python tools/load_schema_snapshot.py <file>  (read the delta)  -> ... --write -> commit.
+           Same route as cc's 13:13 capture. The loader refuses a shrunk or older capture.
+   FORMAT  one object:
+             "_generated_at": now()::text, e.g. "2026-10-20 13:13:22.083606+00"
+             "_constraints":  { "<table>": { "<constraint_name>": "<pg_get_constraintdef text>" } }
+                              (public schema, CHECK only; plain text from the query -- base64 also read)
+             every other key: "<table>": ["<column>", ...]
+   CHECK   python tools/audit_event_type_check.py should then exit 0.
+
+5. PUSHED without force, confirmed by sha (ea60be266). Handoff: SAIRN-handoff-hank-b35.md.
