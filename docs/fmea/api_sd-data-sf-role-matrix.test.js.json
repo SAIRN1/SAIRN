@@ -1,0 +1,115 @@
+{
+ "app_matched": "sairnroofing",
+ "considered": {
+  "defect_records": 662,
+  "detectors_fired": [
+   "1.2",
+   "1.3"
+  ],
+  "detectors_run": 12,
+  "matched_this_file": 1
+ },
+ "drafted_on": "2026-10-20",
+ "exists": true,
+ "no_detector_yet": [
+  "1.6",
+  "2.2",
+  "3.1",
+  "3.2",
+  "3.3",
+  "4.1",
+  "4.2",
+  "4.3",
+  "5"
+ ],
+ "risks": [
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "d7773533f371",
+   "date": "2026-10-13",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "batch b18: SQL-SYNC finding, not a security gap. Michael's live-DB query (relayed via chat, this role has no Supabase credential) confirms rf_schedule's 3 new columns (status_changed_at, status_changed_by, status_changed_by_role) exist in the LIVE database. Direct repo read, this batch: grep -rn 'status_changed_by|status_changed_role|status_changed_at|status_changed_by_role' sql/ returns ZERO hits anywhere in sql/ -- no committed DDL file declares any of the 3 columns. This settles a b17 H1/H2 disagreement: H1's routing doc said 'confirmed present in sql/', this role's grep found none; both were partially right about different layers -- the columns are real and live, the repo's own tracked schema just never got the matching migration committed back. Independently found by H1 the same batch (logged H1 seq1348, same shape as H1's seq1345/1347 sairncode/stonedesk DDL-sync findings). Risk: a fresh provision from the repo's own sql/ files would NOT create these columns -- a real repo-vs-production sync gap, separate from whether the live run itself succeeded. Routed to hank: add the 3-column migration to the appropriate rf_schedule DDL file in sql/.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnroofing) has this defect on record",
+   "cite": "e602cc8a013a",
+   "date": "2026-08-24",
+   "detected_by": "live-verification",
+   "prior_severity": "moderate",
+   "risk": "api/rf-auth.js set_certifications used loadEmployee(), which filters active=eq.true, so certifying a DEACTIVATED employee returned 404 NOT_FOUND -- deactivated is not nonexistent, and an owner has real reasons to certify a record in either state. MODERATE: a visible wrong answer somebody notices, not a silent one",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnroofing) has this defect on record",
+   "cite": "a7103a30fb94",
+   "date": "2026-08-26",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "sairnroofing's photo requirement did not actually refuse, record ids were minted client-side rather than server-verified, and material that was UNAVAILABLE still counted toward a met threshold -- so a claim could present as fully evidenced on photos that were never required, ids the server never issued, and stock that was not there. rf_claim_photos is Tier A.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnroofing) has this defect on record",
+   "cite": "0314dcd39463",
+   "date": "2026-09-24",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "api/rf-auth.js built MANAGEMENT_ROLES and BROAD_READ_ROLES as plain object literals, so every key on Object.prototype indexed truthy: seesAllRows({role:'constructor'}) returned true, reproduced live. A session carrying an inherited name passed the role half of every SAIRNroofing gate -- seesAllRows, ownsRow, and the ~40 sites in api/sd-data.js that index those maps directly -- granting cross-assignee read and write on rf_claims and rf_claim_photos, both Tier A. It was inert only because a SEPARATE array-based allowlist at provisioning (RF_ROLES.indexOf) refuses an unknown role, which is distant code the gate was silently depending on rather than a property of the check itself. Second defect in the same finding: the rf_claims write branch never stripped the caller's own assigned_employee_id from the stored data blob, inert only because the read branch's Object.assign happens to overlay the real column last.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnroofing) has this defect on record",
+   "cite": "b2764261a088",
+   "date": "2026-09-24",
+   "detected_by": "hover-audit",
+   "prior_severity": "moderate",
+   "risk": "api/sd-data.js's rf_buildings write handler upserted EVERY optional column on EVERY write, deriving each from a payload field the caller may not have sent: location_id as trim-or-null, `active` as `payload.active !== false` (absent resolves TRUE), notes and data likewise. The one live caller -- saveBuilding() in sairnroofing.html:4650 -- sends only {building_id, name, customer, address}, so RENAMING A BUILDING from the app silently overwrote its server-side location_id with null, detaching it from the location -> entity chain the capital forecast attributes roof sections through -- and the same rename silently REACTIVATED a deactivated building. Found by H1 (log #536) while reading the register row, whose evidence cell asserted the opposite (\"the app cannot set it wrong\" -- true only of the UI form) and cited api/sd-data.js:7164, a line number that had drifted 216 lines to the rf_bonding write. Fixed by omitting absent payload keys from the upsert body -- PostgREST merge-duplicates only updates the columns present in the posted row, so absent means leave-alone while a present value, including an explicit empty string, still writes. Driven three ways: the shipped rename payload posts a body carrying neither location_id nor active nor notes; an explicit assignment writes LOC-9/false; an explicit empty writes null. The register cell is corrected in the same commit, citation re-anchored to the construct rather than a line number.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnroofing) has this defect on record",
+   "cite": "44abebb30bf5",
+   "date": "2026-10-14",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "SIX CLIENT SAVE SITES STORED MODEL OUTPUT WITH NO PROVENANCE FIELD, AND THE SERVER COULD NOT KNOW. api/_lib/ai-safeguards.js landed in b9 with its own honest limit stated out loud: `ai_source` is a CLAIM BY THE WRITER, so 'a client that does not stamp it gets no gate'. No production client stamped it on a high-risk resource, so the approval gate was reachable and never reached -- and no server test can detect that. H2 traced four sites (seq852): sairnmechanical saveDoc -> mech_docs, sairnroofing saveMeasurementReading -> rf_photos, sairngrounds grdUploadProgressPhoto and sairnscape scpUploadProgressPhoto. rf_photos is the one that was not merely unlabelled: it is in HIGH_RISK_AI because an insurance supplement is built on the model's read of a measurement photograph, so stamping it switches a real refusal on for the first time in production. Two more found in this batch: stonedesk's Review Request Generator put model-written SMS text in front of an operator with nothing saying so, and that text goes to a named customer under the shop's name; and msb_bottle_scans, whose exclusion from REDACTION (correct -- no model prose is stored) was being read as an exemption from DISCLOSURE (wrong -- brand_read is what a model read off a label and the row syncs to the server). 18 arms green from 10 passed / 7 failed / 1 unproven; ablated four ways.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnroofing) has this defect on record",
+   "cite": "45d9a9132305",
+   "date": "2026-10-19",
+   "detected_by": "static-checker",
+   "prior_severity": "moderate",
+   "risk": "sairnroofing.html referenced var(--bd) three times and defined it NOWHERE, so three border:1px solid var(--bd) declarations were invalid at computed-value time and the border was DROPPED -- not drawn in a fallback colour. TWO OF THE THREE ARE THE AGREEMENT AND JOB-BOARD SIGNATURE CANVASES, where that border is the only thing showing a customer where to sign. These were the last 3 of the 153 contrast and undefined-token findings b30 measured across the platform; the ratchet baseline goes 3 -> 0 and the platform now carries zero contrast debt.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnroofing) has this defect on record",
+   "cite": "6b2f8727895e",
+   "date": "2026-10-19",
+   "detected_by": "probe-control",
+   "prior_severity": "moderate",
+   "risk": "tests/roofing_claim_gate_single_source.js, arm \"each branch keeps its own not-provisioned policy\", ASSERTED SOMETHING IT NEVER TESTED. It said \"the photo WRITE no longer refuses loudly\" and tested /NOT_PROVISIONED/ inside src.slice(i).slice(0, 1400) -- A FIXED 1400-CHARACTER WINDOW. The rf_claim_photos write branch is 5,470 characters, so the literal that satisfied the window was the one in the CLAIM-EXISTENCE guard at the top of the branch, NOT the photo write's own refusal 34 lines further down at :9850/:9854/:9871. ROUTING THAT FIRST GUARD THROUGH THE SHIPPED notProvisioned() HELPER -- behaviour identical, literal gone -- TURNED THE ARM RED WHILE THE POLICY IT NAMES WAS FULLY INTACT AT THREE SITES. So for seven weeks a green arm meant \"some occurrence of this string is within 1400 characters of the branch start\", which is not the claim in its name and is not a claim anybody would make. SEVERITY MODERATE, reasoning stated rather than implied: no shipped behaviour was ever wrong, and the cost is that the arm guarding a Tier A claim-photo refusal could not have noticed that refusal being removed -- a false NEGATIVE in a guard, not a false claim to a user. REPAIRED: both halves sliced by BALANCED BRACE with an explicit overrun assertion; the test is on the POLICY rather than one spelling of it (the literal OR a notProvisioned()/notProvisionedText() call); and the arm's ACTUAL subject is asserted for the first time -- that the read's degrade-to-empty-list literal does NOT appear in the write branch, because the two policies differing is the whole point of the arm and was never checked. THE CONTROL THAT MAKES THIS A REPAIR RATHER THAN A LOOSENING FITTED TO THE CHANGE: the repaired suite was copied into a HEAD~1 worktree and passes 23/23 against the UNCONVERTED handler too. FOUND BY A DIFFERENTIAL, NOT BY REVIEW: 230 suites referencing api/sd-data.js driven ALONE at HEAD and at HEAD~1; four came back red-and-unregistered and this was the ONLY one green at baseline. The other three were already red and are now registered in docs/known-red-suites.json. Full account: docs/2026-10-19-cody-b26-four-tier-reads-and-guard-conversion.md section 2.9.",
+   "source": "defect-register"
+  },
+  {
+   "action": "search a comment-stripped copy, or parse; if the subject IS the comment, declare it",
+   "basis": "section 1.2 applies -- Grep cannot tell code from text that describes code",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 1.2",
+   "risk": "matching a source file by TEXT cannot tell code from a comment or string describing code",
+   "source": "process-rules"
+  },
+  {
+   "action": "assert the anchor matches exactly once AND read what it matched before acting",
+   "basis": "section 1.3 applies -- An anchor that still matches is not an anchor that still points at the right thing",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 1.3",
+   "risk": "an exact-string anchor verifies UNIQUENESS, never that it still points at the right code",
+   "source": "process-rules"
+  }
+ ],
+ "target": "api/sd-data-sf-role-matrix.test.js"
+}
