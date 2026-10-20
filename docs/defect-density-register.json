@@ -35118,6 +35118,55 @@
       "recurrence_open": "NOT CLOSED. (1) addCredential() still calls rCredentials() after a local add, which replaces a real board with the not-checked view during the write -- a different defect, not fixed here. (2) Out-of-order completion is unguarded: two evaluations render in the order they SETTLE, so an older response can overwrite a newer one. (3) Nothing sweeps for the class across the other apps."
     },
     {
+      "commit": "41f2c586b440",
+      "date": "2026-10-20",
+      "subject": "fix(sairnbiz b42): invoice and employee ids were the last four digits of the clock -- now sequential and unique per device series",
+      "files": [
+        "sairnbiz.html"
+      ],
+      "lines_added": 50,
+      "lines_removed": 2,
+      "app": "sairnbiz",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "Found by source read in fourth b41 (sairnbiz worldwide audit, VAT Directive Art 226(2)). REPRODUCED RED in Chromium: 50 invoices minted in one millisecond got ONE id, 50 employees likewise, editing one employee then matched 50 records, and a second device minted ids the first already held. Consequence: the invoice id is the GL source_id, the employee id is the server upsert key (on_conflict=customer_email,employee_id) and hydrate merges by id, so a collision silently overwrites or merges records. FIXED: <prefix>-<series>-<000001>, one series per device, counter synchronous and never below the highest stored number, taken ids skipped. GREEN 11/11 (RED 2/11). Employee id injected 901ccc2d; invoice id 10db5d3c.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "901ccc2dcaec",
+        "date": "2026-06-29",
+        "subject": "feat: Add SAIRNbiz - HR + Accounting backbone [Session 54]",
+        "lag_days": 113
+      },
+      "citation_note": "No coding rule in the register covers this class; recorded so the class is countable. Proposed: a record id must be unique by construction, never derived from a clock alone.",
+      "contributing_factors": [
+        {
+          "factor": "An id generator was a display string: the last four digits of the millisecond clock repeat every 10 s and are identical within one millisecond.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "sbNextId(): per-device series plus a synchronous persisted counter, never below the highest stored number."
+        },
+        {
+          "factor": "The id is load-bearing in three places that do not check for duplicates: GL source_id, the server employees upsert key, and hydrate merge-by-id.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Uniqueness now holds by construction across devices (series) and within one (counter + taken check)."
+        },
+        {
+          "factor": "Nothing tested two records created close together; every existing suite created one record at a time.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The b42 drive freezes Date.now and mints 50 of each, plus reload, lost-counter and second-device arms."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. (1) Vendor ids use the same shape (\"V\"+Date.now() last 4, sairnbiz.html saveVendor) and were not in scope. (2) Two TABS of one browser minting in the same instant share the counter and can race. (3) Nothing sweeps the platform for Date.now()-derived ids; stonedesk.html has INV-+Date.now() at two sites."
+    },
+    {
       "commit": "5217024d6958",
       "date": "2026-10-20",
       "subject": "fix(claude+stonedesk b26): ceiling 200->1000 now that absent means enforce, two dead calls out of the Field Map/POS, five FMEA drafts",
@@ -35243,6 +35292,51 @@
       "recurrence_open": "the cross-device half is DETECTED and not PREVENTED: two devices both offline at the moment of issue can still mint the same number and nothing client-side can stop it. The complete fix is a server-side per-year sequence in api/sd-data.js, which is cody's file and is routed"
     },
     {
+      "commit": "5fce516dc22d",
+      "date": "2026-10-20",
+      "subject": "fix(sairnbiz b42): an overtime threshold of 168 was honoured, though no hour can ever exceed it",
+      "files": [
+        "sairnbiz.html",
+        "tests/sairnbiz_benefits_and_overtime.js",
+        "tests/sairnbiz_ot_threshold_coalesce.js"
+      ],
+      "lines_added": 20,
+      "lines_removed": 8,
+      "app": "sairnbiz",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "The bound was n>168 while the function comment said a threshold AT or above 168 is unreachable. OT is hours in excess of the threshold (29 CFR 778.103) and a workweek is 168 hours (778.105), so 168 produced no overtime ever and no note said the setting was unusable. RED: the rejectable-values arm with 168 failed. GREEN: n>=168 falls back to 40 and is reported. Two existing arms pinned the old bound (one asserted 168 is reachable) and were changed with the old reasoning quoted.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "2d9f81ba34cb",
+        "date": "2026-09-26",
+        "subject": "fix(sairnbiz): the plan cards stop asserting Ohio to every customer, and the overtime threshold is read",
+        "lag_days": 24
+      },
+      "citation_note": "No coding rule covers this class: an inclusive or exclusive bound that disagrees with the comment describing it. Proposed: a boundary test at the exact edge value, in both directions, for every refusal bound.",
+      "contributing_factors": [
+        {
+          "factor": "An inclusive/exclusive boundary disagreed with its own comment: >168 coded, >=168 described.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "n>=168 falls back; note wording no longer says 1-168."
+        },
+        {
+          "factor": "A test arm asserted the wrong reading ('168 is reachable'), conflating reachable HOURS with reachable OVERTIME, so the suite defended the defect.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Arm B4 rewritten with the old reasoning quoted and answered from 29 CFR 778.103/.105."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. While the timesheet holds SIX days the maximum recordable week is 144 hours, so thresholds 145-167 are equally unreachable and still honoured; the exact bound is the record own maximum and moves to 168 only when day seven lands (held on api/sd-data.js, cody b29)."
+    },
+    {
       "commit": "8f2036615c6b",
       "date": "2026-10-20",
       "subject": "fix(agent+claude b25): a revoke silently overwritten, a zero-row PATCH logged as a plan change, and two controls that permitted when unset",
@@ -35362,51 +35456,6 @@
         }
       ],
       "recurrence_open": "verdict() and tally() are OPT-IN and nothing makes a probe call them. The b26 recurrence_open said no other probe in the repo asserts its own plant landed, and that is still true of all of them -- this adds the primitive and one caller, not a sweep. tools/sabotage_control_check.py MEASURES the plant-landed class and does not yet recognise or require the ran-check, so the platform figure it reports is silent on this failure entirely. Nothing refuses a probe that drives a hook over a range it never inspected."
-    },
-    {
-      "commit": "bbb17411f48f",
-      "date": "2026-10-20",
-      "subject": "fix(sairnbiz b42): an overtime threshold of 168 was honoured, though no hour can ever exceed it",
-      "files": [
-        "sairnbiz.html",
-        "tests/sairnbiz_benefits_and_overtime.js",
-        "tests/sairnbiz_ot_threshold_coalesce.js"
-      ],
-      "lines_added": 20,
-      "lines_removed": 8,
-      "app": "sairnbiz",
-      "layer": "product",
-      "severity": "low",
-      "detection_method": "code-review",
-      "summary": "The bound was n>168 while the function comment said a threshold AT or above 168 is unreachable. OT is hours in excess of the threshold (29 CFR 778.103) and a workweek is 168 hours (778.105), so 168 produced no overtime ever and no note said the setting was unusable. RED: the rejectable-values arm with 168 failed. GREEN: n>=168 falls back to 40 and is reported. Two existing arms pinned the old bound (one asserted 168 is reachable) and were changed with the old reasoning quoted.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "2d9f81ba34cb",
-        "date": "2026-09-26",
-        "subject": "fix(sairnbiz): the plan cards stop asserting Ohio to every customer, and the overtime threshold is read",
-        "lag_days": 24
-      },
-      "citation_note": "No coding rule covers this class: an inclusive or exclusive bound that disagrees with the comment describing it. Proposed: a boundary test at the exact edge value, in both directions, for every refusal bound.",
-      "contributing_factors": [
-        {
-          "factor": "An inclusive/exclusive boundary disagreed with its own comment: >168 coded, >=168 described.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "n>=168 falls back; note wording no longer says 1-168."
-        },
-        {
-          "factor": "A test arm asserted the wrong reading ('168 is reachable'), conflating reachable HOURS with reachable OVERTIME, so the suite defended the defect.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Arm B4 rewritten with the old reasoning quoted and answered from 29 CFR 778.103/.105."
-        }
-      ],
-      "recurrence_open": "NOT CLOSED. While the timesheet holds SIX days the maximum recordable week is 144 hours, so thresholds 145-167 are equally unreachable and still honoured; the exact bound is the record own maximum and moves to 168 only when day seven lands (held on api/sd-data.js, cody b29)."
     },
     {
       "commit": "cc919c308efd",
