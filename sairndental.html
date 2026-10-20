@@ -3047,10 +3047,17 @@ async function addCredential(){
     rec.label=rec.credential;
   }
   var list=credentials();list.push(rec);st('dnt_credentials_list',list);
-  rCredentials();
-  var syncResult=await sdnData('write','dnt_credentials',rec);
+  // PENDING DURING THE WRITE, NOT COULD-NOT-RUN (b42). This used to call
+  // rCredentials() here, which replaced a real board with the not-checked
+  // view for the length of the write. The board is about to be re-asked, so
+  // it says so; and it is re-asked whether or not the write landed, because
+  // the server's board is the truth about what the server holds -- the toast
+  // says when the new record is not among it.
+  dntCredWriting++;rCredentials(null);
+  var syncResult=null;
+  try{syncResult=await sdnData('write','dnt_credentials',rec);}finally{dntCredWriting--;}
   toast(syncResult?'Credential record added':dntWriteFailText('dnt_credentials','Saved on this device only -- the server did not accept it, so it is not on any other workstation'),syncResult?3000:7000);
-  if(syncResult)refreshCredentialBoard();
+  refreshCredentialBoard(true);
 }
 
 function cdStatusBadge(item){
@@ -3136,7 +3143,7 @@ function rCredentials(board){
   if(!tbody)return;
   var provs=providers();
   var pname=function(id){var p=provs.find(function(x){return x.id===id;});return p?p.name:id;};
-  if(!board&&dntCredPending>0){
+  if(!board&&dntCredIsPending()){
     var pend=credentials();
     var why='The credential board is being evaluated now. Nothing below has been checked yet -- this is not zero and not a failure.';
     tbody.innerHTML='<tr><td colspan="5" style="color:var(--muted);text-align:center">'+
@@ -3270,22 +3277,33 @@ function rCredRules(coverage){
 // Checked, could-not-run and never-asked each have a rendering; "being asked
 // right now" had none, so the first paint borrowed could-not-run's and showed
 // a failure -- with a reason, sometimes the previous attempt's -- for a request
-// that had not answered yet. A COUNT, not a flag: two overlapping evaluations
-// (nav twice, or nav during a sync refresh) stay pending until the last one
-// settles. paintPending is passed only by nav(): the background sync refresh
-// leaves a real board on screen while it re-asks rather than blanking it.
-var dntCredPending=0;
+// that had not answered yet. paintPending is passed only by nav(): the
+// background sync refresh leaves a real board on screen while it re-asks
+// rather than blanking it.
+//
+// ── THE LATEST ASK WINS (b42) ──────────────────────────────────────────────
+// b41 counted evaluations in flight and rendered each one as it SETTLED, so a
+// slow older answer arriving after a fast newer one overwrote it (driven: a
+// stale "5 expired" replaced the current "1"), and an older null painted the
+// rules and enrolment-risk panels as not-checked beside a table still saying
+// "Checking" (Guardian A3). Now every ask takes a sequence number and only the
+// LATEST one renders; an older answer is dropped whole, all three panels
+// together. Pending is "the latest ask has not settled" -- or a credential
+// write is in flight (addCredential) -- not a count, so a dropped answer can
+// never leave the panel stuck on "Checking".
+var dntCredSeq=0,dntCredSettled=0,dntCredWriting=0;
+function dntCredIsPending(){return dntCredSettled<dntCredSeq||dntCredWriting>0;}
 async function refreshCredentialBoard(paintPending){
   var built=cdEnrollmentLines();
-  dntCredPending++;
+  var my=++dntCredSeq;
   var res=null;
   // sdnEvaluateCredentials() catches its own failures; the catch here is so a
-  // throw -- from it OR from the pending paint -- can never leave the counter
-  // up and the panel saying "checking" forever. It renders as could-not-run
-  // with the reason unrecorded, which is then true.
+  // throw -- from it OR from the pending paint -- renders as could-not-run with
+  // the reason unrecorded, which is then true, rather than sticking.
   try{if(paintPending)rCredentials(null);res=await sdnEvaluateCredentials(null,built.lines);}
   catch(e){res=null;}
-  finally{dntCredPending--;}
+  if(my!==dntCredSeq)return;   // a newer ask exists: this answer is stale
+  dntCredSettled=my;
   if(!res){rCredentials(null);rCredRules(null);rEnrollmentRisk(null,0);return;}
   rCredentials(res.board);
   rCredRules(res.coverage);
