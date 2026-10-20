@@ -1,0 +1,16 @@
+HANK b28 DIGEST -- 2026-10-20 -- 2 of 6 live proofs NOT RUN (need credentials), 2 already done, zero overrides
+CONTEXT 46.1% of 1,000,000 -- 460,878 tokens, measured.
+STATUS: LANDED on origin/main (re-derive the tip), NOT FORCED. No application code changed.
+1. STRAIGHT-TIME-FLOOR LIVE: NOT RUN. Needs audit-owner PIN + caregiver PIN; I may not create or type them.
+   NEW: SEN-AUDIT-2026 exists in production (check_license 200 active sairnsenior), so the mint ran.
+2. TRUST-LOCK LIVE: NOT RUN, same reason. LAW-AUDIT-2026 live (200 active). b23 proof is stale vs cody b28.
+3. pos_sale push: already deleted b26; re-confirmed absent from the deployed page and from the repo.
+4. law-trust-reconcile.js header: already fixed b24; re-verified, citations still land.
+5. No new logic, so no concept statement.
+FOUND, NOT ASKED: stonedesk.html sendToNetwork (:2953) sends AI question+answer to a refusing endpoint;
+   sairnSyncAll (:19955) toasts "All apps synced" after a 400.
+DECISION-NEEDED (Michael): confirm audit-owner is bootstrapped and run the two probes with PINs in env.
+NEXT: handoff sec.4 has the exact command per open item (A-F).
+CHANGED: nothing under api/, tools/, sql/ or html. Docs only.
+EVIDENCE-path: docs/2026-10-20-hank-b28-notes.md
+UNVERIFIED: both live proofs; whether audit-owner is bootstrapped.

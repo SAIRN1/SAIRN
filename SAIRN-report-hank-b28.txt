@@ -1,0 +1,20 @@
+HANK b28 REPORT -- 2026-10-20 -- verification-only batch, no application code changed
+
+5. (stated first, per the dispatch) There is no new logic this batch, so no concept statement.
+
+1. STRAIGHT-TIME-FLOOR LIVE: NOT RUN. The probe signs in as a real owner and caregiver with PINs; I may
+   not create a production account or type a PIN into a production login, and an unauthenticated request
+   is refused at the licence gate before the payroll run. Nothing was faked. NEW LIVE FACT: SEN-AUDIT-2026
+   check_license answers 200 active sairnsenior, identical to the SEN-PINNACLE-2026 control, so the b27
+   mint SQL has run. Whether audit-owner is bootstrapped I cannot read. NEEDED: Michael confirms the
+   bootstrap, then runs the probe with SEN_OWNER_PIN and SEN_CAREGIVER_PIN set (command in the handoff).
+2. TRUST-LOCK LIVE: NOT RUN, same reason. LAW-AUDIT-2026 measured live: 200 active sairnlaw. The b23 proof
+   is stale against cody's b28 role change in api/sd-data.js. NEEDED: LAW_OWNER_PIN and LAW_PARALEGAL_PIN.
+3. POS_SALE PUSH: already deleted in b26. Re-confirmed: repo grep finds only comments and the b21 test's
+   direct fixture; the deployed page has no pos_sale push and no maps-static call. Nothing to delete.
+   Found beside it and NOT asked for: sendToNetwork (stonedesk.html:2953) posts the user's AI question and
+   answer to a refusing endpoint on every exchange, and sairnSyncAll (:19955) says "All apps synced" after
+   a 400. Both open, with the next step in the handoff.
+4. LAW-TRUST-RECONCILE HEADER: already fixed in b24 (44861f237). Re-verified past tense; its three
+   citations (sairnlaw.html:3281, :3284, :3287) still land. Nothing to edit.
+6. PUSHED, confirmed by sha. Handoff: SAIRN-handoff-hank-b28.md.
