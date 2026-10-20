@@ -35397,6 +35397,49 @@
       "recurrence_open": "the deployed rate-limit mode is NOT OBSERVABLE from outside: the response carries no mode and a burst of 12 calls is equally consistent with observe and with a daily ceiling above twelve. So if SAIRN_AI_RATE_LIMIT_MODE is absent or misspelled in Vercel, this change switches the cost limiter ON at the daily ceiling on deploy. vercel env ls production is the check and it is the first open item in the handoff"
     },
     {
+      "commit": "a8dc04dbdf2e",
+      "date": "2026-10-20",
+      "subject": "fix(sairncode b42): a rejected coded item was counted among those that \"cleared every check\"",
+      "files": [
+        "sairncode.html"
+      ],
+      "lines_added": 40,
+      "lines_removed": 9,
+      "app": "sairncode",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "Found by fourth b41 while reproducing the (B)(7) measure; fixed b42. scRouteCodedItems() split needs_human_review from everything else and the queue line plus the \"Auto-assigned -- these cleared every check\" table read everything else. RED on the LIVE page: 1 auto, 2 rejected, 1 accepted, 1 pending read \"4 other items cleared every check\" and the cleared table held 4 rows. GREEN: three groups, a Decided-by-a-coder table, unknown statuses fail closed into the queue, the line names all three counts.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "f9a3b3813fb9",
+        "date": "2026-08-20",
+        "subject": "feat: SAIRNcode Phase 2 item 3 -- exception-based routing + two real confidence signals",
+        "lag_days": 61
+      },
+      "citation_note": "No coding rule covers this class: a two-way partition whose ELSE branch is described as if it were one specific state. Proposed: a router over an enumerated status names every member and fails closed on the rest.",
+      "contributing_factors": [
+        {
+          "factor": "A two-way split whose else-branch was labelled with one member's meaning (cleared every check).",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Three named groups; unknown statuses go to the queue."
+        },
+        {
+          "factor": "The panel line and B1's human-oversight claim both leaned on this, so the error overstated how much needed no human.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Line now separates auto-assigned from coder decisions."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. No suite in tests/ covers the coded-items panel at all; the b42 drive lives in the scratchpad, not the repo."
+    },
+    {
       "commit": "aabc1c659b5b",
       "date": "2026-10-20",
       "subject": "control(sabotage b27): a probe must prove the path under test ran before it reports a verdict",
