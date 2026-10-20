@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# OWNER: cc
+# written 2026-10-20, batch b27, item 1
 """Sabotage-test pre-push CHECK 5d (gate `path-scope`) in a scratch worktree.
 
     python tools/push_gate_path_scope_sabotage_probe.py            # run it
