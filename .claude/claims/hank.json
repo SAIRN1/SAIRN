@@ -4218,8 +4218,8 @@
       "task": "b24: attestation end-to-end live proof on the real store (Guardian check 29); law-trust-reconcile.js stale header fix; duplicate OSHA case_no reproduce+fix+arm; currency sweep of own skills/tools/methodology (report-only on shared); ablation pass across b18-b23 arms; push. FILES: api/_lib/law-trust-reconcile.js api/_lib/law-attest.js api/law-attest.js api/b24-osha-caseno-collision.test.js api/b23-iolta-attestation.test.js tools/law_attest_live_probe.py tools/tooling_inventory.py docs/sairn-path-manifest.json sql/ docs/2026-10-20-hank-b24-notes.md SAIRN-handoff-hank-b24.md SAIRN-report-hank-b24.txt SAIRN-digest-hank-b24.txt SAIRN-ACTIVE-WORK-hank.md NOT-stonedesk-html-fourths NOT-sairndental-html-fourths NOT-api-sd-data-js-codys NOT-CLAUDE-md-ccs NOT-dot-claude-skills-REPORT-ONLY",
       "claimed_at": "2026-10-20T06:54:41Z",
       "claimed_at_epoch": 1792479281.1075401,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T08:05:17Z",
       "files": [
         "SAIRN-ACTIVE-WORK-hank.md",
         "SAIRN-digest-hank-b24.txt",
