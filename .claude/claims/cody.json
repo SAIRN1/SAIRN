@@ -4244,8 +4244,8 @@
       "task": "b31 push-gate retry amend; H1 1613 1614 countersign role re-read; rf_invoices cap; extra-actions.test.js",
       "claimed_at": "2026-10-20T12:43:18Z",
       "claimed_at_epoch": 1792500198.9867885,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T13:08:37Z",
       "files": null
     }
   ],
