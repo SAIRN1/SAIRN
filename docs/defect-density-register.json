@@ -35237,7 +35237,7 @@
       "recurrence_open": "NOT CLOSED. (1) THE FIRST-PAINT FLASH IS NARROWED, NOT ELIMINATED: rCredentials(null) still runs before the evaluation resolves, so a sub-second render of \"the reason was not recorded\" remains. Closing it needs a pending state the panel does not have. (2) NOTHING SWEEPS FOR THE CLASS. sdnEvaluateCredentials was found by hand; no check anywhere asks whether every fetch path in a file writes the same per-resource error record, and a file with one such facility and several fetch paths is the normal shape on this platform. (3) THE SERVER HALF IS UNREAD -- dnt_credentials/evaluate lives in api/sd-data.js, which is cody's, so no claim is made about whether the board itself is right when it DOES arrive."
     },
     {
-      "commit": "172a6e96d28a",
+      "commit": "8f2036615c6b",
       "date": "2026-10-20",
       "subject": "fix(agent+claude b25): a revoke silently overwritten, a zero-row PATCH logged as a plan change, and two controls that permitted when unset",
       "files": [

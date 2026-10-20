@@ -1,0 +1,172 @@
+REPORT hank b25 2026-10-20 -- three defects that all reported success, and one deployed mode that cannot be measured from outside
+
+CONTEXT 79.3% of 1,000,000 -- 792,976 tokens, measured.
+
+STATUS
+All six items closed. LANDED on origin/main, 0 ahead 0 behind by sha after a
+fresh fetch. NOT FORCED. ZERO gate overrides. The register-feed gate refused
+FIVE attempts and was FED, not escaped.
+
+1. THE REVOKE WINDOW -- api/agent/register.js. CLOSED.
+   CONCEPT: a registration must not RESURRECT a revoked agent -- the
+   not-revoked condition travels IN THE SAME STATEMENT as the update, and a
+   zero-row result is a REFUSAL, never a success.
+
+   REPRODUCED FIRST, with a recorded PostgREST that revokes the row THE INSTANT
+   THE READ RETURNS -- the real window, which stubbing one answer cannot
+   produce -- and with TWO CONCURRENT CALLS.
+
+   TWO HALVES AND THE SUITE PROVES BOTH ARE NEEDED: &status=neq.revoked on the
+   PATCH, and return=representation plus a zero-row check. WITH `minimal`,
+   PostgREST answers 204 whether it changed one row or none, so a correct
+   database condition would be INVISIBLE to the handler. Ablation D2 removes
+   ONLY the handler half and arm A1 still reddens.
+
+   A zero count AND a non-array body both refuse with the SAME 403 and message
+   as the pre-write check, so a caller cannot tell the race from the ordinary
+   refusal and try to win it. Two concurrent registrations of a LIVE agent both
+   still succeed (A8) -- the condition is neq.revoked, not a single-use lock.
+
+2. THE ZERO-ROW PATCH -- api/agent/stripe-webhook.js. CLOSED.
+   CONCEPT: the log line must say what the WRITE DID, not what was ASKED for.
+
+   `return=minimal` made res.ok true for one row updated AND for none, and the
+   handler then logged `plan_status set to "paid"` for a row that does not
+   exist. THAT LINE IS THE ONLY RECORD THIS ENDPOINT LEAVES: Stripe gets its
+   200 and never retries, nothing reconciles the two sides, and during a billing
+   dispute the one artefact an operator reads says the opposite of what
+   happened. A paid customer whose agent row was never updated looked, in the
+   log, exactly like one whose was.
+
+   Three outcomes on two streams now -- a real change to console.log WITH THE
+   ROW COUNT, no row matched to console.error naming the id, and
+   could-not-read-the-count as UNCONFIRMED. IT DELIBERATELY DOES NOT THROW:
+   retrying an event that names a missing row can never succeed.
+
+3. TWO CONTROLS THAT PERMITTED WHEN UNSET. CLOSED IN CODE; ONE HALF STILL
+   UNOBSERVABLE LIVE.
+   CONCEPT: a control whose setting is MISSING or MISSPELLED must refuse, not
+   permit.
+
+   Both reads were one line, both obviously correct in isolation, and both had
+   the same two holes -- an ABSENT variable permits, and so does every
+   MISSPELLING, because only an exact `enforce` took the other branch.
+   api/_lib/fail-closed-mode.js carries the rule and BOTH call it. The third
+   answer is the point: {mode:'enforce', configured:false, reason} -- a control
+   that silently HARDENED is as hard to operate as one that silently relaxed.
+
+   THE DEGRADED AXIS IS DELIBERATELY UNTOUCHED. "Could not reach the counter"
+   still fails open: that is a MEASUREMENT failure, not a configuration one.
+
+   ONE ARM RE-AIMED RATHER THAN DELETED. ai-rate-limit-tenant.test.js asserted
+   `allowed === true` with the comment "observe mode must still allow", while
+   its own harness DELETES the flag -- so it was really asserting that an unset
+   flag permits. The arm exists for `limited_by`; `allowed` is now set
+   EXPLICITLY on both sides so it names the mode it tests.
+
+   WHAT THE DEPLOYED ENDPOINT ACTUALLY DOES, MEASURED BEFORE THIS SHIPPED:
+     unauthenticated POST          -> 401 NO_LICENSE
+     with SD-AUDIT-2026            -> 200, a real claude-sonnet-4-6 completion
+     burst of 12 authenticated     -> 12 x 200, zero 429, zero degraded flags
+
+   SO SAIRN_CLAUDE_AUTH_MODE IS ALREADY `enforce` IN PRODUCTION and the auth
+   half of this change is a NO-OP there. THE THIRD ROW IS THE HONEST ONE AND IT
+   IS THE FINDING: twelve allowed calls is equally consistent with `observe` and
+   with `enforce` under a ceiling far above twelve. The response carries no
+   mode, SO THE DEPLOYED RATE-LIMIT MODE IS NOT OBSERVABLE FROM OUTSIDE AT ALL.
+   Probing did not close the gap the dispatch named; it measured that it cannot
+   be closed from here.
+
+   THEREFORE A DEPLOY-TIME RISK I CREATED, AND IT IS THE FIRST OPEN ITEM: if
+   SAIRN_AI_RATE_LIMIT_MODE is absent or misspelled in Vercel, this switches the
+   AI COST LIMITER ON at the daily ceiling the moment it deploys.
+   `vercel env ls production --project sairn` is the check.
+
+4. THE TWO b24 ITEMS THE LAST DIGEST OMITTED. RE-REPORTED.
+   Both were DONE in b24 and both are in that batch's notes and handoff; the
+   DIGEST omitted the first entirely and reduced the second to one line.
+
+   4a. api/_lib/law-trust-reconcile.js said in the PRESENT TENSE that
+   `reconcileTrust()` "already compares three figures" and "compares an
+   ALL-TIME ledger balance". THAT FUNCTION DOES NOT EXIST -- deleted when the
+   client was repointed at this module, recorded at sairnlaw.html:3287, and the
+   cited line :3134 now points at an unrelated toast. REWRITTEN RATHER THAN
+   DELETED, because the dissection is the whole argument for the file existing
+   and a reader who cannot find the function it dissects concludes the argument
+   is about code that is not there. Now past tense, naming where the deletion is
+   recorded, and adding the half STILL LIVE: trustLedgerBalance() and
+   clientLedgerBalance() at :3281 and :3284 still read one device's store -- what
+   was removed is the VERDICT they fed, not the arithmetic. Lines re-derived
+   with grep -n; suites 33/0 and 12/0.
+
+   4b. THE CURRENCY SWEEP, report-only on everything shared, every figure with
+   its command:
+     gate_skip.py --gates          CLAUDE.md "eight"  -> MEASURED 11, and FOUR
+                                   DECLARED BUT NOT WIRED
+     cross-domain conventions      CLAUDE.md "Twelve" -> MEASURED 39
+     docs over 400kB               CLAUDE.md seven    -> MEASURED eight, and the
+                                   MEMBERSHIP had moved. cc FIXED THIS MID-BATCH
+                                   (b27) -- it is now correct in CLAUDE.md
+     that tool's exit code         "exits 1"          -> exit 1, CORRECT
+     WRITE_ACTIONS                 17 verbs           -> `attest` ABSENT
+
+   THE SHARPEST ONE, AND b25 PAID FOR IT A THIRD TIME: control-bytes,
+   credential-sql, register-feed and scrutiny-ledger are skippable ON PAPER --
+   the tool says a skip is GRANTED AND THEN IGNORED. b23, b24 and b25 were each
+   refused by one or two of those four, so the scoped override everyone is
+   pointed at would have changed nothing. The only route is to FEED them.
+
+5. THE OSHA DUPLICATE WARNING, DRIVEN IN A REAL BROWSER. IT RENDERS.
+   Against the DEPLOYED page https://sairn.vercel.app/sairnbiz, which carries
+   b24's fix, with three incidents through the page's own render path -- two
+   sharing 2026-1 and one at 2026-2:
+     * sbCaseNoCollisions(rows) -> ["2026-1"], ONE finding for the one
+       duplicated number
+     * BOTH 2026-1 rows render Column A as
+       `2026-1 (warning) DUPLICATE case number -- another entry in 2026 also
+       holds 1. Two recordable cases cannot share one Column A; correct one on
+       the log before filing.`
+     * the 2026-2 row renders NO warning -- hasWarn:false. THAT IS THE CONTROL;
+       without it, "the warning appears" is consistent with it appearing on
+       every row
+     * the warning is a <strong> with computed colour rgb(180,83,9), inside the
+       Column A cell rather than in a banner elsewhere
+     * the tab was created for this and CLOSED afterwards
+
+   WHAT IT DOES NOT SHOW: it was read out of the live DOM, NOT judged as a
+   screenshot -- a rendered-structure pass, not a visual-design one.
+
+6. PUSHED WITHOUT FORCE, confirmed by sha. One ref-lock race (another clone
+   pushing mid-upload, not a gate finding) and five register-feed refusals,
+   answered with a record carrying four contributing factors and
+   --injection-unknown with a stated reason rather than a guessed commit.
+
+   AND THE REGISTER'S FMEA LOOP ANSWERED `PREDICTED` FOR api/claude.js -- rule
+   1.11, from docs/fmea/api_claude.js.json. That is the loop working as designed
+   for the first time in my batches: a draft written earlier named the rule this
+   defect was later filed under. Five other files answered NO DRAFT and are
+   listed in the handoff.
+
+WHAT THIS DOES NOT COVER
+* THE DEPLOYED RATE-LIMIT MODE WAS NOT DETERMINED. First open item.
+* No screenshot was judged; the browser evidence is DOM structure and a
+  computed colour.
+* The register.js race was reproduced against a RECORDED PostgREST, not against
+  two real concurrent HTTP calls to the deployed function.
+* No whole-tree suite run; suites chosen by what the diff touches.
+* Five FMEA drafts named and not written.
+
+THINGS I GOT WRONG
+1. Arms C4 and C5 FAILED ON A CORRECT FILE, because both assert the old
+   `|| 'observe'` default is GONE and both fixes QUOTE that line in the comment
+   explaining them -- the negation read the prose about the code. Third
+   occurrence of this class in three batches. Comments are stripped now, and C8,
+   which asserts documentation on purpose, says so at the line.
+2. I left a placeholder arm asserting `true` in the suite while drafting and
+   only caught it on the first run.
+3. Two wasted attempts on the register's --app value (`platform`, then
+   `sairnbiz`) when the tool prints the allowed list on refusal and the entity
+   is upper-case PLATFORM.
+4. I planned to drive the browser against a LOCAL file and only then realised
+   the deployed page already carried b24's fix -- the local file would have
+   proved my own copy renders, not the app.
