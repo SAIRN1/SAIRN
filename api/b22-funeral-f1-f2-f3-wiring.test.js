@@ -295,6 +295,136 @@ t('E2. and the schema carries BOTH constraints the lock depends on -- the '
   }
 });
 
+// ══ F. THE ABLATIONS, ADDED 2026-10-20 (hank b24) ═════════════════════════
+// THIS SUITE HAD NO ABLATION. Found by a census of the nine b18-b23 suites --
+// six carried one, three did not -- not by review, which is the point: every
+// arm above could have been passing because the thing in FRONT of the guard
+// was working. fourth's b26 finding H1 was exactly that, one file over.
+//
+// D1/D2 are deliberately INVERTED arms (they assert a gap still exists) and
+// D3 is already their control, so the ablations below target the arms that
+// assert something BUILT.
+//
+// Per ARM, not per exit code, and each names what must STAY GREEN.
+if (process.env.B22_FUNERAL_ARMS_ONLY !== '1') {
+  const { execFileSync } = require('child_process');
+  const SELF = __filename;
+  const LEG_ROLES_SRC = path.join(__dirname, '_lib', 'leg-roles.js');
+  const LEG_CS_SRC = path.join(__dirname, 'leg-countersign.js');
+
+  const runArms = () => {
+    try {
+      const out = execFileSync(process.execPath, [SELF], {
+        env: Object.assign({}, process.env, { B22_FUNERAL_ARMS_ONLY: '1' }),
+        encoding: 'utf8', stdio: 'pipe' });
+      return { exit: 0, out: String(out || '') };
+    } catch (e) {
+      return { exit: typeof e.status === 'number' ? e.status : -1,
+               out: String((e && e.stdout) || '') + String((e && e.stderr) || '') };
+    }
+  };
+  const armsOf = (out) => {
+    const m = String(out || '').match(/FAILED:\s*(.+)/);
+    return m ? m[1].trim().split(/\s*,\s*/).filter(Boolean) : [];
+  };
+  // BYTES IN, BYTES OUT -- this repo has mixed line endings file by file, so a
+  // text round trip would rewrite every line and the restore would not be one.
+  const ablate = (file, find, replace) => {
+    const buf = fs.readFileSync(file);
+    const src = buf.toString('utf8');
+    let needle = find, repl = replace, hits = src.split(find).length - 1;
+    if (hits !== 1) {
+      const crlf = find.replace(/\n/g, '\r\n');
+      if (src.split(crlf).length - 1 === 1) {
+        needle = crlf; repl = replace.replace(/\n/g, '\r\n'); hits = 1;
+      }
+    }
+    if (hits !== 1) {
+      return { ok: false, why: 'the ablation anchor matched ' + hits
+        + ' time(s) in ' + path.basename(file) + ', not exactly 1 -- REFUSING '
+        + 'to mutate. FIX THE ANCHOR, do not delete the arm.' };
+    }
+    try {
+      fs.writeFileSync(file, Buffer.from(src.replace(needle, repl), 'utf8'));
+      const r = runArms();
+      return { ok: true, exit: r.exit, arms: armsOf(r.out) };
+    } finally {
+      fs.writeFileSync(file, buf);
+    }
+  };
+
+  section('F. ABLATIONS -- remove ONE layer and measure what it alone catches');
+
+  t('F0. THE CONTROL: with nothing ablated the arms-only child run is GREEN '
+    + '(exit 0). Every ablation below is measured against this', () => {
+    const c = runArms();
+    assert.strictEqual(c.exit, 0, 'child exit ' + c.exit + '\n' + c.out.slice(-400));
+  });
+
+  t('F1. MODE_ALWAYS -> MODE_PREPARED_ONLY makes arm A2 FAIL -- so the mode is '
+    + 'what binds the OWNER, and F1\'s whole answer ("a rule the owner is '
+    + 'exempt from is not a second named person") rests on that one value',
+    () => {
+      const r = ablate(LEG_CS_SRC, 'leg_cremations: cs.MODE_ALWAYS',
+                       'leg_cremations: cs.MODE_PREPARED_ONLY');
+      assert.ok(r.ok, r.why);
+      assert.ok(r.exit === 1 && r.arms.indexOf('A2') !== -1,
+        'exit ' + r.exit + ' arms=' + r.arms.join(','));
+      assert.ok(r.arms.indexOf('A1') === -1 && r.arms.indexOf('A3') === -1,
+        'A1/A3 should stay GREEN -- the membership and the imported signer set '
+        + 'are untouched. arms=' + r.arms.join(','));
+    });
+
+  t('F2. removing the EARLY `forbidden` DENY in decide() makes arm C3 FAIL -- '
+    + 'so the ORDER is the policy and "may not touch these records at all" '
+    + 'really does win. This ablation was RE-AIMED: see F2b', () => {
+      const r = ablate(LEG_ROLES_SRC,
+        "    if (pol.forbidden.indexOf(resource) !== -1) return DENY;",
+        "    if (false && pol.forbidden.indexOf(resource) !== -1) return DENY;");
+      assert.ok(r.ok, r.why);
+      assert.ok(r.exit === 1 && r.arms.indexOf('C3') !== -1,
+        'exit ' + r.exit + ' arms=' + r.arms.join(','));
+      assert.ok(r.arms.indexOf('C1') === -1,
+        'C1 should stay GREEN -- the default still grants nothing new. arms='
+        + r.arms.join(','));
+    });
+
+  // ── F2b IS A FINDING, NOT A PASS, AND IT IS WHY THIS PASS WAS WORTH DOING ─
+  // F2's FIRST draft ablated a DIFFERENT layer: the
+  // `.filter((r) => forbidden.indexOf(r) === -1)` inside apprenticePolicy(),
+  // which strips a resource out of `countersign` when it is also `forbidden`.
+  // NOTHING WENT RED. That layer is REDUNDANT given the early DENY above, so
+  // no arm in this suite can see it -- which means it is not a control and
+  // must not be read as one. It is recorded here rather than deleted: a second
+  // narrowing is cheap and the `apprentice` config is untrusted stored input,
+  // so belt-and-braces is defensible. What is NOT defensible is leaving a
+  // reader to assume an arm is watching it.
+  t('F2b. and the SECOND narrowing inside apprenticePolicy() is REDUNDANT: '
+    + 'ablating it reddens NOTHING, because the early DENY has already '
+    + 'answered. Asserted so the layer is not mistaken for a control', () => {
+      const r = ablate(LEG_ROLES_SRC,
+        "  const countersign = known(src.countersign)\n"
+        + "    .filter((r) => forbidden.indexOf(r) === -1);",
+        "  const countersign = known(src.countersign);");
+      assert.ok(r.ok, r.why);
+      assert.strictEqual(r.exit, 0,
+        'removing the second narrowing DID redden something (exit ' + r.exit
+        + ', arms=' + r.arms.join(',') + ') -- so it IS load-bearing after all '
+        + 'and this arm has the wrong expectation. Re-aim it, do not delete it.');
+    });
+
+  t('F3. making the disclosure default OFF makes arm C5 FAIL -- a missing, '
+    + 'null or malformed value must not silently remove a disclosure, and '
+    + '`!== false` is the one character that holds that', () => {
+      const r = ablate(LEG_ROLES_SRC,
+        'presence_disclosure: src.presence_disclosure !== false,',
+        'presence_disclosure: src.presence_disclosure === true,');
+      assert.ok(r.ok, r.why);
+      assert.ok(r.exit === 1 && r.arms.indexOf('C5') !== -1,
+        'exit ' + r.exit + ' arms=' + r.arms.join(','));
+    });
+}
+
 console.log('\nb22 funeral f1/f2/f3: ' + pass + ' passed, ' + fail + ' failed');
 if (fail) console.log('FAILED: ' + failed.join(', '));
 process.exit(fail ? 1 : 0);

@@ -54,8 +54,74 @@ const KEY = 'KEY-FOR-' + HASH;
 // SAYS WHAT IT IS instead of being exempted through `SAIRN_SKIP`.
 const FIXTURE_TOKEN = 'b20-open-token-placeholder';
 
+// ── THE ABLATION HARNESS, ADDED 2026-10-20 (hank b24) ─────────────────────
+// Same shape as api/b23-iolta-attestation.test.js: mutate ONE named layer,
+// re-run THIS FILE'S ARMS in a child, read the child's own FAILED: line, and
+// restore in a `finally`. The child runs with ARMS_ONLY so the ablations do
+// not recurse.
+const fs = require('fs');
+const path = require('path');
+const { execFileSync } = require('child_process');
+const SELF = __filename;
+const EP_SRC = path.join(__dirname, '_lib', 'countersign-endpoint.js');
+const ARMS_ONLY = process.env.B20_OPEN_ARMS_ONLY === '1';
+
+function runSuite(file, armsOnly) {
+  const env = armsOnly
+    ? Object.assign({}, process.env, { B20_OPEN_ARMS_ONLY: '1' })
+    : process.env;
+  try {
+    const out = execFileSync(process.execPath, [file], {
+      env: env, encoding: 'utf8', stdio: 'pipe' });
+    return { exit: 0, out: String(out || '') };
+  } catch (e) {
+    return { exit: typeof e.status === 'number' ? e.status : -1,
+             out: String((e && e.stdout) || '') + String((e && e.stderr) || '') };
+  }
+}
+function failedArms(out) {
+  const m = String(out || '').match(/FAILED:\s*(.+)/);
+  return m ? m[1].trim().split(/\s*,\s*/).filter(Boolean) : [];
+}
+function ablate(file, find, replace) {
+  // BYTES IN, BYTES OUT. This repo has mixed line endings file by file, so a
+  // text-mode round trip can rewrite every line and the "restore" would be a
+  // reformat. The anchors here are \n; the CRLF spelling is tried too.
+  const originalBuf = fs.readFileSync(file);
+  const original = originalBuf.toString('utf8');
+  let needle = find, repl = replace;
+  let hits = original.split(find).length - 1;
+  if (hits !== 1) {
+    const crlf = find.replace(/\n/g, '\r\n');
+    if (original.split(crlf).length - 1 === 1) {
+      needle = crlf; repl = replace.replace(/\n/g, '\r\n'); hits = 1;
+    }
+  }
+  if (hits !== 1) {
+    return { ok: false, why: 'the ablation anchor matched ' + hits + ' time(s) '
+      + 'in ' + path.basename(file) + ', not exactly 1 -- REFUSING to mutate. '
+      + 'FIX THE ANCHOR, do not delete the arm. Anchor: ' + find.slice(0, 100) };
+  }
+  try {
+    fs.writeFileSync(file, Buffer.from(original.replace(needle, repl), 'utf8'));
+    const mine = runSuite(SELF, true);
+    return { ok: true, exit: mine.exit, arms: failedArms(mine.out), out: mine.out };
+  } finally {
+    fs.writeFileSync(file, originalBuf);
+  }
+}
+
 let pass = 0, fail = 0;
 const failed = [];
+// A DRIFTED ABLATION ANCHOR IS A FAILURE IN THIS FILE, not a third state.
+// This suite has no `unproven` channel, and the alternative -- printing a note
+// and carrying on -- is how an ablation stops ablating and nobody finds out.
+// The message says to RE-SEAT the anchor rather than delete the arm.
+function cannot(l, why) {
+  fail++; failed.push(l.split('.')[0]);
+  console.log('  FAIL  ' + l + '  (THE ABLATION DID NOT RUN)');
+  if (why) console.log('        ' + String(why).slice(0, 400));
+}
 function ok(l) { pass++; console.log('  ok    ' + l); }
 function bad(l, why) {
   fail++; failed.push(l.split('.')[0]);
@@ -340,6 +406,87 @@ const ALL_FOUR = [ROW_AWAITING, ROW_SIGNED, ROW_EXPIRED, ROW_SIGNED_THEN_EXPIRED
        'F2. and it ships the stage vocabulary, so a panel renders the four '
      + 'names the server computes instead of a list of its own that can drift',
        JSON.stringify(b.stages));
+  }
+
+  if (ARMS_ONLY) {
+    console.log('\n  ' + pass + ' passed, ' + fail + ' failed');
+    if (fail) console.log('  FAILED: ' + failed.join(', '));
+    process.exit(fail ? 1 : 0);
+  }
+
+  // ── G. THE ABLATIONS, ADDED 2026-10-20 (hank b24) ───────────────────────
+  // THIS SUITE HAD NONE, and that was found by a census rather than by review:
+  // of the nine b18-b23 suites, six carried a real ablation and three did not.
+  // Every arm above could have been passing because the thing in FRONT of the
+  // guard was working -- fourth's b26 finding H1 in a different file.
+  //
+  // Per ARM, not per exit code. Each ablation removes ONE named layer from
+  // api/_lib/countersign-endpoint.js and names the arm that must redden AND
+  // the arms that must stay green, because an ablation that breaks the whole
+  // file measures nothing.
+  section('G. ABLATIONS -- remove ONE layer and measure what it alone catches');
+
+  const g0 = runSuite(SELF, true);
+  is(g0.exit === 0,
+     'G0. THE CONTROL: with nothing ablated the arms-only child run is GREEN '
+   + '(exit 0). Every ablation below is measured against this',
+     'child exit ' + g0.exit + '\n' + String(g0.out).slice(-300));
+
+  // G1. THE STAGE LADDER'S ORDER. Put `signed` ahead of `expired` and the
+  // signed-then-expired row reads `signed` -- a record whose signature has
+  // lapsed rendering as ready to file. A3 is the arm that sees it.
+  const g1 = ablate(EP_SRC,
+    "  return row.spent_at ? 'filed'\n       : expired ? 'expired'\n"
+    + "       : row.countersign_employee_id ? 'signed'\n"
+    + "       : 'awaiting_signature';",
+    "  return row.spent_at ? 'filed'\n"
+    + "       : row.countersign_employee_id ? 'signed'\n"
+    + "       : expired ? 'expired'\n"
+    + "       : 'awaiting_signature';");
+  if (!g1.ok) {
+    cannot('G1. the stage ladder ORDER is load-bearing', g1.why);
+  } else {
+    is(g1.exit === 1 && g1.arms.indexOf('A3') !== -1,
+       'G1. putting `signed` ahead of `expired` makes arm A3 FAIL -- so the '
+     + 'ORDER is the policy, and a signed-then-expired row would otherwise '
+     + 'render as ready to file',
+       'exit ' + g1.exit + ' arms=' + g1.arms.join(','));
+    is(g1.arms.indexOf('A1') === -1 && g1.arms.indexOf('C1') === -1,
+       'G1b. ...and A1/C1 stay GREEN -- the action still exists and still '
+     + 'leaks no token, so one layer was removed and not the floor',
+       'arms=' + g1.arms.join(','));
+  }
+
+  // G2. THE UNSPENT FILTER. Drop `&spent_at=is.null` and the query no longer
+  // matches idx_<app>_countersign_open -- the index this action was built for.
+  // D1 is the arm that reads the URL.
+  const g2 = ablate(EP_SRC,
+    "          '&spent_at=is.null&select=' + STAGE_COLUMNS +",
+    "          '&select=' + STAGE_COLUMNS +");
+  if (!g2.ok) {
+    cannot('G2. the unspent filter is load-bearing', g2.why);
+  } else {
+    is(g2.exit === 1 && g2.arms.indexOf('D1') !== -1,
+       'G2. dropping `spent_at=is.null` makes arm D1 FAIL -- the list would '
+     + 'return already-filed records and stop matching the partial index',
+       'exit ' + g2.exit + ' arms=' + g2.arms.join(','));
+  }
+
+  // G3. THE COLUMN LIST. Add `token_hash` to the shared select and the
+  // serialised answer carries a bearer-credential hash. C2 asserts an ABSENCE
+  // over the whole serialised response precisely so the NEXT field added is
+  // caught without being named, and this is the arm that proves that works.
+  const g3 = ablate(EP_SRC,
+    "const STAGE_COLUMNS = 'resource,prepared_by,prepared_role,'",
+    "const STAGE_COLUMNS = 'token_hash,resource,prepared_by,prepared_role,'");
+  if (!g3.ok) {
+    cannot('G3. the token-free column list is load-bearing', g3.why);
+  } else {
+    is(g3.exit === 1
+       && (g3.arms.indexOf('C1') !== -1 || g3.arms.indexOf('C2') !== -1),
+       'G3. adding `token_hash` to the shared select makes C1 or C2 FAIL -- so '
+     + 'the absence assertion really does catch a field nobody named',
+       'exit ' + g3.exit + ' arms=' + g3.arms.join(','));
   }
 
   console.log('\n  ' + pass + ' passed, ' + fail + ' failed');
