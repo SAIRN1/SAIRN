@@ -4315,6 +4315,28 @@
         "sairncode.html",
         "sairndental.html"
       ]
+    },
+    {
+      "id": "fourth-1792489003",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "b42: sairnbiz Z1 ids; sbOtThreshold off-by-one; sairncode queue line; sairndental x3; push. HELD: timesheet day seven + start/end (server validator in api/sd-data.js is cody's b29), stonedesk sairnSyncAll (hank b26). FILES: sairnbiz.html sairncode.html sairndental.html tests/sairnbiz_ot_threshold_coalesce.js tests/sairnbiz_benefits_and_overtime.js docs/defect-density-register.json docs/batch-manifest-fourth-b42.json SAIRN-handoff-fourth-b42.md SAIRN-report-fourth-b42.txt SAIRN-digest-fourth-b42.txt NOT-stonedesk-html-HANKS-b26 NOT-api-sd-data-js-CODYS-b29 NOT-tools-shared-REPORT-ONLY NOT-CLAUDE-md-ccs NOT-dot-claude-skills-ccs NOT-docs-tier-a-reviews-json-ccs",
+      "claimed_at": "2026-10-20T09:36:43Z",
+      "claimed_at_epoch": 1792489003.1856494,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b42.txt",
+        "SAIRN-handoff-fourth-b42.md",
+        "SAIRN-report-fourth-b42.txt",
+        "docs/batch-manifest-fourth-b42.json",
+        "docs/defect-density-register.json",
+        "sairnbiz.html",
+        "sairncode.html",
+        "sairndental.html",
+        "tests/sairnbiz_benefits_and_overtime.js",
+        "tests/sairnbiz_ot_threshold_coalesce.js"
+      ]
     }
   ],
   "refusals": [
