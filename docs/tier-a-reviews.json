@@ -7785,6 +7785,30 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-20T16:51:37Z",
+      "opened_at_sha": "deda8387f463778259d1f0f081fb60ad637f5af7",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 6,
+      "resources": [
+        "alf_compliance_rules",
+        "alf_payer_rules",
+        "bld_draws"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/b33-projection-order-sweep.test.js"
+      ],
+      "what": "b33 cody: api/sd-data.js alf_payer_rules + alf_compliance_rules WRITE RESPONSES and bld_draws wip/release_retainage now apply the server-stamped/column fields (rule_id, state, verified_by, draw_id) LAST; api/sd-sub-data.js flattenProgressPhoto puts columns last. Found by the inverted Object.assign(columns, blob) sweep (docs/2026-10-20-cody-b33-notes.md); each was LIVE (client payload.data / unstripped blob could carry the key), response/read-only, stored columns were never wrong. Please try to break: (a) any consumer that relied on the blob's verified_by/state in the rule write RESPONSE; (b) the release_retainage engine input now has draw_id applied after retainage_released (key order only); (c) that api/b33-projection-order-sweep.test.js A1/B1/C1/D1 truly fail under the old order (ablation: 5 red); (d) the ~50 sites classified INERT only by strip-list proximity.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-20T16:51:37Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
