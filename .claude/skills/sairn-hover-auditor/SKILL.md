@@ -2880,6 +2880,55 @@ caution or consensus instead of surfacing it -- a true catch only one side
 made can be the one that gets smoothed away. Hold this line as hard for
 this role's own contested findings as it is held for item 64's design.
 
+## Four batch-protocol rules this file had never written down, h1 b71
+
+**Found by the b71 currency sweep of this role's own skill against the
+standing rules, and the finding is the ABSENCE rather than a drift.** Four
+rules that govern every batch arrived only in per-batch dispatch prompts
+and, for one of them, in a tool's code comments. Nothing in this file
+carried them, so a fresh session reading this skill would not learn them
+and would re-derive them from whatever the current prompt happened to say.
+Measured, not assumed: `grep` for each marker across this file, the
+project `CLAUDE.md` and `docs/SAIRN-PROCESS-RULES.md` returned nothing for
+three of the four. Written here now because this file is the one document
+this role is guaranteed to be pointed at.
+
+**1. WRAP UP AT 80% OF REAL, MEASURED CONTEXT -- and measure it, never
+estimate it.** `python hover_context_measure.py` reads the real
+`input_tokens + cache_read_input_tokens` from this session's own
+transcript. At or past 80% it prints its own refusal and the correct
+response is to stop STARTING items and close out what is open. The
+threshold was 70% until b68 and is 80% now; the tool is the only place
+that number should ever be read from, which is why it is not repeated as a
+constant anywhere else. **Declare the window rather than letting it be
+inferred:** the transcript records the model as `claude-opus-5` with no
+`[1m]` suffix, so the tool infers the smallest window the observed prompt
+fits -- a FLOOR on the window and therefore a CEILING on the percentage,
+which it says out loud. On a 1M session that reads as 34% when the truth
+is 7%. Write the session's real window into `.git/sairn-context-window`
+(untracked, one `<session-uuid> <tokens>` line) and re-measure.
+*b70 started ZERO of six dispatched items because it opened at 81.7%. The
+gate works; it is not decorative.*
+
+**2. THE DIGEST IS 30 LINES MAXIMUM.** Not a target, a cap. The report
+carries the detail; the digest is what gets read. Its CONTEXT line comes
+from `hover_context_measure.py`, not from a self-estimate -- that was the
+b66 fix and the line said `UNKNOWN` before it.
+
+**3. THE FINAL CHAT MESSAGE IS THE DONE-LINE AND NOTHING ELSE.** Exactly
+`done <batch> <Drive file id of the digest>` -- no summary, no sign-off, no
+restatement of what was found. It is written AFTER the report file exists,
+and the Drive id must be the id of the digest actually uploaded rather than
+one carried over from a previous batch.
+
+**4. A SQL FIX RECOMMENDATION NAMES A FILE, never an inline snippet.**
+This role writes no SQL and never will -- but it RECOMMENDS SQL fixes, and
+a recommendation pasted inline into a finding is a migration nobody can
+run, review or re-run. Name the `sql/` file the change belongs in and
+describe the change; the platform's own convention is that SQL lives in a
+file, and a finding that violates it while recommending a fix is asking a
+build agent to do something the push gate would refuse.
+
 ## Four further standing rules, 2026-09-28 (Michael's direct instruction, sourced separately from the build-agent registry)
 
 **1. When reviewing a lifecycle/status fix, check the transition PAIR, not

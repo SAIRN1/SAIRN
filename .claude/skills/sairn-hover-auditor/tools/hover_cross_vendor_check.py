@@ -761,6 +761,47 @@ def validate_tiebreak(verdict, added_lines):
 # a real path and a real in-range line, where no quoted string is given to
 # check against. That shape remains reachable and the mode's verdicts must
 # not be read as evidence against it. Named in the output every run.
+#
+# ── b71: THE QUOTED-CONTENT HALF OF THAT GAP IS NOW CLOSED, and the
+# remaining limit is narrower and stated precisely rather than inherited.
+#
+# The paragraph above was already scoped correctly -- "where no quoted
+# string is given to check against" -- but nothing acted on the other
+# branch. When a finding DOES bind a quoted fragment to a specific line,
+# that fragment can be read off the real line and compared, and a
+# fabricated quotation stops being a matter of vendor credulity. PF5
+# asserted this gap as an honest limit for two batches; as of b71 it
+# asserts the opposite for the bound case, and a NEW control (PF9) carries
+# the genuinely remaining limit.
+#
+# WHICH SHAPES COUNT AS A BOUND QUOTATION, AND WHY NOT "EVERY BACKTICKED
+# STRING". Measured against this role's own real log (1,617 entries) rather
+# than chosen from taste:
+#   * `frag` at path:line      -- 4 matches in 3 entries   ACCEPTED
+#   * `frag` (:NNN)            -- 7 matches in 4 entries   ACCEPTED
+#   * path:line ... `frag` within 80 chars -- 82 matches in 59 entries,
+#     DELIBERATELY NOT ACCEPTED. That is the loose shape, and accepting it
+#     would make every backticked identifier near a citation a claimed
+#     quotation -- including tool names, header names and prose emphasis
+#     that were never asserted to be ON the line. It would refuse dozens of
+#     correct past entries. This is the same judgment the platform's own
+#     tools/citation_anchor_rot_check.py makes in its ANCHOR_RE comment
+#     ("NOT 'every backticked string', which would make every identifier in
+#     a prose cell an anchor") -- convention reused, code not, because that
+#     tool answers a different question (does an anchor resolve exactly once
+#     anywhere in a markdown register cell's target) and because a hover
+#     check must not depend on a file a build agent owns and can change
+#     under it.
+# So the check is OPT-IN BY SYNTAX: bind a fragment to a line and it gets
+# verified; write prose near a citation and nothing is claimed or checked.
+# The count of bound fragments is reported, so zero is visible as a not-run
+# rather than passing as if content had been verified (PR SS1.11).
+#
+# WHAT A FAILURE DISTINGUISHES, because the two are not the same defect:
+# DRIFT (the fragment is real and present in the file, just not at the
+# cited line -- the code moved) vs FABRICATION (the fragment does not
+# appear in the file at ANY line at `ref`). Both refuse; both name which
+# one they are and, for drift, the real line number.
 
 def _repo_root():
     return os.path.join(os.path.expanduser('~'), 'Documents', 'SAIRN-hover')
@@ -781,12 +822,152 @@ def _file_line_count(path, repo=None, ref='HEAD'):
 
 _CITE_RE = re.compile(r'([A-Za-z0-9_./\\-]+\.(?:js|py|html|json|sql|md|jsonl|ts))\s*:\s*(\d+)')
 
+_EXT = r'(?:js|py|html|json|sql|md|jsonl|ts)'
 
-def preflight_citations(entry, repo=None, ref='HEAD'):
+# The two BOUND-QUOTATION shapes, both requiring the fragment and the line
+# number to be syntactically adjacent. See the long comment above for the
+# third, loose shape that is measured and deliberately refused.
+_QUOTE_AT_RE = re.compile(
+    r'`([^`\n]{4,300})`\s+at\s+([A-Za-z0-9_./\\-]+\.%s)\s*:\s*(\d+)' % _EXT)
+_QUOTE_PAREN_RE = re.compile(r'`([^`\n]{4,300})`\s*\(\s*:(\d+)\s*\)')
+
+
+def _file_lines(path, repo=None, ref='HEAD'):
+    """(lines_or_None, why). The file's real lines at `ref`, from git for
+    the same reason _file_line_count reads from git: a dirty working tree
+    would let an uncommitted edit satisfy a check about committed state."""
+    repo = repo or _repo_root()
+    r = subprocess.run(['git', 'show', '%s:%s' % (ref, path)], cwd=repo,
+                        capture_output=True, text=True, encoding='utf-8',
+                        errors='replace')
+    if r.returncode != 0:
+        return None, 'not present at %s in %s (%s)' % (
+            ref, repo, (r.stderr or '').strip()[:80])
+    return r.stdout.splitlines(), ''
+
+
+def _norm_ws(s):
+    """Collapse runs of whitespace to one space and strip. Applied to BOTH
+    sides so a fragment quoted without its source indentation still
+    matches. Case is NOT folded -- this compares code, where `Prefer` and
+    `prefer` are different things."""
+    return ' '.join(str(s).split())
+
+
+def preflight_quoted_content(entry, repo=None, ref='HEAD'):
+    """(problems, checked, notes) -- for every BOUND quotation in the
+    entry, read the cited line from git at `ref` and require the quoted
+    fragment to actually be there.
+
+    `checked` counts bound fragments actually compared, so an entry that
+    binds none reports zero rather than looking content-verified.
+    `problems` entries name DRIFT vs FABRICATION explicitly."""
+    problems = []
+    notes = []
+    checked = 0
+    blob = ' '.join([str(entry.get('ref') or ''), str(entry.get('summary') or '')])
+
+    # (fragment, path_or_None, line)
+    bound = [(m.group(1), m.group(2).replace('\\', '/'), int(m.group(3)))
+             for m in _QUOTE_AT_RE.finditer(blob)]
+    paren = [(m.group(1), None, int(m.group(2)))
+             for m in _QUOTE_PAREN_RE.finditer(blob)]
+
+    # Path resolution for the `(:NNN)` shape, which names no file. The
+    # candidate set is every path the entry itself already commits to.
+    # FAIL CLOSED on ambiguity: a fragment bound to a line in an
+    # unidentifiable file is refused, not waved through, because "I could
+    # not tell which file" is not "the quotation checked out".
+    candidates = set()
+    shas = entry.get('source_shas')
+    if isinstance(shas, dict):
+        candidates |= {str(p).replace('\\', '/') for p in shas if p}
+    for m in _CITE_RE.finditer(blob):
+        candidates.add(m.group(1).replace('\\', '/'))
+    if paren:
+        if len(candidates) == 1:
+            only = next(iter(candidates))
+            paren = [(f, only, ln) for f, _, ln in paren]
+        else:
+            for frag, _, ln in paren:
+                problems.append(
+                    'quoted fragment is bound to (:%d) but the entry names %d '
+                    'candidate path(s) %s, so which file the quotation is from '
+                    'cannot be determined -- write it as `frag` at path:%d. '
+                    'Fragment: %r'
+                    % (ln, len(candidates), sorted(candidates) or '[none]',
+                       ln, frag[:80]))
+            paren = []
+
+    cache = {}
+    for frag, path, ln in bound + paren:
+        if path not in cache:
+            cache[path] = _file_lines(path, repo=repo, ref=ref)
+        lines, why = cache[path]
+        if lines is None:
+            problems.append('quoted fragment cites a FILE that does not exist: '
+                             '%s:%d -- %s' % (path, ln, why))
+            continue
+        if ln < 1 or ln > len(lines):
+            problems.append('quoted fragment cites %s:%d but the file has %d '
+                             'line(s) at %s' % (path, ln, len(lines), ref))
+            continue
+        checked += 1
+        needle = _norm_ws(frag)
+        if needle in _norm_ws(lines[ln - 1]):
+            continue
+        # A statement wrapped across lines is a real and legitimate way to
+        # quote: accept the cited line joined with the two following it.
+        span = _norm_ws(' '.join(lines[ln - 1:ln + 2]))
+        if needle in span:
+            notes.append('quoted fragment at %s:%d matches the cited line '
+                          'joined with the 2 following -- a wrapped statement, '
+                          'accepted' % (path, ln))
+            continue
+        hits = [i + 1 for i, l in enumerate(lines) if needle in _norm_ws(l)]
+        if hits:
+            # WEAK LOCALIZATION, DISCLOSED RATHER THAN SUPPRESSED. Measured
+            # against 443 real past findings: the three DRIFT verdicts this
+            # check produces are all on api/sd-data.js, and two of them
+            # quote the 4-character fragment `read`, which occurs on five
+            # lines. The verdict is still CORRECT -- the fragment is
+            # genuinely not on the cited line -- but a fragment that occurs
+            # many times localizes weakly, and a reader deserves to know
+            # that before treating "the fragment is at 75, 87, 91, 102,
+            # 110" as a precise relocation. The alternative, raising the
+            # minimum fragment length until such cases vanish, would
+            # silently stop checking short-but-real quotations; disclosure
+            # keeps the check running and tells the truth about its
+            # resolving power.
+            weak = ('. NOTE: this fragment occurs on %d lines, so it '
+                     'localizes WEAKLY -- the refusal is sound (it is not on '
+                     'the cited line) but the suggested lines are not a '
+                     'precise relocation' % len(hits)) if len(hits) > 3 else ''
+            problems.append(
+                'DRIFT -- quoted fragment is real but NOT at the cited line: '
+                '%s:%d was cited, the fragment is at line(s) %s at %s. '
+                'Fragment: %r%s'
+                % (path, ln, ', '.join(str(h) for h in hits[:5]), ref,
+                   frag[:80], weak))
+        else:
+            problems.append(
+                'FABRICATION -- quoted fragment does not appear in %s at ANY '
+                'line at %s, so this is not line drift: the content attributed '
+                'to %s:%d was never there. Fragment: %r'
+                % (path, ref, path, ln, frag[:80]))
+    return problems, checked, notes
+
+
+def preflight_citations(entry, repo=None, ref='HEAD', quoted=True,
+                         notes_out=None):
     """(ok, problems, checked) -- verifies, against the real repository:
       * every path in source_shas exists at `ref`;
       * every `path:line` citation anywhere in ref/summary names a path
-        that exists AND a line within that file's real line count.
+        that exists AND a line within that file's real line count;
+      * b71 -- every BOUND quoted fragment is actually ON the line it is
+        bound to, via preflight_quoted_content(). `quoted=False` turns only
+        that third check off, so the b69 fixtures can still exercise the
+        resolve-only behaviour they were written against.
     `problems` is a list of strings; `checked` counts what was actually
     verified, so a finding citing nothing reports zero rather than passing
     silently as if it had been checked."""
@@ -828,6 +1009,23 @@ def preflight_citations(entry, repo=None, ref='HEAD'):
                              % (p, ln, counts[p], ref))
         elif ln < 1:
             problems.append('cited LINE is not a real line number: %s:%d' % (p, ln))
+
+    # b71 -- THE CONTENT HALF. Runs after resolution so a fragment bound to
+    # a file that does not exist is reported once by the stronger check
+    # above rather than twice in different words.
+    if quoted:
+        q_problems, q_checked, q_notes = preflight_quoted_content(
+            entry, repo=repo, ref=ref)
+        problems.extend(q_problems)
+        checked += q_checked
+        # Notes are NOT problems (a wrapped statement is a legitimate
+        # quotation) but they are not nothing either -- a caller that
+        # passes a list gets them and prints them, so an accepted span is
+        # visible rather than a silent widening of the comparison.
+        if notes_out is not None:
+            notes_out.extend(q_notes)
+            notes_out.append('quoted fragments compared against their cited '
+                             'line: %d' % q_checked)
     return (not problems), problems, checked
 
 
@@ -1725,14 +1923,137 @@ def run_fixtures():
     ck('PF4 a finding citing nothing checkable reports ZERO verified rather '
        'than passing as if it had been checked (n=%d)' % n_z,
        ok_z is True and n_z == 0)
-    ck('PF5 HONEST LIMIT, asserted so it cannot be forgotten: false CONTENT '
-       'at a real path and a real in-range line still PASSES pre-flight -- '
-       'this check verifies that citations RESOLVE, never that the claim '
-       'about them is true',
-       preflight_citations({'seq': 3, 'type': 'finding',
-                             'ref': 'api/stonedesk-track.js:101',
-                             'summary': 'a completely false claim about '
-                                        'api/stonedesk-track.js:101'})[0] is True)
+    # ── b71: PF5 IS NOW INVERTED. For two batches PF5 ASSERTED that false
+    # content at a real path and a real in-range line passes -- an honest
+    # limit, locked so it could not be quietly forgotten. The b71 item
+    # closed the half of that limit that is actually checkable, so the
+    # fixture that proved it unguarded is inverted here in the same change
+    # rather than left asserting a gap that no longer exists. The genuinely
+    # remaining limit moves to PF9 and is asserted there, so nothing is
+    # dropped on the floor -- the limit got NARROWER, it did not vanish.
+    #
+    # Every arm below is driven against the REAL repo for the same reason
+    # PF1-PF4 are: a synthetic fixture here would test this role's idea of
+    # the file rather than the file. REAL LINE 101 of
+    # api/stonedesk-track.js, read with `git show HEAD:... | awk NR==101`:
+    #     if (!/^[a-f0-9]{64}$/.test(token)) {
+    TRUE_FRAG = 'if (!/^[a-f0-9]{64}$/.test(token)) {'
+    ok_q, probs_q, n_q = preflight_citations(
+        {'seq': 3, 'type': 'finding',
+         'ref': 'api/stonedesk-track.js:101',
+         'summary': 'the guard is `%s` at api/stonedesk-track.js:101' % TRUE_FRAG})
+    ck('PF5 (INVERTED b71) a TRUE quotation bound to the line it is really '
+       'on PASSES, and is counted as content-verified rather than merely '
+       'resolved (%d checked)' % n_q,
+       ok_q is True and n_q >= 3)
+
+    ok_fab, probs_fab, _ = preflight_citations(
+        {'seq': 4, 'type': 'finding',
+         'ref': 'api/stonedesk-track.js:101',
+         'summary': 'the guard is `const replayGuard = new Map();` at '
+                    'api/stonedesk-track.js:101'})
+    ck('PF6 KNOWN-BAD CONTROL -- FALSE CONTENT AT A REAL LINE (the exact '
+       'shape PF5 used to assert was unreachable): a fragment that is in no '
+       'line of the file is REFUSED and named FABRICATION, not drift',
+       ok_fab is False and any(p.startswith('FABRICATION') for p in probs_fab))
+
+    # Real line 82 of the same file, not 101 -- so this fragment is
+    # genuine, and only the line is wrong. A check that cannot tell this
+    # from PF6 would report a moved line as invented content.
+    ok_dr, probs_dr, _ = preflight_citations(
+        {'seq': 5, 'type': 'finding',
+         'ref': 'api/stonedesk-track.js:101',
+         'summary': 'it refuses with `POST only` at api/stonedesk-track.js:101'})
+    ck('PF7 KNOWN-BAD CONTROL -- DRIFT, DISTINGUISHED FROM FABRICATION: a '
+       'real fragment bound to the WRONG line is REFUSED, named DRIFT, and '
+       'reports the real line (82) rather than a generic failure',
+       ok_dr is False and any(p.startswith('DRIFT') and ' 82' in p
+                               for p in probs_dr))
+
+    ok_amb, probs_amb, _ = preflight_citations(
+        {'seq': 6, 'type': 'finding', 'ref': 'two files',
+         'summary': 'api/stonedesk-track.js:101 and api/agent/poll.js:1 both '
+                    'matter; the guard is `%s` (:101)' % TRUE_FRAG})
+    ck('PF8 FAIL-CLOSED ON AMBIGUITY: the `frag` (:NNN) shape names no file, '
+       'so with TWO candidate paths it is REFUSED rather than guessed -- '
+       '"could not tell which file" is not "the quotation checked out"',
+       ok_amb is False and any('cannot be determined' in p for p in probs_amb))
+
+    ok_one, _, n_one = preflight_citations(
+        {'seq': 7, 'type': 'finding', 'ref': 'api/stonedesk-track.js:101',
+         'summary': 'the guard is `%s` (:101)' % TRUE_FRAG})
+    ck('PF8b the same `frag` (:NNN) shape RESOLVES when the entry commits to '
+       'exactly one path, so the fail-closed arm above is not simply '
+       'refusing the whole shape (%d checked)' % n_one, ok_one is True)
+
+    ok_lim, _, n_lim = preflight_citations(
+        {'seq': 8, 'type': 'finding', 'ref': 'api/stonedesk-track.js:101',
+         'summary': 'a completely false claim about '
+                    'api/stonedesk-track.js:101 with nothing quoted'})
+    ck('PF9 THE REMAINING HONEST LIMIT, inherited from the old PF5 and '
+       'narrowed: false content at a real line still passes WHEN NOTHING IS '
+       'QUOTED. Zero fragments compared is reported as a not-run, never as a '
+       'content pass (quoted fragments checked = 0 of %d total)' % n_lim,
+       ok_lim is True
+       and preflight_quoted_content(
+           {'seq': 8, 'ref': 'api/stonedesk-track.js:101',
+            'summary': 'a completely false claim about '
+                       'api/stonedesk-track.js:101 with nothing quoted'})[1] == 0)
+
+    ok_loose, _, _ = preflight_citations(
+        {'seq': 9, 'type': 'finding', 'ref': 'api/stonedesk-track.js:101',
+         'summary': 'at api/stonedesk-track.js:101 the `Prefer` header and '
+                    'the `hover_log.py` tool are discussed in prose'})
+    ck('PF10 THE LOOSE SHAPE IS NOT TREATED AS A QUOTATION: backticked '
+       'identifiers merely NEAR a path:line (82 such matches across 59 real '
+       'past entries) assert nothing about the line and are not checked, so '
+       'closing PF5 does not retroactively refuse correct past findings',
+       ok_loose is True
+       and preflight_quoted_content(
+           {'seq': 9, 'ref': 'api/stonedesk-track.js:101',
+            'summary': 'at api/stonedesk-track.js:101 the `Prefer` header and '
+                       'the `hover_log.py` tool are discussed in prose'})[1] == 0)
+
+    ok_ind, _, _ = preflight_citations(
+        {'seq': 10, 'type': 'finding', 'ref': 'api/stonedesk-track.js:101',
+         'summary': 'quoted without its six spaces of source indentation: '
+                    '`%s` at api/stonedesk-track.js:101' % TRUE_FRAG.strip()})
+    ck('PF11 whitespace is normalised on BOTH sides, so a fragment quoted '
+       'without its source indentation still matches -- otherwise the check '
+       'would refuse nearly every honest quotation of indented code',
+       ok_ind is True)
+
+    # `token` occurs on many lines of the fixture file; :82 does not carry
+    # it. The refusal is correct and the message must say the localization
+    # is weak rather than present five line numbers as a precise answer.
+    weak_probs, _, _ = preflight_quoted_content(
+        {'seq': 11, 'ref': 'api/stonedesk-track.js:82',
+         'summary': 'the value is `token` at api/stonedesk-track.js:82'})
+    ck('PF12 WEAK LOCALIZATION IS DISCLOSED, not suppressed: a fragment '
+       'occurring on more than 3 lines still REFUSES (it is not on the cited '
+       'line) but says so is weakly localizing, so the suggested lines are '
+       'not mistaken for a precise relocation',
+       any(p.startswith('DRIFT') and 'localizes WEAKLY' in p
+           for p in weak_probs))
+
+    # ── b71 FALSE-POSITIVE ACCOUNTING AGAINST THE REAL RECORD, not a
+    # fixture. Ablated over all 443 real `finding` entries in this role's
+    # own log: 5 would be refused by the new content half that the old
+    # resolve-only check passed. Every one was read:
+    #   seq 892/894/929 -- TRUE citation rot. All three cite api/sd-data.js
+    #     (a ~15,000-line file build agents edit constantly) and the quoted
+    #     fragment has genuinely moved off the cited line since. Two quote
+    #     the 4-char `read` and get the weak-localization note above.
+    #   seq 926 -- the `(:NNN)` shape with 2 candidate paths. Refused by
+    #     PF8's rule. Correct: the entry does not say which file.
+    #   seq 1617 -- THIS ROLE'S OWN b71 FINDING, written hours before this
+    #     check existed, using `(:179)` with 4 candidate paths. My own new
+    #     check refuses my own new finding. Recorded rather than fixed by
+    #     loosening the rule, and logged as its own entry, because the AS-
+    #     FOUND discipline applies to this role's own output too.
+    # So 5/443 = 1.1% of the historical record is refused, none of it
+    # wrongly. This number is stated because a new gate that refuses part
+    # of the existing record must say how much before it is trusted.
 
     lines_after = 0
     if os.path.isfile(real_log):
@@ -1784,18 +2105,25 @@ def main(argv):
             # PRE-FLIGHT CITATIONS, b69. Runs before the call, so a
             # fabricated path or a beyond-EOF line never reaches a reviewer
             # that provably cannot detect either.
-            cite_ok, cite_problems, cite_checked = preflight_citations(entry)
+            cite_notes = []
+            cite_ok, cite_problems, cite_checked = preflight_citations(
+                entry, notes_out=cite_notes)
             print('CITATIONS: %d checked against the real repo at HEAD -- %s'
                   % (cite_checked, 'all resolve' if cite_ok else 'PROBLEMS'))
             for p in cite_problems:
                 print('           - %s' % p)
+            for n in cite_notes:
+                print('           . %s' % n)
             if not cite_ok:
                 raise CouldNotTell(
                     'pre-flight citation check refused seq=%d: %d problem(s) '
                     'above. The evidence-only reviewer cannot verify a '
                     'citation (measured in b69: it AGREED at high confidence '
-                    'with a fabricated path), so an unresolvable citation is '
-                    'refused here rather than sent to be rubber-stamped.'
+                    'with a fabricated path, and separately with a fabricated '
+                    'quotation of an internal comment), so an unresolvable '
+                    'citation -- or, since b71, a quoted fragment that is not '
+                    'on the line it is bound to -- is refused here rather '
+                    'than sent to be rubber-stamped.'
                     % (seq, len(cite_problems)))
             if cite_checked == 0:
                 print('           NOTE: this finding cites no checkable '

@@ -213,6 +213,39 @@ GENESIS = 'genesis:hover-auditor-self-log:v1'
 TYPES = ('check', 'finding', 'no-report', 'note')
 SEVERITIES = ('critical', 'high', 'moderate', 'low', '')
 
+# ── CLOSURE STATE, ADDED h1 b71 ─────────────────────────────────────────────
+# WHY A FIELD AND NOT A KEY. b69 concluded that a real repeat-and-recurrence
+# metric needs to know whether a finding ever actually CLOSED, and that the
+# thing missing was a FIELD rather than a join key: the log records what was
+# found and who owns it, and nothing records what became of it. A metric
+# keyed on "same resource flagged twice" cannot tell a recurrence (fixed,
+# came back) from a restatement (never fixed, mentioned again), and those
+# are opposite facts about the platform.
+#
+# THE FOUR STATES, and the distinction that earns the fourth:
+#   open             nothing in the record says what became of it
+#   routed           handed to an owner; the fix is theirs and not yet seen
+#   fixed-unverified the record says it was fixed. THIS ROLE DID NOT CHECK.
+#   fixed-verified   this role re-derived the fix against the real source
+# fixed-unverified and fixed-verified are deliberately separate because
+# collapsing them is this platform's most-repeated defect: a report of a
+# fix is not a fix, and PR SS5 says a status report is a claim until
+# checked. A single "closed" value would launder the first into the second.
+CLOSURE_STATES = ('open', 'routed', 'fixed-unverified', 'fixed-verified')
+
+# THE BACKFILL GOES IN A SIDECAR AND THAT IS NOT A WORKAROUND, IT IS THE
+# ONLY HONEST PLACE FOR IT. The log is hash-chained and append-only --
+# writing a derived field into 1,623 existing entries would recompute
+# every hash after the first edit, which is indistinguishable from
+# tampering and destroys the one property the chain exists to provide.
+# It would also violate the AS-FOUND discipline this file already
+# carries: a later state must never overwrite how the original finding
+# read. So the backfill is DERIVED, written beside the log, and carries
+# its own evidence per row (which rule fired, and the seq of the entry
+# that triggered it) so a reader can re-derive it instead of trusting it.
+CLOSURE_SIDECAR = os.path.join(os.path.dirname(LOG_PATH) or HERE,
+                                'closure-states.jsonl')
+
 # ── STALENESS GUARD, ADDED 2026-09-23 ───────────────────────────────────────
 # Real incident: hover2 logged leg_aftercare against a pre-fix version of a
 # row hank had already landed on origin/main -- the read happened against a
@@ -471,6 +504,222 @@ def digest_of(prev_digest, entry_without_hash):
     return h.hexdigest()
 
 
+_CLOSURE_SEQ_RE = re.compile(r'(?:#|\bseq\s*)(\d{1,5})\b')
+# Verification language and fix language, kept apart on purpose -- see the
+# CLOSURE_STATES comment for why collapsing them is the defect.
+_CLOSURE_VERIFIED_RE = re.compile(
+    r'(confirmed\s+fixed|verified\s+fixed|fix\s+(?:is\s+)?verified'
+    r'|re-?derived[^.]{0,60}\bfix|fix[^.]{0,40}re-?verified'
+    r'|FIXED\s+AND\s+VERIFIED|verified\s+against\s+the\s+real)', re.I)
+_CLOSURE_FIXED_RE = re.compile(
+    r'(\bfixed\b|\bremediat\w*|\bdischarged\b|\bresolved\b)', re.I)
+# A REFUTATION IS NOT A FIX, and conflating them would be the worst
+# direction of error here: it would record this role's own wrong findings
+# as successes. Found by spot-checking the first derivation -- seq936 is
+# described in a later entry as "The 1 WRONG FINDING", refuted at a named
+# commit, and the first version classified it fixed-verified.
+_CLOSURE_REFUTED_RE = re.compile(
+    r'(refut\w*|withdraw\w*|retract\w*|false\s+positive|\bWRONG\s+FINDING'
+    r'|not\s+a\s+(?:real\s+)?defect|no\s+defect)', re.I)
+
+
+def derive_closure_states(rows):
+    """{seq: {state, rule, evidence_seq}} for every `finding` row.
+
+    THE RULE THAT MAKES THIS A DERIVATION RATHER THAN A GUESS: a fix or
+    verification phrase counts ONLY when it sits in the SAME SENTENCE as
+    the reference to that finding's own seq. A whole-entry keyword match
+    was tried first and measured: it classified 230 of 447 findings as
+    fixed-unverified, because the word "fixed" appears somewhere in a
+    long entry that also happens to mention a seq. That is the exact
+    wrong-occurrence defect SKILL.md records against a re-verify that
+    greps for the finding's own string and hits a different one. Scoped
+    to the sentence, the number is far smaller and every row carries the
+    evidence seq so it can be re-read.
+
+    `open` IS THE CONSERVATIVE DEFAULT AND NOT A POSITIVE FINDING. It
+    means "nothing in the record says what became of this", which is a
+    different statement from "this is still broken". The report prints
+    that distinction rather than leaving it to be assumed."""
+    # SENTENCE SPLITTING IS BORROWED, NOT REWRITTEN, AND THE DEPENDENCE
+    # FAILS CLOSED. citation_class_check.split_sentences() is the shared,
+    # abbreviation-safe splitter -- a bare `re.split(r'(?<=[.!?])\s+')`
+    # breaks a sentence in half at "e.g." or "Inc." and this derivation is
+    # entirely a question of what is in ONE sentence, so a wrong boundary
+    # is a wrong closure state. Writing a second splitter here would be a
+    # second comparator to keep in step with the first, and that copy was
+    # made abbreviation-safe in 9a7f73da on 2026-10-19 -- a fix a private
+    # copy would not have received. If the module cannot be imported this
+    # REFUSES rather than falling back to the naive split: a check that
+    # silently degrades to a worse method when its dependency is missing
+    # reports a pass it never performed (PR SS1.11).
+    try:
+        sys.path.insert(0, HERE)
+        from citation_class_check import split_sentences as _split
+    except Exception as e:
+        raise RuntimeError(
+            'COULD NOT RUN: citation_class_check.split_sentences is '
+            'unavailable (%s). The closure derivation is a per-SENTENCE '
+            'question and will not fall back to a naive splitter, which '
+            'would split at every abbreviation and quietly mis-state which '
+            'findings are closed.' % e)
+    out = {}
+    findings = {r['seq']: r for r in rows
+                if r.get('type') == 'finding' and isinstance(r.get('seq'), int)}
+    # seq -> [(later_seq, sentence)] for sentences that name that seq
+    mentions = {}
+    for r in rows:
+        if not isinstance(r.get('seq'), int):
+            continue
+        body = str(r.get('summary') or '') + ' ' + str(r.get('ref') or '')
+        for sent in _split(body.replace('\n', ' ')):
+            named = {int(m.group(1)) for m in _CLOSURE_SEQ_RE.finditer(sent)}
+            named = {n for n in named if n in findings and n < r['seq']}
+            # ── ONE SENTENCE, ONE FINDING, OR NO VERDICT. A sentence that
+            # names TWO findings cannot confer its verdict on both, and the
+            # first version of this derivation did exactly that: a later
+            # entry reading "Also checked seq959 (re-confirmed FIXED,
+            # closed) and seq992 (a standing metric, tracked by
+            # re-measurement not a routing row)" marked BOTH
+            # fixed-verified, when only the first was. Same wrong-occurrence
+            # family as the re-verify-by-grep defect in SKILL.md, one level
+            # up: the right line, the wrong subject within it. Fail closed --
+            # an ambiguous sentence confers nothing and the finding falls
+            # through to routed/open.
+            if len(named) != 1:
+                continue
+            n = next(iter(named))
+            mentions.setdefault(n, []).append((r['seq'], sent))
+    for seq, f in findings.items():
+        # ── STRUCTURAL FIRST, AND IT IS THE ONLY PART THAT IS BACKFILLED.
+        # `routed` is read off the entry's OWN fields -- its target and its
+        # routable list -- so it is a fact the log already stores, not an
+        # inference about prose. `open` is the conservative default.
+        tgt = f.get('target') or ''
+        if tgt and tgt not in ('self', 'unassigned'):
+            state, rule = 'routed', 'target-is-an-owner'
+        elif f.get('routable'):
+            state, rule = 'routed', 'routable-names-a-resource'
+        else:
+            state, rule = 'open', 'no-owner-and-no-record'
+        row = {'state': state, 'rule': rule, 'evidence_seq': None,
+               'proposed': None, 'proposed_rule': None,
+               'proposed_evidence_seq': None}
+        # ── THEN A PROPOSAL, NEVER A DECISION. See the long comment on
+        # cmd_backfill_closure for the measurement that forced this split.
+        for later_seq, sent in mentions.get(seq, []):
+            if _CLOSURE_REFUTED_RE.search(sent):
+                continue
+            if _CLOSURE_VERIFIED_RE.search(sent):
+                row.update(proposed='fixed-verified',
+                            proposed_rule='verified-phrase-in-sentence',
+                            proposed_evidence_seq=later_seq)
+                break
+            if _CLOSURE_FIXED_RE.search(sent) and not row['proposed']:
+                row.update(proposed='fixed-unverified',
+                            proposed_rule='fix-phrase-in-sentence',
+                            proposed_evidence_seq=later_seq)
+        out[seq] = row
+    return out
+
+
+def cmd_backfill_closure(argv):
+    """Writes the derived sidecar. NEVER touches the chained log.
+
+    WHY ONLY TWO OF THE FOUR STATES ARE BACKFILLED, AND THE MEASUREMENT
+    THAT FORCED IT. The first version of this derivation classified all
+    four states from the record and reported 61 fixed-unverified and 8
+    fixed-verified. Spot-checking is what killed it, in three stages:
+
+      1. A WHOLE-ENTRY keyword match gave 230 fixed-unverified out of
+         447 -- the word "fixed" occurring anywhere in a long entry that
+         also mentioned a seq. Scoped to the SENTENCE, 61.
+      2. Of the 8 fixed-verified, 4 were wrong because ONE SENTENCE
+         NAMED TWO FINDINGS and conferred its verdict on both. Real
+         instance: "Also checked seq959 (re-confirmed FIXED, closed) and
+         seq992 (a standing metric, tracked by re-measurement not a
+         routing row)" marked both fixed-verified. Fixed by requiring
+         exactly one finding per sentence; and seq936, described in a
+         later entry as "The 1 WRONG FINDING", refuted at a named
+         commit, was being recorded as a SUCCESS -- fixed by a
+         refutation veto. That left 2, and both read correctly.
+      3. THEN TWO OF TWO fixed-unverified spot checks were still wrong,
+         and this is the one no regex can fix because the failure is
+         SEMANTIC rather than lexical:
+           seq182 -- the later sentence says "tier-a-reviews.json record
+             #182 ... STILL-OPEN". `#182` there is a DIFFERENT numbering
+             namespace, and the sentence says the opposite of fixed.
+           seq459 -- the later sentence reads "...(fixed: own-stem
+             exclusion ...; caught spot-checking seq 459)". The
+             reference is genuine, the word "fixed" is genuine, and the
+             thing fixed is the TOOL, not finding 459.
+         No tightening of a pattern distinguishes "fixed" from "fixed,
+         and seq N is where we noticed". That needs reading.
+
+    SO: `routed` and `open` are BACKFILLED, because both are read off the
+    entry's own stored fields rather than inferred from prose. The two
+    fixed-* states are emitted as PROPOSALS carrying their evidence seq,
+    and a proposal is not a state. That is this platform's eleventh
+    cross-domain discipline applied to this role's own tooling: a fixer
+    may PROPOSE a repair and may never apply it, because a detector that
+    blesses its own output is the self-certification defect one step
+    later. Promoting a proposal takes a human reading the evidence seq
+    and then an explicit --closure-state on a new entry."""
+    rows = read_all()
+    if not rows:
+        print('COULD NOT RUN: no entries at %s' % LOG_PATH)
+        return EXIT_COULD_NOT_RUN
+    derived = derive_closure_states(rows)
+    if not derived:
+        print('COULD NOT RUN: zero findings in %d entries -- a backfill over '
+              'nothing is not a backfill' % len(rows))
+        return EXIT_COULD_NOT_RUN
+    with open(CLOSURE_SIDECAR, 'w', encoding='utf-8') as f:
+        for seq in sorted(derived):
+            row = dict(derived[seq])
+            row['seq'] = seq
+            f.write(json.dumps(row, sort_keys=True) + '\n')
+    print('backfilled %d finding(s) to %s' % (len(derived), CLOSURE_SIDECAR))
+    print('THE CHAINED LOG WAS NOT MODIFIED -- verify it to confirm:')
+    return cmd_closure_report([])
+
+
+def cmd_closure_report(argv):
+    rows = read_all()
+    derived = derive_closure_states(rows)
+    counts, props = {}, {}
+    for v in derived.values():
+        counts[v['state']] = counts.get(v['state'], 0) + 1
+        if v.get('proposed'):
+            props[v['proposed']] = props.get(v['proposed'], 0) + 1
+    print('CLOSURE STATE over %d finding(s) in %d entries'
+          % (len(derived), len(rows)))
+    print('  BACKFILLED, from each entry\'s own stored fields:')
+    for s in ('open', 'routed'):
+        print('    %-18s %4d' % (s, counts.get(s, 0)))
+    print('  open means NOTHING IN THE RECORD SAYS WHAT BECAME OF IT and the '
+          'entry names no owner. It is the conservative default, NOT a '
+          'finding that the defect is still live -- that would need '
+          're-deriving each one against HEAD.')
+    print('  PROPOSED ONLY, NOT BACKFILLED -- each needs a human to read its '
+          'evidence seq before it becomes a state:')
+    for s in ('fixed-unverified', 'fixed-verified'):
+        print('    %-18s %4d  proposal(s)' % (s, props.get(s, 0)))
+    print('  WHY PROPOSALS: 2 of 2 spot-checked fixed-unverified derivations '
+          'were WRONG for a reason no pattern can fix -- a later sentence can '
+          'genuinely name a finding AND genuinely say "fixed" while the thing '
+          'fixed is something else. See cmd_backfill_closure\'s docstring for '
+          'both instances.')
+    # Explicit field beats derivation whenever an entry carries one.
+    explicit = {}
+    for r in rows:
+        if r.get('closure_state'):
+            explicit[r['closure_state']] = explicit.get(r['closure_state'], 0) + 1
+    print('  EXPLICIT, written at --add time and inside the hash chain: %d '
+          'entr(ies) %s' % (sum(explicit.values()), explicit or '{}'))
+    return EXIT_CLEAN
+
+
 def read_all():
     """Every line, in file order. Returns [] if the file does not exist yet --
     that is a fresh log, not a could-not-read error."""
@@ -708,6 +957,31 @@ def cmd_add(argv):
                   '196, 220). Refusing rather than logging a damaged entry. '
                   'Write the text to a file and pass --summary-file instead.')
             return EXIT_COULD_NOT_RUN
+    # ── CLOSURE STATE (h1 b71). Explicit on a finding, refused elsewhere:
+    # a `check` or `note` is not a thing that closes, and letting one carry
+    # the field would make the report's denominator meaningless. Defaults
+    # to 'open' on a finding, which is the only honest value at the moment
+    # a finding is written -- nothing can have become of it yet.
+    closure_state = opt('--closure-state', required=False, default='')
+    if closure_state and closure_state not in CLOSURE_STATES:
+        print('--closure-state must be one of %s; got %r'
+              % (CLOSURE_STATES, closure_state))
+        return EXIT_COULD_NOT_RUN
+    if closure_state and etype != 'finding':
+        print('--closure-state only makes sense on --type finding -- a %r '
+              'entry is not a thing that opens and closes. Nothing was '
+              'appended.' % etype)
+        return EXIT_COULD_NOT_RUN
+    if etype == 'finding' and not closure_state:
+        closure_state = 'open'
+    if closure_state in ('fixed-verified',) and etype == 'finding':
+        print('REFUSED: a finding cannot be BORN fixed-verified. Verification '
+              'is a fact about a later state, and recording it on the finding '
+              'itself is the AS-FOUND violation this file already guards '
+              'against. Log the finding, then log a separate check that '
+              'verifies the fix. Nothing was appended.')
+        return EXIT_COULD_NOT_RUN
+
     severity = opt('--severity', required=False, default='')
     if severity not in SEVERITIES:
         print('--severity must be one of %s' % (SEVERITIES,))
@@ -1061,6 +1335,7 @@ def cmd_add(argv):
         'contradicts': contradicts,
         'contradicts_external': contradicts_external,
         'contradicts_external_verified': contradicts_external_verified,
+        'closure_state': closure_state,
         'seq': seq,
         'ts': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
         'type': etype,
@@ -1636,6 +1911,108 @@ def run_rotation_gate_fixtures():
     return fail_count[0] == 0
 
 
+def run_closure_state_fixtures():
+    """derive_closure_states() is pure over a list of rows -- no I/O, no
+    git, no LOG_PATH. Every arm below is a hand-built row list, and the
+    three correction arms (C4, C5, C6) are the ones that matter: each
+    reproduces a REAL misclassification this derivation made before it was
+    corrected, so a regression shows up as a failing arm rather than as a
+    quietly wrong number in a report."""
+    ok_count = [0]
+    fail_count = [0]
+
+    def ck(name, cond):
+        if cond:
+            ok_count[0] += 1
+            print('  ok   ' + name)
+        else:
+            fail_count[0] += 1
+            print('  FAIL ' + name)
+
+    def f(seq, target='self', routable=None, summary=''):
+        return {'seq': seq, 'type': 'finding', 'target': target,
+                 'summary': summary, 'routable': routable or []}
+
+    def note(seq, summary):
+        return {'seq': seq, 'type': 'note', 'target': 'self',
+                 'summary': summary, 'routable': []}
+
+    d = derive_closure_states([f(1)])
+    ck('C1 a finding with target self, no routable and no later mention is '
+       'open -- the conservative default',
+       d[1]['state'] == 'open' and d[1]['proposed'] is None)
+
+    d = derive_closure_states([f(2, target='hank')])
+    ck('C2 a finding whose target is an owner is routed, derived from the '
+       "entry's OWN stored field rather than inferred from prose",
+       d[2]['state'] == 'routed' and d[2]['rule'] == 'target-is-an-owner')
+
+    d = derive_closure_states([f(3, routable=['sd_slabs'])])
+    ck('C3 a self-targeted finding that names a routable resource is also '
+       'routed', d[3]['state'] == 'routed')
+
+    # ── C4: ONE SENTENCE, TWO FINDINGS. The real text that caused this.
+    rows = [f(959), f(992),
+            note(1263, 'Also checked seq959 (re-confirmed FIXED, closed, no '
+                        'row needed) and seq992 (a standing metric, tracked '
+                        'by re-measurement not a routing row).')]
+    d = derive_closure_states(rows)
+    ck('C4 KNOWN-BAD CONTROL -- A SENTENCE NAMING TWO FINDINGS CONFERS '
+       'NOTHING ON EITHER. This exact sentence previously marked both '
+       'seq959 and seq992 fixed-verified; now neither gets a proposal',
+       d[959]['proposed'] is None and d[992]['proposed'] is None)
+
+    rows = [f(960), note(1264, 'seq960 was re-confirmed FIXED and closed.')]
+    d = derive_closure_states(rows)
+    ck('C4b the same sentence shape naming exactly ONE finding still '
+       'proposes fixed-verified, so C4 is not simply refusing the shape',
+       d[960]['proposed'] == 'fixed-verified'
+       and d[960]['proposed_evidence_seq'] == 1264)
+
+    # ── C5: A REFUTATION IS NOT A FIX.
+    rows = [f(936), note(1030, 'THE 1 WRONG FINDING seq936 was refuted at '
+                                '42a52c2f and is fixed in the register.')]
+    d = derive_closure_states(rows)
+    ck('C5 KNOWN-BAD CONTROL -- A REFUTED FINDING IS NOT A FIXED ONE. This '
+       'sentence previously recorded seq936 as fixed-verified, turning one '
+       "of this role's own WRONG findings into a success",
+       d[936]['proposed'] is None)
+
+    # ── C6: THE SEMANTIC LIMIT, ASSERTED RATHER THAN CLAIMED CLOSED.
+    rows = [f(459), note(732, 'TWO REAL BUGS CAUGHT BY ITS OWN FIRST RUNS, '
+                                'both fixed (fixed: own-stem exclusion; '
+                                'caught spot-checking seq 459).')]
+    d = derive_closure_states(rows)
+    ck('C6 LOCKED LIMITATION -- a sentence can genuinely name a finding AND '
+       'genuinely say "fixed" while the thing fixed is something else. The '
+       'real seq459 case still produces a fixed-unverified PROPOSAL, which '
+       'is exactly why a proposal is never promoted to a state without a '
+       'human reading the evidence seq',
+       d[459]['proposed'] == 'fixed-unverified')
+    ck('C6b and that wrong proposal does NOT become the finding\'s state -- '
+       'the backfilled state stays open, so a bad proposal cannot leak into '
+       'the backfilled counts', d[459]['state'] == 'open')
+
+    rows = [f(5), note(6, 'seq5 is unrelated prose with no verdict.')]
+    d = derive_closure_states(rows)
+    ck('C7 a later mention with no fix or verify language proposes nothing',
+       d[5]['proposed'] is None)
+
+    rows = [note(7, 'seq8 will be fixed later.'), f(8)]
+    d = derive_closure_states(rows)
+    ck('C8 a mention EARLIER in the chain than the finding is ignored -- a '
+       'closure cannot precede the thing it closes',
+       d[8]['proposed'] is None)
+
+    ck('C9 a non-finding entry gets no closure row at all, so the report '
+       'denominator is findings and not entries',
+       set(derive_closure_states([f(9), note(10, 'x')])) == {9})
+
+    print()
+    print('%d ok, %d failed' % (ok_count[0], fail_count[0]))
+    return fail_count[0] == 0
+
+
 def cmd_verify(argv):
     try:
         rows = read_all()
@@ -1697,7 +2074,10 @@ def main(argv):
         ok_stale = run_staleness_fixtures()
         print()
         ok_rotation = run_rotation_gate_fixtures()
-        return EXIT_CLEAN if (ok_stale and ok_rotation) else EXIT_FINDING_OR_BROKEN
+        print()
+        ok_closure = run_closure_state_fixtures()
+        return (EXIT_CLEAN if (ok_stale and ok_rotation and ok_closure)
+                else EXIT_FINDING_OR_BROKEN)
     # ── THE TWO h1 b32 GUARDS, BEFORE ANY REAL DISPATCH ────────────────────
     # Skipped only for --selftest above, which monkeypatches LOG_PATH itself
     # in an isolated tmpdir and never relies on either check.
@@ -1718,9 +2098,14 @@ def main(argv):
         return cmd_add(argv)
     if '--verify' in argv:
         return cmd_verify(argv)
+    if '--backfill-closure' in argv:
+        return cmd_backfill_closure(argv)
+    if '--closure-report' in argv:
+        return cmd_closure_report(argv)
     if '--tail' in argv or argv == []:
         return cmd_tail(argv)
-    print('unknown invocation. Use --add / --verify / --tail / --selftest.')
+    print('unknown invocation. Use --add / --verify / --tail / '
+          '--backfill-closure / --closure-report / --selftest.')
     return EXIT_COULD_NOT_RUN
 
 

@@ -156,6 +156,43 @@ CONFIG_FILE = os.path.join(HERE, '.mirror-config.json')
 ANCHORS_FILE = os.path.join(HERE, 'mirror-anchors.jsonl')
 EXPIRY_WARN_DAYS = 14
 
+# ── WRONG-DIRECTORY GUARD, ADDED h1 b71, AFTER IT BIT ──────────────────────
+# Every path above is HERE-relative, and that is correct BY DESIGN: the
+# token, the config, the anchors and the log itself all live together in the
+# ONE operational directory, and the mirror snapshots them as a unit. What
+# was missing is a check that HERE actually IS that directory.
+#
+# WHAT HAPPENED, MEASURED NOT HYPOTHESISED. This file is also kept as a
+# TRACKED ARCHIVAL copy under .claude/skills/sairn-hover-auditor/tools/,
+# beside a stale .mirror-config.json that is tracked with it. On b71 the
+# operational copy could not run at all (ModuleNotFoundError:
+# hover_tip_beacon, which is not in that directory), so the archival copy
+# was run instead -- and it answered from the stale store:
+#     operational store   push_count 67, 29 anchors incl. drill records
+#     archival store      push_count 18, NO anchors file at all
+# drill_due() therefore returned (True, 'no passing drill on record'), a
+# FALSE DUE, 49 pushes behind the truth. Acting on it would have recorded
+# push #19 and a fresh drill into a store nothing else reads, forking the
+# mirror's own bookkeeping silently -- a tool whose job is tamper-evidence
+# quietly keeping two sets of books.
+#
+# FAILS CLOSED, naming both directories, the same shape hover_log.py's
+# _LOG_PATH_IS_UNSAFE_FALLBACK refusal already uses: a mirror that cannot
+# tell which store it is reading must refuse, never guess. The real fix for
+# the import half is that hover_tip_beacon.py now sits in the operational
+# directory too; this guard is the detection that stops the NEXT variant.
+def here_is_the_real_store():
+    """(ok, why). The operational directory is the one holding the log."""
+    if os.path.isfile(os.path.join(HERE, LOG_NAME)):
+        return True, ''
+    return False, (
+        'REFUSED: this copy of hover_backup_mirror.py is running from %s, '
+        'which does not contain %s -- so .mirror-config.json and '
+        'mirror-anchors.jsonl read from here are NOT the operational store. '
+        'On b71 exactly this returned push_count 18 and "no passing drill on '
+        'record" while the real store was at 67 with 29 anchors. Run the '
+        'copy that sits beside the log.' % (HERE, LOG_NAME))
+
 
 def load_config():
     try:
@@ -1237,6 +1274,13 @@ def run_fixtures():
 def main(argv):
     if '--selftest' in argv:
         return EXIT_CLEAN if run_fixtures() else EXIT_BROKEN
+    # Before ANY dispatch that reads or writes the store. --selftest is
+    # above it on purpose: the fixtures use their own tmpdirs and must stay
+    # runnable from the archival copy, which is where a reviewer reads it.
+    store_ok, store_why = here_is_the_real_store()
+    if not store_ok:
+        print(store_why)
+        return EXIT_COULD_NOT_RUN
     if '--mirror' in argv:
         return cmd_mirror()
     if '--set-remote' in argv:
