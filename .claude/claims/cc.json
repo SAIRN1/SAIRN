@@ -4424,8 +4424,8 @@
       "task": "b32: push_retry.py stops on deterministic gate refusals and retries only remote races; discharge fourth rt_routes optimiser Tier A (stonedesk.html sdDataEnvelope); last 18 FMEA drafts (16 hover-auditor + 2 refused, documented); push.  FILES: tools/push_retry.py docs/tier-a-reviews.json docs/fmea/ docs/2026-10-20-cc-b32-notes.md docs/batch-manifest-cc-b32.json SAIRN-handoff-cc-b32.md SAIRN-report-cc-b32.txt SAIRN-digest-cc-b32.txt NOT-api NOT-html NOT-tests NOT-sql NOT-hover-auditor-scope",
       "claimed_at": "2026-10-20T16:41:55Z",
       "claimed_at_epoch": 1792514515.8643973,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T16:54:59Z",
       "files": [
         "SAIRN-digest-cc-b32.txt",
         "SAIRN-handoff-cc-b32.md",
