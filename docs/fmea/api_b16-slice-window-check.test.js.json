@@ -1,0 +1,244 @@
+{
+ "app_matched": "sairnsenior",
+ "considered": {
+  "defect_records": 685,
+  "detectors_fired": [],
+  "detectors_run": 12,
+  "matched_this_file": 1
+ },
+ "drafted_on": "2026-10-20",
+ "exists": true,
+ "no_detector_yet": [
+  "1.6",
+  "2.2",
+  "3.1",
+  "3.2",
+  "3.3",
+  "4.1",
+  "4.2",
+  "4.3",
+  "5"
+ ],
+ "risks": [
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "aac69e6acf7d",
+   "date": "2026-10-15",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "THREE TEST SUITES WERE DEAD, NOT FAILING, AND NOTHING SAID SO. b15 added senEffClock to sairnsenior.html and not to the lift list of the three suites that extract visitHours and azBurnDown, so every arm in all three died at 'ReferenceError: senEffClock is not defined' before asserting anything: 191 arms across api/_lib/sairnsenior-pay-rates.test.js (76), sairnsenior-authorizations.test.js (83) and sairnsenior-branches.test.js (32). The pay-rates suite covers sen_pay_rates, one of the two resources the open Tier A obligation is written over.",
+   "rules": [
+    "1.7"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnsenior) has this defect on record",
+   "cite": "973e2471",
+   "date": "2026-09-14",
+   "detected_by": "static-checker",
+   "prior_severity": "moderate",
+   "risk": "api/sen-portal.js declares MANAGEMENT_ROLES = { owner, billing } and references it nowhere, while the agency-wide list branch beside it refuses with 'ask management for the agency-wide list' and enforces the WIDER BROAD_ROLES -- owner, billing, coordinator and scheduler. The message and the check disagree, so one of the two is wrong: either a coordinator should not have the agency-wide list of every client's portal links, or the refusal misstates the rule to everyone who hits it",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnsenior) has this defect on record",
+   "cite": "131b9022ff48",
+   "date": "2026-09-26",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "A caregiver whose CPR certification had expired could be assigned to a client and scheduled onto a visit, on all three write paths -- saveClient(), senReassignClient() and saveVisit() -- while the app already held the expiry date, already computed the days remaining with certDaysUntil(), and already rendered a red \"Expired\" badge for that same caregiver on the Caregivers panel. Two screens gave two answers about the same person and nothing flagged the disagreement. The underlying reason no check existed is structural rather than an omission: assigned_employee_id is an employee_id from SAIRNbiz's roster and a sen_caregivers row is keyed CG-... with a name, so there was no field joining the assignment to the certificate. Fixed by declaring the link (a \"Linked employee\" select on the caregiver record) and gating all three paths through it before any write; an expired certificate refuses and names the date and the day count, while an unlinked or undated record is a third state that allows and says so rather than passing silently.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnsenior) has this defect on record",
+   "cite": "e987dfb266b6",
+   "date": "2026-09-27",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "sairnsenior.html rfDeliveredHoursFor(clientId) read `v.actual_start` and `v.actual_end`. A sen_visits row has no such fields -- the clock is `clock_in_at` / `clock_out_at`, which the authorisation burn-down (~:2540), the visit card (~:2964) and visitHours() (~:3925) all read correctly. So the guard `if(!v.actual_start||!v.actual_end)return;` was true for every visit ever recorded, the loop added nothing, and THE FUNCTION RETURNED 0 FOR EVERY CLIENT FOR AS LONG AS IT EXISTED. rfPerformance() hands that to the Referral Sources table. THE ZERO WAS WORSE THAN A BLANK because the renderer already distinguishes them: `p.linked ? p.hours.toFixed(1)+' h' : '--'`. An unlinked source correctly showed '--' meaning we cannot attribute hours; a LINKED source showed a confident '0.0 h', which reads as \"we looked, and this source's clients received no care\" -- against real clocked visits. Guardian's fabricated-KPI check could not see it: the figure is backed by a real function doing real arithmetic over a real array, and the fabrication arrives through a field NAME. The function's own comment was already the specification -- \"Reuses the same only-count-what-was-actually-clocked rule the authorisation burn-down uses\" -- and was true of the intent and false of the field names. Fixed by CALLING visitHours() rather than carrying a third copy of the clock arithmetic, which is what that function's own header asks for (\"so both compute delivered hours the same way -- a claim and an insufficient-hours finding must never silently diverge on this arithmetic\"). Reachability checked rather than assumed: both are inside the script block spanning ~1339-6052. 11 arms in tests/sairnsenior_referral_hours.js, driven in a vm sandbox against visit fixtures rather than grepped.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnsenior) has this defect on record",
+   "cite": "eb2f92fac84f",
+   "date": "2026-09-29",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "sen_visits propose_clock_correction gates on role while its own refusal message argues identity, so an owner who is also the assigned caregiver could correct their own EVV clock time and nothing marked it",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnsenior) has this defect on record",
+   "cite": "1b453253cc5b",
+   "date": "2026-10-05",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "visitHours() returned a NEGATIVE for a sen_visits row whose clock_out_at precedes its clock_in_at, and generateClaim() billed hours_billed and amount straight off it -- so a backwards clock pair produced a negative claim. Three further unguarded consumers: visitLabourCost (a negative cost, which makes a badly-recorded branch look profitable), the branch rollup (one bad row subtracts from a branch total) and the authorisation-gap AI tool (inflates a shortfall). Clamped at source; the billing path now refuses the row outright rather than writing a silent zero-hour claim over a corrupt record, because in this app a $0 claim already means 'set the rate by hand'.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnsenior) has this defect on record",
+   "cite": "1c53498df088",
+   "date": "2026-10-07",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "tests/phi_cache_scoped_to_user.js arm 5 derived the app's written cache keys by running the regex [ls][dt]\\('(<prefix>_[a-z_]+)' over the RAW file, so the comment at sairnsenior.html:5772,5774 -- which quotes st('sen_settings') in order to record that the key must never be written, because the resource is server-authoritative -- was counted as two write sites. Arm 5a then demanded a purge-or-exempt rule for a cache that does not exist and stayed red, which left tests/phi_cache_scope_probe.py refusing to plant any of its 7 mutations against the PHI purge guard, so that guard was unverified in either direction for as long as the false positive stood. Fixed by extracting write sites from tests/lib/strip_comments.js output, with arm 5e as a both-directions control that fails without it.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnsenior) has this defect on record",
+   "cite": "b384a513f99e",
+   "date": "2026-10-12",
+   "detected_by": "hover-audit",
+   "prior_severity": "high",
+   "risk": "api/sd-data.js sen_caregivers/read returned the whole data blob, every row on the licence, to ANY authenticated sairnsenior role -- including each caregiver's background-check date, a state-issued caregiver ID and free-text HR notes about a colleague. The branch's stated justification was 'Employment/certification data, not client PHI -- lighter gate than sen_clients': true, and the wrong comparison. It is EMPLOYEE PII and three of its fields serve no scheduling purpose. Fixed at FIELD level rather than by a flat role refusal, which would have broken the roster the lighter gate exists to serve (senIsScheduler reads it agency-wide, certDaysUntil computes from cpr_expiry, visits join on employee_id). bgcheck_date/state_caregiver_id/notes now go to owner/billing only, under a NEW constant rather than a reused one, with the round-trip-wipe safety driven by an arm; sairnsenior.html renders an explicit Restricted badge so a redacted compliance column cannot read as 'no check on file'.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnsenior) has this defect on record",
+   "cite": "5b2ff5415e51",
+   "date": "2026-10-13",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "The hover2 seq965 redaction stripped bgcheck_date, state_caregiver_id and notes from the sen_caregivers READ for every role outside owner/billing, and the fix reached only ONE of the three places those fields render -- so sairnsenior.html:5722 (the COMPLIANCE panel) and :5745 (the caregivers CSV export) both presented a Background Check column that was empty for every caregiver, which reads as no background check on file on the one column a state surveyor asks about, and in the export put that claim in a file that leaves the building",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnsenior) has this defect on record",
+   "cite": "07dfa24f489d",
+   "date": "2026-10-14",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "b12's own fix for the silent EVV clock overwrite (N1) refused the second write 409 CLOCK_ALREADY_RECORDED and wrote nothing. That closed the overwrite and left no route at all for the person who made the mistake: propose_clock_correction is SCHEDULER-ONLY, so a caregiver who clocked in at the wrong time on their own visit could not correct it and could not ask. Michael decided for the append: the original is kept, the submission is appended to clock_corrections with the old value, the new value, the actor from the verified session, a reason and a server timestamp, PENDING, and effectiveClock() ignores a pending entry so payroll does not move until a scheduler approves it.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnsenior) has this defect on record",
+   "cite": "31406a87e010",
+   "date": "2026-10-14",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "FOUR FINDINGS LEFT OPEN AT HEAD BY fourth's b18 TIER A DISCHARGE, PLUS TWO SAIRNfreedom DELETE DEFECTS NOBODY HAD DRIVEN. N1: the sen_visits EVV write copied every payload field over the row, so a second clock-in silently REPLACED a recorded one -- on a path any caregiver reaches on their own visit, while propose_clock_correction beside it was built append-only for exactly that reason. Now 409 CLOCK_ALREADY_RECORDED on a different value with nothing written, and an identical re-send still accepted because the offline replay path depends on it. N2: sen-auth `setup` could demote the last active Owner, reaching by ROLE the end state set_active has been guarded against by the active flag since the lifecycle module was written -- after which bootstrap 409s and nothing can provision. Six sibling endpoints already call soleRoleDemotionRefusal(); SAIRNsenior did not. N3: a requirement that returned a clean false for a person's position vanished from the response, because unmapped_requirements is built only from STRUCTURALLY unmappable rows -- under-inclusion that nobody can see is indistinguishable from the requirement not existing, which was the author's own self-flag. N4: three comments claimed driven arms that do not exist, and the hire-date check is shape-only -- DRIVEN here, which found the reported '2024-02-30' -> window_from '2026-02-30' AND an impossible MONTH the report did not reach, '2024-13-01' -> '2025-13-01', printed on a regulated compliance finding. F6: sfDeleteEvent announced 'Event and its bingo session removed' having removed nothing, because the toast was chosen on the pointer being truthy and never on whether the filter matched, and sfDeleteSession was what created those stale pointers. 21 arms green from 10 passed / 10 failed; ablated six ways.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnsenior) has this defect on record",
+   "cite": "9731d8806982",
+   "date": "2026-10-14",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "sen_visits clock_flags were ASSIGNED, not merged. api/sd-data.js's EVV branch did visitData.clock_flags = clockCheck.flags, and a visit's two halves arrive as TWO separate writes -- checkClockEvent only reports on the clock fields present in THIS payload, so the clock-out's write REPLACED the clock-in's flags and a LATE_REPLAY on the way in vanished with nothing saying it had existed. The per-field SKEW STAMPS do not have the problem because they are KEYED; this was the one unkeyed array. Found in cody's b8 Tier A review of hank's api/ work, not by any checker. It only shows when BOTH halves are flagged, which is the case a state EVV audit asks about -- with a clean clock-out the array is empty, the guard never fires, and the first flag survives by luck. Fixed by merging on field, with the superseded set taken from the PAYLOAD rather than from the new flags: a field this payload re-reported has been re-checked so its stale flag must go EVEN IF the re-check produced none, and a field it did not mention was not checked so its flag is kept. The key stays ABSENT when there is nothing to say, because api/sd-data-sen-evv-clock.test.js:200 asserts that on a clean write. CLOCK_FIELDS hoisted out of api/_lib/sen-evv-clock.js and exported rather than re-listed.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnsenior) has this defect on record",
+   "cite": "e444dc83ba08",
+   "date": "2026-10-14",
+   "detected_by": "hover-audit",
+   "prior_severity": "high",
+   "risk": "THREE read/write asymmetries in api/sd-data.js. (1) sen_branches and (2) sen_settings had management-only WRITES and reads open to ANY signed-in employee returning the WHOLE row -- including `updatedBy`/`updatedByRole` on a branch, and `updated_by`/`updated_at` on every setting, which say who changed the agency's federally-mandated EVV compliance declaration and when; plus any field or setting key added later, by default. (3) the five SEN_REFERRAL_RESOURCES had both verbs decided by a role set literally named SEN_CLIENT_BROAD_READ_ROLES, so a coordinator or a scheduler could WRITE sen_training_rules -- the rule that decides whether a caregiver is compliant to work -- and sen_applicants, employment data about somebody who is not yet staff.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnsenior) has this defect on record",
+   "cite": "49f6a75289c0",
+   "date": "2026-10-15",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "AN APPROVED CLOCK CORRECTION REACHED PAYROLL NOT AT ALL, AND IT IS MONEY. api/_lib/sen-payroll.js read row.clock_in_at and row.clock_out_at raw -- grep -c effectiveClock over that file returned 0 -- while api/_lib/sen-evv-clock.js says of effectiveClock() that the approval rule is 'implemented HERE, in the function payroll reads'. Fourth's b23 repro measured one visit with one approved correction at 240 minutes / 8000 cents against 300 / 10000 corrected: sixty minutes and 2000 cents unpaid, per visit, per correction. The same defect ran through sairnsenior.html, which read the raw clock about 25 times and used effective_clock zero times.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnsenior) has this defect on record",
+   "cite": "652f40344fbf",
+   "date": "2026-10-15",
+   "detected_by": "user-report",
+   "prior_severity": "high",
+   "risk": "b13 built the append-a-clock-correction path AND the scheduler-only approval verb and SHOWED NEITHER. effectiveClock() already returned pending / pending_count / pending_entries and no screen rendered any of them, so a caregiver's submitted correction sat pending for ever: strictly better than the old 409 for the caregiver and NO BETTER AT ALL for payroll, because nobody could see there was anything to approve. b13's own handoff named it as open work and the route shipped anyway.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnsenior) has this defect on record",
+   "cite": "652f40344fbf",
+   "date": "2026-10-15",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "b13 allowed a scheduler to approve a correction THEY had submitted, marking it `self_approved: true` rather than refusing, on the argument that a one-person agency has nobody else. On propose_clock_correction the submitter and the approver were the same person BY CONSTRUCTION -- the filing itself approved -- so every office correction was a self-approval. Michael decided the other way: an approval by the submitter is not an approval.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnsenior) has this defect on record",
+   "cite": "883ad0bc2478",
+   "date": "2026-10-15",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "AN EVV EXPORT AND A PAY RUN DISAGREED ABOUT THE SAME VISIT. b15's F1 moved payroll onto the effective clock and deliberately left api/_lib/sen-evv-readiness.js and the client's EVV anomaly checks on the raw clock, so a visit whose clock-out exists ONLY as an APPROVED correction was simultaneously PAID with real minutes and reported as 'No clock-out time recorded'. A state EVV programme reconciling an export against a payroll register finds hours paid for a visit the export says has no end time, and neither number looks wrong to a reader of one of them. Nothing reconciled the two.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnsenior) has this defect on record",
+   "cite": "9a70365b5a21",
+   "date": "2026-10-15",
+   "detected_by": "independent-review",
+   "prior_severity": "critical",
+   "risk": "A CLOCK CORRECTION APPROVED AFTER A PAY RUN SILENTLY RESTATED A HISTORICAL TOTAL. b15's F1 made api/_lib/sen-payroll.js read the EFFECTIVE clock, which closed a real underpayment (60 minutes and 2000 cents per visit per correction) and opened its mirror: nothing anywhere versioned or froze a period already paid, so re-running a paid period after a later approval produced a DIFFERENT wage with no restatement, no adjustment line and nothing on screen saying the figure had moved. A wage reported to a payer and auditable by a state EVV programme is not a number that may change because somebody approved a correction a week later. Fixed by Michael's decision: a paid period is frozen as at its paid_at, and a later approval posts as an ADJUSTMENT LINE in the period containing the approval.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnsenior) has this defect on record",
+   "cite": "c470c2e13c31",
+   "date": "2026-10-15",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "The b14 clock-corrections queue read the LOCAL store and told a scheduler 'Nothing is waiting.' on a cold device or after a failed hydrate. The panel exists to stop a submitted correction being invisible, and that sentence made it invisible with confidence -- the affirmative-false-success shape, in the feature built to prevent it.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnsenior) has this defect on record",
+   "cite": "144dfb71587e",
+   "date": "2026-10-16",
+   "detected_by": "independent-review",
+   "prior_severity": "critical",
+   "risk": "THE PAID-PERIOD FREEZE WAS ERASABLE BY THE ROLE THAT RUNS PAYROLL, through a 200. b16 stored the closed-period list as ONE sen_settings row and b17's first write path put an append-only comparison in that branch -- on a store whose own comment four lines up says it does not validate anything and whose upsert uses resolution=merge-duplicates. fourth drove the whole chain through the real endpoint with a real signed session: a billing session POSTs {\"periods\":[]}, gets HTTP 200, the stored row becomes empty with the prior value gone, and the next pay run reports a period already paid at $80.00 as $100.00 with period_closed:null stating that nothing is frozen -- and no record anywhere that the list had ever been longer. `billing` is also the role that runs payroll. Fixed by a different SHAPE rather than a stricter check: a new append-only sen_period_closings resource, one row per close and one per REOPEN, SELECT+INSERT grants only, effective set derived by replaying them; and the settings path refuses the key BY NAME.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnsenior) has this defect on record",
+   "cite": "144dfb71587e",
+   "date": "2026-10-16",
+   "detected_by": "independent-review",
+   "prior_severity": "critical",
+   "risk": "A DOWNWARD CLOCK CORRECTION SILENTLY DEDUCTED WAGES FROM A LATER PERIOD. b16's carry-forward computed a signed delta and did `b.adjustment_cents += dCents` with no sign guard, while total_payable_cents = gross + adjustment_cents. fourth drove it against the real module: a 60-minute downward correction gave adjustment_cents=-2000 and total_payable_cents=-2000, so a scheduler approving a correction removed $20 from a later period's pay with nothing saying so. It is the MIRROR of the harm F1 closed -- F1 was sixty minutes unpaid by omission, this is sixty minutes removed by COMMISSION, which is worse because somebody chose it. And a negative adjustment is not an adjustment: it is a wage deduction to recover an overpayment, which is a separate regulated act.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnsenior) has this defect on record",
+   "cite": "144dfb71587e",
+   "date": "2026-10-16",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "MICHAEL'S SAME-CLOCK DECISION WAS HALF-LANDED AND LOOKED SETTLED. b16's F2 made api/_lib/sen-evv-readiness.js read the EFFECTIVE clock that payroll reads, which was the decision -- and it called effectiveClock(v, field), the no-as-of form, while payroll calls effectiveClockAsOf with the period's paid_at. So for an OPEN period the two agreed and for a CLOSED period PAY READ AS AT paid_at WHILE EVV READ NOW: a correction approved after a period was paid made a visit submittable in a federally mandated export while the payroll register paid nothing for it. b16 recorded this as a DELIBERATE disagreement in arm E8; it was not deliberate, it was the argument not being threaded with the function. WORSE THAN THE ORIGINAL GAP because both halves now pointed at one function and read as finished.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnsenior) has this defect on record",
+   "cite": "144dfb71587e",
+   "date": "2026-10-16",
+   "detected_by": "static-checker",
+   "prior_severity": "moderate",
+   "risk": "A ROLE-POLICY MAP WAS A BARE OBJECT LITERAL, so a payload-supplied resource name of 'constructor', 'toString' or 'valueOf' resolved TRUTHY through Object.prototype. SEN_REFERRAL_WRITE_ROLES in api/sen-auth.js maps resource -> role set and api/sd-data.js does SEN_REFERRAL_WRITE_ROLES[resource] with resource from the request. The 500 WRITE_MAP_MISSING immediately below exists precisely so a resource with no recorded policy is REFUSED rather than defaulted -- and it would not have fired, because the lookup returned a function. The next test senRefAllowed[session.role] is undefined on a function so the request was refused 403 anyway: THE DEFECT IS THAT IT WAS REFUSED BY ACCIDENT, with the wrong code and the wrong message, through the one branch built to catch exactly this.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnsenior) has this defect on record",
+   "cite": "aa1a9e3e727f",
+   "date": "2026-10-20",
+   "detected_by": "live-verification",
+   "prior_severity": "high",
+   "risk": "Closing a SAIRNsenior pay period answered 503 AUDIT_UNAVAILABLE on production because the live CHECK constraint on sairnsenior_audit_log does not include pay_period_closed: b17 added it inside create table if not exists, which skips the existing table (snapshot 2026-10-20 shows five values). The close path is right to refuse. The live straight-time-floor probe's B1/B2/B4 failures follow from the missing closing, not from the sign guard -- reproduced offline exactly, B3 still holding.",
+   "source": "defect-register"
+  }
+ ],
+ "target": "api/b16-slice-window-check.test.js"
+}

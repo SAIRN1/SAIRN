@@ -1,0 +1,100 @@
+{
+ "app_matched": "sairndesign",
+ "considered": {
+  "defect_records": 685,
+  "detectors_fired": [],
+  "detectors_run": 12,
+  "matched_this_file": 4
+ },
+ "drafted_on": "2026-10-20",
+ "exists": true,
+ "no_detector_yet": [
+  "1.6",
+  "2.2",
+  "3.1",
+  "3.2",
+  "3.3",
+  "4.1",
+  "4.2",
+  "4.3",
+  "5"
+ ],
+ "risks": [
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "53b0f9a475c5",
+   "date": "2026-09-16",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "sairndental addSupply() dropped dntPushOne('dnt_supplies') and toasted 'Supply item added' unconditionally. WORSE than the sairngrounds instance of the same shape: dntPushOne reports a refusal to console.warn and raises NO toast, so that claim was the only thing the user ever saw whether or not the record reached the server. Adding supplies repeats, so even a correction would have been overwritten by the next item's message",
+   "rules": [
+    "1.5"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "53b0f9a475c5",
+   "date": "2026-09-16",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "sairndental vPlaceOrder() dropped dntPushOne('dnt_vendor_orders') inside a forEach and its message hedged only about the EMAIL DRAFT being blocked, never about whether the purchase-order ARCHIVE reached the server. A vendor order archive that silently stayed on one device is the thing an archive exists to prevent. Now collects the promises, awaits them and names the two failures separately",
+   "rules": [
+    "1.5"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "53b0f9a475c5",
+   "date": "2026-09-16",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "sairndesign markRoomARPoint() dropped saveRoomDimensions() and toasted 'Room captured' unconditionally. saveRoomDimensions DID report honestly to the user and returned UNDEFINED, so no caller could condition anything on the write -- a helper that reports to the USER and tells its CALLER nothing forces every caller to be optimistic. It now returns whether it synced",
+   "rules": [
+    "1.5"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "53b0f9a475c5",
+   "date": "2026-09-16",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "sairndesign handleScannedSampleCode() raised a SECOND toast over markSampleReturned()'s own honest message. Worse than a bare optimistic claim because the truthful message EXISTED and was overwritten by the one after it -- toast() is textContent, so the last writer wins. Scanning samples repeats, so the overwrite is the normal case rather than a race. markSampleReturned now takes the caller's success wording so there is one message per action",
+   "rules": [
+    "1.5"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndesign) has this defect on record",
+   "cite": "58303cc59aaa",
+   "date": "2026-09-24",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "Four SAIRNdesign resources sat at Tier A on a licence key alone for a day: sdn_projects, sdn_proposals, sdn_specitems and sdn_timeentries were individually read and promoted B->A on 2026-09-23, hours AFTER the SAIRNdesign session gate was armed for \"the five at Tier A\" -- and nothing connected a tier promotion to the gate whose scope was defined BY tier. The gate's comment said \"only the five at Tier A\" and named five names; the tier table moved; the comment and the gate stayed. A studio's client budgets (steering the AI adviser), priced accept/decline proposals (whose Approved path reserves one-of-a-kind inventory), the cost/retail catalogue both totals derive from, and billable hours were all writable and readable by anyone holding the browser-shipped licence key, which is the exact finding that armed the first five.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndesign) has this defect on record",
+   "cite": "49f7ae011063",
+   "date": "2026-09-29",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "sairndesign.html invoice-create rendered 'Saved on this device only -- server sync failed, try again with a connection' for EVERY non-2xx, including 401 and 403. After the 2026-09-25 header fix the 403s stopped, but the sentence remained, and for an auth refusal it tells the user to do the one thing that cannot work. The row is correctly KEPT on 403 -- unlike the 409 path, which rolls back, because on 409 the server holds a duplicate and on 403 it holds nothing, so a rollback would delete the user's invoice -- and rInvoicing() counts the kept row into the outstanding total, so the money figure on screen includes an invoice the server refused. Now branches on 401/403 with its own sentence naming the sign-in and the affected total.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndesign) has this defect on record",
+   "cite": "607f4f034662",
+   "date": "2026-10-06",
+   "detected_by": "hover-audit",
+   "prior_severity": "moderate",
+   "risk": "api/sd-data.js, the single generic SDN_RESOURCES write branch serving all 18 SAIRNdesign resources, built its upsert body as 'data: payload' -- the caller's entire object with no storedBlob() call. Any key the caller invented was persisted verbatim into the data jsonb column, INCLUDING a forged license_hash, app_id or p_license_hash, and was echoed back on read beside the real columns that contradict it. Twelve of the eighteen resources carry client identity or money (sdn_clients, sdn_contracts, sdn_referrals, sdn_projects, sdn_specitems, sdn_proposals, sdn_pos, sdn_invoices, sdn_timeentries, sdn_discounts, sdn_team, sdn_vendors). LATENT RATHER THAN LIVE: every read path resolves tenancy from the real license_hash COLUMN, which always wins, so no cross-tenant read was reachable -- what the defect produced was a stored falsehood waiting for the next reader that trusts a field inside data. Fixed with storedBlob(payload, []), an EMPTY column list unlike every sibling call site's ['id'], because those branches re-attach the id from its column on read and this one returns x.data verbatim; passing ['id'] here would have emptied the id off every record in all eighteen resources.",
+   "source": "defect-register"
+  }
+ ],
+ "target": "api/_lib/roofing-asset-registry.test.js"
+}

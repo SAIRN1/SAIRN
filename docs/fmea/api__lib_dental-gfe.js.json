@@ -1,0 +1,289 @@
+{
+ "app_matched": "sairndental",
+ "considered": {
+  "defect_records": 685,
+  "detectors_fired": [],
+  "detectors_run": 12,
+  "matched_this_file": 1
+ },
+ "drafted_on": "2026-10-20",
+ "exists": true,
+ "no_detector_yet": [
+  "1.6",
+  "2.2",
+  "3.1",
+  "3.2",
+  "3.3",
+  "4.1",
+  "4.2",
+  "4.3",
+  "5"
+ ],
+ "risks": [
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "a8f74bc8332a",
+   "date": "2026-09-04",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "45 CFR 149.610(c)(1), the Good Faith Estimate requirement, was enforced only in sairndental.html's browser JavaScript. Any caller reaching the endpoint directly bypassed it entirely and the server had no opinion -- a federal billing-disclosure rule with no server-side enforcement on a Tier A dental resource.",
+   "rules": [
+    "1.11"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndental) has this defect on record",
+   "cite": "2ae0b0a7ea67",
+   "date": "2026-09-03",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "api/sairndental/public-book.js wrote a dnt_patients row before the appointment it exists for, and a failed booking left that patient record behind with no route to remove it -- on an unauthenticated public endpoint, so an anonymous caller could accumulate them. PHI created by a transaction that did not complete, in a practice that cannot delete it.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndental) has this defect on record",
+   "cite": "73629b2298af",
+   "date": "2026-09-04",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "dnt_coverage_rules could hold two rules matching one lookup and the read took a single row, so which of two legitimate coverage rules applied was decided by row order. Refused now and the client moved with it -- a quiet wrong answer from a benefits determination is worse than a refusal, and dnt_coverage_rules is Tier A.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndental) has this defect on record",
+   "cite": "5b98fd27209b",
+   "date": "2026-09-10",
+   "detected_by": "mutation-testing",
+   "prior_severity": "high",
+   "risk": "Three source assertions matched what came AFTER the guard rather than its position, so if(false && dntIsUnconfirmed(...)) left them green",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndental) has this defect on record",
+   "cite": "5b98fd27209b",
+   "date": "2026-09-10",
+   "detected_by": "probe-control",
+   "prior_severity": "low",
+   "risk": "A mutation control was anchored on a line two writers share verbatim, so it reported ANCHOR-2 and silently probed nothing",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndental) has this defect on record",
+   "cite": "5b98fd27209b",
+   "date": "2026-09-10",
+   "detected_by": "fault-injection",
+   "prior_severity": "high",
+   "risk": "A dropped socket produced NO toast at all, because a rejection never reaches a .then(ok => ...) handler -- and two callers attach none, so it was an unhandled rejection",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndental) has this defect on record",
+   "cite": "5b98fd27209b",
+   "date": "2026-09-10",
+   "detected_by": "fault-injection",
+   "prior_severity": "moderate",
+   "risk": "A hung write never settled and there was no timeout anywhere on the path, so it was indistinguishable from not having clicked",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndental) has this defect on record",
+   "cite": "5b98fd27209b",
+   "date": "2026-09-10",
+   "detected_by": "fault-injection",
+   "prior_severity": "moderate",
+   "risk": "A partial response counted as success and CLEARED the unconfirmed flag, letting hydration overwrite the local copy",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndental) has this defect on record",
+   "cite": "d22ce1060e10",
+   "date": "2026-09-10",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "A refused vendor write showed a success toast and the next sync silently replaced the edit -- a negotiated discount, so it changes what the practice pays",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndental) has this defect on record",
+   "cite": "133b0989473d",
+   "date": "2026-09-16",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "api/sairndental/send-reminder.js returned 502 on a failed dnt_appointments read WITHOUT writing a heartbeat. This is the exact path that failed 23 times between 2026-09-12 and 2026-09-14 per the Vercel runtime-error table. Because the job succeeds most hours, the last successful beat stayed fresh and cron-watchdog went on reporting send-reminder=ok through the whole outage -- a FALSE GREEN, not a gap, and the failures were found in the provider error table instead of by the monitor built to find them.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndental) has this defect on record",
+   "cite": "53b0f9a475c5",
+   "date": "2026-09-16",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "sairndental addSupply() dropped dntPushOne('dnt_supplies') and toasted 'Supply item added' unconditionally. WORSE than the sairngrounds instance of the same shape: dntPushOne reports a refusal to console.warn and raises NO toast, so that claim was the only thing the user ever saw whether or not the record reached the server. Adding supplies repeats, so even a correction would have been overwritten by the next item's message",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndental) has this defect on record",
+   "cite": "53b0f9a475c5",
+   "date": "2026-09-16",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "sairndental vPlaceOrder() dropped dntPushOne('dnt_vendor_orders') inside a forEach and its message hedged only about the EMAIL DRAFT being blocked, never about whether the purchase-order ARCHIVE reached the server. A vendor order archive that silently stayed on one device is the thing an archive exists to prevent. Now collects the promises, awaits them and names the two failures separately",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndental) has this defect on record",
+   "cite": "debb3b674068",
+   "date": "2026-09-16",
+   "detected_by": "static-checker",
+   "prior_severity": "moderate",
+   "risk": "api/sairndental/public-book.test.js asserted `reached || res.statusCode !== 400 || res.body.error.code !== 'NOTES_TOO_LONG'` for an arm titled \"passes validation and REACHES THE NETWORK STAGE\". Any one term satisfied it, and the request was 502ing before it reached anything -- because the block's resolveSlug stub throws unconditionally and public-book.js destructures it at module load, so NO arm in that block could ever get past validation. The arm was green the whole time",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndental) has this defect on record",
+   "cite": "a8fe1485d2c0",
+   "date": "2026-09-17",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "sairndental.html's addChargeEntry() recorded only procedure_type_id, and a procedure type is a mutable row carrying cdt_code, cdt_version and the effective window. The ADA publishes a new CDT edition annually, so the day a practice updates its catalogue every historical charge silently re-reads the new code and edition -- a charge correctly billed as D1110 under CDT 2025 renders, exports through dnt_charges and reports as whatever the row says today, with no error and no warning. The catalogue had full versioning (cdtStatusFor, cdtMaintenance, effective windows); the transactions had none, so the ledger stopped describing what was actually claimed. cdt_code and cdt_version are now stamped at posting and exported from the charge rather than joined.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndental) has this defect on record",
+   "cite": "f9fc2aa87bdf",
+   "date": "2026-09-17",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "api/dnt-bi.js read the whole practice dataset BEFORE resolving the patient scope on the patient_ids path, so the SCOPE_LOOKUP_FAILED refusal fired with every PHI row already fetched",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndental) has this defect on record",
+   "cite": "2a81009bb206",
+   "date": "2026-09-18",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "computeEstimatedInsurance used Number(amount)||0 and tpItemMoney used Number(item.fee)||0, so a procedure or treatment-plan fee that could not be read as a number became a measured zero: the coverage note rendered 'Estimated insurance: $0.00' from a fee nobody could read, and a plan line contributed a silent 0 to the fee, insurance and patient-portion totals -- so the figure a patient is asked to accept and sign was short by that line with nothing on screen saying so",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndental) has this defect on record",
+   "cite": "332132f7ed49",
+   "date": "2026-09-18",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "tests/sairndental_ledger_export.js: the arm 'a patient who no longer exists leaves the NAME blank and the ID intact' split the CSV row on commas and indexed by header position, so a preceding cell carrying two adjacent commas was quoted by dntCsvCell(), torn into pieces by the split, and left cells[nameIdx] === '' -- the arm then PASSED with the NAME-IS-ID defect present. That is the same defect the arm had been fixed for two days earlier, one layer down: an assertion satisfied by exactly the thing it is named after. Fixed by asserting cells.length === head.length BEFORE indexing, so a row the naive split cannot line up with its header is a REFUSAL rather than a verdict.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndental) has this defect on record",
+   "cite": "5cedf088ebe3",
+   "date": "2026-09-18",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "api/dnt-bi.js read its dataset through .json().catch(() => null) and consumed it as `(Array.isArray(drows) ? drows : []).map(...)`, so a 200 whose body would not parse arrived as null, failed Array.isArray, and was served as ZERO ROWS with ok:true. A Power BI, Tableau or Looker dashboard polling this feed then charts a period with no production, no charges and no appointments -- a claim about the practice rather than about the read. First site in this sweep on a READ rather than a write: the consequence is a fabricated-looking empty rather than a false confirmation",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndental) has this defect on record",
+   "cite": "73f96009bfcb",
+   "date": "2026-09-18",
+   "detected_by": "static-checker",
+   "prior_severity": "moderate",
+   "risk": "Two further sites of the swept shape in api/dnt-bi.js, in the file whose feed read had already been fixed. list: 'tokens: Array.isArray(rows) ? rows : []' turned an unparseable 200 into an EMPTY TOKEN LIST served with ok:true, so the admin screen says no feed tokens exist and the decision taken off it is 'there is nothing live to revoke', about a list nobody read. revoke: 'const n = Array.isArray(rows) ? rows.length : 0' folded an unparseable 200 into that zero and reported 'No live feed token with that id' -- this one already failed TOWARD a refusal rather than a false success, the safer direction, and is still wrong because the revoke may have landed while the admin is told the token never existed. Both now refuse (READ_UNREADABLE, REVOKE_UNCONFIRMED); a real empty list and a genuine miss keep their existing answers",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndental) has this defect on record",
+   "cite": "0c7672e17d11",
+   "date": "2026-09-24",
+   "detected_by": "user-report",
+   "prior_severity": "moderate",
+   "risk": "api/_lib/dnt-rollup.js summed money amounts as IEEE754 doubles: `cell.value += n` at the sum branch, and `v += cell.value` again at the totals line. 0.1 + 0.2 reported 0.30000000000000004; one hundred $10.01 charges totalled 1000.9999999999998 -- in a roll-up whose own header promises the totals line agrees with the buckets by construction, serving the SAIRNdental per-location production/collections figures. No crash, no warning; the number was simply not the number the ledger says. Fixed by accumulating integer cents in pass 1 and recovering each bucket's integer losslessly at the totals line, with three regression arms each verified to FAIL on the old code.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndental) has this defect on record",
+   "cite": "9a0903e690f5",
+   "date": "2026-10-16",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "THE CHARGE CDT STAMP WAS WRITTEN AND NEVER READ, AND THE CATALOGUE HAD NO EDIT PATH, so the guarantee the stamping commit stated did not hold and the versioning feature was unreachable for the population it was built for. addChargeEntry() has stamped cdt_code and cdt_version onto every dnt_charges row since 2026-09-17, and its own comment states that the code and edition are STAMPED AT POSTING so a catalogue edit cannot restate history. BOTH readers ignored the stamp and looked the code up live from the mutable procedure-type row: the patient ledger's charges table, and the charges export's Procedure column -- nine lines below its own comment stating the rule it then broke, that a deleted patient still has charges and a name-only export would make those rows unattributable. A deleted or revised procedure type has charges too. The defect is invisible to every structural check because the stamp and the live lookup return the same answer on every row until the day the catalogue is edited, which is the one day the stamp exists for. SECOND HALF: the procedure-type form was ADD-ONLY and the table's only action was Remove, so every row predating the versioning reported 'Not verifiable' permanently with no path to a checked state, and applying a new CDT edition meant Remove-and-re-Add, minting a new row id and orphaning every historical charge -- the exact ledger-integrity failure the stamp was written to prevent, reached by a different door. The stamping fix was therefore written for an edit path that did not exist, which is why its missing read half never surfaced. FIXED: dntChargeCode() is the single reader at both sites, preferring the stamp, falling back to the live row only when there is no stamp and LABELLING that, and saying 'not recorded' when neither exists rather than guessing; three new export columns carry the code and edition as billed and the source of each; and a revise path updates a procedure type in place keeping its row id, appending replaced values to revisions[] rather than overwriting, recording only changed fields, and refusing a no-change, a vanished target and an inverted window. DRIVEN, 22 checks exit 0, first arm being the discriminating case where the catalogue was revised after posting so stamp and lookup disagree. NO TOOL FOUND IT: found by tracing which readers consume a charge's stamped fields after reading addChargeEntry()'s own comment claiming a guarantee; the 22-check driver was written afterwards to prove the fix, not to find the defect.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndental) has this defect on record",
+   "cite": "730a078c682f",
+   "date": "2026-10-17",
+   "detected_by": "live-verification",
+   "prior_severity": "moderate",
+   "risk": "var(--accent) IS NOT A TOKEN IN sairndental.html AND NEVER WAS -- one occurrence, defined nowhere in :root and not a house token in any other app. Written on 2026-10-16 by the b28 F2 revise path, it made the whole border-left shorthand invalid at computed-value time, so the revise banner's 3px accent stripe rendered at 0px rather than in a fallback colour. Found by reading computed style in a real browser on the live deployment (scratchpad b29_segC_f1f2_live.py), measured before the fix as borderLeftWidth 0px with borderLeftColor rgb(100,116,139) inherited from currentcolor, and ablated red-on-HEAD green-on-fix in b29_segF_verify_fixes.py. b28's verification of this exact feature was 22 arms, exit 0, every one sound and every one still passing -- and NONE of them could ever have gone red for it, because the harness extracted the functions BY NAME and ran them against stubs and never rendered the markup.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndental) has this defect on record",
+   "cite": "730a078c682f",
+   "date": "2026-10-17",
+   "detected_by": "live-verification",
+   "prior_severity": "moderate",
+   "risk": "41 DISTINCT WCAG 2.2 AA CONTRAST FAILURES across all 23 panels of sairndental, measured on the live deployment by tools/wcag_contrast_check.py -- including EVERY primary button in the app (white on #0EA5E9, 2.77:1 against a 4.5 requirement, 11 panels), every active sidebar item (#0284C7 on #E0F2FE, 3.57:1, 23 rows), the header pills (3.29:1 on all 23 panels), the success-green badges at 11-13px (#22C55E, 2.28:1) and the error red (#EF4444, 3.76:1). Ablation through the shipped tool on identical code paths: HEAD 41 failures exit 1, fixed tree 0 failures exit 0, same 23 panels.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndental) has this defect on record",
+   "cite": "730a078c682f",
+   "date": "2026-10-17",
+   "detected_by": "live-verification",
+   "prior_severity": "moderate",
+   "risk": "A SHAREABLE PUBLIC BOOKING LINK THAT CANNOT WORK, AND BOTH SCREENS STAYED SILENT. The live dnt_settings row lists publicly_bookable_procedure_type_ids = [PC-1786416376504-314] while the catalogue holds PC-DEMO-1..5, so api/sd-data.js correctly returns procedure_types: [] and the public page tells every patient 'Online booking is not yet available for this practice.' The owner's Booking Settings panel showed a Public link preview and five unticked boxes and said nothing about either fact, so a practice could hand out a dead link indefinitely. Driven live on sairn.vercel.app/sairndental-book?slug=verify-test-slug (b29 segment E) and ablated red-on-HEAD green-on-fix.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndental) has this defect on record",
+   "cite": "21a4b3ceb2a7",
+   "date": "2026-10-20",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "rGfe() never compared the stored rec.issued_at to the 149.610(b)(1)(vi) due date, so an estimate issued 46 days past its date rendered identically to one issued on time. REPRODUCED in a browser BEFORE the fix: requested 2026-09-01, due 2026-09-04, marked Issued 2026-10-20, and the Due tile went 1 -> 0 with the nav badge disappearing and the row badge neutral. issueGfe() had stored issued_at since the panel shipped in a002b2dc and NOTHING EVER READ IT, so the whole obligation -- which in (b)(1)(vi) is a DATE -- was dropped while the data to keep it sat on the record. Fixed by rendering three outcomes (issued LATE with the day count, issued in time, issued with timing not on file) plus a late count in the Issued tile sub-line, because fixing only the row would have left the tiles reading clean and the tiles are what gets read.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndental) has this defect on record",
+   "cite": "21a4b3ceb2a7",
+   "date": "2026-10-20",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "rCredentials(null) returned before touching the four KPI tiles, which are hardcoded 0 in the markup, so a panel that had checked nothing showed Expired 0 / Expiring Soon 0 / CE Behind Pace 0 / MATE Outstanding 0 with the nav badge hidden. REPRODUCED in a browser BEFORE the fix with the licence key blanked and two credentials on file expired 21 and 28 months (2025-01-31 and 2024-06-30 against 2026-10-20): all four tiles read 0. Reachable on FOUR silent conditions in sdnEvaluateCredentials() -- no licence key, any non-ok status, an ok status with a non-ok body, any network error -- all four console.warn and return null. Could-not-run is a third state and folding it into passed is PR 1.11 arriving in a KPI tile instead of a gate. Fixed to -- per tile with a tooltip, a ? nav badge, and an empty-table message that says the board could not be evaluated. A NEGATIVE CONTROL was driven because it was needed: a successful board must CLEAR the marks, or a tile that is now a real 0 keeps a tooltip saying it was never checked.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndental) has this defect on record",
+   "cite": "2eb738de4e6f",
+   "date": "2026-10-20",
+   "detected_by": "fault-injection",
+   "prior_severity": "low",
+   "risk": "REPRODUCED with a delayed stubbed fetch before the change: first paint was the could-not-run view with NO_REASON on a first visit, and on a revisit the PREVIOUS attempt's FORBIDDEN \"your session is not authorised ... sign in again\" while a request that would succeed was in flight. FIXED with a pending state: refreshCredentialBoard(paintPending) counts in-flight evaluations and paints \"Checking the credential board\" with pending tiles and badge. DRIVEN 37/37: ok/403/500/network each pending-then-outcome, no-licence settles without sticking, overlap holds pending until the last settles, the background refresh leaves a real board up, a throw cannot leave it stuck. MUTATION CONTROL: the pending branch disabled in a routed copy of the page makes the first-paint assertion fail. Severity LOW: transient until the request settles, no data changed -- but the revisit case mis-stated whose problem it was.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndental) has this defect on record",
+   "cite": "cc919c308efd",
+   "date": "2026-10-20",
+   "detected_by": "code-review",
+   "prior_severity": "low",
+   "risk": "b39 made could-not-run a visible third state (four \"--\" tiles and a \"?\" badge instead of four zeros) and left this recorded as a `planned` factor: ALL FAILURES OF THE CREDENTIAL BOARD SAID THE SAME THING. DRIVEN BEFORE AND AFTER, awaiting the real promise rather than sleeping -- four distinct codes with four distinct sentences now: 403 FORBIDDEN \"not authorised, this panel is owner-only\" (your sign-in), 500 UPSTREAM \"the server refused, run its schema first\" (the server), NETWORK \"could not be reached, check the connection\" (the connection), NO_LICENCE \"no licence key on this install\" (this practice). A 200-with-ok:false is separated too (REFUSED, status 200). NEGATIVE CONTROL: a successful board clears the record, restores 0 0 0 0 and HIDES the badge -- without it \"--\" and \"?\" sticking forever would look identical to the fix working. THE FIX WAS NOT A NEW MECHANISM: dntLastErr at :1647 already is one, and this function was simply a second fetch path that never fed it.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairndental) has this defect on record",
+   "cite": "cf1e3cd19ca1",
+   "date": "2026-10-20",
+   "detected_by": "fault-injection",
+   "prior_severity": "low",
+   "risk": "Left open by fourth b41 (recorded recurrence). RED on the LIVE page 4/8: a slow older answer replaced a fast newer one (stale 5 expired over the current 1), a newer failure was overwritten by an older success, an older null painted the rules and enrolment-risk panels as not-checked beside a Checking table (Guardian A3), and addCredential replaced a real board with the not-checked view during the write. GREEN 8/8: sequence-numbered asks, only the latest renders, pending = latest unsettled or a write in flight; b41 suite still 37/37.",
+   "source": "defect-register"
+  }
+ ],
+ "target": "api/_lib/dental-gfe.js"
+}

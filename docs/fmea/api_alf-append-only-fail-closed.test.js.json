@@ -1,0 +1,140 @@
+{
+ "app_matched": "sairnbuild",
+ "considered": {
+  "defect_records": 685,
+  "detectors_fired": [
+   "1.2",
+   "1.3"
+  ],
+  "detectors_run": 12,
+  "matched_this_file": 4
+ },
+ "drafted_on": "2026-10-20",
+ "exists": true,
+ "no_detector_yet": [
+  "1.6",
+  "2.2",
+  "3.1",
+  "3.2",
+  "3.3",
+  "4.1",
+  "4.2",
+  "4.3",
+  "5"
+ ],
+ "risks": [
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "1884f8148112",
+   "date": "2026-09-21",
+   "detected_by": "probe-control",
+   "prior_severity": "moderate",
+   "risk": "tests/faults/alf_rule_read_faults.js had been RED on main since 2026-09-18, six of thirteen arms dying on 'prRenderRecorded is not defined'. NOT A PRODUCT REGRESSION: rPayerRouting() gained a real call to a real function that exists in sairncare.html, and the suite builds its vm context one named global at a time, so every arm touching the payer panel died on a ReferenceError before reaching its assertion. Six requirements about failed rule reads were reported as failures of the product for three days. Fixed with a no-op stub rather than by extracting the real function, because prRenderRecorded() reads alf_claim_routes and needs alfIsManagement(), residents(), H() and a #pr-recorded element -- pulling that in would make a suite about rule-read failure states also a suite about the billing trail. What the stub gives up is named in the file with a pointer: that rPayerRouting calls it at all is asserted in tests/sairncare_route_record.js section 8 and planted as mutation 10 of tests/run_sairncare_route_record_sabotage_probe.py.",
+   "rules": [
+    "1.1"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "1884f8148112",
+   "date": "2026-09-21",
+   "detected_by": "probe-control",
+   "prior_severity": "high",
+   "risk": "Arm 5 of tests/alf_append_only_probe.py ('a non-array body stops refusing') had been SILENT since 2026-09-18 19:15. api/alf-append-only-fail-closed.test.js asserted the guard with a whole-file assert.match(SRC, /if \\(!Array\\.isArray\\(rows\\)\\)/) against api/sd-data.js. It bit correctly from 2026-09-04 because there was exactly ONE such line, so the whole-file match happened to be equivalent to a scoped one. Commit 92be209a -- the stonedesk soft-delete half of the json-catch-null sweep -- added a second one thirty lines above inside wroteRow(), and from that moment the mutation could remove the real fail-closed guard in appendOnlyExisting() with the suite green. That guard protects six append-only Tier A integrity checks, three of which write with merge-duplicates and would silently overwrite the record they protect. The same test documents fixing this exact defect on its two neighbouring assertions on 2026-09-15 and left the third; it is now scoped to the function body the same way.",
+   "rules": [
+    "1.3"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "b5e20fe80b4e",
+   "date": "2026-09-21",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "alf_mar append-only TOCTOU: the handler SELECTed for an existing entry_id, answered 409 ALREADY_RECORDED if found, then POSTed with Prefer: resolution=merge-duplicates. Two callers racing the SAME entry_id could both pass the SELECT before either POST landed, and the second POST's merge-duplicates resolution silently OVERWROTE the first row instead of reaching the 409 -- a recorded medication administration of 'given' replaced by 'refused', unrecoverably, with no error anywhere. Fixed by routing through public.alf_check_and_insert_mar_entry(), which holds pg_advisory_xact_lock across the check and the write in one transaction.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "b5e20fe80b4e",
+   "date": "2026-09-21",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "bld_draws retainage release lost update: the branch read the draw's jsonb data, computed a new retainage_released and appended one audit entry to retainage_release_log client-side, then PATCHed the whole blob back with only license_hash and draw_id in the WHERE clause -- no version or CAS predicate. Two concurrent release_retainage calls on the same draw each read the same starting value and whichever PATCH landed second silently won, discarding the first release's figure AND its audit-trail entry with no error. Fixed by routing through public.bld_release_retainage_atomic(), an optimistic-CAS RPC that compares the row's current retainage_released against what the caller read under pg_advisory_xact_lock and raises RETAINAGE_RELEASE_CONFLICT rather than overwriting blind.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnbuild) has this defect on record",
+   "cite": "200fe08686cd",
+   "date": "2026-09-21",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "sairnbuild.html granted bld_pending_trusted on a device that had pushed nothing. The attestation required provisioned!==false and bldPendingCount()===0, and that count is zero both for a list the retry emptied and for one that was NEVER WRITTEN -- the pre-2026-09-04 install the design is explicitly reasoned about. Driven end to end: trust granted on the first load with zero pushes; the merge still refuses on that load because mayOverwrite separately requires pend.state to be ok, which is there for an unreadable map; then any later failed write calls bldPendingMark, the key appears, the state becomes ok, and the already-granted flag turns into permission to overwrite edits the pending list has no record of because the mechanism postdates them. A local record went from EDITED HERE, never pushed to the server copy in three steps. The flag is never cleared, so the wrong grant is permanent. Fixed with one term. The suite now RUNS the attestation statement instead of reading it for substrings, which is what let a present-but-wrong condition pass every arm.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnbuild) has this defect on record",
+   "cite": "7acf4659eee2",
+   "date": "2026-09-22",
+   "detected_by": "static-checker",
+   "prior_severity": "moderate",
+   "risk": "sairnbuild.html rDrawsTbl(): `outstanding` and `received` summed d.amount and d.amount_received with `s + (x || 0)` while the two figures beside them, retHeld and retReleased, went through drawMoney() -- defined on the line immediately above the function. `|| 0` does not coerce: a non-empty string is truthy, the guard never fires and `+` concatenates. A third site at line 7408 summed d.amount_received the same way on the job-detail view.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnbuild) has this defect on record",
+   "cite": "25d1c0009efb",
+   "date": "2026-09-27",
+   "detected_by": "code-review",
+   "prior_severity": "critical",
+   "risk": "sairnbuild.html jobWIP() computed percent complete as Math.min(1, costToDate/budgetFor(id)) and earned revenue as that percent times the revised contract. Three defects: the denominator was the ORIGINAL cost budget and was never re-forecast; the Math.min cap meant a job at 130 percent of budget reported 100 percent complete, so earned became the WHOLE contract and over/under billing swung to its most UNDER-billed reading -- the cap INVERTED the finding rather than rounding an overrun off; and an accepted change order added its value to the contract while nothing added its cost to the budget, because a change-order record in this app carries no cost field at all, so percent complete was computed against a denominator known to be too small and earned revenue was overstated twice. Fixed by adding an optional per-cost-line forecast (estimated cost at completion, falling back to budget), reporting the ratio UNCAPPED, and REFUSING earned revenue and over/under billing -- returning null with a named reason -- wherever the forecast is known to be stale. The identical cap in api/_lib/wip-accounting.js is fixed in the same commit. The change order's cost is NOT invented.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnbuild) has this defect on record",
+   "cite": "86189e37d552",
+   "date": "2026-10-12",
+   "detected_by": "code-review",
+   "prior_severity": "critical",
+   "risk": "api/sd-data.js: bld_draws was gated on TWO of its four actions. `wip` and `release_retainage` required a sairnbuild session and owner/office; `read` and `write` ON THE SAME TABLE fell through to the generic BLD_RESOURCES loop and took the licence key alone. A caller with the key and no session could read every draw's retainage figures, and could POST action:'write' with a `data` blob of its own choosing -- a merge-duplicates upsert that REPLACES `data` entirely, so one request could author a release that never happened, inflate one, or set `retainage_released` back to zero. That defeated bld_release_retainage_atomic's CAS, the no-reduce rule in api/_lib/wip-accounting.js and the append-only audit trail at once, with no employee recorded against any of it. Routed to this session as hover finding seq664; the originating hover INSTANCE is not recorded in any source a build agent may read, so the method here is this session's own read of both branches at HEAD rather than an attribution it could not verify.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnbuild) has this defect on record",
+   "cite": "0ef5447b2631",
+   "date": "2026-10-16",
+   "detected_by": "mutation-testing",
+   "prior_severity": "high",
+   "risk": "A Tier A guard on bld_bids was green on a comment, and BOTH repairs of it left a hole a mutation could walk through. The suite asserted the literal key==='bld_bids' appears in bldRetryPending; that literal is gone from sairnbuild.html and both surviving occurrences are comments, one of them inside bldRetryPending explaining its own removal. The first repair stripped line comments and required some fourth argument: four of five mutations were still accepted -- false, 0, the declaration deleted, and a BLOCK comment carrying a satisfying call. The second repair collapsed string literals, which closed those and blinded the assertion to which string the first argument was, so 'write' -> 'read' was accepted at 25 passed 0 failed -- a retry that drains the pending queue by reading, saving nothing, while reporting success. Fixed with two derived copies and two assertions, re-ablated 10 of 10 refused on the named arm; probe arms 14 and 15 added so nothing rests on an assertion nobody made fail.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnbuild) has this defect on record",
+   "cite": "74be8ec8383c",
+   "date": "2026-10-16",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "A FAILED SERVER BACKUP WAS REPORTED AS A SUCCESSFUL SAVE. sairnbuild.html's st() called bldSyncCollection() inside `catch(e){}` -- an empty catch -- and still returned okWrite===true, because the LOCAL write had succeeded. So a throw inside the backup hook left the record on one device only with NOTHING in the console and NOTHING in the pending list that bldRetryPending() reads, while st() answered 'saved' to all 86 call sites. It is worse than the swallowing catch twenty lines above that was fixed on 2026-09-04: that one at least returned false. Fixed in two steps -- the handler now says so loudly and MARKS the collection pending so the mechanism this file already has for 'did not reach the server' actually sees it, and this commit restructures that handler to one message with one logger guard after the seam check caught the first version.",
+   "source": "defect-register"
+  },
+  {
+   "action": "search a comment-stripped copy, or parse; if the subject IS the comment, declare it",
+   "basis": "section 1.2 applies -- Grep cannot tell code from text that describes code",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 1.2",
+   "risk": "matching a source file by TEXT cannot tell code from a comment or string describing code",
+   "source": "process-rules"
+  },
+  {
+   "action": "assert the anchor matches exactly once AND read what it matched before acting",
+   "basis": "section 1.3 applies -- An anchor that still matches is not an anchor that still points at the right thing",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 1.3",
+   "risk": "an exact-string anchor verifies UNIQUENESS, never that it still points at the right code",
+   "source": "process-rules"
+  }
+ ],
+ "target": "api/alf-append-only-fail-closed.test.js"
+}
