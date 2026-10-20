@@ -6732,7 +6732,9 @@ module.exports = async (req, res) => {
         if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, provisioned: false, data: [], totals: null }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
-        const draws = (rows || []).map((x) => Object.assign({ draw_id: x.draw_id }, x.data || {}));
+        // draw_id is the row's real key: the column goes LAST (b33 sweep). bld_draws writes the
+        // client payload as the blob without stripping draw_id, so a blob copy used to win.
+        const draws = (rows || []).map((x) => Object.assign({}, x.data || {}, { draw_id: x.draw_id }));
         const out = draws.map((d) => bwip.summariseDraw({ draw: d, today: bToday, aged_days: bldAged }));
         // TOTALS ARE SUMMED FROM THE SUMMARIES, and a draw the engine could not
         // work out is EXCLUDED and COUNTED rather than treated as zero. A
@@ -6805,7 +6807,7 @@ module.exports = async (req, res) => {
       // engine reports a problem it would not have reported before -- so the
       // rules stay in one place and a rule added there is enforced here for
       // free.
-      const before = bwip.summariseDraw({ draw: Object.assign({ draw_id: curRow.draw_id }, curData), today: bToday, aged_days: bldAged });
+      const before = bwip.summariseDraw({ draw: Object.assign({}, curData, { draw_id: curRow.draw_id }), today: bToday, aged_days: bldAged });
       if (!before.ok) { res.status(400).json({ error: { code: 'UNSUMMARISABLE', message: before.error.message } }); return; }
       const already = Number(curData.retainage_released) || 0;
       if (relAmt < already) {
@@ -6813,8 +6815,8 @@ module.exports = async (req, res) => {
         return;
       }
       const after = bwip.summariseDraw({
-        draw: Object.assign({ draw_id: curRow.draw_id }, curData,
-          { retainage_released: relAmt, retainage_released_at: relOn }),
+        draw: Object.assign({}, curData,
+          { retainage_released: relAmt, retainage_released_at: relOn, draw_id: curRow.draw_id }),
         today: bToday, aged_days: bldAged
       });
       if (!after.ok) { res.status(400).json({ error: { code: 'UNSUMMARISABLE', message: after.error.message } }); return; }
@@ -14029,7 +14031,9 @@ module.exports = async (req, res) => {
       }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
-      res.status(200).json({ ok: true, data: Object.assign({ rule_id: payload.rule_id, state: ruleState, verified_by: session.employee_id }, ruleData) });
+      // Server-stamped columns LAST (b33 sweep): ruleData is the client's own payload.data,
+      // so under the old order a client-sent verified_by/state/rule_id won in this response.
+      res.status(200).json({ ok: true, data: Object.assign({}, ruleData, { rule_id: payload.rule_id, state: ruleState, verified_by: session.employee_id }) });
       return;
     }
     // Compute a routing decision. Deliberately does NOT write anything -- persisting the
@@ -14991,7 +14995,8 @@ module.exports = async (req, res) => {
       }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
-      res.status(200).json({ ok: true, data: Object.assign({ rule_id: payload.rule_id, state: cState, verified_by: session.employee_id }, cData) });
+      // Server-stamped columns LAST (b33 sweep) -- same as alf_payer_rules above.
+      res.status(200).json({ ok: true, data: Object.assign({}, cData, { rule_id: payload.rule_id, state: cState, verified_by: session.employee_id }) });
       return;
     }
     // Compute a compliance finding. Reads rules AND, for training checks, the real recorded
