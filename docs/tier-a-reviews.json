@@ -7443,6 +7443,28 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-10-20T13:42:06Z",
+      "opened_at_sha": "72dfaf5cb644ea3fff1d5ab5345b646d50934aca",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 0,
+      "resources": [
+        "rt_routes"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "stonedesk.html"
+      ],
+      "what": "fourth b44: stonedesk.html Field Map optimiser (rt_routes). fmRunOptimize now calls a new named transport sdDataEnvelope() (same licence/session/timeout/failure reporting as sdData, returns the envelope) because optimize answers with no data key and sdData returned undefined -- every successful optimise was discarded. Also a permutation check on the server order (was length-only). ATTACK POINTS: (1) sdDataEnvelope is a second copy of transport logic -- does it drift from sdData (no _sdReadFailed/_sdWriteOk bookkeeping by design)? (2) the permutation check against server orders that legitimately omit stops; (3) whether any other StoneDesk caller hits a data-less action through sdData. Driven RED 5/10 -> GREEN 10/10 in scratchpad/b44/drive_route.py.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-20T13:42:06Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
