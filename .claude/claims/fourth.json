@@ -4248,6 +4248,29 @@
         "sairndental.html",
         "sairndesign.html"
       ]
+    },
+    {
+      "id": "fourth-1792485011",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "b41: sairndesign B1-B3 certification fields + CPR/GPSR/REACH from source; sairndental credentialing pending state; sairncode B7 citation-rejection rate; AMLR privilege article + AI Act Arts 8-15/Annex IV; sairnbiz worldwide audit; push. FILES: sairndesign.html sairndental.html sairncode.html docs/cloud-research/sairndesign-worldwide-competitive-gap-audit-2026-10-20.md docs/cloud-research/2026-10-20-eu-law-route-and-the-three-audits-eu-limbs.md docs/2026-10-20-fourth-b39-sairncode-compliance-artefacts.md docs/cloud-research/sairnbiz-worldwide-competitive-gap-audit-2026-10-20.md docs/manifests/ SAIRN-handoff-fourth-b41.md SAIRN-report-fourth-b41.txt SAIRN-digest-fourth-b41.txt SAIRN-ACTIVE-WORK-fourth.md NOT-docs-defect-density-register-json-ccs NOT-docs-tier-a-reviews-json-ccs NOT-api-ANYTHING-codys NOT-tools-shared-REPORT-ONLY NOT-CLAUDE-md-ccs NOT-dot-claude-skills-ccs NOT-sairnbiz-html-AUDIT-ONLY",
+      "claimed_at": "2026-10-20T08:30:11Z",
+      "claimed_at_epoch": 1792485011.6390667,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-fourth.md",
+        "SAIRN-digest-fourth-b41.txt",
+        "SAIRN-handoff-fourth-b41.md",
+        "SAIRN-report-fourth-b41.txt",
+        "docs/2026-10-20-fourth-b39-sairncode-compliance-artefacts.md",
+        "docs/cloud-research/2026-10-20-eu-law-route-and-the-three-audits-eu-limbs.md",
+        "docs/cloud-research/sairnbiz-worldwide-competitive-gap-audit-2026-10-20.md",
+        "docs/cloud-research/sairndesign-worldwide-competitive-gap-audit-2026-10-20.md",
+        "sairncode.html",
+        "sairndental.html",
+        "sairndesign.html"
+      ]
     }
   ],
   "refusals": [
