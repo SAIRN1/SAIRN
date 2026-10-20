@@ -25,8 +25,8 @@
     {
       "id": 4,
       "title": "Finish the last FMEA drafts; document the refused ones",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "docs/fmea/ (16 new); docs/2026-10-20-cc-b32-notes.md section 4 (4 refused by fmea_draft rule)"
     },
     {
       "id": 5,
