@@ -246,7 +246,7 @@ in shipped behaviour regardless of jurisdiction.
    226(2)'s sequential-number requirement is quoted from the original and was
    not re-checked against the consolidated version.** The e-invoicing rules
    were **not read at all**.
-3. **No US source was read this batch.** The day-seven point (§2.2) is named
+3. **[CLOSED b44 — §6 reads 29 CFR 516 and 26 CFR 31.6001-1 from source.]** **No US source was read this batch.** The day-seven point (§2.2) is named
    for 29 CFR Part 778, not cited from it.
 4. **Targeted extraction, not whole reads**: each article quoted was read in
    full; the rest of each instrument was not.
@@ -256,3 +256,91 @@ in shipped behaviour regardless of jurisdiction.
    the write site named. The invoice-id collision rate is arithmetic on the
    expression, not an observed collision.
 7. **No legal review.**
+
+---
+
+## 6. b44 ADDENDUM — THE US FEDERAL LIMB, FROM SOURCE
+
+**fourth / b44, 2026-10-20.** §5.3 said no US source had been read. This
+increment reads the federal recordkeeping rules and maps them against the
+real write sites. **Audit only:** `sairnbiz.html` is in 0 of this batch's
+commits.
+
+**Sources, eCFR renderer API, HTTP 200:** `title-29?part=516` and
+`title-26?section=31.6001-1`. The research was delegated to a subagent; I
+then re-read the two payroll claims below against the code myself before
+writing them here.
+
+### 6.1 THE HEADLINE — THE PAYROLL GROSS PAYS OVERTIME HOURS AT THE STRAIGHT RATE
+
+The function is `sbGrossPerPeriod(e)`, at `sairnbiz.html:3681`:
+
+    function sbGrossPerPeriod(e){ return (Number(e && e.rate) || 0) * sbHoursPerPeriodExact(e); }
+
+`sbHoursPerPeriodExact()` is `sbWeeklyHours(e) * 52 / sbPeriodsPerYear(e)`.
+`sbWeeklyHours()` returns the most recent **recorded** week, which is often
+above 40. **So a recorded 50-hour week enters the payroll gross as 50 ×
+rate. No overtime premium applies.**
+- The **timesheet panel** does apply the premium: `rTS()` uses
+  `(t-ot)*rate + ot*rate*1.5`, and so does the CSV.
+- **So two screens of the same app disagree about the same week's pay.**
+- **29 CFR 778.107** (b42) and **516.2(a)(9)** both treat overtime premium as
+  a distinct, required figure.
+- The pay run says *"Calculation only -- no payment was sent from this
+  app"*. **It is still the figure an employer budgets and books from**: the
+  run posts to the GL.
+
+**This is a defect in shipped behaviour regardless of jurisdiction. It is
+NOT fixed here** (audit-only), and the exact next step is in the b44
+handoff.
+
+### 6.2 29 CFR 516.2(a) — each required record against what the app keeps
+
+| 516.2(a) | the rule (quoted) | sairnbiz | gap |
+|---|---|---|---|
+| (1) | "Name in full, as used for Social Security recordkeeping purposes" | `fn`, `ln` (saveEmp) | free text, not tied to the SS name |
+| (2) | "Home address, including zip code" | **none** (the only address field is the company's) | missing |
+| (3) | "Date of birth, if under 19" | **none** | missing |
+| (4) | "Sex and occupation in which employed" | `role` is the occupation; **no sex field** | sex missing (the same gap as the EU Art. 7 one, §2.1) |
+| (5) | "Time of day and day of week on which the employee's workweek begins" | the start exists **only in code**: `sbWeekStart()` `:3286` hard-codes Monday, local midnight | no stored notation |
+| (6) | regular hourly rate in OT weeks; basis of pay; 7(e) exclusions | one current `rate`, **overwritten on edit** | no rate history per workweek; no salary, piece or commission basis |
+| (7) | "Hours worked each workday and total hours worked each workweek" | `sb_ts` `{week, hours:[6]}` | **no day seven** (Sunday cannot be entered, §2.2); totals only |
+| (8) | straight-time earnings | **not stored**; the pay run is one roster-wide `gross` | not per employee |
+| (9) | "Total premium pay for overtime hours" | **not stored, and not computed for payroll** — §6.1 | missing |
+| (10) | additions/deductions "the dates, amounts, and nature of the items" | aggregate employer FICA and benefits only; the panel says withholding and net pay are not computed | missing per employee |
+| (11) | "Total wages paid each pay period" | aggregate `gross` / `total` | not per employee |
+| (12) | "Date of payment and the pay period covered by payment" | only `run_on` (`sbLocalToday()`) | no pay date, no period start/end |
+
+**The pay run** (`sb_payruns`, written at about `:3890`) is **one row per
+run with no per-employee lines.** It holds `run_on`, `gross`, `taxes_fica`,
+`benefits`, `total`, `annual_gross`, a `note` and counts. **On its own it
+cannot produce items (7)–(12) for any individual employee.**
+
+### 6.3 Retention, quoted
+
+* **516.5:** *"Each employer shall preserve for at least 3 years: (a) Payroll
+  records."*
+* **516.6(a):** *"preserve for a period of at least 2 years ... all basic time
+  and earning cards or sheets on which are entered the daily starting and
+  stopping time of individual employees"*. That presumes start/stop times,
+  which the timesheet does not have (§2.2).
+* **26 CFR 31.6001-1(e)(2):** keep for *"at least four years after the due
+  date of such tax ... or the date such tax is paid, whichever is the later."*
+* **App side:** neither `sb_ts` nor `sb_payruns` is ever pruned on the
+  client. **Server-side retention was not checked.**
+
+### 6.4 What this adds to §4
+
+| | thing | size | blocker |
+|---|---|---|---|
+| **Z7** | **Payroll gross with the overtime premium.** Use the same `(t-ot)*rate + ot*rate*1.5` the timesheet panel uses, from one shared function, so the two screens cannot disagree | **small** | none — **a defect fix, do first** |
+| **Z8** | **Per-employee pay lines on the pay run**: straight-time, OT premium, deductions, and the pay period plus pay date (516.2(a)(8)–(12)) | medium | none |
+| **Z9** | **Employee home address, DOB-if-under-19, and a rate history** keyed by workweek (516.2(a)(2), (3), (6)) | small–medium | none |
+
+### 6.5 Not read
+
+* **29 CFR 516.3** (exempt employees), **29 CFR 1620** (equal-pay records)
+  and **26 CFR 31.6001-2 to -5** were not read.
+* **No state law** (state wage-statement and pay-stub rules differ widely).
+* **Not driven in the app.** Every row in this section is a static read; §6.1
+  was re-read by hand, not executed.
