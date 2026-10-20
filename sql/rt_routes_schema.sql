@@ -10,12 +10,32 @@
 -- separately, and then reflected here. A schema file that silently stops being
 -- the source of truth is the staleness class this platform keeps paying for.
 --
--- WHAT RAN DIFFERS FROM WHAT THIS FILE SAID AT THE TIME, IN EXACTLY ONE PLACE:
--- `constraint rtroutes_saved_sane` was REMOVED before the run, deliberately.
--- The full reason is on the `saved_seconds` column below. This file was
--- reconciled to the real state on 2026-10-19 (fourth b38); the window in which
--- the repo and the database disagreed was hours, and it is recorded rather
--- than quietly closed.
+-- ── CORRECTED 2026-10-20 (cc b28). THIS FILE WAS WRONG FOR A DAY. ──────────
+-- It said: "`constraint rtroutes_saved_sane` was REMOVED before the run,
+-- deliberately", recorded on 2026-10-19 (fourth b38) as a reconciliation to
+-- what Michael actually ran. **IT WAS NOT REMOVED.** It was live on the
+-- database the whole time -- read out of the 2026-10-20 07:55:45 capture in
+-- `db/schema_snapshot.json`, where `_constraints.rt_routes` carries four
+-- entries and `rtroutes_saved_sane` is one of them.
+--
+-- THE COST OF THAT SENTENCE, because this is not a documentation nit. The
+-- paragraph on `saved_seconds` below states what the constraint WOULD do:
+-- "Postgres would have rejected the ENTIRE upsert and the route write would
+-- have failed." The constraint was in place, so that was not a hypothetical --
+-- the first negative saving to reach the live database would have failed the
+-- whole upsert, while this file told every reader it could not happen.
+-- Nobody re-checks a schema file after reading a paragraph that confident.
+--
+-- RESOLVED BY DROPPING IT, which is Michael's decision of 2026-10-20:
+-- `api/_lib/routes.js` stays un-clamped and the constraint goes.
+-- `sql/rt_routes_drop_saved_sane.sql` is the migration. The code was right and
+-- the database was wrong.
+--
+-- THE WINDOW WAS A DAY, NOT HOURS, and the lesson is about how it closed: not
+-- by anybody re-reading this file, but because an unrelated push gate demanded
+-- a fresh live capture and the capture disagreed with the prose. A reconciled
+-- claim is only as good as the read behind it -- b38's read was of what it
+-- believed had been run, and this one was of the database.
 --
 -- Scope and the reasoning behind every column:
 -- docs/2026-10-19-fourth-b33-routing-primitive-scope.md.
@@ -88,18 +108,25 @@ create table if not exists public.rt_routes (
   unique (license_hash, app_id, assignee_id, route_date),
 
   -- ── THERE IS NO NON-NEGATIVE CHECK ON `saved_seconds`, DELIBERATELY ──────
-  -- A `constraint rtroutes_saved_sane check (saved_seconds is null or
-  -- saved_seconds >= 0)` stood here until 2026-10-19 and WAS REMOVED BEFORE
-  -- THIS FILE WAS EVER RUN. It contradicted the module it exists to store for:
+  -- CORRECTED 2026-10-20: these lines previously said the constraint "WAS
+  -- REMOVED BEFORE THIS FILE WAS EVER RUN". That was false -- `constraint
+  -- rtroutes_saved_sane check (saved_seconds is null or saved_seconds >= 0)`
+  -- WAS LIVE ON THE DATABASE from the run on 2026-10-19 until
+  -- `sql/rt_routes_drop_saved_sane.sql` removed it. Michael's decision of
+  -- 2026-10-20: the module stays un-clamped and the constraint goes. The
+  -- argument below is why, and it is unchanged -- it was correct all along
+  -- about what the constraint would do and wrong only about whether it was
+  -- there. It contradicted the module it exists to store for:
   -- api/_lib/routes.js returns a NEGATIVE saving UN-CLAMPED on purpose -- "a
   -- caller that stores a negative saving has learned something true" -- a test
   -- arm asserts it is negative, and all four wired consumers render it as
   -- "this order is about N min LONGER than the one you had". With the
-  -- constraint in place Postgres would have rejected the ENTIRE upsert and the
-  -- route write would have failed, so the only way to satisfy it was to clamp
-  -- in the module, which re-introduces the exact 2026-06-18 defect the
-  -- `saved_seconds` comment above exists to prevent: "we could not tell" and
-  -- "we saved nothing" rendering as the same figure.
+  -- constraint in place Postgres rejects the ENTIRE upsert and the route write
+  -- fails -- the user loses the ORDERING, not just the figure -- so the only
+  -- way to satisfy it was to clamp in the module, which re-introduces the
+  -- exact 2026-06-18 defect the `saved_seconds` comment above exists to
+  -- prevent: "we could not tell" and "we saved nothing" rendering as the same
+  -- figure.
   --
   -- A NEGATIVE SAVING IS A REAL MEASUREMENT, NOT BAD DATA. The three states
   -- this column must keep distinct are NULL (not computed), negative (the
