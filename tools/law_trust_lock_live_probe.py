@@ -1,3 +1,4 @@
+# OWNER: hank
 """Prove SAIRNlaw's trust HARD-LOCK against the LIVE deployed endpoint.
 
     LAW_LICENSE=LAW-AUDIT-2026 LAW_OWNER_PIN=... LAW_PARALEGAL_PIN=... \
