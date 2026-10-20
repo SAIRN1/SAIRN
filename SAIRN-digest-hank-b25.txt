@@ -6,29 +6,27 @@ THREE DEFECTS THAT ALL REPORTED SUCCESS. 30 arms, 4 ablations, each reproduced
   wrote 'active' with an ID-ONLY filter -- a revoke in that window was SILENTLY
   OVERWRITTEN and the caller got ok:true. Now &status=neq.revoked IN THE WRITE
   plus a zero-row refusal; ablation D2 removes only the handler half and A1
-  STILL reddens, because with return=minimal PostgREST answers 204 whether it
-  changed one row or none -- a guard nothing can read reports success on a
-  refusal. (2) stripe-webhook's
-  zero-row PATCH logged 'plan_status set to paid' for a row that does not
-  exist, and THAT LINE IS THE ONLY RECORD THE ENDPOINT LEAVES. Three outcomes
-  on two streams now; it deliberately does not throw. (3) SAIRN_CLAUDE_AUTH_MODE
-  and SAIRN_AI_RATE_LIMIT_MODE both PERMITTED when absent AND treated every
-  misspelling as observe. One shared resolver, fail-closed, with a reason.
+  STILL reddens -- with return=minimal PostgREST answers 204 whether it changed
+  one row or none, so a guard nothing can read reports success on a refusal.
+  (2) stripe-webhook's zero-row PATCH logged 'plan_status set to paid' for a row
+  that does not exist, and THAT LINE IS THE ONLY RECORD THE ENDPOINT LEAVES.
+  (3) SAIRN_CLAUDE_AUTH_MODE and SAIRN_AI_RATE_LIMIT_MODE both PERMITTED when
+  absent AND read every misspelling as observe. One shared fail-closed resolver.
 DECISION-NEEDED
 1. IS SAIRN_AI_RATE_LIMIT_MODE SET IN VERCEL? If absent or misspelled, this
    change switches the AI COST LIMITER ON at the daily ceiling on deploy. I
-   could not read it: the response carries no mode and a 12-call burst gave
-   12x200, equally consistent with observe and with a ceiling above twelve.
-   `vercel env ls production --project sairn` is the check. MEASURED: the AUTH
-   half is already `enforce` live (unauthenticated -> 401), so it is a no-op.
+   could not read it: no mode on the response, and a 12-call burst gave 12x200,
+   equally consistent with observe and with a ceiling above twelve. Check with
+   `vercel env ls production --project sairn`. The AUTH half IS measured:
+   already `enforce` live (unauthenticated -> 401), so that half is a no-op.
 2. Four skippable gates are DECLARED AND NOT WIRED (control-bytes,
-   credential-sql, register-feed, scrutiny-ledger) -- b23/b24/b25 were each
+   credential-sql, register-feed, scrutiny-ledger): b23/b24/b25 were each
    refused by them and a SAIRN_SKIP would have changed nothing. cc's.
-3. CLAUDE.md: "eight named gates" -> 11 and "Twelve conventions" -> 39, both
-   measured. cc FIXED the over-ceiling list mid-batch; these two remain.
+3. CLAUDE.md: "eight named gates" -> 11, "Twelve conventions" -> 39, measured.
+   cc FIXED the over-ceiling list mid-batch; these two remain.
 BROWSER: the OSHA duplicate warning RENDERS on the deployed page -- both 2026-1
-  rows warn in Column A, the 2026-2 row does NOT. DOM-read, not a screenshot.
-B24 ITEMS THE LAST DIGEST OMITTED, now reported: the stale present-tense header
-  in law-trust-reconcile.js (fixed, past tense, grep-derived lines) and the
-  five-row currency sweep. NOT DONE: five FMEA drafts named; the deployed
-  rate-limit mode could not be determined (item 1); no screenshot judged.
+  rows warn in Column A, 2026-2 does NOT (the control). DOM-read, no screenshot.
+B24 ITEMS THE LAST DIGEST OMITTED: the stale present-tense header in
+  law-trust-reconcile.js (fixed) and the five-row currency sweep. NOT DONE: five
+  FMEA drafts named. NOTE: the wrap said b23 -- b23 landed two batches ago and
+  its handoff, report and digest are UNCHANGED; these are b25's.
