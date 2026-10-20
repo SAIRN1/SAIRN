@@ -535,7 +535,7 @@ label.chk input{width:auto;}
         <div class="krow">
           <div class="kpi"><div class="klbl">Expired</div><div class="kval" id="k-cred-expired">0</div><div class="kt">Act now</div></div>
           <div class="kpi"><div class="klbl">Expiring Soon</div><div class="kval" id="k-cred-expiring">0</div><div class="kt">Within 30 days (DEA: 60)</div></div>
-          <div class="kpi"><div class="klbl">CE Behind Pace</div><div class="kval" id="k-cred-ce">0</div><div class="kt">Hours vs time left</div></div>
+          <div class="kpi"><div class="klbl">CE Behind or Overdue</div><div class="kval" id="k-cred-ce">0</div><div class="kt">Hours vs time left</div></div>
           <div class="kpi"><div class="klbl">MATE Outstanding</div><div class="kval" id="k-cred-mate">0</div><div class="kt">One-time attestation</div></div>
         </div>
         <div class="card"><div class="ch"><div class="ct">Add Credential Record</div></div><div class="cb">
@@ -3073,9 +3073,16 @@ async function addCredential(){
   refreshCredentialBoard(true);
 }
 
+// CONCEPT (b45): payer-enrolment rows carry their countdown as
+// `revalidation_days` (api/_lib/dental-credentials.js), every other record as
+// `days` -- read whichever this row has, and never print "undefinedd".
+function cdDaysFor(item){
+  var n=item.record_type==='payer_enrollment'?item.revalidation_days:item.days;
+  return (n===null||n===undefined||n==='')?'?':n;
+}
 function cdStatusBadge(item){
   if(item.status==='expired')return '<span class="badge br">Expired</span>';
-  if(item.status==='expiring')return '<span class="badge bw">'+item.days+'d</span>';
+  if(item.status==='expiring')return '<span class="badge bw">'+cdDaysFor(item)+'d</span>';
   if(item.status==='overdue')return '<span class="badge br">CE overdue</span>';
   if(item.status==='behind')return '<span class="badge bw">Behind pace</span>';
   if(item.status==='complete')return '<span class="badge bg">CE complete</span>';
@@ -3200,7 +3207,7 @@ function rCredentials(board){
     // a gate. The badge is SHOWN rather than hidden for the same reason: a
     // hidden badge is indistinguishable from nothing to action.
     [['k-cred-expired','Expired'],['k-cred-expiring','Expiring soon'],
-     ['k-cred-ce','CE behind pace'],['k-cred-mate','MATE outstanding']]
+     ['k-cred-ce','CE behind pace or overdue'],['k-cred-mate','MATE outstanding']]
       .forEach(function(p){
         var el=$(p[0]); if(!el)return;
         el.textContent='--';
@@ -3254,6 +3261,8 @@ function rCredentials(board){
   if(badgeEl0)badgeEl0.removeAttribute('title');
   $('k-cred-expired').textContent=c.expired||0;
   $('k-cred-expiring').textContent=c.expiring||0;
+  // CONCEPT (b45): this tile is behind + overdue, so its label ("CE Behind or
+  // Overdue", :538) names both halves rather than only the first.
   $('k-cred-ce').textContent=(ce.behind||0)+(ce.overdue||0);
   $('k-cred-mate').textContent=board.mate_outstanding||0;
   var badge=$('credentials-badge');
@@ -4141,6 +4150,21 @@ function dnAppealWindow(d){
           termDays:Number(term.days), source:term.source||''};
 }
 
+// CONCEPT (b45): a SUBMITTED appeal has already been filed, so its window is
+// judged once, against submitted_on <= deadline -- never against today. It
+// cannot be "closing" or "past the window" any more; it was either filed
+// inside the window or filed N days late.
+function dnFiled(d){return d.stage==='submitted';}
+function dnUnfiledOpen(open){
+  return open.filter(function(d){return !dnFiled(d);});
+}
+// Days submitted_on fell after the deadline (<=0 is inside the window), or
+// null when either date is missing.
+function dnFiledLateBy(d,w){
+  if(!w||!w.known||!d.submitted_on)return null;
+  return Math.round((new Date(d.submitted_on+'T00:00:00').getTime()-new Date(w.deadline+'T00:00:00').getTime())/86400000);
+}
+
 // A denial is at stake while it is undecided AND some of it is unrecovered.
 function dnAtStake(d){
   if(DN_DECIDED[d.stage])return 0;
@@ -4366,7 +4390,8 @@ function rDenials(){
   var decided=list.filter(function(d){return DN_DECIDED[d.stage]&&d.stage!=='abandoned';});
   var recoveredAny=decided.filter(function(d){return d.stage==='won'||d.stage==='partial';});
   var atStake=open.reduce(function(s,d){return s+dnAtStake(d);},0);
-  var closing=open.filter(function(d){
+  var unfiled=dnUnfiledOpen(open);
+  var closing=unfiled.filter(function(d){
     var w=dnAppealWindow(d);
     return w.known&&w.days!==null&&w.days<=14;
   });
@@ -4395,6 +4420,14 @@ function rDenials(){
         windowCell='<span class="badge bx">no deadline on file</span>';
       }else if(DN_DECIDED[d.stage]){
         windowCell='<span style="color:var(--muted)">'+H(w.deadline)+'</span>';
+      }else if(dnFiled(d)){
+        var late=dnFiledLateBy(d,w);
+        windowCell=late===null
+          ? '<span class="badge bw">filed, date not on file</span>'
+          : (late>0
+              ? '<span class="badge br">filed '+late+' d late</span>'
+              : '<span class="badge bg">filed inside the window</span>')+
+            '<div style="font-size:11px;color:var(--muted)">deadline '+H(w.deadline)+'</div>';
       }else if(w.days<0){
         windowCell='<span class="badge br">closed '+Math.abs(w.days)+' d ago</span>';
       }else{
@@ -4418,7 +4451,7 @@ function rDenials(){
     var bits=[];
     var noWindow=open.filter(function(d){return !dnAppealWindow(d).known;});
     if(noWindow.length)bits.push('<strong>'+noWindow.length+' open denial'+(noWindow.length===1?'':'s')+' '+(noWindow.length===1?'has':'have')+' no appeal window on file for the payer.</strong> Deadlines come from your contract and differ between payers, so none is assumed &mdash; those rows read &quot;no deadline on file&quot; rather than being called timely. Add the window under <em>Payer appeal windows</em>.');
-    var closed=open.filter(function(d){var w=dnAppealWindow(d);return w.known&&w.days!==null&&w.days<0;});
+    var closed=unfiled.filter(function(d){var w=dnAppealWindow(d);return w.known&&w.days!==null&&w.days<0;});
     if(closed.length)bits.push('<strong>'+closed.length+' open denial'+(closed.length===1?'':'s')+' '+(closed.length===1?'is':'are')+' past the contracted appeal window.</strong> They are still listed rather than hidden: an appeal that can no longer be filed is a figure the practice should see, not one the software quietly drops.');
     var abandoned=list.filter(function(d){return d.stage==='abandoned';});
     if(abandoned.length)bits.push(abandoned.length+' denial'+(abandoned.length===1?' was':'s were')+' abandoned rather than argued. Those are excluded from the success rate in <strong>both</strong> halves &mdash; walking away is not the payer deciding against you, and counting it as a loss would understate how the appeals actually argued went.');
@@ -5120,10 +5153,13 @@ function gfeBusinessDaysBetween(aStr,bStr){
   while(d<b){ d.setDate(d.getDate()+1); if(!gfeIsWeekend(d))n++; }
   return n;
 }
+// CONCEPT (b45): a year's New Year's Day can be OBSERVED on 31 December of the
+// year before (1 Jan on a Saturday -> Friday 31 Dec), so the loop also reads
+// the year after the window ends -- 2027-12-31 is in gfeFederalHolidays(2028).
 function gfeHolidaysInWindow(startStr,endDate){
   var a=gfeDateOnly(startStr); if(!a||!endDate)return [];
   var out=[];
-  for(var y=a.getFullYear();y<=endDate.getFullYear();y++){
+  for(var y=a.getFullYear();y<=endDate.getFullYear()+1;y++){
     gfeFederalHolidays(y).forEach(function(h){
       if(h[1]>a && h[1]<=endDate && !gfeIsWeekend(h[1])) out.push(h[0]+' ('+gfeFmtDate(h[1])+')');
     });
@@ -5148,10 +5184,17 @@ function gfeDeadline(rec){
     return {applies:false, leadDays:lead,
       note:'Scheduled only '+lead+' business day'+(lead===1?'':'s')+' ahead. 149.610(b)(1)(vi) has no limb below 3 business days, so scheduling alone sets no deadline here -- this is NOT overdue. A request from the patient would still start the 3-business-day clock under (C).'};
   }
+  // CONCEPT (b45): at 10+ business days (A) and (B) both apply on their face
+  // and the rule does not say which wins. The app TRACKS the EARLIER date --
+  // (A)'s 1 business day -- as the due date, because that is the reading
+  // conservative for the patient (they get the estimate sooner) and it is what
+  // the panel advises ("treat the earlier date as binding"). The overdue count
+  // and the issued-late verdict both read dueDate, so advice and tracking now
+  // agree; (B)'s later date is kept as altDate and shown alongside.
   if(lead>=10){
-    return {applies:true, cite:'149.610(b)(1)(vi)(B)', dueDate:gfeAddBusinessDays(trig,3), leadDays:lead,
-      altCite:'149.610(b)(1)(vi)(A)', altDate:gfeAddBusinessDays(trig,1),
-      note:'Scheduled '+lead+' business days ahead, so (B) gives 3 business days. Note that (A) also applies on its face at this lead time and gives 1 business day -- the two limbs overlap and the rule does not resolve it. The earlier date is shown alongside.'};
+    return {applies:true, cite:'149.610(b)(1)(vi)(A)', dueDate:gfeAddBusinessDays(trig,1), leadDays:lead,
+      altCite:'149.610(b)(1)(vi)(B)', altDate:gfeAddBusinessDays(trig,3),
+      note:'Scheduled '+lead+' business days ahead. (B) gives 3 business days, but (A) also applies on its face at this lead time and gives 1 business day -- the two limbs overlap and the rule does not resolve it. This app tracks the earlier date, from (A), as the due date; the later date from (B) is shown alongside.'};
   }
   return {applies:true, cite:'149.610(b)(1)(vi)(A)', dueDate:gfeAddBusinessDays(trig,1), leadDays:lead,
     note:'Scheduled '+lead+' business days ahead, so (A) gives 1 business day.'};
@@ -5160,11 +5203,22 @@ function gfeDeadline(rec){
 // Every required element of 149.610(c)(1) that this record cannot supply.
 // Returned as citations, so the panel names the paragraph rather than saying
 // "incomplete" and leaving the practice to guess which one.
+// CONCEPT (b45): the completeness check and the printed document read the SAME
+// patient name and DOB -- gfeSnapshot(). An Issued estimate is frozen, so both
+// read the copy stored on it; a Draft is refreshed from the patient record at
+// issue (issueGfe), so both read the live record until then. Before this, the
+// check read the live record while the document printed the save-time copy,
+// and an estimate could be issued that printed "date of birth --".
+function gfeSnapshot(rec){
+  if(rec.status==='Issued') return {name:rec.patient_name||'', dob:rec.patient_dob||''};
+  var pt=patients().find(function(p){return p.id===rec.patient_id;});
+  return pt?{name:pt.name||'', dob:pt.dob||''}:{name:'', dob:''};
+}
 function gfeMissing(rec){
   var s=settings(), miss=[];
-  var pt=patients().find(function(p){return p.id===rec.patient_id;});
-  if(!pt||!pt.name) miss.push('(c)(1)(i) patient name');
-  if(!pt||!pt.dob) miss.push('(c)(1)(i) patient date of birth');
+  var snap=gfeSnapshot(rec);
+  if(!snap.name) miss.push('(c)(1)(i) patient name');
+  if(!snap.dob) miss.push('(c)(1)(i) patient date of birth');
   if(!rec.primary_description) miss.push('(c)(1)(ii) description of the primary item or service');
   if(!rec.lines||!rec.lines.length) miss.push('(c)(1)(iii) itemised list of items and services');
   else{
@@ -5240,8 +5294,10 @@ function gfeDeadlineHtml(d){
   var hol=gfeHolidaysInWindow($('gfe-trigger-date')?$('gfe-trigger-date').value:'', d.dueDate);
   return '<div class="psub"><span class="badge bw">due '+gfeFmtDate(d.dueDate)+'</span> '+H(d.note)+
     ' <span style="color:var(--muted)">['+H(d.cite)+']</span>'+
-    (d.altDate?'<br><strong>The other reading gives '+gfeFmtDate(d.altDate)+'</strong> ['+H(d.altCite)+']. Treat the earlier date as binding unless you have advice otherwise.':'')+
-    (hol.length?'<br><span class="badge bw">holiday in the window</span> '+H(hol.join(', '))+'. The rule does not define "business day", so this app counted weekdays only and did not drop these &mdash; if your practice treats them as non-business days the real due date is earlier.':'')+
+    // CONCEPT (b45): skipping a holiday while counting business days pushes the
+    // due date LATER, never earlier -- the holiday sentence below said "earlier".
+    (d.altDate?'<br><strong>The other reading gives '+gfeFmtDate(d.altDate)+'</strong> ['+H(d.altCite)+']. This app tracks the earlier date shown above as binding unless you have advice otherwise.':'')+
+    (hol.length?'<br><span class="badge bw">holiday in the window</span> '+H(hol.join(', '))+'. The rule does not define "business day", so this app counted weekdays only and did not drop these &mdash; if your practice treats them as non-business days, skipping them would make the due date LATER than the one shown, so the date shown is the earlier, safer one.':'')+
     '</div>';
 }
 
@@ -5295,6 +5351,9 @@ async function issueGfe(id){
   var list=gfeRecords();
   var rec=list.find(function(g){return g.id===id;});
   if(!rec)return;
+  // Refresh the printed copy from the patient record NOW, so the document that
+  // is issued carries what gfeMissing() just checked (see gfeSnapshot).
+  var snap=gfeSnapshot(rec);
   var miss=gfeMissing(rec);
   if(miss.length){
     // REFUSED, not warned. An estimate handed to a patient missing a required
@@ -5304,6 +5363,7 @@ async function issueGfe(id){
     toast('Cannot issue: 45 CFR 149.610(c)(1) still requires '+miss.length+' element'+(miss.length===1?'':'s')+' -- see the row for which',7000);
     return;
   }
+  rec.patient_name=snap.name;rec.patient_dob=snap.dob;
   rec.status='Issued';rec.issued_at=dntLocalToday();
   st('dnt_gfe_list',list);
   rGfe();
@@ -5320,6 +5380,7 @@ function openGfeDoc(id){
   var d=gfeDeadline(rec);
   var total=gfeTotal(rec);
   var svc=rec.service_date||'';
+  var snap=gfeSnapshot(rec);
   var lines=(rec.lines||[]).map(function(l){
     var proc=procedureTypes().find(function(p){return p.id===l.procedure_type_id;});
     var cdt=cdtStatusFor(proc, svc||rec.created_at);
@@ -5328,12 +5389,22 @@ function openGfeDoc(id){
       '<td>'+H(l.description)+'</td><td>'+(l.diagnosis_code?H(l.diagnosis_code):'<span style="color:var(--muted)">none applies</span>')+'</td>'+
       '<td>'+fmt(l.expected_charge)+'</td></tr>';
   }).join('');
+  // CONCEPT (b45), disclaimers quoted from 45 CFR 149.610(c)(1), eCFR current:
+  //  (vi)  the disclaimer sits DIRECTLY ABOVE the separately-scheduled list and
+  //        carries all three elements: separate estimates on scheduling or
+  //        request; codes/charges/identifiers need not be included here; and
+  //        how to obtain those estimates.
+  //  (x)   adds where to find how to initiate patient-provider dispute
+  //        resolution (CMS's published No Surprises page) and that initiating
+  //        it will not adversely affect the quality of care.
+  //  (xi)  restored to the rule's text: not a contract, and no obligation to
+  //        obtain the items or services from ANY provider or facility named.
   $('gfe-doc').innerHTML=
     (miss.length?'<div class="psub" style="margin-bottom:10px"><span class="badge br">not compliant yet</span> 45 CFR 149.610(c)(1) requires: '+H(miss.join('; '))+'.</div>':'')+
     '<div style="font-size:13px;line-height:1.8">'+
     '<strong>Good Faith Estimate of Expected Charges</strong><br>'+
     'Issued under the No Surprises Act, 45 CFR 149.610.<br><br>'+
-    '<strong>Patient</strong> '+H(rec.patient_name||'--')+', date of birth '+H(rec.patient_dob||'--')+' &nbsp;<span style="color:var(--muted)">[(c)(1)(i)]</span><br>'+
+    '<strong>Patient</strong> '+H(snap.name||'--')+', date of birth '+H(snap.dob||'--')+' &nbsp;<span style="color:var(--muted)">[(c)(1)(i)]</span><br>'+
     '<strong>Primary item or service</strong> '+H(rec.primary_description||'--')+
       (svc?(', scheduled for '+H(svc)):', not yet scheduled')+' &nbsp;<span style="color:var(--muted)">[(c)(1)(ii)]</span><br>'+
     '<strong>Provider / facility</strong> '+H(s.gfe_legal_name||'(practice legal name not set)')+
@@ -5348,16 +5419,23 @@ function openGfeDoc(id){
       ' <span style="font-size:11px;font-weight:400;color:var(--muted)">[(c)(1)(iii)-(iv)]</span></div>'+
     '<div style="font-size:13px;line-height:1.8;margin-top:14px">'+
     '<strong>Items or services that must be scheduled separately</strong> &nbsp;<span style="color:var(--muted)">[(c)(1)(vi)]</span><br>'+
-      (rec.separate_scheduling?H(rec.separate_scheduling):'None identified.')+
-      ' These are not included in the total above and would have their own estimate.<br><br>'+
+      'Separate good faith estimates will be issued to you upon scheduling or upon request of the items or services listed below. '+
+      'For the items or services in this list, information such as diagnosis codes, service codes, expected charges and provider or facility identifiers do not need to be included, '+
+      'as that information will be provided in separate good faith estimates upon scheduling or upon request of such items or services. '+
+      'To obtain a good faith estimate for any item or service listed below, ask '+H(s.gfe_legal_name||'the practice')+' when you schedule it, or request one at any time'+
+      (s.practice_address?(' in person or in writing at '+H(s.practice_address)):'')+'.<br>'+
+      '<em>Listed:</em> '+(rec.separate_scheduling?H(rec.separate_scheduling):'None identified.')+
+      ' These are not included in the total above.<br><br>'+
     '<strong>This estimate does not include</strong> &nbsp;<span style="color:var(--muted)">[(c)(1)(viii)]</span><br>'+
       'any item or service that may be recommended to you later as part of your care and that is not listed above.<br><br>'+
     '<strong>This is an estimate</strong> &nbsp;<span style="color:var(--muted)">[(c)(1)(ix)]</span><br>'+
       'It reflects the items and services reasonably expected for this care. The actual items, services or charges may differ.<br><br>'+
     '<strong>Your right to dispute a bill</strong> &nbsp;<span style="color:var(--muted)">[(c)(1)(x), 149.620]</span><br>'+
-      'If you are billed for an amount at least $'+GFE_DISPUTE_THRESHOLD+' more than the total expected charges on this estimate, you may start the patient-provider dispute resolution process. Your notice must be postmarked within '+GFE_DISPUTE_DAYS+' calendar days of receiving the bill. On these figures, that threshold is '+fmt(total+GFE_DISPUTE_THRESHOLD)+'.<br><br>'+
+      'If you are billed for an amount at least $'+GFE_DISPUTE_THRESHOLD+' more than the total expected charges on this estimate, you may start the patient-provider dispute resolution process. Your notice must be postmarked within '+GFE_DISPUTE_DAYS+' calendar days of receiving the bill. On these figures, that threshold is '+fmt(total+GFE_DISPUTE_THRESHOLD)+'. '+
+      'For information about how to initiate the patient-provider dispute resolution process, visit https://www.cms.gov/nosurprises, the No Surprises Act information published by the Centers for Medicare &amp; Medicaid Services. '+
+      'Initiating the patient-provider dispute resolution process will not adversely affect the quality of health care services furnished to you by a provider or facility.<br><br>'+
     '<strong>This good faith estimate is not a contract</strong> &nbsp;<span style="color:var(--muted)">[(c)(1)(xi)]</span><br>'+
-      'It does not require you to obtain the items or services listed.<br><br>'+
+      'This good faith estimate is not a contract and does not require you to obtain the items or services from any of the providers or facilities identified in this good faith estimate.<br><br>'+
     '<strong>Scope of this estimate</strong><br>'+
       'It covers only the charges of the provider and facility named above. 149.610(c)(1)(iii) requires the itemised list to be grouped by provider and facility, and any other provider involved in this care would have its own expected charges, which are not gathered here.'+
     '</div>'+
