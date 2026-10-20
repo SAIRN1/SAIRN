@@ -4395,6 +4395,27 @@
         "tools/schema_snapshot_freshness.py",
         "tools/tooling_inventory.py"
       ]
+    },
+    {
+      "id": "cc-1792505084",
+      "session": "cc",
+      "subject": "cc",
+      "task": "b31: discharge hank 2026-10-16T13:03:47Z Tier A; FMEA drafts + fix fmea_draft multi-path --save; handoff-convention CLAUDE.md:33 vs practice; Tier A rt routes 700B/stop job_ref worst case; Tier A sc_claims/sc_dme; commit Michael's 13:13Z snapshot re-capture (unwrapped); push.  FILES: tools/fmea_draft.py docs/fmea/ docs/tier-a-reviews.json db/schema_snapshot.json CLAUDE.md .claude/skills/sairn-session-handoff/ docs/2026-10-20-cc-b31-notes.md docs/batch-manifest-cc-b31.json SAIRN-handoff-cc-b31.md SAIRN-report-cc-b31.txt SAIRN-digest-cc-b31.txt NOT-api NOT-html NOT-tests NOT-sql",
+      "claimed_at": "2026-10-20T14:04:44Z",
+      "claimed_at_epoch": 1792505084.3077042,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "CLAUDE.md",
+        "SAIRN-digest-cc-b31.txt",
+        "SAIRN-handoff-cc-b31.md",
+        "SAIRN-report-cc-b31.txt",
+        "db/schema_snapshot.json",
+        "docs/2026-10-20-cc-b31-notes.md",
+        "docs/batch-manifest-cc-b31.json",
+        "docs/tier-a-reviews.json",
+        "tools/fmea_draft.py"
+      ]
     }
   ],
   "refusals": [
