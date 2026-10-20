@@ -80,7 +80,7 @@ tolerate.
 | (i) intended use | Assist a **qualified human coder** in selecting and checking codes against current CMS/AMA guidance. |
 | (ii) intended patient populations | None. **The intervention operates on a clinical note and a code set, not on a patient cohort** — there is no patient-level model and no population was selected for or against. |
 | (iii) intended users | Certified/qualified medical coders and billing staff inside a licensed practice. **Not patients, not clinicians at the point of care.** |
-| (iv) intended decision-making role | **INFORMS.** Never augments-to-autonomy and never replaces: every suggestion enters a human-review queue, and `sairncode.html:842` refuses to pass a suggestion whose citation it cannot verify. |
+| (iv) intended decision-making role | **[b41 CORRECTION: "every suggestion enters a human-review queue" is not what the code does. A captured suggestion that clears every check is `auto_assigned` (`scDeriveCodedItemConfidence`, `sairncode.html:7212`) and routed to a list the panel says needs no action -- no coder decides it. Only HELD items enter the queue. A human still clicked Capture, so INFORMS stands; the queue claim does not. See §A4.]** **INFORMS.** Never augments-to-autonomy and never replaces: every suggestion enters a human-review queue, and `sairncode.html:842` refuses to pass a suggestion whose citation it cannot verify. |
 
 ### (B)(3) Cautioned out-of-scope use
 
@@ -406,3 +406,78 @@ above the measure reads *"N other items cleared every check and need no
 action"*, and `scRouteCodedItems()` (`:7402`) puts **`reviewed_rejected`**
 items in that group. A rejected item did not clear every check. Recorded, not
 folded into this change.
+
+---
+
+## A4. b41 — AI ACT ARTICLES 8–15 AND ANNEX IV, READ AGAINST B1
+
+**fourth / b41, 2026-10-20.** Regulation (EU) 2024/1689, CELEX `32024R1689`,
+HTTP 200, 1,257,134 bytes, via the b40 route. **Articles 8–15 read in full
+(Section 2 of Chapter III, from Art. 8 to the Section 3 heading) and Annex IV
+read in full (5,829 chars).**
+
+**THE LEGAL POSITION FIRST, unchanged from b40:** SAIRNcode is **not** an
+Annex III high-risk system on the actor test (Annex III 5(a) is public
+authorities, 5(c) is the insurer's pricing, 5(d) is emergency triage), so
+**Articles 8–15 do not bind it today.** This section is a **gap map for the
+boundary b40 named** — a sale to a payer or public authority making
+eligibility or pricing determinations engages 5(a)/5(c) with no code change —
+and a check of how far the US artefact (B1) would carry an EU file.
+
+### A4.1 Article by article
+
+| AI Act | what it requires (from the text) | what B1 / the code already has | gap |
+|---|---|---|---|
+| **Art. 9** risk management | a *"continuous iterative process … throughout the entire lifecycle"*: identify, estimate, evaluate (incl. post-market data under Art. 72), mitigate; residual risk *"judged to be acceptable"* | B1 (B)(3)(ii) names one measured limitation (no code set is date-qualified) | **no process, no lifecycle, no residual-risk judgement** |
+| **Art. 10** data governance | **Art. 10(6): for systems not using training, paragraphs 2–5 apply *"only to the testing data sets"*** | B1 (B)(4)(i): no training set, by design | **the exemption is narrower than B1's "not applicable": a TESTING data set is still required, and none exists** |
+| **Art. 11 + Annex IV** technical documentation | drawn up **before** placing on the market, at minimum Annex IV (below); SMEs may use a simplified Commission form | B1 is a partial Annex IV | §A4.2 |
+| **Art. 12** record-keeping | automatic logging of events over the lifetime, sufficient to identify risk situations, support post-market monitoring and deployer monitoring | coded items record the **human** decision with `reviewed_by` / `reviewed_at` (`reviewCodedItem`) | **whether each model call is logged was not checked** — no claim either way |
+| **Art. 13** instructions for use | provider identity and contact; intended purpose; **accuracy level and metrics**; foreseeable misuse; oversight measures; input specifications | B1 (B)(1)–(B)(3) cover purpose, users, out-of-scope use | **(B)(1)(i) contact is NOT SET; no declared accuracy (13(3)(b)(ii))** |
+| **Art. 14** human oversight | enable people to understand limits, **stay aware of automation bias (14(4)(b))**, interpret output, **disregard/override (14(4)(d))**, and stop the system (14(4)(e)) | the strongest row: a held item cannot leave the queue except by a recorded Accept/Reject; the citation check fails closed | **`auto_assigned` items reach no human reviewer (see the correction at (B)(2)(iv)); 14(4)(b) is exactly the risk of a list labelled "need no action"** |
+| **Art. 15** accuracy, robustness, cybersecurity | appropriate accuracy, **declared in the instructions (15(3))**; resilience to errors; resistance to manipulation of inputs | fail-closed citation verification is a real robustness measure | **no declared accuracy; clinical note text is passed to a model and prompt-injection resistance was not assessed** |
+
+### A4.2 Annex IV, point by point against B1
+
+| Annex IV | B1 coverage |
+|---|---|
+| 1(a) intended purpose, provider name, **version** | purpose (B)(2)(i), name (B)(1)(i); **no version recorded** |
+| 1(b)–(h) interactions, software versions, forms of supply, hardware, UI, instructions | **not in B1** |
+| 2(a) development method, **recourse to pre-trained third-party systems** | B1 says a general-purpose model is instructed to answer from live search; **the model and its version are not recorded** |
+| 2(b) design logic, key choices, expected output | partly: citation verification, the INFORMS role |
+| 2(c) architecture, compute | **no** |
+| 2(d) training data | not applicable — no training (and see Art. 10(6) above) |
+| 2(e) assessment of human-oversight measures | partly, (B)(2)(iv) — **with the correction above** |
+| 2(f) pre-determined changes | **no** |
+| 2(g) **validation and testing procedures, metrics, test logs "dated and signed by the responsible persons"** | (B)(6) NOT ESTABLISHED; (B)(7) **one leaf as of b41 (§A3)**; **no signed test reports** |
+| 2(h) cybersecurity measures | **no** |
+| 3 accuracy for specific groups, foreseeable unintended outcomes | (B)(5) NOT ESTABLISHED; (B)(4)(ii) measured **no** protected-class input |
+| 4 appropriateness of the performance metrics | **§A2/§A3's argument is the first draft of this** — the strongest reuse in the file |
+| 5 risk management system (Art. 9) | **no** |
+| 6 lifecycle changes | **no** |
+| 7 harmonised standards applied | **none** |
+| 8 EU declaration of conformity (Art. 47) | not applicable while not high-risk |
+| 9 post-market monitoring plan (Art. 72) | (B)(8) NOT ESTABLISHED; **§A3's measure is a monitorable property** and (B)(9) already named it |
+
+### A4.3 What this says
+
+* **B1 carries over further than expected on purpose, users, oversight
+  design and metric appropriateness, and not at all on versioning,
+  architecture, cybersecurity, risk management or signed testing.**
+* **The one finding that is not a gap but an ERROR is B1's own (B)(2)(iv)**,
+  corrected in place above: the code auto-assigns cleared items. Art.
+  14(4)(b)'s automation-bias duty is precisely about a list a human is told
+  needs no action.
+* **Art. 10(6) narrows B1's "not applicable"**: the absence of training data
+  removes the training-data duties, not the testing-data ones.
+* **(B)(9)'s recommended monitored property** — *"what fraction of
+  suggestions are rejected for an unverifiable citation"* — **is the
+  citation-held figure §A3 built.** It is now computable on screen.
+
+### A4.4 Not read
+
+* **Art. 6(3) (the derogation for systems that do not materially influence
+  decisions), Art. 4 (AI literacy) and Art. 50 (transparency)** — not read
+  this batch.
+* **Section 3 (provider and deployer obligations, Arts. 16–27)** — not read.
+* **The Commission's simplified SME form under Art. 11(1)** — not located.
+* **No consolidated-version check. No legal review.**

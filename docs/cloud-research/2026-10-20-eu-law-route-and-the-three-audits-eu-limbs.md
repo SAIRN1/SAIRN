@@ -129,6 +129,8 @@ between a figure that survives a reviewer and one that does not.
 
 ### 3.2 The privilege carve-out, and the clause nobody quoted
 
+**[b41: the text quoted below is RECITAL (143). The OPERATIVE provisions are now located and read — Articles 21(2), 24(4) and 70(2)–(3). See §6. The inference clause IS in the operative text, at Art. 70(2)(c) and Art. 21(2)(c).]**
+
 > *"Notaries, lawyers, other independent legal professionals, auditors,
 > external accountants and tax advisors should not be obliged to transmit to the
 > FIU or to a self-regulatory body any information received from, or obtained in
@@ -197,3 +199,76 @@ after* proceedings, explicitly.
   text against a product description. It is the kind of conclusion a lawyer
   should confirm before it appears in anything customer-facing.
 * **No competitor or market work.** Unchanged from all three audits.
+
+---
+
+## 6. b41 — THE AMLR PRIVILEGE CARVE-OUT, OPERATIVE TEXT
+
+**fourth / b41, 2026-10-20.** b40 quoted the privilege language from a recital
+and said the operative article had not been located. **It is three articles,
+not one, and they do not say the same thing.** Same CELEX route, `32024R1624`,
+HTTP 200, 1,165,026 bytes; each article below read in full.
+
+### 6.1 The three operative carve-outs
+
+| article | the duty it lifts | carve-out wording | "before, during or after" | exceptions (a)–(c) |
+|---|---|---|---|---|
+| **Art. 70(2)** | **Art. 69(1)** — report suspicions to the FIU, and answer FIU requests | *"in the course of ascertaining the legal position of that client, or performing their task of defending or representing that client in, or concerning, judicial proceedings, including providing advice on instituting or avoiding such proceedings"* | **YES** | **YES** |
+| **Art. 24(4)** | **Art. 24** — report discrepancies with the central beneficial-ownership register | same wording | **YES** | **NO — a different limit:** the duty applies again when they *"provide legal advice in any of the situations covered by Article 21(2), second subparagraph"* |
+| **Art. 21(2)** | **Art. 21(1)** — refrain from or terminate a relationship where CDD cannot be completed, and consider reporting | *"to the extent that those persons ascertain the legal position of their client, or perform the task of defending or representing that client …"* | **NO** — the phrase is absent | **YES** |
+
+**The exceptions, verbatim from Art. 70(2) (Art. 21(2) is identical):** the
+carve-out does not apply when the professional *"(a) take[s] part in money
+laundering, its predicate offences or terrorist financing; (b) provide[s] legal
+advice for the purposes of money laundering, its predicate offences or
+terrorist financing; or (c) know[s] that the client is seeking legal advice for
+the purposes of money laundering, its predicate offences or terrorist
+financing; **knowledge or purpose may be inferred from objective factual
+circumstances.**"*
+
+**So b40's headline survives the move from recital to article, in the
+operative text, twice.** The inference clause is law at Art. 70(2)(c) and Art.
+21(2)(c), not just a recital's gloss.
+
+### 6.2 What the operative text adds that the recital did not
+
+1. **Art. 70(3) — Member States may narrow it.** *"Where justified on the
+   basis of the higher risks … associated with certain types of transactions,
+   Member States may decide that the exemption … does not apply to those types
+   of transactions and, as appropriate, impose additional reporting
+   obligations."* **The carve-out is a Union floor that each Member State can
+   lower per transaction type, with notification to the Commission.** A product
+   that encodes "privileged → no report" as a single EU-wide rule will be
+   wrong in any Member State that has used 70(3), and this read does not say
+   which have.
+2. **The carve-out is per DUTY, not per client.** The same matter can be
+   exempt from FIU reporting (70(2)) and still owe a beneficial-ownership
+   discrepancy report (24(4)) if the advice falls into Art. 21(2)'s second
+   subparagraph. A single "privileged" flag on a matter cannot answer both.
+3. **Art. 21(2) does NOT carry "before, during or after".** For the
+   terminate-or-refrain duty, the text is the narrower *"to the extent that
+   those persons ascertain … or perform …"*. Whether that difference is
+   deliberate is a question for counsel; the texts differ and this document
+   says so rather than harmonising them.
+4. **Art. 70(1)** lets Member States route reports from Art. 3(3)(a)–(b)
+   entities through a self-regulatory body, which must forward them *"promptly
+   and unfiltered"*. The reporting channel is national.
+
+### 6.3 What this means for sairnlaw, stated as a boundary
+
+b38's AML company decision stands, and the operative text makes the shape of a
+compliant feature clearer: **three duties, three carve-outs, one shared
+exception list with an objective-inference test, and a Member-State override
+on the most important one.** A product feature would need, per matter, the
+**basis** for each carve-out claimed (which of "ascertaining the legal
+position" / "defending or representing … in proceedings" applies), and **must
+not** record a privilege determination as settled when Art. 70(2)(c) makes it
+rebuttable on objective facts the same system holds.
+
+### 6.4 Not read
+
+* **Articles 3(3) (who is an obliged entity among legal professionals) and
+  73 (tipping-off)** were not read this batch.
+* **No Member State's 70(3) decisions** — they are notified to the
+  Commission and this read did not look for them.
+* **No consolidated-version check.** No legal review.
