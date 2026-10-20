@@ -36242,6 +36242,20 @@
       "confirmed_by": "cc"
     },
     {
+      "commit": "144dfb71587e",
+      "date": "2026-10-16",
+      "subject": "fix(sairnsenior,sairnlaw): a paid period is reopened by an APPENDED row, an adjustment is never negative, and the trust lock finally has arms",
+      "app": "sairnsenior",
+      "layer": "product",
+      "method": "live-verification",
+      "claim": "The SAIRNsenior straight-time-floor sign guard holds on the deployed pay run: a downward clock correction approved after its period was paid comes back as an OVERPAYMENT (60 min / 2000 cents, requires_human_act) and is never netted into pay, the upward control comes back as an ADJUSTMENT (60 min / 2000 cents), total_payable_cents >= gross_cents on every caregiver, and overpayment_cents is reported in its own total (2000).",
+      "driven": "docs/2026-10-20-hank-b27-sen-straight-time-floor-live-probe.py, run by Michael on 2026-10-20 against https://sairn.vercel.app on SEN-AUDIT-2026 after sql/sairnsenior_audit_log_event_types_widen_2026-10-20.sql was applied; identities confirmed by whoami (audit-owner as owner, hank-b27-caregiver as caregiver); A1-A2b and A7 passed, B0-B4 passed, VERIFIED. The same fixtures are proven offline by api/b27-sen-straight-time-floor-fixtures.test.js (23 arms, guard ablated).",
+      "verdict": "sound-with-limits",
+      "limits": "One agency, one caregiver, one closed period and two visits with one approved correction each, on the build deployed that day; it shows the guard on this shape of carry-forward and says nothing about premium (overtime) cases, multi-rate weeks or reopened periods. The visits and closing were written by an earlier failing run of the same probe and re-read here, not re-created, and the output was pasted to me rather than read from the server by me.",
+      "confirmed": "2026-10-20",
+      "confirmed_by": "hank"
+    },
+    {
       "commit": "7e43c9dab7dc",
       "date": "2026-10-20",
       "subject": "b28(cody): the role in the token is not the role in the roster, a photo cap that was never the real ceiling, and a hook that finally runs",
