@@ -1,0 +1,35 @@
+{
+ "app_matched": "sairndental-complaint",
+ "considered": {
+  "defect_records": 685,
+  "detectors_fired": [],
+  "detectors_run": 12,
+  "matched_this_file": 1
+ },
+ "drafted_on": "2026-10-20",
+ "exists": true,
+ "no_detector_yet": [
+  "1.6",
+  "2.2",
+  "3.1",
+  "3.2",
+  "3.3",
+  "4.1",
+  "4.2",
+  "4.3",
+  "5"
+ ],
+ "risks": [
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "7cce0d6d56ce",
+   "date": "2026-10-20",
+   "detected_by": "fault-injection",
+   "prior_severity": "low",
+   "risk": "Left unproven by b43 (the satellites showed under two controls without parameters). Driven in b44 with real URL params on LIVE: sairndental-complaint?slug=verify-test-slug CLICKABLE (3 controls) when framed. Embed intent checked first: the owner app offers only a public link and no embed snippet. GREEN: guard in all four, framed 4/4 HIDDEN in both modes.",
+   "rules": [],
+   "source": "defect-register"
+  }
+ ],
+ "target": "stonedesk-catalog.html"
+}

@@ -1,0 +1,146 @@
+{
+ "app_matched": "sairnfreedom",
+ "considered": {
+  "defect_records": 685,
+  "detectors_fired": [
+   "1.3"
+  ],
+  "detectors_run": 12,
+  "matched_this_file": 2
+ },
+ "drafted_on": "2026-10-20",
+ "exists": true,
+ "no_detector_yet": [
+  "1.6",
+  "2.2",
+  "3.1",
+  "3.2",
+  "3.3",
+  "4.1",
+  "4.2",
+  "4.3",
+  "5"
+ ],
+ "risks": [
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "c8b5e5b123c4",
+   "date": "2026-09-26",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "api/sd-data.js carried 132 verifySessionToken gates and ONE credentialStillActive, placed inside the SD_SESSION_GATED conditional so it covered 34 resources and 70 action-pairs. A credential DEACTIVATED after its token was issued kept read and write on the other 131 gates for up to the 12h token life, across thirteen apps' resources -- and deactivation is the one control an owner has over somebody who has just left. The comment beside the single call site read NOTHING CLOSED IT FOR THE DATA PATH, which reads as closed-for-all, and its eight-arm control was green because every arm was true of that one call site",
+   "rules": [
+    "1.11"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "b7f6fb54116e",
+   "date": "2026-10-11",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "Four Tier A SAIRNfreedom resources -- sf_sessions (prizeCap, a statutory ORC Chapter 2915 limit, plus receipts and prizes), sf_shifts (a cash variance attributed to a named employee), sf_tickets (unitPrice and total at point of sale) and sf_rentals (charge, proceeds and the alcohol/notified compliance pair) -- were in neither SD_SESSION_GATED nor SD_GATE_APP, so the browser-shipped licence key was the whole authorisation on the gaming floor's money records; and in the same file sfHydrateAll() ran once from DOMContentLoaded BEFORE any interactive sign-in with sfEnterApp() never re-running it, so on a fresh browser every GATED sf_ resource's hydrate answered 403, the per-resource empty catch swallowed it, and signing in never went back for the server's copy -- already live for the 18 resources gated before this change",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnfreedom) has this defect on record",
+   "cite": "20d822772dbc",
+   "date": "2026-09-22",
+   "detected_by": "hover-audit",
+   "prior_severity": "critical",
+   "risk": "Eight SAIRNfreedom resources in api/sd-data.js were readable and writable with a bare licence key and no session check: sf_operators (name + DOB + a FELONY flag and a GAMBLING disqualification flag on one row -- a criminal-history assertion about a named volunteer), sf_youth_participants (MINORS), sf_gaming_expenses and sf_disbursements (payee name + amount, the records ORC 2915.10(A)(2) and (C) require a charitable-gaming licensee to keep), sf_donations (donor name + amount), sf_staff (DOB, which the app age-gates off), sf_waivers (health and military-status disclosure) and sf_service_appointments (a member tied to a VA-adjacent referral outcome). The licence key is a bearer credential shipped to the browser. REPRODUCED LIVE WITH A CONTROL before the fix: on SF-PINNACLE-2026 with no session token all eight answered 200, while sf_ledger -- gated since 2026-09-21, same dispatcher, identical treatment -- answered 403 FORBIDDEN, so the difference is the gate and not an absent table. STATED RATHER THAN GLOSSED: every one returned ZERO ROWS on that tenant, so this shows nothing stops a caller REACHING the resource rather than that regulated data left. THE DISTINCTIVE PART IS NOT THE MISSING GATE, IT IS WHY IT STAYED MISSING: the dispatcher recorded the remaining 32 resources as a deliberate open product decision, and described them as a question about who may see -- quote -- a duty roster or a bottle count. That description does not cover minors, a felony flag or an ORC 2915 payee. The deferral was legitimate; it was taken against an understated description of the set, so anyone reading that line to decide was deciding about the wrong thing.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnfreedom) has this defect on record",
+   "cite": "e312f2e8f1e3",
+   "date": "2026-09-22",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "sf_donor_awards and sf_members were reachable for read AND write on the SAIRNfreedom licence key alone, with no employee session. sf_donor_awards rows are {donorKey, tierId, state, updated} -- the donorKey identifies a donor and tierId resolves through sf_donor_tiers to a giving amount, so the row asserts THIS NAMED PERSON GAVE AT LEAST THIS MUCH. That is the same disclosure sf_donations was gated for on 2026-09-22, on the stated ground that donor identity is not public by default; gating donations and leaving awards open left the same fact reachable through a second door. sf_members carries member identity and the gate's own comment already named it an acknowledged gap rather than a decision. The licence key is a BEARER CREDENTIAL shipped to the browser, so it was the entire boundary on both.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnfreedom) has this defect on record",
+   "cite": "295de7744eba",
+   "date": "2026-09-24",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "SAIRNfreedom's ORC 2915.09(D)(1) enforcement -- no compensation to a bingo game operator -- matched names with bare trim().toLowerCase() on both routes (the canteen-roster match and the gaming-account payee match), so \"Pat  Doe\" with a doubled internal space did not equal \"Pat Doe\". The evasion was bidirectional: a payee written with a doubled space missed the operator roster, and an operator ENROLLED with a doubled space was exempted from every payee comparison at once. The test arm named \"the match is case- and whitespace-insensitive\" was green the whole time because its fixture read 'Pat  Doe'.replace(/\\s+/g, ' ') -- the FIXTURE collapsed the whitespace before handing the string to the matcher, so the arm tested 'Pat Doe' twice and covered nothing. Found by H1 (seq #526), verified live. Fixed with one shared normaliser (sfD1Name: trim, collapse internal whitespace, lowercase) used by both routes; the test now extracts that normaliser from the app rather than re-implementing it, feeds raw fixture strings including a tab, and drives the operator-enrolment direction the old fixture never touched. Mutation-verified: trim-only turns exactly the two whitespace arms red.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnfreedom) has this defect on record",
+   "cite": "426b29a2a25a",
+   "date": "2026-09-24",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "sf_signatures reached api/sd-data.js with no session gate: the SF_RESOURCES read and write branches dispatched on the licence hash alone, and the licence key is shipped to the browser and readable by anyone who can open the app. The row is {docId, docTitle, version, hash, signer, typed, signed} -- a named person, their typed signature, and the governance document it binds them to, with a hash of the text they signed. It is not a fact ABOUT a person but a reusable instrument that can be lifted off one document and re-applied to another, which is why it is sharper than the identity rows gated beside it. Named alongside sf_members in the 2026-09-22 finding; sf_members was closed that day and this one was left with the words 'the open-work row stays open'. Reachability was demonstrated live on 2026-09-22 -- 200 provisioned:true with no session token, against a control where sf_ledger answered 403 -- and exfiltration was NOT: every probe returned zero rows on that tenant.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnfreedom) has this defect on record",
+   "cite": "5c03c0ae7d58",
+   "date": "2026-09-27",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "sairnfreedom.html getP4Config() defaulted the ORC 2915.101 tiered-distribution threshold to 250000 -- the STATUTORY BASE, which has not been the operative figure since 2023-11-01. OAC 109:1-4-21 replaces \"two hundred fifty thousand dollars\" with \"three hundred thirty thousand dollars\". THE DIRECTION OF THE ERROR IS THE OPPOSITE OF WHAT IT LOOKS LIKE AND THE AUDIT THAT FOUND IT GOT IT BACKWARDS: a LOWER threshold shrinks the 25% tier and pushes money into the 50% tier, so the app computed a required distribution that was TOO HIGH -- on 300000 of tiered-regime net profit it demanded 87500 where the law requires 75000. That is conservative on the duty, so it is NOT an exposure in the direction the Ohio AG actually enforces (underpaying the contracted charity, its lead issue: American Legion No. 243 drew a notice of intent to deny over a 23945.70 shortfall). The harm is the other one: the Distribution panel printed \"Short by 12500\" for a post that was not short, and a treasurer who moves money to close a fabricated gap has been harmed by a number nothing supports. Compounding it, sf_phase4_config is excluded from the server backup by design, so no default change reaches a device that already saved the old figure.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnfreedom) has this defect on record",
+   "cite": "5c03c0ae7d58",
+   "date": "2026-09-27",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "sairnfreedom.html told the user two of its own built features were NOT BUILT. sfRenderProfitChain() ended \"Those rules are Phase 4 and are not built\" while TIER1_MIN_DISTRIBUTION, tieredRequirement() and the shortfall computation had all been in the same file for weeks; the Bingo Accounts panel said \"Disbursement is Phase 4 and is not built\" while the whole Disbursements panel existed. THE COST IS NOT COSMETIC: underpaying the contracted charity is the Ohio Attorney General lead charitable-bingo enforcement issue, so the one paragraph a treasurer reads before thinking about distribution told them the test the regulator applies most often did not exist here. A third instance in the same commit is a statutory wording error rather than a staleness one: the beer vendor tile said a wholesale purchase \"must be for cash\", which an officer reads as currency, where OAC 4301-9-01(B) permits cash, check, debit card, credit card, money order and EFT and only CREDIT is barred.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnfreedom) has this defect on record",
+   "cite": "50def018aa48",
+   "date": "2026-09-29",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "sf_vehicle_service was re-tiered Tier A on INTEGRITY on 2026-09-23 and stayed out of SD_SESSION_GATED, so it was readable and writable with the SAIRNfreedom licence key alone -- a key shipped to the browser -- for six days",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnfreedom) has this defect on record",
+   "cite": "56e040c3c6ac",
+   "date": "2026-10-11",
+   "detected_by": "hover-audit",
+   "prior_severity": "critical",
+   "risk": "sf_officers, SAIRNfreedom's officer roster and the post's governance record, was in neither SD_SESSION_GATED nor SD_GATE_APP, so the browser-shipped licence key was the whole authorisation on it -- and the generic SF_RESOURCES write branch stores data:payload verbatim with no role or capability check, so a write past the gate is a write past all three client-side trapdoor guards (activeProvisioners, the SPEC 1c last-active-provisioner refusal, the sole-holder refusal) and can leave a post at zero active provisioners, the state SPEC 1c exists to make unreachable",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnfreedom) has this defect on record",
+   "cite": "b56c667f6cbb",
+   "date": "2026-10-12",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "Three duplicate DOM ids, none cosmetic. sairnfreedom.html ac-name (:371 officer provisioning, :1444 account name): sfOpenAccount() read the OFFICER name box, so a post could not open the ORC 2915.10(C) exclusive bingo-session account under the name typed into the account form. sairnfreedom.html ac-tbody (:380 officer roster, :1461 accounts): sfRenderAccess() and the accounts renderer both wrote into the officer tbody, so whichever ran last won -- the accounts table never rendered or the officer roster was replaced by account rows. sairncare.html fc-name (:320 family contact, :1082 facility profile): openFacilityModal() overwrote the family-contact input and saveFacility() stored THAT box's value as alf_facility.name, normally empty. Renames follow each file's own existing prefix (acct- from acct-kpis, fc-facname beside fc-company/fc-state/fc-licnum). Measured before and after with an HTML parser rather than a regex: sairncare 303/1 -> 304/0, sairnfreedom 398/2 -> 400/0, sairnsenior 327/0 unchanged. NOT live-verified: id uniqueness is measured, the behaviour is reasoned from the call sites.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnfreedom) has this defect on record",
+   "cite": "2884063edf4d",
+   "date": "2026-10-15",
+   "detected_by": "hover-audit",
+   "prior_severity": "moderate",
+   "risk": "docs/CRITICALITY-TIERS.md:358, the sf_events row, asserted a quoted-string anchor that resolved ZERO times in sairnfreedom.html. hank b12's F6 legitimately rewrote sfDeleteEvent() to COUNT the rows it removed instead of choosing its toast on the pointer being truthy, which moved the line the register was quoting. The cell carries its citations as quoted strings precisely BECAUSE all seven of its line citations had rotted once before, and it states its own acceptance rule in its own prose -- every quoted anchor must resolve EXACTLY ONCE -- with nothing driving it. So a Tier A row that argues sf_events is Tier A on INTEGRITY, because exactly one stored id links a hall event to the bingo session a statutory ORC 2915.09(C)(4) limit is computed from, cited that link through text that was no longer in the app. Found by hover2 b36 by hand; re-derived here from source, which also settled the ordinal: hover2 and the dispatch both called it the 7th anchor and it is the 6th of 7, measured twice by two different enumerations.",
+   "source": "defect-register"
+  },
+  {
+   "action": "assert the anchor matches exactly once AND read what it matched before acting",
+   "basis": "section 1.3 applies -- An anchor that still matches is not an anchor that still points at the right thing",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 1.3",
+   "risk": "an exact-string anchor verifies UNIQUENESS, never that it still points at the right code",
+   "source": "process-rules"
+  }
+ ],
+ "target": "api/sd-data-dental-provider-scope.test.js"
+}

@@ -1,0 +1,373 @@
+{
+ "app_matched": "sairnvet",
+ "considered": {
+  "defect_records": 685,
+  "detectors_fired": [
+   "1.3"
+  ],
+  "detectors_run": 12,
+  "matched_this_file": 2
+ },
+ "drafted_on": "2026-10-20",
+ "exists": true,
+ "no_detector_yet": [
+  "1.6",
+  "2.2",
+  "3.1",
+  "3.2",
+  "3.3",
+  "4.1",
+  "4.2",
+  "4.3",
+  "5"
+ ],
+ "risks": [
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "4f4afc8a113f",
+   "date": "2026-09-21",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "api/provisioner-health.js counted active holders of ANY provisioning role, so a licence with an active admin and no owner row at all reported HEALTHY though no route back to an owner exists; and tools/licence_recoverability_check.py keyed its verdict on state=='TRAPDOOR' alone, so the new unrecoverable state would have printed and exited 0. The detector shared the blind spot of the guard it exists to monitor, and watched 6 of the 16 apps that can reach the state.",
+   "rules": [
+    "1.11"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "0f57c0dbcbf7",
+   "date": "2026-09-25",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "api/sv-auth.js's bootstrap refusal named a remedy that cannot work in the exact state that produces the most confusing 409. The message was \"This practice already has employee credentials set up -- use action:setup instead\", and `setup` requires an Owner SESSION. The existence probe feeding that 409 carries NO `active` filter, deliberately, so a licence whose every credential is inactive also gets it -- and that licence has no Owner who can sign in, so it cannot obtain the session `setup` demands. The operator was sent round a loop the API had already closed, with nothing saying so: PR 1.5, the confident line printed after the error. MEASURED rather than reasoned -- on 2026-09-25 SV-PINNACLE-2026/38471260 answered 401 at login and bootstrap answered this 409, and the session chasing it could not tell a wrong PIN from a dead licence, correctly, because login answers 401 identically for a wrong PIN and an unknown employee. THE GATE IS NOT THE DEFECT AND WAS NOT TOUCHED: the no-active-filter probe is what stops anybody holding the browser-readable licence key deactivating their way to a fresh Owner and seizing the practice including its controlled-substance register, and the route that actually creates the dead state was closed the previous day in 7f952aa8. The message now names BOTH remedies -- action:setup if an Owner can still sign in, direct database access if none is active -- and states them conditionally so it does not reveal WHICH case the caller is in, because that would tell an unauthenticated licence-key holder whether the practice is locked out. Two new arms plus a control in api/sv-auth.test.js; the control's second half is structural rather than prose-reading, asserting the existence probe selects no `active` column so the branch cannot know its own state even if the message were rewritten.",
+   "rules": [
+    "1.5"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "1348466a2e73",
+   "date": "2026-09-10",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "A throw mid-hydration left svSyncSuppressed true, silencing every later server write for the whole session, with the surrounding .catch swallowing the evidence",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "6fde9cea7b84",
+   "date": "2026-09-10",
+   "detected_by": "fault-injection",
+   "prior_severity": "high",
+   "risk": "A hung server backup was completely silent: no timeout anywhere, so svData() never settled, the saved===null warning never printed, and the record stayed on one device with nothing saying so",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "6fde9cea7b84",
+   "date": "2026-09-10",
+   "detected_by": "fault-injection",
+   "prior_severity": "moderate",
+   "risk": "recordSvSharedTopics() wrote shared_knowledge fire-and-forget with no timeout, so a hung AI-context write was unobservable at the call site",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "a858cab7cb17",
+   "date": "2026-09-10",
+   "detected_by": "code-review",
+   "prior_severity": "critical",
+   "risk": "Lazy demo seeding reached the LIVE server on a fresh device: opening the controlled-substance panel wrote invented drug balances with invented vet names into the real DEA-relevant register, and hydration is additive-only with no delete path",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "ad588e6c5dc3",
+   "date": "2026-09-10",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "A peer-consult photo is a base64 JPEG against a 64KB CHECK, so every photo consult write was rejected and surfaced only as a console warning",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "53e5c88b7867",
+   "date": "2026-09-14",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "item 83's fail-safe suites never drove an EXPIRED witness token, so disabling the only expiry guard on the spend path left all 22 arms in both suites green. Both suites build tokens with Date.now()+TOKEN_TTL_MS and the recovery suite MEASURES remaining TTL, which reads like expiry coverage and is not. The CAS checks spent_at is null and says nothing about time, so with the guard gone an expired signature writes a controlled-substance row",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "bba0c82a5d25",
+   "date": "2026-09-14",
+   "detected_by": "mutation-testing",
+   "prior_severity": "high",
+   "risk": "Found during the independent review of item 83, by mutation rather than by reading. Every refusal on api/sv-witness.js's countersign action -- SAME_PERSON, ALREADY_COUNTERSIGNED, ALREADY_SPENT, EXPIRED -- can be deleted with all 66 arms across witness_atomicity.js, witness_recovery.js and sv-witness.test.js still green. SAME_PERSON is the entire content of two-person on a DEA-relevant lock. The lock is correct today; nothing would notice if a refusal were removed.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "3e94cbb24b20",
+   "date": "2026-09-16",
+   "detected_by": "independent-review",
+   "prior_severity": "critical",
+   "risk": "The half of the witnessing lock that MINTS the token is driven by no suite on this platform. Four mutations inside action: request / set_policy survived all 96 arms across four suites: the prescriber gate can be replaced with if(false) so a receptionist mints a witness token for a controlled-substance entry; token_hash can store the PLAINTEXT token, which both puts spendable signatures in a DEA register and breaks the lock outright since requireWitness looks up a sha256; the content binding can be minted against an empty payload, which is the exact hole the file header names; and any signed-in employee can turn require_two_person off. Structurally the identical finding bba0c82a made about countersign, one entry point over.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "3e94cbb24b20",
+   "date": "2026-09-16",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "api/sv-witness.js:181 -- dropping active=eq.true from the employee lookup leaves all four witnessing suites green. A struck-off, dismissed or deactivated veterinarian with a live session can request and countersign controlled-substance entries, which is the exact hazard the file names in words at :172-175.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "3e94cbb24b20",
+   "date": "2026-09-16",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "The arm that is supposed to make an uncovered mutation VISIBLE is a floor check. witness_countersign.js:477-489 asserts the probe lists at least 6 mutations; a seventh with no matching arm in the suite passes silently, which is the opposite of what the comment two lines above claims.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "769667475cb5",
+   "date": "2026-09-16",
+   "detected_by": "independent-review",
+   "prior_severity": "critical",
+   "risk": "The dosing audit trail rendered an UNPROVISIONED server as a legitimately-empty DEA record. api/sd-data.js answers a missing table with {ok:true,data:[],provisioned:false} and its own comment says the flag exists so the client can tell nothing-saved-yet from not-set-up; svData() discarded it, so the reader took the empty branch and printed 'this is the correct answer -- it is not a failed read' while the entries sat unread on the device. COULD-NOT-READ folded into a pass, on a controlled-substance record.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "769667475cb5",
+   "date": "2026-09-16",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "A dosing-audit read still IN FLIGHT rendered as a confirmed-empty trail. One keystroke in a date or text filter during a 15s read printed 'it is not a failed read' under a banner still saying Loading -- the same false statement as the unprovisioned case, reached with no misconfiguration at all.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "769667475cb5",
+   "date": "2026-09-16",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "The one test arm defending the failed-read-is-not-empty claim COULD NOT FAIL. It asserted !/correct answer/ on the banner element; that string only exists in the tbody template, so rewriting the failed-read branch to say literally 'the trail is empty' still passed it.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "769667475cb5",
+   "date": "2026-09-16",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "A present-but-unparseable timestamp was silently dropped by every date filter on the dosing audit trail, directly contradicting the comment above the code. The row that vanished in the reproduction was a controlled_log_blocked -- a refusal, the entry an inspector is most likely asking about.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "769667475cb5",
+   "date": "2026-09-16",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "The exported dosing-audit CSV carried none of the provenance the panel is built on, so a file handed to an inspector was indistinguishable between the full server record and a capped local copy taken after a failed read.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "769667475cb5",
+   "date": "2026-09-16",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "Dosing entries written while a backup was refused or timed out exist only on the device and were absent from the server view with nothing saying so, while the banner framed local as the smaller copy.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "769667475cb5",
+   "date": "2026-09-16",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "The dosing-audit read had no hang guard. svFetchTimeoutSignal() returns undefined on an engine without AbortSignal.timeout, on which the read never settles and the panel shows Loading with an empty table indefinitely -- while svPushOne twenty lines away races a timer for exactly this reason.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "9e2fdb18354a",
+   "date": "2026-09-16",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/export_coverage_check.py reported NO EXPORT MACHINERY for sairnvet's sv_controlled and sv_audit_log while sairnvet.html carried svExportControlled() and svExportDoseAudit(), two real CSV writers on two real buttons. app_exports() had two states -- registry found, or not -- and printed the absence of a REGISTRY as the absence of export MACHINERY, which is a claim rather than a shrug. The claim then propagated: docs/2026-09-14-class-a-retrievability.md copied it into a hand-verified table and tests/run_export_coverage_probe.py section E pinned it, so three artefacts agreed with each other and none agreed with the app. Fixed with a third state, NO REGISTRY TO READ, never gated by --check.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "6fb6d696489c",
+   "date": "2026-09-22",
+   "detected_by": "hover-audit",
+   "prior_severity": "critical",
+   "risk": "api/sd-data.js dispatched all 41 SV_RESOURCES entries -- including sv_controlled, the DEA-relevant controlled-substance register, plus sv_patients and sv_soapnotes -- with NO session check on either verb. The licence key is a BEARER CREDENTIAL shipped to the browser and readable by anyone who can open the app, so it was the entire boundary on the clinical record. REPRODUCED LIVE WITH A CONTROL before the fix was applied, because an unmigrated table answers an honest empty to everybody and that is not a gate: sairncare/alf_mar and sairncare/alf_claim_routes answered 401 NO_SESSION on a bare key, while sairnvet/sv_controlled, sv_patients, sv_soapnotes and sv_whiteboard all answered 200 with provisioned:true on identical treatment. STATED RATHER THAN GLOSSED: every open table returned ZERO ROWS on the tenant I drove (SV-PINNACLE-2026), so my run demonstrated that nothing stops a caller REACHING the resource rather than that regulated data left; hover2's reproduction on their tenant did return rows. THE INJECTION COMMIT IS 29b1f1d5 AND THAT NEEDS SAYING: the dispatcher's own comment -- 'SAIRNvet has no per-employee authentication at all ... a session gate here would gate on a session that does not exist' -- was TRUE when written. 29b1f1d5 shipped api/sv-auth.js, ROLES_BY_APP.sairnvet, AUTH_TABLE_BY_APP.sairnvet and the schema on 2026-09-13, under the subject line 'the last app without it held the DEA register', and nothing re-read the justification after the premise it rested on stopped holding. The absence became a defect at that moment, not when the dispatcher was written.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "3922ef4649e5",
+   "date": "2026-09-23",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "The comment stripper in api/sairnvet-transcribe.test.js could hide the code the check exists to find. The no-fallback check strips comments before asserting that the SAIRNvet scribe module contains no reference to the browser SpeechRecognition API -- the module's own header names that API in order to reject it, so stripping is necessary. The stripper was two regexes, and the line-comment one guarded `//` with `[^:]`, which protects `http://` and nothing else: a `//` inside a STRING, REGEX or TEMPLATE literal took the entire rest of that line with it, including any SpeechRecognition reference after it. So a real fallback branch written after a string containing `//` on the same line would have passed the ban. Replaced with a character scanner tracking string/template/regex/line-comment/block-comment state, because whether a `/` opens a comment, opens a regex or is a division depends on what came before it and that is a state machine rather than a pattern. MEASURED LATENT AT THE TIME: no line in the shipped scribe module had the dangerous shape, so nothing was actually hidden -- that is a property of the source, not of the check, and the next module is not obliged to keep it.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "3ff1dbaca078",
+   "date": "2026-09-23",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "scribePreflight() in sairnvet.html decided ambient-scribe availability by the ABSENCE of one failure code -- \"anything that is NOT TRANSCRIBE_HOST_NOT_CONFIGURED means a host IS configured\" -- which is an allowlist written as a denylist. Driven against the real endpoint: with a host configured, a VALID licence answers the preflight body with 400 CONSENT_REF_REQUIRED and an INVALID one answers 403 LICENSE_INVALID, and the old rule enabled the \"Start - ask the client\" consent button for BOTH. So a practice whose licence had lapsed, or whose host was configured and broken, reached the point of asking a client to consent to a recording that could never be transcribed -- the harm the module's own header names as consent theatre. Corrected to decide POSITIVELY from CONSENT_REF_REQUIRED, the only code that proves host AND licence AND app together, because the endpoint checks them in that order. LATENT AT THE TIME OF THE FIX: hostConfigured() is false in every environment, so the branch could not execute -- the wrong logic was shipped, the wrong behaviour was not, and the severity reflects that rather than the harm the code describes.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "fc2ee8f136b3",
+   "date": "2026-09-23",
+   "detected_by": "code-review",
+   "prior_severity": "low",
+   "risk": "SAIRNvet's Revenue MTD KPI folded `s + (b.rate || 0) * days` across every booking in the month. Dispatched as the same uncoerced-fold defect fixed in stonedesk.html the same day, and it is NOT that class: `*` has no string overload, so the multiplication coerces before the addition sees the value. Driven, rates of \"500\" and \"250\" over 3 days give 2250, where the bare fold gives the string \"0500250\". WHAT WAS REAL IS SMALLER: the multiplication rescues a numeric STRING and not a junk value. \"abc\" * 3 is NaN, one NaN poisons the whole reduce, and the KPI rendered \"$NaN\" -- every other booking's revenue vanishing with it, which is a worse outcome than a single wrong row. Wrapped in Number(x) || 0 so one bad row costs that row. sairnvet.html::b.rate was in truthy_sum_baseline.json's grandfathered map carrying the recorded reason \"NOT ASSESSED -- whether it is a defect depends on whether anything can put a STRING in this field\", a deferral that was honest and was never resolved; it has now been assessed (a string CAN arrive, sv_boarding is server-synced) and the entry is removed. The criticality-tier row written the same morning cited the uncoerced fold as evidence of concatenation risk and was corrected in the same commit.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "7cc29f6e4c5a",
+   "date": "2026-09-24",
+   "detected_by": "hover-audit",
+   "prior_severity": "high",
+   "risk": "sairnvet.html's dose-audit banner asserted \"The server copy is not capped\" on every successful read of the DEA dosing register, with no Content-Range verification anywhere in the read path -- the sv_ read branch in api/sd-data.js never asked PostgREST for a count, so a max-rows truncation would return a partial register byte-identical to a complete one, under a banner claiming completeness. The claim was manufactured at display time from a 200 status alone. Fixed with the pattern api/audit-checkpoint.js:137 already carries: Prefer count=exact, the after-the-slash total returned beside the rows, and the client claiming completeness only when received rows match it, with truncation said in bold and an unknown total said as unverified rather than assumed complete.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "7f952aa8de26",
+   "date": "2026-09-25",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "api/sv-auth.js's setup action upserted the role column on (license_hash, employee_id) with no sole-role demotion guard, so the sole active Owner of a SAIRNvet practice could set their own role to any of the five non-provisioning SV_ROLES (dvm, tech, assistant, manager, frontdesk) and leave the licence with ZERO Owners. set_active's last-admin guard cannot see that route -- api/_lib/employee-lifecycle.js:340 documents it -- and bootstrap correctly refuses 409 ALREADY_PROVISIONED whenever any credential row exists, so the resulting state is UNRECOVERABLE THROUGH THE API on an app holding a DEA-relevant controlled-substance register. Five sibling endpoints already called the shared guard; SAIRNvet did not, because set_active deliberately passes soleRole:null (exact for that route, since one provisioning role makes the two counts identical) and soleRoleDemotionRefusal reads the same field and no-ops when it is absent. Found while root-causing why SV-PINNACLE-2026 answers 401 on its documented PIN while bootstrap answers 409 -- the observable signature of exactly this end state. Fixed by wiring the shared guard with a SAIRNvet-vocabulary refusal; three new derived wiring arms now fail on a new unguarded endpoint and on any of the six losing its guard.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "1f4d199092b3",
+   "date": "2026-09-26",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "sairnvet.html's VET_DRUGS flunixin meglumine CATTLE row carried route \"IV/IM\" where the FDA label (Banamine, NADA 101-479, 50 mg/mL) says the product is for intravenous use only and the dose is \"given by SLOW INTRAVENOUS administration\". Extra-label IM or SC flunixin in cattle is a known cause of violative tissue residues, and the 4-day slaughter withdrawal is established for the intravenous route -- it does not hold for another. The row also stored 1.1mg/kg as the whole dose where the label range is 1.1-2.2mg/kg across two distinct indications (once daily or divided q12h for up to 3 days for pyrexia/BRD/endotoxemia; 2.2mg/kg IV once for acute mastitis), and its withdrawalMeat and withdrawalMilk were null with withdrawalStatus verify_required although the label states 4 days meat and 36 hours milk verbatim. The HORSE row read \"1.1mg/kg SID-BID\" where the label is once daily for up to 5 days; twice-daily dosing is extra-label and flunixin's characteristic toxicities, right dorsal colitis and renal papillary necrosis, are accumulated-dose effects, so a doubled frequency is the specific thing not to get wrong. All 70 food-animal rows shared the same two-state withdrawal display -- verify_required with no figures -- which was honest while none had a sourced time and becomes the wrong answer for any row that acquires one.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "2cec9c094b0b",
+   "date": "2026-09-26",
+   "detected_by": "live-verification",
+   "prior_severity": "high",
+   "risk": "sairnvet.html's Treatment Protocol and Ask-AI panels told the model, and through it the treating veterinarian, that the app's tables are verified -- four strings, none of them touched by the formulary badge fix that landed hours earlier as f52330d3 with sixteen green arms: the protocol miss-branch (\"not in our verified database\"), the protocol grounding context (\"Verified database record(s) for this diagnosis: \" + JSON.stringify(matches)), the protocol system prompt (\"cite which part of your answer comes from the verified database record\"), and the Ask-AI system prompt (\"use the AI Dosing Calculator (for verified, bounds-checked doses)\") -- which re-asserts from a second panel the exact claim just removed from the calculator itself. The protocol panel reads VET_DIAGNOSES: 465 rows whose keys are name, signs, species, system, with NO SOURCE FIELD AT ALL, so not one entry could cite anything even if somebody looked it up. Found by the PR 3.2 post-push live check against the deployed URL, not by the passing test.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "7bc26782e533",
+   "date": "2026-09-26",
+   "detected_by": "code-review",
+   "prior_severity": "critical",
+   "risk": "sairnvet.html searchDrugs() rendered a green \"Verified\" badge from `d.needsReview ? 'Needs Review' : '\u2713 Verified'` -- the ABSENCE of a review flag read as the PRESENCE of a verification, on 284 of 485 VET_DRUGS rows, with no `reference` field on any row and no source recorded anywhere in the file for the badge to have checked. The same claim reached the clinician through nine further sites including the AI dosing system prompt (\"you may ONLY use the verified database record\") and the grounding context (\"Verified database record:\"). And one of the doses so badged was wrong: the Butorphanol HORSE row carried 0.2-0.4 mg/kg, the dog/cat figure propagated across all five species rows, against the FDA-approved equine 0.1 mg/kg IV (Torbugesic, NADA 135-780) -- 2-4x the label dose, shown to a vet under a tick.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "7bc26782e533",
+   "date": "2026-09-26",
+   "detected_by": "code-review",
+   "prior_severity": "critical",
+   "risk": "sairnvet.html searchDrugs() rendered a green \"Verified\" badge from `d.needsReview ? 'Needs Review' : '\u00e2\u0153\u201c Verified'` -- the ABSENCE of a review flag read as the PRESENCE of a verification, on 284 of 485 VET_DRUGS rows, with no `reference` field on any row and no source recorded anywhere in the file for the badge to have checked. The same claim reached the clinician through nine further sites including the AI dosing system prompt (\"you may ONLY use the verified database record\") and the grounding context (\"Verified database record:\"). And one of the doses so badged was wrong: the Butorphanol HORSE row carried 0.2-0.4 mg/kg, the dog/cat figure propagated across all five species rows, against the FDA-approved equine 0.1 mg/kg IV (Torbugesic, NADA 135-780) -- 2-4x the label dose, shown to a vet under a tick.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "b015ea783653",
+   "date": "2026-09-26",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "sairnvet.html requestAISuggestion(): a staff-typed case note (#pc-note, an <input type=text>) was interpolated directly into the SYSTEM prompt of the photo peer-consult -- 'Case note: '+(note||'none provided')+'. Give a SHORT ranked list of possible differentials or considerations ... flag anything that looks urgent'. Untrusted free text sitting inside the instruction block of a CLINICAL DECISION SUPPORT call, with no delimiter, no labelling, and nothing telling the model that part of its own instructions came from a user. The output is shown to staff as differentials and urgency flags and is persisted into the peer-consult record (sv_peerconsults) as aiResponse, so a successful steer is both acted on and stored. FIXED by routing the note through the platform's sfFence/sfRule pair (the byte-identical client mirror of api/_lib/prompt-fence.js), which labels it as DATA and mechanically defangs both fence markers so the text cannot close the fence it sits in. NOTHING IS FILTERED -- the note still reaches the model in full; a fence is a mitigation, not a proof, and whether the model honours the instruction is a question only a model call answers. `species` was deliberately left unfenced: #pc-species is a <select>, so its value is one of the app's own options and fencing app-owned text would put a fence in every prompt. FOUND BY HAND, and that is the point: tools/adversarial_prompt_corpus.py reported 0 unfenced sites platform-wide at the time, because its untrusted-field list held `notes` and the whole-word boundary correctly rejects `note`.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "f3484b3c5889",
+   "date": "2026-09-26",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "sairnvet.html told a clinician that a dose had been VERIFIED when nothing in the app had ever verified anything. The Drug Database screen rendered `var status = d.needsReview ? 'Needs Review' : 'CHECK Verified'`, so every row whose needsReview flag was false displayed a green tick reading Verified next to a mg/kg figure. `needsReview:false` is the ABSENCE OF A FLAG, not the presence of a verification: there was no reference field on any row of VET_DRUGS, no citation anywhere in the file, and therefore nothing that could have been checked. MEASURED: 485 rows, 284 of them displaying the Verified tick, including 20 controlled substances, and 0 rows carrying any source field because the schema had none. THE SAME UNEARNED CLAIM APPEARED IN NINE OTHER PLACES and the worst of them is not a badge: the system prompt of the AI Dosing Calculator read \"you may ONLY use the verified database record and calculation provided below as your source of truth for the numeric dose\", which puts the word in the model's mouth and therefore in front of the vet, in prose the vet is more likely to believe than a chip. The others were the dashboard panel description (\"grounded in verified data across every species\"), the Ask-AI card, a dashboard KPI sublabel, the formulary panel description, the grounding context string passed to the model (\"Verified database record: ...\"), the gap notice (\"not in our verified database\"), the green calculation box (\"CHECK Verified calculation:\"), the dose audit log value ('verified_calculated'), and a local variable named verifiedCalc. FIXED: a `reference` field added to VET_DRUGS and populated on three rows from sources retrieved and quoted rather than recalled -- Mickelson MA, Mans C, Colopy SA, Vet Clin North Am Exot Anim Pract 2016;19(1):33-53, PMID 26611923, for chlorhexidine 0.05% and povidone-iodine in exotic pets, and the FDA-approved Suprelorin F label via DailyMed for deslorelin 4.7 mg in ferrets. The badge is three-state now because two could not express the truth: Needs Review (201 rows), Referenced (3), and No source recorded (281, deliberately not green). The AI grounding path stops saying verified everywhere, the system prompt now instructs the model to tell the user plainly when a figure is unsourced, and the grounding context branches on the row's reference so a cited row and an uncited one no longer look identical to the model. \"Verified calculation\" became \"Calculated in-app from the stored range\", because the multiplication is something the app genuinely performed while the range it multiplied may have no source -- the old wording transferred the confidence of the arithmetic onto its input. ONE DOSE STRING WAS EDITED, and only because the citation demanded it: povidone-iodine stored \"Dilute 1:10 for lavage\", and a ratio is not a dose without its starting strength -- 1:10 is 1% only from the usual 10% stock, which the string never said. Rewritten to \"Dilute to 1% for lavage (1:10 from 10% stock)\". WHAT COULD NOT BE SOURCED IS FLAGGED RATHER THAN ASSUMED CORRECT: sevoflurane \"2-4% maintenance\" on the bird and exotic small-mammal/reptile rows could not be sourced from Merck/MSD avian and reptile clinical procedures or from PubMed Central, where minimum anaesthetic concentration is reported per species rather than as one range, so those two rows now read No source recorded.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "f80460a45f11",
+   "date": "2026-09-26",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "sairnvet.html's VET_DRUGS carried two ketamine rows at 5-10mg/kg IM with needsReview:false and no flag beyond the Schedule III note, and a butorphanol dog row at 0.2-0.4mg/kg with the bare flag \"Schedule IV\" -- and reading the actual FDA labels showed both were making silent claims. Ketaset (ketamine HCl 100 mg/mL, NADA 043-304) gives 11mg/kg IM for restraint and 22 to 33mg/kg for anaesthesia, so the stored figure is 2-6x BELOW the only label for the species, and that label approves cats and subhuman primates only -- every canine use is extra-label. For butorphanol there is NO FDA-approved injectable label covering dogs at all: Torbugesic-SA (NADA 141-047) is cats, Torbugesic (NADA 135-780) and Butorphic (ANADA 200-332) are horses. On a screen that had no way to say \"checked, and there is nothing to cite\", a verified absence and an unexamined blank were indistinguishable, and a row whose only label disagrees with it by 2-6x was showing needsReview:false.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "69518f0e0122",
+   "date": "2026-09-27",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "Four food-animal injectable antimicrobials in sairnvet.html's VET_DRUGS carried figures that were not specific to the species on the row. Tulathromycin: both cattle and swine read route SC/IM where DRAXXIN (NADA 141-244) is subcutaneous in cattle and intramuscular in swine -- each species offered the other's route, with meat withdrawals 13 days apart (18 vs 5). Florfenicol: both read 20-40mg/kg IM/SC, but NUFLOR (NADA 141-063) ties the dose to the route (20mg/kg IM repeated at 48h, 40mg/kg SC once, withdrawal 28 vs 38 days) so it is not a range, and the swine label is 15mg/kg IM, making the stored swine range 33-167 percent above label with SC unlabelled. Ceftiofur: both read 1-2.2mg/kg IM/SC, the cattle figure, where EXCENEL RTU EZ (NADA 141-288) gives swine 3-5mg CE/kg IM -- an UNDER-dose, the opposite consequence direction from florfenicol. Oxytetracycline: both read 10-20mg/kg SID, flattening LA-200's (NADA 113-232) single long-acting 9mg/lb dose and its 3-5mg/lb DAILY dose into one once-daily range, and the swine row carried IV which the label offers in cattle only. Routes and doses corrected to label, references quoted verbatim, withdrawal times populated and each naming its product. Two rows deliberately keep null numeric bounds so the calculator refuses rather than multiplying a false range by a body weight.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "d537709f63e4",
+   "date": "2026-09-30",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "Four Betadine (Povidone-Iodine) rows in sairnvet.html's VET_DRUGS stated a\nconcentration the cited source does not give. Mickelson 2016 (PMID 26611923),\nquoted verbatim on the row itself, says \"0.05% chlorhexidine and 0.5 or 1%\npovidone-iodine would be considered appropriate\". The exotic/zoo row read \"Dilute\nto 1% for lavage (1:10 from 10% stock)\" -- the range narrowed to its upper bound,\non the one row that carried the citation -- and dog, cat and horse read \"Dilute\n1:10 for lavage\", a ratio that is 1% only if the stock is 10%, which a clinician\nholding a 5% or 7.5% scrub cannot rely on. Two rows also read \"generally safe\nacross species at this dilution\", a safety claim the quote does not make; it says\nthe concentration would be \"considered appropriate\" in one wound-management\ncontext. All four povidone rows now read 0.5-1%, the citation is on all eight\nTopical Antiseptic rows, and the unsupported safety wording is replaced with what\nthe quote supports.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "15a8ff9a94a3",
+   "date": "2026-10-13",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "svHydrateAll had ONE call site, at script PARSE time, before any PIN was entered -- and api/sd-data.js:13552 gates EVERY SAIRNvet resource (46 of them) on a signed session via if (SV_RESOURCES[resource]), so on any page load that began at the sign-in pane all 46 reads answered 401 NO_SESSION, the per-resource empty catch swallowed each one, svEnterApp did not fetch again, and the server backup was READ-DEAD for the life of that page; broader than the SAIRNfreedom instance that defined the class, where the gate covered 22 of 36",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "9841e14a5eaa",
+   "date": "2026-10-14",
+   "detected_by": "independent-review",
+   "prior_severity": "critical",
+   "risk": "41 OF SAIRNvet's 42 RESOURCES HAD NO PER-RESOURCE ROLE CHECK. MEASURED, not asserted: `grep -nE \"SV_[A-Z_]*ROLES\" api/sd-data.js` returned nothing. So a `frontdesk` token read and wrote sv_soapnotes, sv_labresults, sv_surgery, sv_imaging and sv_invoicing exactly as the owner did. The 42nd is sv_controlled, the DEA-relevant register, which has had PRESCRIBER_ROLES and the witnessing lock since 2026-09-13 -- and the existence of that one gate is part of why the other 41 looked like policy rather than a 1-of-42 coverage figure. The 2026-09-21 session gate (6fb6d696) closed 'no session' and left 'any session' open; nothing between then and now asked what a session was allowed to DO. Fixed with one table of 42 rows and one decide() in api/_lib/sv-roles.js, consulted ONCE before the read/write dispatch so neither branch is reachable without it, plus the append-only lock on sv_audit_log which binds the owner too and therefore cannot be a role grant. sv_controlled's row is DERIVED from PRESCRIBER_ROLES rather than re-listed, and arm C4 asserts the new block does not reference api/sv-witness.js at all. 30 arms green from 19 passed / 11 failed; D1 drives all 492 (resource, role, action) combinations against the table in both directions and D2 is the control that the table holds both verdicts. Ablated three ways.",
+   "source": "defect-register"
+  },
+  {
+   "action": "assert the anchor matches exactly once AND read what it matched before acting",
+   "basis": "section 1.3 applies -- An anchor that still matches is not an anchor that still points at the right thing",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 1.3",
+   "risk": "an exact-string anchor verifies UNIQUENESS, never that it still points at the right code",
+   "source": "process-rules"
+  }
+ ],
+ "target": "api/sv-auth.test.js"
+}
