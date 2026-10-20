@@ -4455,6 +4455,27 @@
         "stonedesk-intake.html",
         "stonedesk.html"
       ]
+    },
+    {
+      "id": "fourth-1792506008",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "b45: sairnbiz Z7 OT-aware gross; sairndental audit defects; stonedesk+hr anti-framing via hank b33 patch; Field Map lock/confirm/0-saving; push. FILES: sairnbiz.html sairndental.html stonedesk.html stonedesk-hr.html docs/defect-density-register.json docs/batch-manifest-fourth-b45.json SAIRN-handoff-fourth-b45.md SAIRN-report-fourth-b45.txt SAIRN-digest-fourth-b45.txt NOT-docs-tier-a-reviews-json-CCS NOT-api NOT-tests NOT-tools NOT-CLAUDE-md NOT-dot-claude-skills",
+      "claimed_at": "2026-10-20T14:20:08Z",
+      "claimed_at_epoch": 1792506008.7591429,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b45.txt",
+        "SAIRN-handoff-fourth-b45.md",
+        "SAIRN-report-fourth-b45.txt",
+        "docs/batch-manifest-fourth-b45.json",
+        "docs/defect-density-register.json",
+        "sairnbiz.html",
+        "sairndental.html",
+        "stonedesk-hr.html",
+        "stonedesk.html"
+      ]
     }
   ],
   "refusals": [
@@ -4714,6 +4735,36 @@
       "other_claimed_at": "2026-10-19T15:33:58Z",
       "shared_files": [
         "api/sd-data.js"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-20T14:19:28Z",
+      "my_subject": "fourth",
+      "my_task": "b45: sairnbiz Z7 OT-aware gross; sairndental audit defects; stonedesk+hr anti-framing via hank b33 patch; Field Map lock/confirm/0-saving; push. FILES: sairnbiz.html sairndental.html stonedesk.html stonedesk-hr.html docs/defect-density-register.json docs/tier-a-reviews.json docs/batch-manifest-fourth-b45.json SAIRN-handoff-fourth-b45.md SAIRN-report-fourth-b45.txt SAIRN-digest-fourth-b45.txt NOT-api NOT-tests NOT-tools NOT-CLAUDE-md NOT-dot-claude-skills",
+      "other_session": "cc",
+      "other_subject": "cc",
+      "other_task": "b31: discharge hank 2026-10-16T13:03:47Z Tier A; FMEA drafts + fix fmea_draft multi-path --save; handoff-convention CLAUDE.md:33 vs practice; Tier A rt routes 700B/stop job_ref worst case; Tier A sc_claims/sc_dme; commit Michael's 13:13Z snapshot re-capture (unwrapped); push.  FILES: tools/fmea_draft.py docs/fmea/ docs/tier-a-reviews.json db/schema_snapshot.json CLAUDE.md .claude/skills/sairn-session-handoff/ docs/2026-10-20-cc-b31-notes.md docs/batch-manifest-cc-b31.json SAIRN-handoff-cc-b31.md SAIRN-report-cc-b31.txt SAIRN-digest-cc-b31.txt NOT-api NOT-html NOT-tests NOT-sql",
+      "other_claimed_at": "2026-10-20T14:04:44Z",
+      "shared_files": [
+        "docs/tier-a-reviews.json"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-20T14:19:53Z",
+      "my_subject": "fourth",
+      "my_task": "b45: sairnbiz Z7 OT-aware gross; sairndental audit defects; stonedesk+hr anti-framing via hank b33 patch; Field Map lock/confirm/0-saving; push. FILES: sairnbiz.html sairndental.html stonedesk.html stonedesk-hr.html docs/defect-density-register.json docs/tier-a-reviews.json docs/batch-manifest-fourth-b45.json SAIRN-handoff-fourth-b45.md SAIRN-report-fourth-b45.txt SAIRN-digest-fourth-b45.txt NOT-api NOT-tests NOT-tools NOT-CLAUDE-md NOT-dot-claude-skills",
+      "other_session": "cc",
+      "other_subject": "cc",
+      "other_task": "b31: discharge hank 2026-10-16T13:03:47Z Tier A; FMEA drafts + fix fmea_draft multi-path --save; handoff-convention CLAUDE.md:33 vs practice; Tier A rt routes 700B/stop job_ref worst case; Tier A sc_claims/sc_dme; commit Michael's 13:13Z snapshot re-capture (unwrapped); push.  FILES: tools/fmea_draft.py docs/fmea/ docs/tier-a-reviews.json db/schema_snapshot.json CLAUDE.md .claude/skills/sairn-session-handoff/ docs/2026-10-20-cc-b31-notes.md docs/batch-manifest-cc-b31.json SAIRN-handoff-cc-b31.md SAIRN-report-cc-b31.txt SAIRN-digest-cc-b31.txt NOT-api NOT-html NOT-tests NOT-sql",
+      "other_claimed_at": "2026-10-20T14:04:44Z",
+      "shared_files": [
+        "docs/tier-a-reviews.json"
       ],
       "source": "status-registry",
       "why": "same declared FILES",
