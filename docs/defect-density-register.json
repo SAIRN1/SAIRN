@@ -34960,53 +34960,58 @@
       "recurrence_open": "verdict() and tally() are OPT-IN and nothing makes a probe call them. The b26 recurrence_open said no other probe in the repo asserts its own plant landed, and that is still true of all of them -- this adds the primitive and one caller, not a sweep. tools/sabotage_control_check.py MEASURES the plant-landed class and does not yet recognise or require the ran-check, so the platform figure it reports is silent on this failure entirely. Nothing refuses a probe that drives a hook over a range it never inspected."
     },
     {
-      "commit": "72dfaf5cb644",
+      "commit": "0b590160b1c7",
       "date": "2026-10-20",
-      "subject": "fix(stonedesk b44): the Field Map optimiser threw away every successful answer -- a named envelope transport, and the order must be a permutation",
+      "subject": "fix(checks b34): audit_event_type_check could not see the b33 outage -- it now reads the live CHECK, and three blind spots that hid it are closed",
       "files": [
-        "stonedesk.html"
+        "docs/sairn-path-manifest.json",
+        "tools/audit_event_type_check.py"
       ],
-      "lines_added": 48,
-      "lines_removed": 2,
-      "app": "stonedesk",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "fault-injection",
-      "summary": "RED 5/10 with the real sdData transport against the server exact shape: sdData returns j.data, undefined for optimize on rt_routes, so a 200 with order [2,0,1] stored nothing, the button said the server did not answer, auto re-optimise was silent, and unavailable answers lost their named reason, while the server had already written optimized_at. The order check accepted [0,0,1] (one stop twice, one lost). FIXED via the named sdDataEnvelope transport the bare-envelope suite prescribes, plus a permutation check. GREEN 10/10.",
-      "rules": [],
-      "citation_confidence": "not-citable",
+      "lines_added": 197,
+      "lines_removed": 6,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/audit_event_type_check.py passed while production refused every SAIRNsenior pay-period close: it read the CHECK only from the SQL file (whose widening never ran on the live table), could not see the emitted events behind a quoted ternary, truncated the file's CHECK at a ')' in a comment, and charged map-addressed calls to the default table. It now reads the live CHECK from db/schema_snapshot.json; replaying this morning's snapshot names the outage it missed.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
       "injection_phase": "coding",
       "phase_confidence": "inferred",
-      "found_by_tool": "scratchpad drive_route.py (Playwright, /api/sd-data intercepted with the server exact response shape; not in repo)",
+      "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "commit": "f4208738e2f5",
-        "date": "2026-10-19",
-        "subject": "feat(routing): phase 1 -- the shared primitive, two consumers, and the one branch that is blocked",
-        "lag_days": 1
+        "unknown_reason": "four independent blind spots with different origins (the file-only design and three regexes); no single commit introduced the miss"
       },
-      "citation_note": "Covered in spirit by tests/stonedesk_bare_envelope_actions.js, whose DATA_LESS list did not include optimize on rt_routes. Proposed: the list is derived from api/sd-data.js 200 responses with no data key, not hand-kept.",
       "contributing_factors": [
         {
-          "factor": "The b34 repoint moved the call onto sdData(), whose return is j.data, for an action whose answer has no data key.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "sdDataEnvelope(), a named transport returning the envelope."
-        },
-        {
-          "factor": "The bare-envelope guard keeps a HAND list of data-less actions and optimize was not on it, so the guard passed.",
+          "factor": "The checker read the allowed values from the SQL file only, so it agreed with a file that the database had never been rebuilt from: the b17 widening sat inside create table if not exists and never ran, and the tool passed while production refused every pay-period close.",
           "kind": "detection",
-          "action_status": "planned",
-          "action": "Proposed: derive the list from the endpoint (cody's test file; routed, not edited)."
+          "action_status": "done",
+          "action": "The CHECK is also read from db/schema_snapshot.json (plain-text and base64 snapshots both); live rejections and file-ahead-of-live drift are reported separately, with the snapshot's age; an uncovered table is NOT COMPARED, never clean."
         },
         {
-          "factor": "Order validation checked length only, so a malformed server order could drop and duplicate stops.",
+          "factor": "EV_TERNARY's condition `[^,']*` could not cross a quote, so `kind === 'close' ? 'pay_period_closed' : 'pay_period_reopened'` was never seen as emitting anything.",
           "kind": "technical",
           "action_status": "done",
-          "action": "Integer, in-range, each-once permutation check."
+          "action": "The condition is `[^,?]*`; fixture F1."
+        },
+        {
+          "factor": "CHK's value list `[^)]*` stopped at a ')' inside a SQL comment within the list, so the tool read five allowed values where the file declares seven.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Line comments are stripped before the CHECK is parsed; fixture F2."
+        },
+        {
+          "factor": "A call naming its table through AUDIT_TABLE_BY_APP.<app> was charged to the file's default table, so the right table never saw the events.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Per-call attribution through the map, with those events removed from the file-wide pass; fixture F3."
         }
       ],
-      "recurrence_open": "NOT CLOSED. locked is never set by StoneDesk; great-circle is unreachable without coordinates; the manual press shows no confirmation; 0/negative savings render like null; routes.js mid-route pin restart. Not driven against a live StoneDesk tenant (no StoneDesk login available)."
+      "recurrence_open": "The live half is only as fresh as the snapshot: the committed snapshot (13:13 UTC) predates Michael's widening, so the tool reports the table red until the snapshot is re-exported."
     },
     {
       "commit": "1e104d4b2f2d",
@@ -35451,6 +35456,55 @@
         }
       ],
       "recurrence_open": "NOT CLOSED. While the timesheet holds SIX days the maximum recordable week is 144 hours, so thresholds 145-167 are equally unreachable and still honoured; the exact bound is the record own maximum and moves to 168 only when day seven lands (held on api/sd-data.js, cody b29)."
+    },
+    {
+      "commit": "72dfaf5cb644",
+      "date": "2026-10-20",
+      "subject": "fix(stonedesk b44): the Field Map optimiser threw away every successful answer -- a named envelope transport, and the order must be a permutation",
+      "files": [
+        "stonedesk.html"
+      ],
+      "lines_added": 48,
+      "lines_removed": 2,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "fault-injection",
+      "summary": "RED 5/10 with the real sdData transport against the server exact shape: sdData returns j.data, undefined for optimize on rt_routes, so a 200 with order [2,0,1] stored nothing, the button said the server did not answer, auto re-optimise was silent, and unavailable answers lost their named reason, while the server had already written optimized_at. The order check accepted [0,0,1] (one stop twice, one lost). FIXED via the named sdDataEnvelope transport the bare-envelope suite prescribes, plus a permutation check. GREEN 10/10.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "scratchpad drive_route.py (Playwright, /api/sd-data intercepted with the server exact response shape; not in repo)",
+      "found_by_session": null,
+      "injection": {
+        "commit": "f4208738e2f5",
+        "date": "2026-10-19",
+        "subject": "feat(routing): phase 1 -- the shared primitive, two consumers, and the one branch that is blocked",
+        "lag_days": 1
+      },
+      "citation_note": "Covered in spirit by tests/stonedesk_bare_envelope_actions.js, whose DATA_LESS list did not include optimize on rt_routes. Proposed: the list is derived from api/sd-data.js 200 responses with no data key, not hand-kept.",
+      "contributing_factors": [
+        {
+          "factor": "The b34 repoint moved the call onto sdData(), whose return is j.data, for an action whose answer has no data key.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "sdDataEnvelope(), a named transport returning the envelope."
+        },
+        {
+          "factor": "The bare-envelope guard keeps a HAND list of data-less actions and optimize was not on it, so the guard passed.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "Proposed: derive the list from the endpoint (cody's test file; routed, not edited)."
+        },
+        {
+          "factor": "Order validation checked length only, so a malformed server order could drop and duplicate stops.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Integer, in-range, each-once permutation check."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. locked is never set by StoneDesk; great-circle is unreachable without coordinates; the manual press shows no confirmation; 0/negative savings render like null; routes.js mid-route pin restart. Not driven against a live StoneDesk tenant (no StoneDesk login available)."
     },
     {
       "commit": "7cce0d6d56ce",
