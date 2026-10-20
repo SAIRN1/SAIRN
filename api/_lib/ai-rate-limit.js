@@ -51,7 +51,7 @@
 // without blocking. Flip it deliberately once the real numbers are known AND
 // the RPC migration has been run:
 //     SAIRN_AI_RATE_LIMIT_MODE=enforce
-//     SAIRN_AI_DAILY_LIMIT=200          (optional, default 200)
+//     SAIRN_AI_DAILY_LIMIT=1000         (optional, default 1000 -- was 200 until b26)
 //
 // ══ READ THIS BEFORE FLIPPING enforce: IT IS ALSO A TENANCY DECISION ══════
 //
@@ -109,7 +109,22 @@
 
 const TABLE = 'sairn_ai_rate_limit_log';
 const RPC = 'sairn_ai_rate_limit_consume';
-const DEFAULT_DAILY_LIMIT = 200;
+// ── THE DEFAULT IS 1000, RAISED FROM 200 (2026-10-20, b26) ─────────────────
+// Because b25 made an ABSENT SAIRN_AI_RATE_LIMIT_MODE mean ENFORCE, and
+// production has that variable absent (Michael, Vercel production, 2026-10-20),
+// the ceiling below is now a LIVE refusal and not a log line. 200 was chosen for
+// observe mode, where exceeding it cost nothing. As an enforced ceiling it is
+// one app's whole day: every tenant of an app shares it, and the sub-budget
+// below caps one tenant at half. A busy firm, or a day of sales demos on one
+// app, reaches 100-200 calls well inside business hours.
+//
+// 1000 IS A JUDGMENT, NOT A MEASUREMENT: no per-app daily count has been read
+// from sairn_ai_rate_limit_log. It is chosen to sit above a plausible heavy day
+// while still bounding a runaway loop or a leaked key to a known dollar figure
+// per app per day. Tune it from the log, or override with SAIRN_AI_DAILY_LIMIT
+// without a deploy. The tenant share and contention floor default to half of
+// this, so they move with it (500 / 500).
+const DEFAULT_DAILY_LIMIT = 1000;
 const WINDOW_SECONDS = 24 * 60 * 60;
 
 function dailyLimit() {

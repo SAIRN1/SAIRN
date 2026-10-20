@@ -7792,9 +7792,11 @@ function sdCsvCell(v){var s=v==null?'':String(v);if(/^[=+\-@\t\r]/.test(s)&&!(s!
     // The slab was reserved above, before the invoice existed. sdReserveSlab()
     // already adopted the server's row into sdSlabs and saved -- nothing to do
     // here, and doing it again locally would re-introduce the blind write.
-    fetch('https://sairn.vercel.app/api/bridge',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',event_type:'pos_sale',source_device:'mobile',timestamp:new Date().toISOString(),payload:inv})
-    }).catch(function(){ /* bridge sync optional -- sale is already saved locally */ });
+    // REMOVED 2026-10-20 (hank b26): a `pos_sale` push to api/bridge sat here. It
+    // sent the invoice AND the customer signature to an endpoint that has refused
+    // it since b22 (no ?action= -> 400 UNKNOWN_ACTION; before that 401, because
+    // it carried no Authorization header) and its catch swallowed the answer.
+    // Nothing else reads a pos_sale event. The sale is saved by invSaveStore().
     document.getElementById('pos-confirm').style.display='block';
     document.getElementById('pos-confirm').innerHTML='✅ Sale recorded as <strong>'+inv.num+'</strong> — $'+total.toFixed(2)+' ('+inv.status+')';
     if(typeof showToast==='function') showToast('Sale '+inv.num+' recorded');
@@ -12815,7 +12817,7 @@ function fmRenderMap(containerId, stops){
     body:JSON.stringify({addresses:addrs})})
     .then(function(r){ return r.ok?r.json():Promise.reject(r.status); })
     .then(function(data){ if(data.imageUrl) el.innerHTML='<img src="'+escHtml(data.imageUrl)+'" alt="Route map">'; else el.innerHTML='<div class="fm-map-placeholder">Map unavailable.</div>'; })
-    .catch(function(){ el.innerHTML='<div class="fm-map-placeholder">Map unavailable -- check GOOGLE_MAPS_API_KEY is set.</div>'; });
+    .catch(function(){ el.innerHTML='<div class="fm-map-placeholder">Map unavailable.</div>'; });
 }
 
 // HARD GATE (2026-08-06): a stop cannot be marked Done until a QC-APPROVED

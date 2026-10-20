@@ -1,0 +1,29 @@
+    # -- ADDED 2026-10-20 (hank b26) -- NOT LANDED, see
+    # docs/2026-10-20-hank-b26-notes.md item 1 for the two blockers.
+    {
+        'tool': 'push_gate_path_scope_sabotage_probe.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-10-20, report-only. CONCEPT: a gate that refuses is '
+                    'only a gate while something re-asks it to; this plants one '
+                    'out-of-scope path per population plus one auditor path, '
+                    'drives the REAL pre-push hook in a scratch worktree, and '
+                    'exits non-zero the day any of the five stops being '
+                    'refused BY NAME. Exit 2 (INCONCLUSIVE) is reported as a '
+                    'finding and never as a pass, so a plant that did not '
+                    'reach the outgoing range cannot read as clean.',
+        'catches': 'pre-push CHECK 5d (gate path-scope) having stopped '
+                   'refusing: a foreign-population path allowed through, a '
+                   'refusal that does not NAME the planted path, or one that '
+                   'does not NAME the deciding rule (FOREIGN / AUDITOR).',
+        'evidence': 'REAL RUN 2026-10-20 (hank b26), python -u, exit 0: '
+                    '"5 of 5 decided and matched, 0 decided and did NOT match, '
+                    '0 INCONCLUSIVE" -- hank/cc/cody/fourth each REFUSED with '
+                    'FOREIGN named, the auditor path REFUSED with AUDITOR '
+                    'named. --selftest: all arms pass. WALL TIME ~520s '
+                    '(05:14:00 to 05:22:40), which is the reason this is not '
+                    'a casual entry: the sweep runner gives every entry a '
+                    'hard 300s subprocess timeout, so as written this entry '
+                    'TIMES OUT and lands in `unrun` on every pass. Log: '
+                    'docs/2026-10-20-hank-b26-path-scope-probe-run1.log.',
+    },

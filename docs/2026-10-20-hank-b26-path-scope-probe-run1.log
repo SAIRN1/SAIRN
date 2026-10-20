@@ -1,0 +1,16 @@
+  ok      hank    tools/zz_pathscope_probe.py                             want FOREIGN -> REFUSED
+          refusal names the path and names FOREIGN
+  ok      cc      api/zz_pathscope_probe.js                               want FOREIGN -> REFUSED
+          refusal names the path and names FOREIGN
+  ok      cody    stonedesk_zz_pathscope_probe.html                       want FOREIGN -> REFUSED
+          refusal names the path and names FOREIGN
+  ok      fourth  tests/zz_pathscope_probe.js                             want FOREIGN -> REFUSED
+          refusal names the path and names FOREIGN
+  ok      cc      .claude/skills/sairn-hover-auditor/tools/zz_pathscope.py want AUDITOR -> REFUSED
+          refusal names the path and names AUDITOR
+
+PRE-PUSH CHECK 5d (gate path-scope) -- sabotage, scratch worktree
+  5 of 5 decided and matched
+  0 decided and did NOT match
+  0 INCONCLUSIVE -- counted in neither
+EXIT 0

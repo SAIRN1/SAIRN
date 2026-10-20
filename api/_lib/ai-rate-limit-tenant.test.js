@@ -106,8 +106,8 @@ const RAW_KEY = 'DNT-PINNACLE-2026';  // the bearer secret that must never appea
     const rpc = f.calls.filter((c) => c.url.indexOf('rpc/') !== -1)[0];
     assert.ok(rpc, 'no RPC call was made at all');
     assert.strictEqual(rpc.body.p_tenant_key, HASH);
-    assert.strictEqual(rpc.body.p_tenant_limit, 100, 'default share is half of 200');
-    assert.strictEqual(rpc.body.p_contention_floor, 100, 'default floor is half of 200');
+    assert.strictEqual(rpc.body.p_tenant_limit, 500, 'default share is half of 1000');
+    assert.strictEqual(rpc.body.p_contention_floor, 500, 'default floor is half of 1000');
     assert.strictEqual(r.tenant_scoped, true);
   });
 

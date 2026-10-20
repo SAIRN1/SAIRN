@@ -88,7 +88,10 @@ function load() {
   process.env.SUPABASE_URL = 'https://example.supabase.co';
   process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-key';
   process.env.SAIRN_AI_DAILY_LIMIT = '5';
-  delete process.env.SAIRN_AI_RATE_LIMIT_MODE;      // observe
+  // SET, NOT DELETED (b26): an absent mode has meant ENFORCE since b25, so the
+  // arms below that assert 'observe' have to ask for it. The absent case is
+  // covered by b25-revoke-race-and-failclosed.test.js.
+  process.env.SAIRN_AI_RATE_LIMIT_MODE = 'observe';
 
   // ---- exact-count parsing, the bug fixed on the way past ----------------
   const { exactCountFrom } = load();
@@ -155,7 +158,7 @@ function load() {
     assert.ok(results.every(r => r.mode === 'enforce'));
     assert.strictEqual(be.log.length, 8,
       'and blocked calls are still recorded, so observe data is not clipped');
-    delete process.env.SAIRN_AI_RATE_LIMIT_MODE;
+    process.env.SAIRN_AI_RATE_LIMIT_MODE = 'observe';
   }
 
   // ---- fail open, every way it can fail --------------------------------
