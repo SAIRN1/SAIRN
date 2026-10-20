@@ -35118,7 +35118,7 @@
       "recurrence_open": "NOT CLOSED. (1) addCredential() still calls rCredentials() after a local add, which replaces a real board with the not-checked view during the write -- a different defect, not fixed here. (2) Out-of-order completion is unguarded: two evaluations render in the order they SETTLE, so an older response can overwrite a newer one. (3) Nothing sweeps for the class across the other apps."
     },
     {
-      "commit": "41f2c586b440",
+      "commit": "da64a94b38d2",
       "date": "2026-10-20",
       "subject": "fix(sairnbiz b42): invoice and employee ids were the last four digits of the clock -- now sequential and unique per device series",
       "files": [
@@ -35292,7 +35292,7 @@
       "recurrence_open": "the cross-device half is DETECTED and not PREVENTED: two devices both offline at the moment of issue can still mint the same number and nothing client-side can stop it. The complete fix is a server-side per-year sequence in api/sd-data.js, which is cody's file and is routed"
     },
     {
-      "commit": "5fce516dc22d",
+      "commit": "6494262c9654",
       "date": "2026-10-20",
       "subject": "fix(sairnbiz b42): an overtime threshold of 168 was honoured, though no hour can ever exceed it",
       "files": [
@@ -35337,7 +35337,7 @@
       "recurrence_open": "NOT CLOSED. While the timesheet holds SIX days the maximum recordable week is 144 hours, so thresholds 145-167 are equally unreachable and still honoured; the exact bound is the record own maximum and moves to 168 only when day seven lands (held on api/sd-data.js, cody b29)."
     },
     {
-      "commit": "73a5f942c808",
+      "commit": "cf1e3cd19ca1",
       "date": "2026-10-20",
       "subject": "fix(sairndental b42): the latest credential ask wins, a stale answer no longer overwrites a newer one, and adding a credential no longer blanks the board",
       "files": [
@@ -35446,7 +35446,7 @@
       "recurrence_open": "the deployed rate-limit mode is NOT OBSERVABLE from outside: the response carries no mode and a burst of 12 calls is equally consistent with observe and with a daily ceiling above twelve. So if SAIRN_AI_RATE_LIMIT_MODE is absent or misspelled in Vercel, this change switches the cost limiter ON at the daily ceiling on deploy. vercel env ls production is the check and it is the first open item in the handoff"
     },
     {
-      "commit": "a8dc04dbdf2e",
+      "commit": "ebe472e14e9b",
       "date": "2026-10-20",
       "subject": "fix(sairncode b42): a rejected coded item was counted among those that \"cleared every check\"",
       "files": [
