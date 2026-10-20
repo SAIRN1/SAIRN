@@ -9465,7 +9465,16 @@ module.exports = async (req, res) => {
       if (!RF_BROAD_READ_ROLES[session.role]) {
         out = out.filter((r) => r.assigned_employee_id === session.employee_id);
       }
-      const data = out.map((r) => Object.assign({ id: r.job_id, job_class: r.job_class || 'residential', assigned_employee_id: r.assigned_employee_id || '', location_id: r.location_id || roofingLocations.DEFAULT_LOCATION_ID }, r.data));
+      // ── THE REAL COLUMNS GO LAST (b32, fourth's b37 Tier A review §7.1) ────
+      // Object.assign lets the LATER source win. This used to put the columns
+      // FIRST and the blob last, so a blob copy of any of these four keys
+      // would have overridden the value the server authorised and stored --
+      // not an access bypass (the privacy filter above tests the real
+      // column), but the attribution the client is TOLD, on the Tier A row
+      // whose A-grounds are branch attribution. It was inert only because
+      // storedBlob strips all four keys on write: ONE point of failure,
+      // serving both directions. rf_claims' read already has the safe order.
+      const data = out.map((r) => Object.assign({}, r.data || {}, { id: r.job_id, job_class: r.job_class || 'residential', assigned_employee_id: r.assigned_employee_id || '', location_id: r.location_id || roofingLocations.DEFAULT_LOCATION_ID }));
       res.status(200).json({ ok: true, data, provisioned: true });
       return;
     }
@@ -9650,7 +9659,9 @@ module.exports = async (req, res) => {
       });
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
-      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, job_class: jobClass, assigned_employee_id: requestedAssignee || '', location_id: locationId }, jobData) });
+      // Columns LAST, same reason as the read above: the response must carry
+      // what was stored, not what the blob says.
+      res.status(200).json({ ok: true, data: Object.assign({}, jobData, { id: payload.id, job_class: jobClass, assigned_employee_id: requestedAssignee || '', location_id: locationId }) });
       return;
     }
 
