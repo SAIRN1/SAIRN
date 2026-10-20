@@ -35181,7 +35181,7 @@
       "recurrence_open": "NOT CLOSED FOR THE CLASS, and it is the same open class as the GFE record filed against this commit: a summary that cannot distinguish nothing-wrong from nothing-known. Specifically still open here: the four null conditions are still not distinguished from each other in the UI, so a practice cannot tell a missing licence key from an unreachable server. And nothing sweeps the platform for hardcoded KPI defaults that an early return leaves standing -- every app on this platform renders tiles from markup defaults the same way."
     },
     {
-      "commit": "69684cd90ab5",
+      "commit": "ece9de35ba08",
       "date": "2026-10-20",
       "subject": "fix(sairnbiz b45): Z7 -- payroll priced overtime hours at the straight rate; one OT-aware week price now feeds payroll, the timesheet and the CSV",
       "files": [
@@ -35884,7 +35884,7 @@
       "recurrence_open": "The DETECTION factor is closed for these three files and open everywhere else: arms C1/C2 scan api/sd-data.js, api/sc-eligibility.js and api/audit-checkpoint.js only. Nothing sweeps the other 60-odd api/*.js files, and the shape is not specific to these three -- any handler that reads an upstream body to classify it can fall through carrying it. The PROCESS factor is also open: upstream()'s convention is still written down only inside upstream(), so the next branch to classify a body itself has nothing telling it what to do with the body afterwards. The right close is a repo-wide sweep plus one sentence in docs/SAIRN-PROCESS-RULES.md, and neither is done."
     },
     {
-      "commit": "855ccbe13224",
+      "commit": "b5eef18d58b9",
       "date": "2026-10-20",
       "subject": "fix(sairndental b45): seven client-side defects from the b44 correctness audit -- on-time appeals, the GFE snapshot, two disclaimers, holidays, the binding date, the badge",
       "files": [
@@ -36080,7 +36080,7 @@
       "recurrence_open": "NOT CLOSED. (1) Vendor ids use the same shape (\"V\"+Date.now() last 4, sairnbiz.html saveVendor) and were not in scope. (2) Two TABS of one browser minting in the same instant share the counter and can race. (3) Nothing sweeps the platform for Date.now()-derived ids; stonedesk.html has INV-+Date.now() at two sites."
     },
     {
-      "commit": "22a4e942001c",
+      "commit": "41f825dbb689",
       "date": "2026-10-20",
       "subject": "fix(stonedesk b45): Field Map -- stops can be locked in place, a manual optimise confirms itself, and a zero saving is said rather than shown as \"~0 min\"",
       "files": [
@@ -36288,7 +36288,7 @@
       "recurrence_open": "NOT CLOSED. No suite in tests/ covers the coded-items panel at all; the b42 drive lives in the scratchpad, not the repo."
     },
     {
-      "commit": "c4461ff1c02b",
+      "commit": "687d60360e7e",
       "date": "2026-10-20",
       "subject": "fix(stonedesk b45): anti-framing on stonedesk and stonedesk-hr, applied from hank's b33 patch as written",
       "files": [
