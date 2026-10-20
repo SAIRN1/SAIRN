@@ -4208,6 +4208,26 @@
         "sairnlaw.html",
         "sql/rt_routes_schema.sql"
       ]
+    },
+    {
+      "id": "fourth-1792477548",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "b39: sairndental two render fixes (GFE issued_at vs dueDate lateness; credentialing KPI tiles telling clean from unchecked) + Tier A review obligation + browser verification of both; re-read the 5 sibling leg_* rows and finish the CRITICALITY-TIERS pass; sairncode B1/B3/B4 artefacts off the full text of 45 CFR 170.315(b)(11); sairndesign worldwide competitive-gap audit; push; handoff/report/digest. FILES: sairndental.html docs/CRITICALITY-TIERS.md docs/tier-a-reviews.json docs/cloud-research/ docs/2026-10-20-fourth-b39-notes.md SAIRN-handoff-fourth-b39.md SAIRN-report-fourth-b39.txt SAIRN-digest-fourth-b39.txt docs/batch-manifest-fourth-b39.json NOT-stonedesk-html-hanks NOT-api-sd-data-js-codys NOT-tools-shared-REPORT-ONLY NOT-dot-claude-shared-REPORT-ONLY NOT-sairncode-html-DOCS-ONLY-THIS-BATCH",
+      "claimed_at": "2026-10-20T06:25:48Z",
+      "claimed_at_epoch": 1792477548.3646998,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b39.txt",
+        "SAIRN-handoff-fourth-b39.md",
+        "SAIRN-report-fourth-b39.txt",
+        "docs/2026-10-20-fourth-b39-notes.md",
+        "docs/CRITICALITY-TIERS.md",
+        "docs/batch-manifest-fourth-b39.json",
+        "docs/tier-a-reviews.json",
+        "sairndental.html"
+      ]
     }
   ],
   "refusals": [
