@@ -111,6 +111,18 @@ function harness(opts) {
     + declSrc('var SB_INCIDENT_CLASS={') + '\n'
     + declSrc('var SB_INCIDENT_TYPE={') + '\n'
     + fnBody('function sbIncidentsYTD(') + '\n'
+    // ADDED 2026-10-20 (hank b24), AND IT IS A DEPENDENCY RATHER THAN AN
+    // EXTRA. rIncidents() now consults sbCaseNoCollisions() to mark a
+    // duplicate OSHA Form 300 Column A, so lifting the render without it made
+    // nine arms in this file die on `sbCaseNoCollisions is not defined`.
+    //
+    // THE ALTERNATIVE WAS A `typeof === 'function'` GUARD IN THE RENDER AND IT
+    // WAS REJECTED: in the browser both functions are in the same file, so
+    // such a guard could only ever fire in a harness that lifted one and not
+    // the other -- and it would make THIS file report the render as fine while
+    // the duplicate warning never appeared. A missing dependency in a lift is
+    // the harness's defect to fix, not the app's to paper over.
+    + fnBody('function sbCaseNoCollisions(') + '\n'
     + fnBody('function rIncidents(') + '\n'
     + fnBody('function rTrain()'), ctx);
   ctx.rTrain();

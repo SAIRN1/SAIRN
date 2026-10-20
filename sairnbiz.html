@@ -4681,14 +4681,67 @@ var SB_INCIDENT_TYPE={injury:'Injury',skin:'Skin disorder',
 // the incident date because the log itself is per-year. Derived from the
 // records already stored, so two incidents entered in either order still get
 // stable, non-colliding numbers within their own year.
+//
+// ── TWO HOLES CLOSED AND ONE NAMED, 2026-10-20 (hank b24) ─────────────────
+// CONCEPT: an OSHA Form 300 case number must be unique within its
+// establishment-year WHEREVER IT WAS ISSUED.
+//
+// HOLE 1, CLOSED HERE. The year test was `String(r.year)!==String(year)`, so
+// any row whose `year` FIELD was absent -- a row that reached this device by
+// any route other than saveIncident() -- was INVISIBLE to this max scan, and
+// the next save re-issued a number that row already held. On one device, with
+// no second device involved. The date is now the fallback, because a row's
+// `date` is the thing OSHA cares about and it is required on every save.
+//
+// HOLE 2, DETECTED AND NOT PREVENTED -- see sbCaseNoCollisions() below. This
+// function reads ONE DEVICE'S localStorage, and `sbServerWinsMerge()` matches
+// rows BY `id`, which is generated per device. So two devices each issue 1 for
+// the same year, both rows survive the merge, and both print as `2026-1` while
+// the 300A totals stay correct. Nothing client-side can prevent that: the
+// COMPLETE fix is a server-side per-year sequence in api/sd-data.js, which is
+// routed rather than done here.
+//
+// AND THE NUMBER IS NEVER REWRITTEN. A case number already printed on a filed
+// Form 300 is a regulatory record; resolving a duplicate is a human act, so
+// the collision is SHOWN in the column that is wrong and nothing renumbers.
+// api/b24-osha-caseno-collision.test.js holds the reproduction and the arms.
 function sbNextCaseNo(list,year){
   var n=0;
   (Array.isArray(list)?list:[]).forEach(function(r){
-    if(!r||String(r.year)!==String(year))return;
+    if(!r)return;
+    // The row's own `year` when it has one, otherwise the year of its date.
+    // NOT `r.year||...` -- a stored year of 0 is not a year, and the `||`
+    // spelling would silently prefer the date in a case nobody would test.
+    var ry=(r.year===undefined||r.year===null||r.year==='')
+      ?String(r.date||'').slice(0,4):String(r.year);
+    if(ry!==String(year))return;
     var v=parseInt(r.case_no,10);
     if(!isNaN(v)&&v>n)n=v;
   });
   return n+1;
+}
+
+// Which Column A values are held by MORE THAN ONE row in the same year.
+// Returns the `<year>-<case_no>` strings, one per duplicated number rather
+// than one per colliding pair -- a reader needs the NUMBER that is wrong.
+//
+// A row with NO case number is NOT reported here. That is a different defect
+// -- an unnumbered case -- and calling it "duplicate --" would send somebody
+// looking for a number neither row has.
+function sbCaseNoCollisions(list){
+  var seen={},dup={},out=[];
+  (Array.isArray(list)?list:[]).forEach(function(r){
+    if(!r)return;
+    var v=parseInt(r.case_no,10);
+    if(isNaN(v))return;
+    var ry=(r.year===undefined||r.year===null||r.year==='')
+      ?String(r.date||'').slice(0,4):String(r.year);
+    if(!ry)return;
+    var k=ry+'-'+v;
+    if(seen[k]){if(!dup[k]){dup[k]=true;out.push(k);}}
+    else seen[k]=true;
+  });
+  return out;
 }
 
 // The tile beside this log is labelled "YTD OSHA log", so the count is YTD.
@@ -4708,6 +4761,13 @@ function rIncidents(list){
   var rows=(Array.isArray(list)?list.slice():[]).sort(function(a,b){
     return String(b.date||'').localeCompare(String(a.date||''));
   });
+  // ── A DUPLICATE COLUMN A IS SHOWN IN COLUMN A (2026-10-20, hank b24) ────
+  // Not in a banner elsewhere on the page: the column that is wrong is where
+  // a reader transcribing onto Form 300 is already looking. The number is NOT
+  // reassigned here -- see sbNextCaseNo() for why a printed case number is a
+  // human's to resolve.
+  var dupKeys={};
+  sbCaseNoCollisions(rows).forEach(function(k){dupKeys[k]=true;});
   el.innerHTML=rows.length?rows.map(function(r){
     // PRIVACY CASE: 1904.29(b)(6)-(9). The name is NOT rendered here. It is
     // still on the record and the modal says so in as many words -- hiding it
@@ -4715,7 +4775,16 @@ function rIncidents(list){
     // the honest half of a rule this app cannot fully satisfy, because OSHA
     // wants a SEPARATE confidential list and there is not one.
     var who=r.privacy?'<em>Privacy Case</em>':H(r.emp||'--');
-    return '<tr><td>'+H(String(r.year||'')+'-'+String(r.case_no||''))+'</td>'+
+    var ry=(r.year===undefined||r.year===null||r.year==='')
+      ?String(r.date||'').slice(0,4):String(r.year);
+    var cn=parseInt(r.case_no,10);
+    var dupMark=(!isNaN(cn)&&dupKeys[ry+'-'+cn])
+      ?'<br><strong style="color:#b45309">&#9888; DUPLICATE case number -- '
+       +'another entry in '+H(ry)+' also holds '+cn+'. Two recordable cases '
+       +'cannot share one Column A; correct one on the log before filing.'
+       +'</strong>'
+      :'';
+    return '<tr><td>'+H(String(r.year||'')+'-'+String(r.case_no||''))+dupMark+'</td>'+
       '<td>'+fdate(r.date)+'</td><td><strong>'+who+'</strong></td>'+
       '<td>'+H(r.job||'--')+'</td><td>'+H(r.where||'--')+'</td>'+
       '<td>'+H(r.desc||'')+'</td>'+
