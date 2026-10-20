@@ -93,8 +93,19 @@ EXIT_COULD_NOT_RUN = 2
 #
 # THE FAILURE MODE IS NOISE, NOT A BYPASS: an absent key still earns its 401
 # from the platform. What a stale list costs is the NOTE below meaning nothing.
+#
+# ── ADDED 2026-10-20 (hank b35): SEN-AUDIT-2026, ON ITS OWN MEASUREMENT ──────
+# A key joins this tuple only with the measurement that proved it exists.
+# Minted by sql/mint_sen_audit_2026.sql. check_license against the deployed
+# platform, 2026-10-20 (hank b28): 200 {"ok":true,"active":true,
+# "app_id":"sairnsenior"}, identical to the SEN-PINNACLE-2026 control. Then
+# exercised end to end the same day: the straight-time-floor probe signed in
+# on it and passed B1-B4 (register CONFIRMED CLEAN, 144dfb715).
+#
+#   SEN-AUDIT-2026   200 EXISTS   (seeded 2026-10-20)
 KNOWN_AUDIT_KEYS = ('SD-AUDIT-2026', 'RF-AUDIT-2026', 'ALF-AUDIT-2026',
-                    'LAW-AUDIT-2026', 'MECH-AUDIT-2026', 'SC-AUDIT-2026')
+                    'LAW-AUDIT-2026', 'MECH-AUDIT-2026', 'SC-AUDIT-2026',
+                    'SEN-AUDIT-2026')
 
 
 def is_audit_licence(key):
