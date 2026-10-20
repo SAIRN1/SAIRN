@@ -917,6 +917,23 @@
                     <tbody id="coded-items-auto-tbody"></tbody>
                 </table></div>
             </div>
+
+            <div style="font-weight:700;font-size:15px;margin:24px 0 6px;">Decided by a coder <span id="coded-items-decided-count" style="font-weight:400;color:#666;font-size:13px;"></span></div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">
+                Items a coder accepted or rejected from the queue above. A rejected item did NOT clear
+                every check -- it was held, and a person decided against it.
+            </div>
+            <div class="table-container">
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
+                    <thead>
+                        <tr>
+                            <th>Code</th><th>Encounter</th><th>Citation</th>
+                            <th>Reasoning</th><th>Source rule</th><th>Status</th><th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="coded-items-decided-tbody"></tbody>
+                </table></div>
+            </div>
         </div>
 
         <!-- Claims Panel -->
@@ -7399,17 +7416,23 @@ How to answer:
         // the auto-assigned table is a record you can audit but do not have
         // to work through. Nothing was auto-assigned unless every real check
         // above passed.
+        // THREE GROUPS, NOT TWO (b42). A decided item leaves the queue -- it is
+        // settled, whichever way it went -- but "settled" is not "cleared every
+        // check": a reviewed_rejected item was HELD and a coder decided against
+        // it. Lumping decided items in with auto_assigned made the queue line say
+        // a rejection had "cleared every check and need no action". A status
+        // this function does not recognise fails CLOSED into the queue rather
+        // than being counted as cleared.
         function scRouteCodedItems(list){
-            var exceptions = [], auto = [];
+            var exceptions = [], auto = [], decided = [];
             list.forEach(function(r){
-                // Anything a human has already decided on leaves the queue --
-                // it is settled, whichever way it went.
-                if (r.review_status === 'needs_human_review') exceptions.push(r);
-                else auto.push(r);
+                if (r.review_status === 'auto_assigned') auto.push(r);
+                else if (r.review_status === 'reviewed_accepted' || r.review_status === 'reviewed_rejected') decided.push(r);
+                else exceptions.push(r);
             });
             var byNewest = function(a, b){ return String(b.created_at || '').localeCompare(String(a.created_at || '')); };
-            exceptions.sort(byNewest); auto.sort(byNewest);
-            return { exceptions: exceptions, auto: auto };
+            exceptions.sort(byNewest); auto.sort(byNewest); decided.sort(byNewest);
+            return { exceptions: exceptions, auto: auto, decided: decided };
         }
 
         // ── (B)(7) FIRST MEASURED LEAF (b41) ─────────────────────────────
@@ -7467,14 +7490,22 @@ How to answer:
             var pending = routed.exceptions.length;
             var queueEl = document.getElementById('coded-items-queue-count');
             if (queueEl) {
+                var nAuto = routed.auto.length, nAcc = 0, nRej = 0;
+                routed.decided.forEach(function(r){ if (r.review_status === 'reviewed_rejected') nRej++; else nAcc++; });
+                var settled = nAuto + ' item' + (nAuto === 1 ? '' : 's') + ' cleared every check; '
+                    + nAcc + ' accepted and ' + nRej + ' rejected by a coder.';
                 queueEl.textContent = pending === 0
-                    ? 'Nothing needs you. ' + routed.auto.length + ' item' + (routed.auto.length === 1 ? '' : 's') + ' on record.'
-                    : pending + ' exception' + (pending === 1 ? '' : 's') + ' need' + (pending === 1 ? 's' : '') + ' a human coder — ' + routed.auto.length + ' other item' + (routed.auto.length === 1 ? '' : 's') + ' cleared every check and need no action.';
+                    ? 'Nothing needs you. ' + settled
+                    : pending + ' exception' + (pending === 1 ? '' : 's') + ' need' + (pending === 1 ? 's' : '') + ' a human coder — ' + settled;
             }
             var autoEl = document.getElementById('coded-items-auto-tbody');
             if (autoEl) scRenderCodedRows(autoEl, routed.auto, 'Nothing auto-assigned yet.');
             var autoCountEl = document.getElementById('coded-items-auto-count');
             if (autoCountEl) autoCountEl.textContent = routed.auto.length ? '(' + routed.auto.length + ')' : '';
+            var decEl = document.getElementById('coded-items-decided-tbody');
+            if (decEl) scRenderCodedRows(decEl, routed.decided, 'No coder decisions yet.');
+            var decCountEl = document.getElementById('coded-items-decided-count');
+            if (decCountEl) decCountEl.textContent = routed.decided.length ? '(' + routed.decided.length + ')' : '';
             scRenderCodedRows(tbody, routed.exceptions, 'No exceptions. Codes that clear every check are auto-assigned and listed below instead.');
         }
 
