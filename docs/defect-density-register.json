@@ -34899,7 +34899,7 @@
       "recurrence_open": "An ABSENT ?action= is STILL accepted and still reaches handlePush -- arm D1 asserts that residual deliberately, because refusing it is a second decision with a different blast radius (stonedesk.html:7795 sends neither an action nor a data_type). The THREE CALLERS are unchanged: stonedesk.html is held by fourth under a live b34 claim, so the caller half is routed rather than fixed, and until it lands :7795 keeps upserting a bridge_data row of three nulls. AND THE REFUSAL IS NOT DEPLOYED at the time of this record, so every arm is against the handler and none against the live URL -- a 401 from the deployed endpoint today is evidence about the licence gate and none about this fix."
     },
     {
-      "commit": "01e239d3834d",
+      "commit": "bc5ca0d18cb4",
       "date": "2026-10-20",
       "subject": "b29(cody): the database's error message is not the client's, three caps that were never this gate's business, and a policy nothing passed the arguments to",
       "files": [
