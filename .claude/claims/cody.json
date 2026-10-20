@@ -4196,8 +4196,8 @@
       "task": "b29: defect 1606 -- the raw PostgREST error body returned to the client as detail, 9 sites 3 shapes, generic message + server-side log only, one arm per shape RED-before/GREEN-after; close the six remaining oversized payload caps starting rf_claim_agreements and update arm C7 EXPECTED_UNCOVERED; sd_locations cap LOWERED to 16384 after measuring the largest real row, update arm C8; rt_stops.license_hash derived from the route row server-side never from the client, with an arm proving a mismatched hash is refused or overwritten (NO SQL -- cc owns the matching FK); paralegal back on the IOLTA reconcile list as PREPARE-ONLY with attorney/owner attestation and a per-firm self-attest setting, b19 R2c/A1 arms updated to that policy and GREEN; b22 D1 DELETED with the F2/F3 arms promoted to handler level and the funeral F2 (livery billing per-home, default no money read) and F3 (apprentice clearance owner-configurable) policy wired into sd-data.js with an arm each; push. FILES: api/sd-data.js api/_lib/countersign.js api/_lib/law-roles.js api/_lib/leg-roles.js api/b19-iolta-reconcile-carveout.test.js api/b22-funeral-f1-f2-f3-wiring.test.js api/b28-photo-cap.test.js api/b29-error-detail.test.js api/b29-rt-stops-hash.test.js api/b29-funeral-f2-f3.test.js docs/2026-10-20-cody-b29-notes.md SAIRN-handoff-cody-b29.md SAIRN-report-cody-b29.txt SAIRN-digest-cody-b29.txt NOT-sql-ccs NOT-tools-shared-REPORT-ONLY NOT-dot-claude-skills-REPORT-ONLY NOT-CLAUDE-md-REPORT-ONLY-ccs NOT-html-fourths NOT-CRITICALITY-TIERS-md-fourths NOT-api-claude-js-hanks NOT-api-lib-ai-rate-limit-js-hanks",
       "claimed_at": "2026-10-20T09:17:04Z",
       "claimed_at_epoch": 1792487824.4991977,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T11:02:20Z",
       "files": [
         "SAIRN-digest-cody-b29.txt",
         "SAIRN-handoff-cody-b29.md",
