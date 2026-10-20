@@ -34899,6 +34899,66 @@
       "recurrence_open": "An ABSENT ?action= is STILL accepted and still reaches handlePush -- arm D1 asserts that residual deliberately, because refusing it is a second decision with a different blast radius (stonedesk.html:7795 sends neither an action nor a data_type). The THREE CALLERS are unchanged: stonedesk.html is held by fourth under a live b34 claim, so the caller half is routed rather than fixed, and until it lands :7795 keeps upserting a bridge_data row of three nulls. AND THE REFUSAL IS NOT DEPLOYED at the time of this record, so every arm is against the handler and none against the live URL -- a 401 from the deployed endpoint today is evidence about the licence gate and none about this fix."
     },
     {
+      "commit": "01e239d3834d",
+      "date": "2026-10-20",
+      "subject": "b29(cody): the database's error message is not the client's, three caps that were never this gate's business, and a policy nothing passed the arguments to",
+      "files": [
+        "api/_lib/law-roles.js",
+        "api/audit-checkpoint.js",
+        "api/b19-iolta-reconcile-carveout.test.js",
+        "api/b27-leg-settings.test.js",
+        "api/b28-photo-cap.test.js",
+        "api/b29-error-detail.test.js",
+        "api/b29-funeral-f2-f3.test.js",
+        "api/b29-law-reconcile-prepare.test.js",
+        "api/b29-rt-stops-hash.test.js",
+        "api/sc-eligibility.js",
+        "api/sd-data.js",
+        "docs/2026-10-20-cody-b29-notes.md",
+        "docs/sairn-path-manifest.json",
+        "sql/sairnlegacy_settings_livery_grants.sql"
+      ],
+      "lines_added": 2467,
+      "lines_removed": 85,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "A raw upstream error body was returned to the HTTP client as `error.detail` at eleven sites in three shapes: the raw PostgREST text at seven sites in api/sd-data.js (rf_proposals, rf_invoices, grd programmes, sd_locations, schedule entries, rules, agreements), the raw Stedi JSON at two sites in api/sc-eligibility.js, and the raw PostgREST rows carried on an Error property and re-echoed at api/audit-checkpoint.js. A PostgREST error names the table, the constraint, the column and frequently the offending value, so this disclosed an internal schema map plus a slice of customer data to any holder of a licence key. api/sc-eligibility.js:309 is the sharpest: it is the 270/271 eligibility check, whose request carries subscriber first name, last name, member id and date of birth, and a payer's rejection routinely echoes the subscriber block it could not match -- so that `detail` could return PHI inside an error envelope. The file's own upstream() helper has logged-and-answered-generically since it was written; these eleven sites bypassed it. Fixed by logging every body to console.error and answering with a generic message that keeps the HTTP status and the error code, which are what distinguish an auth failure from a quota failure and were never the detail. Driven by api/b29-error-detail.test.js, 11 arms: each plants a marker inside the upstream body and asserts it appears NOWHERE in the serialised response AND does appear in the captured server log, so a fix that merely deleted the body would fail too. RED baseline 10 failed / 1 passed, reproduced by stashing the three source files and re-running.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "unknown",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Eleven sites across three files and three different authors over months; there is no single injecting commit. api/sd-data.js's seven are the fall-through of seven separately-written branches, api/sc-eligibility.js's two were written with the defence in a comment, and api/audit-checkpoint.js's one rides on an Error property set in a different function. git log -S on `detail: bt` would name seven commits and none of them is \"the\" injection. Recorded as unknown rather than picking the oldest and calling it the cause."
+      },
+      "citation_note": "No standing numbered rule in docs/SAIRN-PROCESS-RULES.md names \"an upstream error body returned to the client\". The nearest is PR 1.11 (could-not-tell is a third state) and it is the wrong shape: these sites KNEW what went wrong and told the caller too much, rather than failing to tell. The closest thing to a rule the platform does have is the behaviour of api/sd-data.js's own upstream() helper -- log the body, answer \"Data store error, try again\" -- which is a convention held in one function and written down nowhere, which is precisely how eleven sites came to bypass it. The rule worth writing is therefore the one this record argues for: a client error envelope carries a code and a sentence this codebase composed, never a document some other system composed.",
+      "phase_note": "Not one of the four phases cleanly. The seven sd-data.js sites were each written as the fall-through of a branch that had just read the body to classify two known cases, so the leak is a CODING-phase slip repeated seven times by copy. But api/sc-eligibility.js:226 is a DESIGN decision, argued in a comment that is still there in the git history: \"Surface Stedi's real message. Never substitute a generic 'no payers found' for what was actually an auth or quota error.\" That reasoning is half right and was deliberate, which is a different phase from a slip. Recording one phase for both would be a guess.",
+      "contributing_factors": [
+        {
+          "factor": "api/sd-data.js's upstream() helper has had this right since it was written -- log the body, answer generically -- but it is a CONVENTION HELD IN ONE FUNCTION, written down in no rule, no skill and no checker. Seven branches in the same file bypassed it by reading the body themselves to classify two known cases and then falling through, and nothing in the repo could tell them they had.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "One sentence in docs/SAIRN-PROCESS-RULES.md: a client error envelope carries a code and a sentence this codebase composed, never a document another system composed. NOT WRITTEN -- that file is shared and b29 did not edit it; it is reported in docs/2026-10-20-cody-b29-notes.md instead."
+        },
+        {
+          "factor": "Two of the eleven sites were DEFENDED in a comment on reasoning that is half right: 'Surface Stedi's real message. Never substitute a generic no-payers-found for what was actually an auth or quota error.' Distinguishing auth from quota needs the STATUS and the CODE, both always present and neither of them the detail -- so the premise did not support the conclusion, and a comment arguing for a behaviour makes a reviewer less likely to question it rather than more.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Both sites fixed and the old reasoning quoted in place with the half that does not follow named, rather than deleted -- so the next reader sees why it was wrong instead of wondering why it changed."
+        },
+        {
+          "factor": "No checker looked for it. There is no sweep over client error envelopes for values the codebase did not compose, so the only thing that could find this was somebody reading eleven sites across three files.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Arms C1 and C2 of api/b29-error-detail.test.js. C1 sweeps the three files for a `detail:` set from an identifier inside a res.status(...).json(...) statement; C2 runs the SAME function over a fixture carrying one real leak plus a null, a literal and an internal audit call, so a broken pattern cannot report the same zero as clean code. C2 earned its keep immediately by catching a literal backspace (byte 0x08) where the exclusion wanted a word boundary."
+        }
+      ],
+      "recurrence_open": "The DETECTION factor is closed for these three files and open everywhere else: arms C1/C2 scan api/sd-data.js, api/sc-eligibility.js and api/audit-checkpoint.js only. Nothing sweeps the other 60-odd api/*.js files, and the shape is not specific to these three -- any handler that reads an upstream body to classify it can fall through carrying it. The PROCESS factor is also open: upstream()'s convention is still written down only inside upstream(), so the next branch to classify a body itself has nothing telling it what to do with the body afterwards. The right close is a repo-wide sweep plus one sentence in docs/SAIRN-PROCESS-RULES.md, and neither is done."
+    },
+    {
       "commit": "0543598cd4b0",
       "date": "2026-10-20",
       "subject": "control(sabotage b27): a probe must prove the path under test ran before it reports a verdict",
@@ -34958,6 +35018,63 @@
         }
       ],
       "recurrence_open": "verdict() and tally() are OPT-IN and nothing makes a probe call them. The b26 recurrence_open said no other probe in the repo asserts its own plant landed, and that is still true of all of them -- this adds the primitive and one caller, not a sweep. tools/sabotage_control_check.py MEASURES the plant-landed class and does not yet recognise or require the ran-check, so the platform figure it reports is silent on this failure entirely. Nothing refuses a probe that drives a hook over a range it never inspected."
+    },
+    {
+      "commit": "1e104d4b2f2d",
+      "date": "2026-10-20",
+      "subject": "fix(claude+stonedesk b27): the limiter reports its mode, the Field Map map stops calling a dead action, and the SEN audit licence + straight-time-floor fixtures are ready",
+      "files": [
+        "api/_lib/ai-rate-limit.js",
+        "api/b21-bridge-unknown-action.test.js",
+        "api/b27-claude-mode-echo-and-log.test.js",
+        "api/b27-sen-straight-time-floor-fixtures.test.js",
+        "api/bridge.js",
+        "api/claude.js",
+        "docs/2026-10-20-hank-b27-notes.md",
+        "docs/2026-10-20-hank-b27-sen-straight-time-floor-fixtures.json",
+        "docs/2026-10-20-hank-b27-sen-straight-time-floor-live-probe.py",
+        "sql/mint_sen_audit_2026.sql",
+        "sql/verify_sen_audit_2026.sql",
+        "stonedesk.html"
+      ],
+      "lines_added": 873,
+      "lines_removed": 16,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "The StoneDesk Field Map map never rendered: fmRenderMap POSTed ?action=maps-static to api/bridge, an action that has never existed on main, so every call was refused and every call sent each stop's customer address to the refusing endpoint; the catch arm blamed a Maps key the request never reached (cut in b26). Replaced by a directions link built from the stops. The same commit makes the AI limiter's resolved mode, configured flag and ceiling readable on the response, since the deployed mode had been unobservable from outside.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the maps-static action was added on a branch that is not an ancestor of main (the same story bridge.js records for maps-optimize), so there is no main commit that introduced the mismatch to cite"
+      },
+      "citation_note": "A caller of an action its callee never had. b21 closed the endpoint half (UNKNOWN_ACTION); no standing rule covers the caller half, which is how this page kept calling it.",
+      "contributing_factors": [
+        {
+          "factor": "stonedesk.html asked api/bridge for ?action=maps-static, an action that was only ever written on a branch and never reached main. Every call answered 400 UNKNOWN_ACTION (401 before b21), so the Field Map map has not rendered, and each call carried every stop's customer address to an endpoint that refused it.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "fmRenderMap no longer calls bridge; it builds a Google Maps directions link from the stops in display order (no key, no server call, addresses leave only on click)."
+        },
+        {
+          "factor": "The catch arm told the reader to check GOOGLE_MAPS_API_KEY, a key the request never reached, so the failure was filed under the wrong layer for as long as it existed.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The catch message was cut to 'Map unavailable.' in b26 and the whole call is gone in b27."
+        },
+        {
+          "factor": "The deployed rate-limit mode could not be read from outside: the response carried no mode, so a 12-call burst could not tell observe from a high ceiling and a misspelled variable was invisible until it bit.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "api/claude.js now echoes rate_limit_mode, rate_limit_configured and rate_limit_limit on any response that reached the limiter; an unauthenticated request still reveals nothing."
+        }
+      ],
+      "recurrence_open": "The map is now a link and not an embedded image, which is a smaller feature than the one the page was written to have; a server-built static map would need a decision about where a Maps key may live."
     },
     {
       "commit": "21a4b3ceb2a7",
@@ -35123,63 +35240,6 @@
         }
       ],
       "recurrence_open": "NOT CLOSED. (1) addCredential() still calls rCredentials() after a local add, which replaces a real board with the not-checked view during the write -- a different defect, not fixed here. (2) Out-of-order completion is unguarded: two evaluations render in the order they SETTLE, so an older response can overwrite a newer one. (3) Nothing sweeps for the class across the other apps."
-    },
-    {
-      "commit": "1e104d4b2f2d",
-      "date": "2026-10-20",
-      "subject": "fix(claude+stonedesk b27): the limiter reports its mode, the Field Map map stops calling a dead action, and the SEN audit licence + straight-time-floor fixtures are ready",
-      "files": [
-        "api/_lib/ai-rate-limit.js",
-        "api/b21-bridge-unknown-action.test.js",
-        "api/b27-claude-mode-echo-and-log.test.js",
-        "api/b27-sen-straight-time-floor-fixtures.test.js",
-        "api/bridge.js",
-        "api/claude.js",
-        "docs/2026-10-20-hank-b27-notes.md",
-        "docs/2026-10-20-hank-b27-sen-straight-time-floor-fixtures.json",
-        "docs/2026-10-20-hank-b27-sen-straight-time-floor-live-probe.py",
-        "sql/mint_sen_audit_2026.sql",
-        "sql/verify_sen_audit_2026.sql",
-        "stonedesk.html"
-      ],
-      "lines_added": 873,
-      "lines_removed": 16,
-      "app": "stonedesk",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "The StoneDesk Field Map map never rendered: fmRenderMap POSTed ?action=maps-static to api/bridge, an action that has never existed on main, so every call was refused and every call sent each stop's customer address to the refusing endpoint; the catch arm blamed a Maps key the request never reached (cut in b26). Replaced by a directions link built from the stops. The same commit makes the AI limiter's resolved mode, configured flag and ceiling readable on the response, since the deployed mode had been unobservable from outside.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "the maps-static action was added on a branch that is not an ancestor of main (the same story bridge.js records for maps-optimize), so there is no main commit that introduced the mismatch to cite"
-      },
-      "citation_note": "A caller of an action its callee never had. b21 closed the endpoint half (UNKNOWN_ACTION); no standing rule covers the caller half, which is how this page kept calling it.",
-      "contributing_factors": [
-        {
-          "factor": "stonedesk.html asked api/bridge for ?action=maps-static, an action that was only ever written on a branch and never reached main. Every call answered 400 UNKNOWN_ACTION (401 before b21), so the Field Map map has not rendered, and each call carried every stop's customer address to an endpoint that refused it.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "fmRenderMap no longer calls bridge; it builds a Google Maps directions link from the stops in display order (no key, no server call, addresses leave only on click)."
-        },
-        {
-          "factor": "The catch arm told the reader to check GOOGLE_MAPS_API_KEY, a key the request never reached, so the failure was filed under the wrong layer for as long as it existed.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "The catch message was cut to 'Map unavailable.' in b26 and the whole call is gone in b27."
-        },
-        {
-          "factor": "The deployed rate-limit mode could not be read from outside: the response carried no mode, so a 12-call burst could not tell observe from a high ceiling and a misspelled variable was invisible until it bit.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "api/claude.js now echoes rate_limit_mode, rate_limit_configured and rate_limit_limit on any response that reached the limiter; an unauthenticated request still reveals nothing."
-        }
-      ],
-      "recurrence_open": "The map is now a link and not an embedded image, which is a smaller feature than the one the page was written to have; a server-built static map would need a decision about where a Maps key may live."
     },
     {
       "commit": "5217024d6958",
