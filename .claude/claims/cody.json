@@ -4171,8 +4171,8 @@
       "task": "b28: rt_routes LIVE endpoint check end to end; role-from-token bypass in api/sd-data.js prepared-only mode (settling re-verifies ACTIVE but not ROLE) reproduce+fix+arm; patient photo booking cap mismatch -- public-book.js writes up to 1.2MB but the staff path applies a uniform 65536 cap so a 300KB photo can neither be confirmed nor rejected, fix the CAP side, plus the unreachable 1.5MB branch near sd-data.js:9857; currency sweep of cody-owned skills/tools/methodology vs standing rules (REPORT-ONLY on shared items, no edits); redo b27 item 4 with the atexit/process.on hook at the TOP of each file, verified by --drive; push without force and confirm. FILES: api/sd-data.js api/sairndental/public-book.js api/_lib/dental-photo-validation.js api/b28-role-from-token.test.js api/b28-photo-cap.test.js api/sd-data-appointments-photos.test.js docs/b27-logs/stable_last_line.py docs/known-red-suites.json tests/run_rebase_resolve_probe.py docs/2026-10-20-cody-b28-notes.md SAIRN-handoff-cody-b28.md SAIRN-report-cody-b28.txt SAIRN-digest-cody-b28.txt NOT-tools-shared-REPORT-ONLY NOT-dot-claude-skills-REPORT-ONLY NOT-CRITICALITY-TIERS-md-fourths NOT-html-fourths NOT-api-bridge-js-hanks NOT-api-law-hanks",
       "claimed_at": "2026-10-20T07:33:49Z",
       "claimed_at_epoch": 1792481629.5681324,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T09:06:58Z",
       "files": [
         "SAIRN-digest-cody-b28.txt",
         "SAIRN-handoff-cody-b28.md",
