@@ -405,6 +405,98 @@ def reseat_only():
     return True, ''
 
 
+# ── THE PUSH GATE'S SCRUTINY WRITE-BACK, AND THE COMMIT PER LOST RACE (b31) ──
+# The gate appends rows to docs/scrutiny-flags.json on EVERY push attempt and
+# leaves the tree dirty. The hand-written loop committed whatever the tree held
+# each round, so four lost races made four near-identical commits over one
+# file (b30 squashed them by hand; b29 was refused by the duplicate-subject
+# gate for the same loop).
+#
+# THE ONE-LINE CONCEPT: the write-back is bookkeeping ABOUT the commits being
+# pushed, so it gets exactly one bookkeeping commit that every later round
+# AMENDS -- never a new commit per round, and never folded into a work commit,
+# because a work commit's sha IS the row key and amending it would orphan the
+# row the gate just wrote.
+SCRUTINY_FILE = 'docs/scrutiny-flags.json'
+BOOKKEEPING_PREFIX = 'chore(gate-bookkeeping '
+
+
+def scrutiny_append_only():
+    """(True, '') if the working-tree change to the ledger only ADDS rows.
+
+    Same discipline as reseat_only(): could-not-tell is (False, reason), never
+    permission to stage somebody's unreviewed edit. Every row at HEAD must
+    survive unchanged and every other top-level key must be equal.
+    """
+    rc, head, _ = git('show', 'HEAD:' + SCRUTINY_FILE)
+    if rc != 0:
+        return False, 'HEAD has no %s to compare against' % SCRUTINY_FILE
+    try:
+        old = json.loads(head)
+        new = json.load(io.open(os.path.join(REPO, SCRUTINY_FILE),
+                                encoding='utf-8'))
+        old_rows, new_rows = old['flags'], new['flags']
+    except Exception as exc:
+        return False, '%s does not parse as a ledger: %s' % (SCRUTINY_FILE, exc)
+    if {k: v for k, v in old.items() if k != 'flags'} != \
+            {k: v for k, v in new.items() if k != 'flags'}:
+        return False, 'a top-level key other than "flags" changed'
+    key = lambda r: json.dumps(r, sort_keys=True)
+    missing = set(map(key, old_rows)) - set(map(key, new_rows))
+    if missing:
+        return False, '%d row(s) at HEAD were changed or removed' % len(missing)
+    return True, ''
+
+
+def fold_scrutiny():
+    """Fold the gate's write-back into the ONE bookkeeping commit.
+
+    Returns (folded, reason). Never raises: this runs inside a retry loop.
+    """
+    rc, porc, _ = git('status', '--porcelain', '--', SCRUTINY_FILE)
+    if rc != 0:
+        return False, 'git status could not read %s' % SCRUTINY_FILE
+    if not porc.strip():
+        return False, 'nothing'
+    ok, why = scrutiny_append_only()
+    if not ok:
+        return False, '%s NOT folded: %s' % (SCRUTINY_FILE, why)
+    subj = head_subject() or ''
+    if subj.startswith(BOOKKEEPING_PREFIX):
+        safe, reasons = amend_safety()
+        if not safe:
+            return False, 'amend refused by the guard: ' + '; '.join(reasons)[:200]
+        arc, _, aerr = git('commit', '--amend', '--no-edit', '--',
+                           SCRUTINY_FILE)
+        if arc != 0:
+            return False, 'amend failed: %s' % (aerr or '')[:120]
+        return True, 'amended the bookkeeping commit'
+    ops, um = operation_in_progress(), unmerged_paths()
+    if ops is None or um is None or ops or um:
+        return False, 'an operation is in progress or the tree is unreadable'
+    rc, tip, _ = git('rev-parse', '--short', 'HEAD')
+    if rc != 0:
+        return False, 'could not resolve HEAD'
+    # THE TIP SHA IS IN THE SUBJECT so a later batch's bookkeeping commit never
+    # collides with this one under the duplicate-subject gate.
+    new_subj = ("%s%s): the push gate's own scrutiny rows"
+                % (BOOKKEEPING_PREFIX, tip))
+    crc, _, cerr = git('commit', '-m', new_subj, '-m',
+                       'Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>',
+                       '--', SCRUTINY_FILE)
+    if crc != 0:
+        return False, 'commit failed: %s' % (cerr or '')[:120]
+    # Registered as yours, or the guard refuses every later amend of it.
+    subs = captured_subjects() or []
+    try:
+        io.open(STATE_FILE, 'w', encoding='utf-8').write(
+            json.dumps({'safe_subjects': subs + [new_subj]}, ensure_ascii=False))
+    except Exception:
+        return True, 'created the bookkeeping commit, but could not register ' \
+                     'it as amendable'
+    return True, 'created the bookkeeping commit'
+
+
 def selftest():
     out, bad = [], 0
 
@@ -538,6 +630,76 @@ def selftest():
                 'the local-only set -- it came back as %r. An empty or wrong set '
                 'makes the guard refuse every amend, which looks like caution '
                 'and is a broken tool.' % (head_subject(), subs))
+
+    # ── b31: THE SCRUTINY WRITE-BACK IS AMENDED, NOT RECOMMITTED -- driven on a
+    # real scratch repo, because the defect was a commit COUNT and a fixture of
+    # the decision model cannot see a count.
+    import shutil
+    import tempfile
+    global REPO, STATE_FILE
+    saved = (REPO, STATE_FILE)
+    tmp = tempfile.mkdtemp(prefix='push_retry_selftest_')
+    try:
+        REPO = tmp
+        os.makedirs(os.path.join(tmp, 'docs'))
+        STATE_FILE = os.path.join(tmp, '.git', 'push_retry_safe_subjects.json')
+        sf = os.path.join(tmp, SCRUTINY_FILE)
+
+        def put(rows, extra=None):
+            d = {'merge_policy': 'x', 'flags': rows}
+            d.update(extra or {})
+            io.open(sf, 'w', encoding='utf-8').write(json.dumps(d, indent=1))
+
+        def count():
+            return int(git('rev-list', '--count', 'HEAD')[1] or '0')
+
+        git('init', '-q')
+        git('config', 'user.email', 'a@b.c')
+        git('config', 'user.name', 'selftest')
+        put([{'sha': 'a1', 'path': 'p'}])
+        git('add', '-A')
+        git('commit', '-q', '-m', 'work: mine')
+        capture()
+        base = count()
+
+        put([{'sha': 'a1', 'path': 'p'}, {'sha': 'b2', 'path': 'p'}])
+        f1, w1 = fold_scrutiny()
+        arm('round 1 creates ONE bookkeeping commit',
+            f1 and count() == base + 1
+            and head_subject().startswith(BOOKKEEPING_PREFIX), w1)
+        subj1 = head_subject()
+
+        put([{'sha': 'a1', 'path': 'p'}, {'sha': 'b2', 'path': 'p'},
+             {'sha': 'c3', 'path': 'p'}])
+        f2, w2 = fold_scrutiny()
+        arm('round 2 AMENDS it -- the commit count does not move',
+            f2 and count() == base + 1 and head_subject() == subj1,
+            'count %d -> %d: a lost race made a new commit, which is the '
+            'defect b30 squashed by hand' % (base + 1, count()))
+        rc_s, shown, _ = git('show', 'HEAD:' + SCRUTINY_FILE)
+        arm('...and the amended commit carries all three rows',
+            rc_s == 0 and len(json.loads(shown)['flags']) == 3)
+
+        put([{'sha': 'b2', 'path': 'p'}])
+        f3, w3 = fold_scrutiny()
+        arm('a change that REMOVES a row is NOT folded, and says why',
+            not f3 and 'changed or removed' in w3 and count() == base + 1, w3)
+        put([{'sha': 'a1', 'path': 'p'}, {'sha': 'b2', 'path': 'p'},
+             {'sha': 'c3', 'path': 'p'}], {'merge_policy': 'y'})
+        f4, w4 = fold_scrutiny()
+        arm('a change to another top-level key is NOT folded',
+            not f4 and 'top-level' in w4, w4)
+        io.open(sf, 'w', encoding='utf-8').write('<<<<<<< not json')
+        f5, w5 = fold_scrutiny()
+        arm('an unparseable file is NOT folded -- could-not-tell is not a pass',
+            not f5 and 'parse' in w5, w5)
+        git('checkout', '--', SCRUTINY_FILE)
+        f6, w6 = fold_scrutiny()
+        arm('CONTROL -- a clean ledger folds nothing',
+            not f6 and w6 == 'nothing', w6)
+    finally:
+        REPO, STATE_FILE = saved
+        shutil.rmtree(tmp, ignore_errors=True)
     return out, bad
 
 
@@ -638,6 +800,14 @@ def cmd_loop(attempts):
         return 3
     print('captured %d local-only subject(s) as safe to amend' % len(cap))
     for i in range(1, attempts + 1):
+        # The gate's write-back from the PREVIOUS attempt is a dirty tree that
+        # would also block the rebase below; fold it into the one bookkeeping
+        # commit before anything else (see fold_scrutiny).
+        _sf, _sw = fold_scrutiny()
+        if _sf:
+            print('  scrutiny rows: %s' % _sw)
+        elif _sw != 'nothing':
+            print('  scrutiny rows: %s' % _sw)
         git('fetch', '-q', 'origin')
         rc, behind, _ = git('rev-list', '--count', 'HEAD..origin/main')
         behind = int(behind or '0') if rc == 0 else -1

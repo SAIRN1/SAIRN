@@ -1175,26 +1175,6 @@
    "exit_code_observed_b28": 1
   },
   {
-   "file": "api/_resources/extra-actions.test.js",
-   "kind": "node",
-   "tail": "41 passed, 7 failed",
-   "since": "2026-10-19",
-   "exit_code": 1,
-   "owner": "hank",
-   "diagnosed": "",
-   "diagnosed_by": "",
-   "environment": {
-    "where": "disposable git worktree, both legs",
-    "pinned": false,
-    "tool": "the suite itself, driven ALONE at HEAD and at HEAD~1, one process each",
-    "sha": "81e6183d4",
-    "basis": "RED IN BOTH LEGS OF b26's REGRESSION DIFFERENTIAL. 230 suites referencing api/sd-data.js were driven alone at HEAD and at HEAD~1; four came back red-and-unregistered and this is one of the three that were ALREADY red before the change. Byte-identical output in both legs for tests/sairnlegacy_reservation_lock.js; identical pass/fail counts for the other two."
-   },
-   "why": "",
-   "why_empty_means": "NOT DIAGNOSED. Registered because it is RED AND WAS UNRECORDED, which means it would have read as a regression for whoever ran next -- an absent row reads NEW. THE ENTRY MAKES IT ATTRIBUTABLE AND DOES NOT MAKE IT ACCEPTABLE. b26 did not diagnose it and an invented cause would be worse than this blank, because it would end the investigation.",
-   "found_by": "cody b26 regression differential, 2026-10-19. NOT caused by b26: red at HEAD~1 too, measured rather than assumed."
-  },
-  {
    "file": "tests/sairnlegacy_reservation_lock.js",
    "kind": "node",
    "tail": "  ok   ...and every spec'd resource is one of SAIRNlegacy's own 36, so the map is being read against the right app rather than widening the loop",
@@ -2127,6 +2107,20 @@
    "recovered_by": "cody b26 (known-red tail census)",
    "exit_code": 0,
    "recovered_why": "FOUND GREEN BY THE b26 KNOWN-RED TAIL CENSUS, not by a fix in this batch. The register's own _what_this_is_NOT rule applies: \"An entry whose suite has gone GREEN is reported as RECOVERED and must be deleted: while it stands it swallows the next real failure of that file.\" WHY IT IS GREEN IS NOT DIAGNOSED HERE and is recorded as undiagnosed rather than guessed -- an invented cause ends the investigation."
+  },
+  {
+   "file": "api/_resources/extra-actions.test.js",
+   "kind": "node",
+   "tail": "48 passed, 0 failed",
+   "since": "2026-10-19",
+   "exit_code": 0,
+   "owner": "hank",
+   "diagnosed": "cody b31",
+   "diagnosed_by": "cody b31",
+   "recovered": "2026-10-20",
+   "recovered_by": "cody b31",
+   "recovered_why": "RECOVERED cody b31, 2026-10-20: 41 passed / 7 failed -> 48 passed / 0 failed, driven alone, exit 0. The suite was STALE, not the code: Tier A sc_ resources grew to 24 and now grant 'tombstones' beside 'soft_delete' (5c781b990 and the tombstone work), sc_dme became Tier A so 'delete' on it is a correct 400, and two compute-only verbs ('therapy_accumulator', 'payroll') were documented in backticks where the suite requires quotes. Fixed in the test (derived hard-deletable subject, updated expected grants/messages) and two comment quotings.",
+   "why": "Was RED 41/7 since 2026-10-19 (b26 differential); see recovered_why."
   }
  ],
  "_b5_addition_2026_10_12": "ELEVEN entries added by fourth, batch b5 item 2, and the brief asked for THIRTY. The 30 is hank's 2026-10-08 figure (\"101 red, registry records 75, 30 RED AND NOT RECORDED\") and it was re-derived rather than carried: the gap against this register at HEAD 327e9e80 is 23, not 30, because the register has absorbed some of them since and cody's later run moved others. Of those 23, driving each ALONE returned 11 RED, 7 GREEN, 2 exit-2 COULD NOT RUN, 2 exit-3 SKIPPED and 1 TIMEOUT at 180s. ONLY THE 11 ARE RED. The 7 GREEN are the finding that matters: a run log named them red and they are not, so the stale half of a census is a wrong answer in both directions. The 12 non-red are listed by name with their measured state in docs/2026-10-12-fourth-b5-routing.md -- they are NOT in this file, because an entry here is an exemption and an exemption over a suite that is green or that never ran would swallow its next real failure.",

@@ -123,7 +123,13 @@ async function callHandler(action, resource, key) {
     }
     let hard = 0;
     for (const name of sc) {
-      const expected = soft.indexOf(name) === -1 ? ['delete'] : ['soft_delete'];
+      // Tier A also grants 'tombstones' (the read that lets a client learn a
+      // hidden row's absence), and sc_claims alone carries the compute-only
+      // 'therapy_accumulator'. Neither is a REMOVAL verb, so the removal verb
+      // is still asserted to be exactly one: it is always first.
+      const expected = soft.indexOf(name) === -1
+        ? ['delete'] : ['soft_delete', 'tombstones'];
+      if (name === 'sc_claims') expected.push('therapy_accumulator');
       assert.deepStrictEqual(reg.EXTRA_ACTIONS[name], expected, name);
       if (expected[0] === 'delete') hard += 1;
     }
@@ -345,8 +351,15 @@ async function callHandler(action, resource, key) {
   await atest('...and delete is REFUSED on sc_denial by the gate itself', async () => {
     assert.notStrictEqual((await gate('delete', 'sc_denial')).code, PASSED_GATE);
   });
-  await atest('delete is allowed on the newest sc_ resource (sc_dme)', async () => {
-    assert.strictEqual((await gate('delete', 'sc_dme')).code, PASSED_GATE);
+  // DERIVED, NOT NAMED. This arm said "the newest sc_ resource (sc_dme)" until
+  // sc_dme became Tier A (5c781b990) and 'delete' on it correctly became a 400;
+  // the arm then failed for a reason about the TEST. Any hard-deletable
+  // resource proves the verb still passes the gate, so the first one is used.
+  const scMod = require('./sairncode');
+  const HARD = scMod.resources.filter((n) => scMod.tierASoftDeleteOnly.indexOf(n) === -1)[0];
+  await atest('delete is allowed on a hard-deletable sc_ resource (' + HARD + ')', async () => {
+    assert.ok(HARD, 'no sc_ resource is hard-deletable, so this arm has no subject');
+    assert.strictEqual((await gate('delete', HARD)).code, PASSED_GATE);
   });
   await atest('route is allowed on alf_payer_rules', async () => {
     assert.strictEqual((await gate('route', 'alf_payer_rules')).code, PASSED_GATE);
@@ -402,12 +415,12 @@ async function callHandler(action, resource, key) {
   await atest('a Tier A sc_ resource names SOFT_DELETE, not delete', async () => {
     assert.strictEqual(
       (await gate('bogus_verb', 'sc_denial')).body.error.message,
-      "action must be 'read' or 'write' or 'soft_delete'"
+      "action must be 'read' or 'write' or 'soft_delete' or 'tombstones'"
     );
   });
   await atest('...and a hard-deletable sc_ resource still names delete', async () => {
     assert.strictEqual(
-      (await gate('bogus_verb', 'sc_dme')).body.error.message,
+      (await gate('bogus_verb', HARD)).body.error.message,
       "action must be 'read' or 'write' or 'delete'"
     );
   });
@@ -415,7 +428,7 @@ async function callHandler(action, resource, key) {
               + 'both arms would pass on a message that named neither verb',
     async () => {
       const a = (await gate('bogus_verb', 'sc_denial')).body.error.message;
-      const b = (await gate('bogus_verb', 'sc_dme')).body.error.message;
+      const b = (await gate('bogus_verb', HARD)).body.error.message;
       assert.notStrictEqual(a, b);
       assert.ok(!/'delete'/.test(a), 'a Tier A record is still being offered delete: ' + a);
     });
@@ -480,7 +493,7 @@ async function callHandler(action, resource, key) {
     // point of this arm -- it was previously accurate about the wrong one.
     assert.strictEqual(
       handler.checkEnvelope('bogus_verb', 'sc_denial', 'sairncode').body.error.message,
-      "action must be 'read' or 'write' or 'soft_delete'");
+      "action must be 'read' or 'write' or 'soft_delete' or 'tombstones'");
     assert.strictEqual(
       handler.checkEnvelope('bogus_verb', 'profile', 'stonedesk').body.error.message,
       "action must be 'read' or 'write'");

@@ -438,6 +438,59 @@ const TOO_LARGE = (res) => res.statusCode === 413
        'not in the expected form');
   }
 
+  // ═══════════════════════════════════════════════════════════════════════
+  section('W. rf_invoices: THE ROOM GOES TO `write`, NOT `issue` (b31)');
+  // ═══════════════════════════════════════════════════════════════════════
+
+  // W1. A write the TABLE would accept (rfinv_data_size 262144) is not refused
+  // for size. At the 64KB default this was a 413.
+  {
+    const p = sizedTo({ id: 'INV-1', job_id: 'JOB-1' }, 250 * 1024, 'bill_to');
+    const { res } = await call('sairnroofing', 'rf_invoices', 'write', 'owner', p);
+    is(!TOO_LARGE(res),
+       'W1. a ' + bytesOf(p) + '-byte rf_invoices `write` (inside the table '
+       + 'ceiling) is NOT refused for size',
+       res.statusCode + ' ' + eCode(res) + ' ' + eMsg(res));
+  }
+
+  // W2. ...and the new number is a ceiling, not an exemption.
+  {
+    const p = sizedTo({ id: 'INV-1', job_id: 'JOB-1' }, 300 * 1024, 'bill_to');
+    const { res } = await call('sairnroofing', 'rf_invoices', 'write', 'owner', p);
+    is(TOO_LARGE(res) && /rf_invoices\/write/.test(eMsg(res))
+       && /294912/.test(eMsg(res)),
+       'W2. a ' + bytesOf(p) + '-byte `write` -> 413 naming rf_invoices/write '
+       + 'and 294912',
+       res.statusCode + ' ' + eCode(res) + ' ' + eMsg(res));
+  }
+
+  // W3. `issue` WAS NOT RAISED. Its measured payload is 61-87 bytes, so a
+  // loosened cap would be a gate widened for no measured need. This arm is
+  // what fails if somebody sets a per-RESOURCE rf_invoices cap instead.
+  {
+    const p = sizedTo({ invoice_id: 'INV-1' }, 100 * 1024, 'blob');
+    const { res } = await call('sairnroofing', 'rf_invoices', 'issue', 'owner', p);
+    is(TOO_LARGE(res) && /65536/.test(eMsg(res)),
+       'W3. a ' + bytesOf(p) + '-byte `issue` is still refused at 65536',
+       res.statusCode + ' ' + eCode(res) + ' ' + eMsg(res));
+  }
+
+  // W4. THE CEILING IS DERIVED FROM THE TABLE, NOT RETYPED: the SQL's own
+  // constraint is read and compared, so a migration that moves it fails here.
+  {
+    const { stripJs } = require('../tests/lib/strip_comments.js');
+    const src = stripJs(fs.readFileSync(SD_DATA, 'utf8'));
+    const sql = fs.readFileSync(path.join(__dirname, '..', 'sql',
+      'sairnroofing_billing_schema.sql'), 'utf8');
+    const m = /rfinv_data_size check \(octet_length\(data::text\) <= (\d+)\)/.exec(sql);
+    const c = /const RF_INVOICE_DATA_CEILING = (\d+);/.exec(src);
+    is(m && c && m[1] === c[1]
+       && /const RF_INVOICE_WRITE_CAP_BYTES = RF_INVOICE_DATA_CEILING \+ 32768;/.test(src),
+       'W4. the write cap is the SQL constraint (' + (m && m[1]) + ') plus a '
+       + 'stated allowance, not a typed number',
+       'sql=' + (m && m[1]) + ' code=' + (c && c[1]));
+  }
+
   console.log('\n' + (fail ? 'FAILED' : 'PASSED') + ' -- ' + pass + ' passed, '
     + fail + ' failed'
     + (fail ? '\nFAILING ARMS: ' + failed.join(', ') : ''));

@@ -612,7 +612,30 @@ const RT_ROUTE_CAP_BYTES = RT_STOPS_MAX * RT_STOP_WORST_BYTES + 32768;
 // name. Inert today because the envelope gate whitelists both first; that is
 // exactly how all 48 role literals
 // tests/role_maps_have_no_prototype.js was built for were inert.
+// ── rf_invoices: THE VERB THAT NEEDS THE ROOM IS `write`, NOT `issue` (b31) ─
+// b30 left rf_invoices at the 64KB default and named `issue` as the verb to
+// measure. MEASURED with the real modules (api/_lib/roofing-billing.js and the
+// payloads sairnroofing.html builds at :3101/:3108/:3126):
+//
+//   issue         61 bytes (client: {invoice_id}); 87 with issue_date
+//   add_payment   964 bytes with 200-char reference and 500-char notes
+//   write         carries line_items -- 134 bytes per stored line typical,
+//                 438 worst (description clipped to 300, unit to 40 by
+//                 normalizeLineItems), and NOTHING bounds the line COUNT
+//
+// So `issue` is two orders of magnitude inside the default and raising it would
+// loosen a gate for no measured need. `write` is the only verb whose payload
+// can approach the table's own ceiling (sql/sairnroofing_billing_schema.sql
+// `rfinv_data_size`, 262144): at 64KB a draft of ~145 worst-case lines is
+// refused where the table would accept ~598.
+//
+// Derived the same way as RT_ROUTE_CAP_BYTES: one bound plus one stated
+// allowance (bill_to, terms, ids and keys around the data blob).
+const RF_INVOICE_DATA_CEILING = 262144; // rfinv_data_size, sairnroofing_billing_schema.sql
+const RF_INVOICE_WRITE_CAP_BYTES = RF_INVOICE_DATA_CEILING + 32768;
+
 const PAYLOAD_CAP_BY_ACTION = Object.create(null);
+PAYLOAD_CAP_BY_ACTION['rf_invoices|write'] = RF_INVOICE_WRITE_CAP_BYTES;
 PAYLOAD_CAP_BY_ACTION['rt_routes|upsert'] = RT_ROUTE_CAP_BYTES;
 PAYLOAD_CAP_BY_ACTION['rt_routes|optimize'] = RT_ROUTE_CAP_BYTES;
 PAYLOAD_CAP_BY_ACTION['rt_stops|upsert'] = RT_ROUTE_CAP_BYTES;

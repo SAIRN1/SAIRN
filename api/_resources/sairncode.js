@@ -259,7 +259,7 @@ module.exports = {
   // get 'soft_delete' rather than a 'delete' that quietly behaves differently.
   // A caller copying a working delete call from sc_dme to sc_claims now gets a
   // refusal naming the right verb, not the other behaviour.
-  // `therapy_accumulator` is COMPUTE-ONLY and persists nothing, same shape as
+  // 'therapy_accumulator' is COMPUTE-ONLY and persists nothing, same shape as
   // SAIRNsenior's `readiness` verb on sen_visits. It reads the practice's own
   // sc_claims rows and returns per-beneficiary year-to-date therapy totals
   // against the CMS KX thresholds. It is a verb rather than a table because
