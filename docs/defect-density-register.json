@@ -35249,70 +35249,6 @@
       "recurrence_open": "Nothing closes the missing measurement: the ceiling is still not derived from sairn_ai_rate_limit_log, and the deployed rate-limit mode is still not observable from outside (no mode on the response)."
     },
     {
-      "commit": "e137c3bc1dab",
-      "date": "2026-10-20",
-      "subject": "fix(clickjacking b43): 16 root apps are hidden until they prove they are the top window -- measured 18 of 22 clickable when framed on the live site",
-      "files": [
-        "sairnbiz.html",
-        "sairnbuild.html",
-        "sairncare.html",
-        "sairncash.html",
-        "sairncode.html",
-        "sairndental.html",
-        "sairndesign.html",
-        "sairnfreedom.html",
-        "sairngrounds.html",
-        "sairnlaw.html",
-        "sairnlegacy.html",
-        "sairnmechanical.html",
-        "sairnroofing.html",
-        "sairnscape.html",
-        "sairnsenior.html",
-        "sairnvet.html"
-      ],
-      "lines_added": 213,
-      "lines_removed": 16,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "fault-injection",
-      "summary": "Hover2 b70 swept 17 root apps and counted 14 unprotected; driven on the LIVE site in b43 by framing every page from a cross-origin parent (normal and sandboxed-without-scripts): 18 of 22 clickable, INCLUDING sairncode and stonedesk, whose busters only reassigned top.location -- Chrome blocks that from a cross-origin frame without a user gesture -- and sairnlaw, whose frame-ancestors sits in a meta CSP that browsers ignore. sairncode's buster also replaced documentElement.innerHTML mid-parse. FIXED in 16 apps: html hidden by a style that only a top-window check removes. GREEN: framed 16/16 hidden in both modes, top-level 16/16 usable.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": "scratchpad drive_frame.py (Playwright, cross-origin and sandboxed iframe framing; not in repo)",
-      "found_by_session": null,
-      "injection": {
-        "commit": "b8c5ee9e8052",
-        "date": "2026-08-20",
-        "subject": "feat: SAIRNcode security pass -- AI audit log, injection screening, consent/disclosure, CSP, frame-busting, idle lock, persistent rate limit",
-        "lag_days": 61
-      },
-      "citation_note": "No coding rule covers this class: a defence that is present in the source and inert in the browser. Proposed: a security control is verified by driving the attack in a real browser, never by grepping for the control.",
-      "contributing_factors": [
-        {
-          "factor": "The existing busters relied on navigating the top window, which modern Chrome refuses from a cross-origin frame without a user gesture.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Hide-until-proven-top: the page stays invisible whether or not the break-out succeeds."
-        },
-        {
-          "factor": "A control counted as present (two apps protected, one meta frame-ancestors) was inert in the browser, so the protected count was overstated.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Counted by driving the attack in a browser, live and local."
-        },
-        {
-          "factor": "sairncode's catch branch rewrote the document during parsing, which would have defeated any later guard.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Removed with a comment explaining why."
-        }
-      ],
-      "recurrence_open": "NOT CLOSED. stonedesk.html and stonedesk-hr.html remain clickable when framed (hank holds stonedesk). The header form (frame-ancestors / X-Frame-Options via vercel.json) is not done, so a browser that ignores the guard is unprotected. No repo suite drives framing; the drive lives in the scratchpad."
-    },
-    {
       "commit": "5941a119c8a7",
       "date": "2026-10-20",
       "subject": "fix(sairnbiz b24): two recordable injuries printed as the same OSHA case number",
@@ -35414,6 +35350,58 @@
         }
       ],
       "recurrence_open": "NOT CLOSED. While the timesheet holds SIX days the maximum recordable week is 144 hours, so thresholds 145-167 are equally unreachable and still honoured; the exact bound is the record own maximum and moves to 168 only when day seven lands (held on api/sd-data.js, cody b29)."
+    },
+    {
+      "commit": "7e4195975945",
+      "date": "2026-10-20",
+      "subject": "fix(stonedesk b31): remove the Sync All Apps button, which stamped \"Last sync\" on every click whatever the server said",
+      "files": [
+        "api/b29-stonedesk-sync-honesty.test.js",
+        "docs/2026-10-20-hank-b31-notes.md",
+        "sql/audit_owner_and_demo_caregiver_credentials_2026-10-20.sql",
+        "stonedesk.html"
+      ],
+      "lines_added": 272,
+      "lines_removed": 91,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "StoneDesk's Sync All Apps button ran sairnSyncAll() and then sairnUpdateLastSync() in the same onclick; the second call stamped 'Last sync: <time>' on every click regardless of the server's answer, so even after b29 made the function report failure honestly the page still claimed a sync time. The button could never succeed (nothing reads bridge_data), so it was removed on Michael's decision with the stamp, both functions and the restore.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "57db94fbf375",
+        "date": "2026-06-22",
+        "subject": "Fix JavaScript syntax errors in stonedesk.html - 94/106 scripts passing Node syntax check",
+        "lag_days": 120
+      },
+      "citation_note": "No standing rule covers an onclick that chains an unconditional success side effect after an async call it does not await.",
+      "contributing_factors": [
+        {
+          "factor": "The Sync All Apps onclick was `sairnSyncAll();sairnUpdateLastSync()`. The first call is async and not awaited; the second is synchronous and stamps 'Last sync: <time>' unconditionally. So the time was set on every click whatever the server answered, and b29's honest-failure fix inside sairnSyncAll could not prevent it.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The button, the stamp, both functions and the restore are removed on Michael's decision; six arms assert the absence and each is red against the pre-removal page."
+        },
+        {
+          "factor": "b29's live verification called window.sairnSyncAll() directly in the page instead of clicking the button, so it verified the function and not the control the user touches; the second call in the onclick was outside what it drove.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Recorded in the re-aimed test header and the b31 notes: drive the control, not the function behind it."
+        },
+        {
+          "factor": "The control could never succeed: nothing reads bridge_data and push is latest-wins on one row, so any real fix would have overwritten the expense queue the one live caller writes.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Removed rather than fixed."
+        }
+      ],
+      "recurrence_open": "getBusinessContext() still reads the now-unwritten stonedesk_last_sync key; it has no callers, so nothing shows it, but a future caller would read a stale stamp."
     },
     {
       "commit": "8ebeb1213e91",
@@ -35793,6 +35781,70 @@
         }
       ],
       "recurrence_open": "NOT CLOSED. (1) Vendor ids use the same shape (\"V\"+Date.now() last 4, sairnbiz.html saveVendor) and were not in scope. (2) Two TABS of one browser minting in the same instant share the counter and can race. (3) Nothing sweeps the platform for Date.now()-derived ids; stonedesk.html has INV-+Date.now() at two sites."
+    },
+    {
+      "commit": "e137c3bc1dab",
+      "date": "2026-10-20",
+      "subject": "fix(clickjacking b43): 16 root apps are hidden until they prove they are the top window -- measured 18 of 22 clickable when framed on the live site",
+      "files": [
+        "sairnbiz.html",
+        "sairnbuild.html",
+        "sairncare.html",
+        "sairncash.html",
+        "sairncode.html",
+        "sairndental.html",
+        "sairndesign.html",
+        "sairnfreedom.html",
+        "sairngrounds.html",
+        "sairnlaw.html",
+        "sairnlegacy.html",
+        "sairnmechanical.html",
+        "sairnroofing.html",
+        "sairnscape.html",
+        "sairnsenior.html",
+        "sairnvet.html"
+      ],
+      "lines_added": 213,
+      "lines_removed": 16,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "fault-injection",
+      "summary": "Hover2 b70 swept 17 root apps and counted 14 unprotected; driven on the LIVE site in b43 by framing every page from a cross-origin parent (normal and sandboxed-without-scripts): 18 of 22 clickable, INCLUDING sairncode and stonedesk, whose busters only reassigned top.location -- Chrome blocks that from a cross-origin frame without a user gesture -- and sairnlaw, whose frame-ancestors sits in a meta CSP that browsers ignore. sairncode's buster also replaced documentElement.innerHTML mid-parse. FIXED in 16 apps: html hidden by a style that only a top-window check removes. GREEN: framed 16/16 hidden in both modes, top-level 16/16 usable.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "scratchpad drive_frame.py (Playwright, cross-origin and sandboxed iframe framing; not in repo)",
+      "found_by_session": null,
+      "injection": {
+        "commit": "b8c5ee9e8052",
+        "date": "2026-08-20",
+        "subject": "feat: SAIRNcode security pass -- AI audit log, injection screening, consent/disclosure, CSP, frame-busting, idle lock, persistent rate limit",
+        "lag_days": 61
+      },
+      "citation_note": "No coding rule covers this class: a defence that is present in the source and inert in the browser. Proposed: a security control is verified by driving the attack in a real browser, never by grepping for the control.",
+      "contributing_factors": [
+        {
+          "factor": "The existing busters relied on navigating the top window, which modern Chrome refuses from a cross-origin frame without a user gesture.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Hide-until-proven-top: the page stays invisible whether or not the break-out succeeds."
+        },
+        {
+          "factor": "A control counted as present (two apps protected, one meta frame-ancestors) was inert in the browser, so the protected count was overstated.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Counted by driving the attack in a browser, live and local."
+        },
+        {
+          "factor": "sairncode's catch branch rewrote the document during parsing, which would have defeated any later guard.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Removed with a comment explaining why."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. stonedesk.html and stonedesk-hr.html remain clickable when framed (hank holds stonedesk). The header form (frame-ancestors / X-Frame-Options via vercel.json) is not done, so a browser that ignores the guard is unprotected. No repo suite drives framing; the drive lives in the scratchpad."
     },
     {
       "commit": "e9083a1461bd",
