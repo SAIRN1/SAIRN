@@ -106,6 +106,28 @@ def arm(label, status, code, want_status, want_code=None, extra=None):
     return ok
 
 
+# ── THE PROBE CONFIRMS WHO IT IS BEFORE IT MEASURES ANYTHING (b32) ────────
+# CONCEPT: a probe that authenticates as the wrong role proves nothing, so
+# before any arm runs it asks the SERVER who this session is -- `whoami`, which
+# reads the role from the credential row, not from the login reply and not
+# from what the probe meant to sign in as -- and refuses to report a verdict
+# (exit 2) if the answer is not the role under test.
+def confirm_identity(key, tok, want_emp, want_role):
+    st, body = post(AUTH, {'action': 'whoami'}, key, tok)
+    if st != 200:
+        return 'whoami answered %s %s' % (st, code_of(body))
+    try:
+        d = json.loads(body.decode('utf-8', 'replace'))
+    except Exception:
+        return 'whoami returned an unreadable body'
+    if d.get('employee_id') != want_emp or d.get('role') != want_role:
+        return ('the session is %r with role %r, not %r with role %r'
+                % (d.get('employee_id'), d.get('role'), want_emp, want_role))
+    print('  ok   signed in as %-22s role %-9s (whoami, from the credential row)'
+          % (want_emp, want_role))
+    return None
+
+
 def sd(key, tok, resource, action, payload=None):
     body = {'action': action, 'resource': resource}
     if payload is not None:
@@ -155,7 +177,13 @@ def main():
     if not owner_tok:
         print('COULD NOT RUN -- the owner "%s" could not sign in (%s %s). If this is'
               % (OWNER_ID, st, code_of(b)))
-        print('401 INVALID_LICENSE, sql/mint_sen_audit_2026.sql has not run.')
+        print('401 INVALID_LICENSE, sql/mint_sen_audit_2026.sql has not run; if it is')
+        print('401 INVALID_CREDENTIALS, run sql/audit_owner_and_demo_caregiver_credentials_2026-10-20.sql')
+        print('and pass the PIN in its header as SEN_OWNER_PIN.')
+        return EXIT_COULD_NOT_RUN
+    why = confirm_identity(key, owner_tok, OWNER_ID, 'owner')
+    if why:
+        print('COULD NOT RUN -- %s. The fixtures need an owner session.' % why)
         return EXIT_COULD_NOT_RUN
 
     # The caregiver: log in, or provision once through the app's own setup.
@@ -168,6 +196,11 @@ def main():
         cg_tok, st, b = login(key, cg, cg_pin)
     if not cg_tok:
         print('COULD NOT RUN -- the caregiver could not sign in (%s %s)' % (st, code_of(b)))
+        return EXIT_COULD_NOT_RUN
+    why = confirm_identity(key, cg_tok, cg, 'caregiver')
+    if why:
+        print('COULD NOT RUN -- %s. Only the ASSIGNED CAREGIVER may write the clock, so '
+              'a different role would test a refusal, not the pay run.' % why)
         return EXIT_COULD_NOT_RUN
 
     print('A. THE FIXTURES (read before write, fixed ids)')

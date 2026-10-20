@@ -58,11 +58,14 @@ from audit_licence import require_audit_licence                     # noqa: E402
 
 AUTH = 'https://sairn.vercel.app/api/law-auth'
 DATA = 'https://sairn.vercel.app/api/sd-data'
-OWNER_ID = 'hank-b23-owner'
+# audit-owner since b32: the credential sql/audit_owner_and_demo_caregiver_
+# credentials_2026-10-20.sql writes. It was hank-b23-owner, a row only the b23
+# run knew the PIN for.
+OWNER_ID = 'audit-owner'
 PARA_ID = 'hank-b23-paralegal'
 
 LIVE_PROBE_CLASS = 'VERIFICATION'
-LIVE_PROBE_RESIDUE = 'sql/zz_probe_residue_delete_b23.sql -- two employee credential rows on the AUDIT licence, hank-b23-owner and hank-b23-paralegal, reusing the same two ids every run so the count does not grow'
+LIVE_PROBE_RESIDUE = 'sql/zz_probe_residue_delete_b23.sql -- one employee credential row this probe writes on the AUDIT licence, hank-b23-paralegal, reusing the same id every run so the count does not grow. The owner, audit-owner, is written by sql/audit_owner_and_demo_caregiver_credentials_2026-10-20.sql, not by this probe; hank-b23-owner from the b23 run is still on the licence and is no longer used'
 LIVE_PROBE_TEARDOWN = 'the paralegal is deactivated with set_active and the deactivation is READ BACK by attempting a login, which must answer 401 INVALID_CREDENTIALS. A 200 from set_active is the reply, not the state, and this probe asserts the state.'
 
 EXIT_OK, EXIT_FAILED, EXIT_COULD_NOT_RUN = 0, 1, 2
@@ -105,6 +108,28 @@ def arm(label, got_status, got_code, want_status, want_code):
     return ok
 
 
+# ── THE PROBE CONFIRMS WHO IT IS BEFORE IT MEASURES ANYTHING (b32) ────────
+# CONCEPT: a probe that authenticates as the wrong role proves nothing, so
+# before any arm runs it asks the SERVER who this session is -- `whoami`, which
+# reads the role from the credential row, not from the login reply and not
+# from what the probe meant to sign in as -- and refuses to report a verdict
+# (exit 2) if the answer is not the role under test.
+def confirm_identity(key, tok, want_emp, want_role):
+    st, body = post(AUTH, {'action': 'whoami'}, key, tok)
+    if st != 200:
+        return 'whoami answered %s %s' % (st, code_of(body))
+    try:
+        d = json.loads(body.decode('utf-8', 'replace'))
+    except Exception:
+        return 'whoami returned an unreadable body'
+    if d.get('employee_id') != want_emp or d.get('role') != want_role:
+        return ('the session is %r with role %r, not %r with role %r'
+                % (d.get('employee_id'), d.get('role'), want_emp, want_role))
+    print('  ok   signed in as %-22s role %-9s (whoami, from the credential row)'
+          % (want_emp, want_role))
+    return None
+
+
 def main():
     key = os.environ.get('LAW_LICENSE', '').strip()
     owner_pin = os.environ.get('LAW_OWNER_PIN', '').strip()
@@ -134,11 +159,17 @@ def main():
     st, body = post(AUTH, {'action': 'login', 'employee_id': OWNER_ID,
                            'pin': owner_pin}, key)
     if st != 200:
-        print('UNVERIFIED -- the probe owner could not sign in (%s). The '
-              'credential exists on a licence whose PIN is not this one; run '
-              'sql/zz_probe_residue_delete_b23.sql and re-run.' % st)
+        print('UNVERIFIED -- %s could not sign in (%s %s). Run '
+              'sql/audit_owner_and_demo_caregiver_credentials_2026-10-20.sql, '
+              'and pass the PIN published in its header as LAW_OWNER_PIN.'
+              % (OWNER_ID, st, code_of(body)))
         return EXIT_COULD_NOT_RUN
     owner_tok = json.loads(body)['token']
+    why = confirm_identity(key, owner_tok, OWNER_ID, 'owner')
+    if why:
+        print('UNVERIFIED -- %s, so the owner controls below would not be '
+              'measuring the owner.' % why)
+        return EXIT_COULD_NOT_RUN
 
     st, body = post(AUTH, {'action': 'setup', 'employee_id': PARA_ID,
                            'pin': para_pin, 'role': 'paralegal',
@@ -159,6 +190,12 @@ def main():
               'nothing below would be measuring the lock.' % para.get('role'))
         return EXIT_COULD_NOT_RUN
     para_tok = para['token']
+    # The login reply above already says paralegal; whoami asks the credential
+    # row, which is the thing the lock actually reads.
+    why = confirm_identity(key, para_tok, PARA_ID, 'paralegal')
+    if why:
+        print('UNVERIFIED -- %s, so nothing below would be measuring the lock.' % why)
+        return EXIT_COULD_NOT_RUN
 
     print('A. THE HARD LOCK')
     for res in ('law_trusttx', 'law_bankstatements'):
