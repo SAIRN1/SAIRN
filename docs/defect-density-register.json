@@ -35119,6 +35119,61 @@
         }
       ],
       "recurrence_open": "the cross-device half is DETECTED and not PREVENTED: two devices both offline at the moment of issue can still mint the same number and nothing client-side can stop it. The complete fix is a server-side per-year sequence in api/sd-data.js, which is cody's file and is routed"
+    },
+    {
+      "commit": "cc919c308efd",
+      "date": "2026-10-20",
+      "subject": "fix(sairndental): the credential board says WHICH failure, through the facility the app already had",
+      "files": [
+        "sairndental.html"
+      ],
+      "lines_added": 85,
+      "lines_removed": 10,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "b39 made could-not-run a visible third state (four \"--\" tiles and a \"?\" badge instead of four zeros) and left this recorded as a `planned` factor: ALL FAILURES OF THE CREDENTIAL BOARD SAID THE SAME THING. DRIVEN BEFORE AND AFTER, awaiting the real promise rather than sleeping -- four distinct codes with four distinct sentences now: 403 FORBIDDEN \"not authorised, this panel is owner-only\" (your sign-in), 500 UPSTREAM \"the server refused, run its schema first\" (the server), NETWORK \"could not be reached, check the connection\" (the connection), NO_LICENCE \"no licence key on this install\" (this practice). A 200-with-ok:false is separated too (REFUSED, status 200). NEGATIVE CONTROL: a successful board clears the record, restores 0 0 0 0 and HIDES the badge -- without it \"--\" and \"?\" sticking forever would look identical to the fix working. THE FIX WAS NOT A NEW MECHANISM: dntLastErr at :1647 already is one, and this function was simply a second fetch path that never fed it.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "876bd84cfad4",
+        "date": "2026-08-24",
+        "subject": "feat(sairndental): licensing/credentialing -- state licences, DEA/MATE, CE pacing",
+        "lag_days": 57
+      },
+      "citation_note": "No coding rule in the register covers this class. It is not syntax, fabrication, contrast or grants -- it is a SECOND I/O PATH that does not feed the failure-reporting facility its siblings feed, so every failure on that path reports identically. The rule that would cover it: a fetch path that can fail must write the same per-resource error record every other fetch path in the file writes.",
+      "contributing_factors": [
+        {
+          "factor": "sdnEvaluateCredentials() was a SECOND FETCH PATH that never fed dntLastErr, the per-resource failure record the app already had at :1647 with dntLastErrCode(), dntLastErrText() and dntWriteRefused() reading it. The facility existed and this one function was not wired to it.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "It now writes dntLastErr['dnt_credentials'] at every failure exit exactly as sdnData does, keeping the `status` convention whose presence marks a message as the server's own words."
+        },
+        {
+          "factor": "The four failures are fixed by DIFFERENT PEOPLE -- a missing licence key is the practice's own ten-second fix, a 403 is a sign-in, a 5xx is support's, a dropped connection is wait-and-retry -- and one sentence sent all four to the same dead end. This is the same class as the StoneDesk Field Map message that told a reader to check an API key the request never reached.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Four distinct codes with four distinct sentences, each naming whose problem it is."
+        },
+        {
+          "factor": "MY FIRST DESIGN WAS WRONG AND A COUNTED ASSERTION CAUGHT IT. I wrote a new `dntCredFailure` module variable; a post-check tripped on code:'NO_LICENCE' appearing twice, which is what surfaced the existing dntLastErr facility. A parallel copy of a working mechanism is the thing that goes stale.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The parallel variable was abandoned before it was written to disk; the post-check now asserts dntCredFailure= appears ZERO times."
+        },
+        {
+          "factor": "A SECOND-ORDER DEFECT FOUND ONLY BY DRIVING IT: nav('credentials') calls rCredentials(null) BEFORE the evaluation resolves, so the first paint renders the PREVIOUS attempt's reason. A four-failure drive showed NO_LICENCE on screen while a 403 was in flight.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "sdnEvaluateCredentials now clears the key ON ENTRY, shrinking the window to the request itself. The flash is NOT fully closed and the code comment says so."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. (1) THE FIRST-PAINT FLASH IS NARROWED, NOT ELIMINATED: rCredentials(null) still runs before the evaluation resolves, so a sub-second render of \"the reason was not recorded\" remains. Closing it needs a pending state the panel does not have. (2) NOTHING SWEEPS FOR THE CLASS. sdnEvaluateCredentials was found by hand; no check anywhere asks whether every fetch path in a file writes the same per-resource error record, and a file with one such facility and several fetch paths is the normal shape on this platform. (3) THE SERVER HALF IS UNREAD -- dnt_credentials/evaluate lives in api/sd-data.js, which is cody's, so no claim is made about whether the board itself is right when it DOES arrive."
     }
   ],
   "started": "2026-09-09",
