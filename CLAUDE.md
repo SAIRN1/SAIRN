@@ -411,13 +411,25 @@ re-derive any of it from a handoff.
   once per clone-and-session — `--provision-window <tokens>` — because an
   inferred window makes the percentage ambiguous while the token count stays
   exact. cc breached this in b25 (81.9%) and b26 (89.0%).
-- **The digest is 30 lines maximum.** It is a **routing** document — what the
-  next session has to know and where to look — not a second report. If it does
-  not fit, the content belongs in the report, which has no cap for exactly
-  that reason. **Mechanically checked as of 2026-10-20:**
-  `tools/drive_upload_verify.py` defaults to `--max-lines 30` on the digest,
-  and over the cap is a finding. It still uploads: a missing deliverable is
-  worse than a long one.
+- **The digest is 30 lines maximum, and that is now the ONLY digest ceiling.**
+  It is a **routing** document — what the next session has to know and where to
+  look — not a second report. If it does not fit, the content belongs in the
+  report, which has no cap for exactly that reason. **Checked by two tools that
+  agree:** `tools/digest_lint.py` (`MAX_LINES`, exits 1) and
+  `tools/drive_upload_verify.py --max-lines` (default 30, a finding — it still
+  uploads, because a missing deliverable is worse than a long one). Both count
+  with `splitlines()`, so a final line with no trailing newline counts and
+  `wc -l` may say one fewer.
+
+  **THE 150-WORD RULE IS RETIRED — Michael's decision, 2026-10-20.** It lived
+  in `digest_lint.py` from 2026-10-13 and no agent met it: re-measured that day
+  over each agent's newest digest, **cc b27 11 lines / 596 words, fourth b40
+  15 / 837, hank b24 34 / 391, cody b26 239 / 2011** — four for four over 150
+  words, and half of them already inside 30 lines. Two ceilings disagreeing was
+  worse than either: every digest passed one and failed the other, so neither
+  was readable as a verdict. The word count is still printed and is no longer a
+  finding. **Do not reinstate it** — `digest_lint --fixtures` carries two arms
+  that fail if somebody does.
 - **SQL goes in `sql/<name>.sql`. The digest gives the PATH ONLY.** A digest
   that embeds a schema is a second copy of it, and the second copy is the one
   that goes stale with nothing to say it has.

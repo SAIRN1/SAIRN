@@ -176,10 +176,23 @@ skills on the build side.
 | **report** | the record of what this batch actually did and how each claim was verified | as long as the batch was |
 | **digest** | **routing** — what the other five sessions need to know and where to look | **30 lines, maximum** |
 
-- **30 lines is a cap, not a target.** The digest is read by sessions that are
-  not going to open the report. If it does not fit, the content belongs in the
-  report — which is uncapped for exactly that reason, so nothing is ever lost
-  by shortening a digest.
+- **30 lines is a cap, not a target, and it is the ONLY digest ceiling.** The
+  digest is read by sessions that are not going to open the report. If it does
+  not fit, the content belongs in the report — which is uncapped for exactly
+  that reason, so nothing is ever lost by shortening a digest.
+  **Checked by two tools that agree on the number AND the definition:**
+  `python tools/digest_lint.py <digest>` (exits 1) and `python
+  tools/drive_upload_verify.py --agent <you> --batch b<n>` (a finding; the file
+  still uploads). Both count with `splitlines()`, so a final line with no
+  trailing newline counts and `wc -l` may report one fewer.
+- **THE 150-WORD RULE IS RETIRED — Michael's decision, 2026-10-20.** It is
+  named here because a reader of an older handoff will meet it. It lived in
+  `digest_lint.py` from 2026-10-13 and **no agent ever met it**: re-measured
+  that day, cc b27 11 lines / 596 words, fourth b40 15 / 837, hank b24 34 /
+  391, cody b26 239 / 2011. Two ceilings disagreeing was worse than either —
+  every digest passed one and failed the other. The word count is still
+  printed and is no longer a finding. Do not reinstate it; `digest_lint
+  --fixtures` has two arms that fail if somebody does.
 - **SQL goes in `sql/<name>.sql` and the digest gives the PATH ONLY.** A digest
   that pastes a schema is a second copy, and the second copy goes stale with
   nothing to announce it. Same for a diff, a config block or a long refusal

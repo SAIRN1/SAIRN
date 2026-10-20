@@ -80,34 +80,45 @@ nothing is half-finished**:
 
 Then:
 
-    python tools/digest_lint.py SAIRN-digest-cc-b<N>.txt    # 150-WORD CEILING
+    python tools/digest_lint.py SAIRN-digest-cc-b<N>.txt    # 30-LINE CEILING
     cp SAIRN-{handoff,report,digest}-cc-b<N>.* "G:/My Drive/SAIRN-status/"
     python tools/drive_upload_verify.py --agent cc --batch b<N>
     python tools/batch_manifest.py --close --agent cc --batch b<N>
 
-**THERE ARE TWO DIGEST CEILINGS AND THEY ARE NOT THE SAME NUMBER. Corrected
-2026-10-20 (cc b27) — this paragraph previously named only the first.**
+**ONE DIGEST CEILING: 30 LINES. The 150-word rule is RETIRED — Michael's
+decision, 2026-10-20 (cc b28).** This section carried two ceilings for a day
+and that was worse than either number: every digest passed one and failed the
+other, so neither could be read as a verdict.
 
-| ceiling | where | enforced |
+| the rule | where it is written | where it is enforced |
 |---|---|---|
-| **150 words** | `tools/digest_lint.py`, `MAX_WORDS` | exits 1, but **no gate runs it** |
-| **30 lines** | `CLAUDE.md` *"Batch deliverables"*, the standing rule | `tools/drive_upload_verify.py --max-lines`, default 30, **finding** |
+| **30 lines** | `CLAUDE.md` *"Batch deliverables"*; the handoff skill's *The digest* | `tools/digest_lint.py` (`MAX_LINES`, exits 1) **and** `tools/drive_upload_verify.py --max-lines` (default 30, a finding) |
 
-**NEEDS MICHAEL'S CALL, and it is stated here rather than resolved quietly:**
-the two are complementary in intent and far apart in practice. Measured
-2026-10-20 over the newest digest of each of four agents — hank b23 **30 lines
-/ 356 words**, fourth b38 **13 / 541**, cody b26 **239 / 2011**, cc b26 **10 /
-213**. **Nobody meets 150 words and the figure has not been met in months**, so
-it is a ceiling in writing only. Write to **30 lines**, which is the rule the
-dispatches name and the one now mechanically checked, and expect
-`digest_lint` to report over-length until the two are reconciled.
+**Two tools, one number, one definition** — both count with `splitlines()`, so
+a final line with no trailing newline counts and `wc -l` may report one fewer.
+`digest_lint` still PRINTS a word count and it is no longer a finding: a number
+that informs and a number that gates are different jobs, and conflating them is
+what produced two ceilings. Two `--fixtures` arms lock the retirement in both
+directions, because a retirement recorded only in prose comes back.
 
-**What changed, so a stale sentence here is not read as current:** this file
-used to say *"nothing blocks an over-length digest."* Since 2026-10-20
-`drive_upload_verify` raises a finding at over 30 lines and exits 1, which is
-what says do not mark the batch closed. It still uploads the file — a missing
-deliverable is worse than a long one. The detail belongs in the report, which
-is what `EVIDENCE-path` points at and which has no cap for that reason.
+**RE-MEASURED 2026-10-20 against 30 lines, newest digest per agent:**
+
+| agent | digest | lines | verdict |
+|---|---|---:|---|
+| cc | b27 | **11** | CLEAN |
+| fourth | b40 | **15** | inside the cap, but **missing `EVIDENCE-path`** — the schema half still bites |
+| hank | b24 | **34** | over by 4 |
+| cody | b26 | **239** | over by 209 |
+
+Half the fleet is already inside it, which is the other half of why 30 lines is
+the survivable number and 150 words was not.
+
+**And one sentence here used to be wrong in the opposite direction:** this file
+said *"nothing blocks an over-length digest."* Since 2026-10-20
+`drive_upload_verify` raises a finding and exits 1, which is what says do not
+mark the batch closed. It still uploads the file — a missing deliverable is
+worse than a long one. The detail belongs in the report, which is what
+`EVIDENCE-path` points at and which has **no cap** for that reason.
 
 **And three more deliverable rules that lived in no file a fresh session reads
 until 2026-10-20 — they are now in `CLAUDE.md` *"Batch deliverables"*, which
