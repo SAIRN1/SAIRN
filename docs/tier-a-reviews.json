@@ -7354,6 +7354,41 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-20T08:43:13Z",
+      "opened_at_sha": "9a972010f64a14c3244d03e258da045a06297f08",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 21,
+      "resources": [
+        "dnt_appointments",
+        "dnt_patients",
+        "law_clients",
+        "law_trusttx",
+        "leg_cremations",
+        "rf_claim_agreements",
+        "rf_claim_photos",
+        "rf_invoices",
+        "rf_proposals",
+        "rt_routes",
+        "rt_stops"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/b28-photo-cap.test.js",
+        "api/b28-role-from-token.test.js",
+        "api/sd-data.js",
+        "tests/rt_routes_live_probe.py"
+      ],
+      "what": "b28(cody) -- TWO SECURITY FIXES AND A CAP CHANGE ON SIX TIER A RESOURCES. (1) api/_lib/countersign.js: MODE_PREPARED_ONLY decided whether a caller may move client trust money from the role inside the SIGNED SESSION TOKEN and never asked the database, so an attorney demoted to paralegal kept writing law_trusttx with no countersignature for SESSION_TTL_MS = 12 hours; and the SETTLING STEP re-read active=eq.true and nothing about role, so a struck-off attorney still on the payroll passed it. Fixed with currentStanding(), one roster read, three outcomes, fail-closed on unreadable. 15 arms in api/b28-role-from-token.test.js, reproduction driven at 200 before the fix. (2) api/sd-data.js PAYLOAD_CAP_BY_RESOURCE: the uniform 64KB write cap was RAISED for dnt_appointments (1291059) and rf_claim_photos (1572864) to the numbers those tables' own DB constraints already carry, because public-book.js accepts 1.2MB of patient photos and the staff path then answered 413 on every confirm or decline. 13 arms in api/b28-photo-cap.test.js. WHAT TO TRY TO BREAK: (a) is the roster read on the PREPARED-ONLY path reachable on every write and skipped on every read -- arms R6/M2 count it, but a source scan cannot see a branch I did not think of; (b) does requiring BOTH the token role and the roster role ever LOCK OUT a legitimate caller the old code admitted, beyond the promotion case R3 documents; (c) is api cap <= db constraint true for both entries against the SQL at HEAD and not just against the sql/ file my arm C6 reads; (d) dnt_patients, rf_claim_agreements, rf_invoices and rf_proposals are named only because api/b28-photo-cap.test.js MENTIONS them in its drift arms -- no code serving them changed, and that claim is worth checking against the diff rather than my word; (e) the six uncovered oversized caps pinned by arm C7 -- is the pin the right set.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-10-20T08:43:13Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
