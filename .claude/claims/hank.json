@@ -4324,8 +4324,8 @@
       "task": "b29 stonedesk.html sairnSyncAll honest failure and sendToNetwork removal decision. FILES: stonedesk.html docs/2026-10-20-hank-b29-notes.md SAIRN-handoff-hank-b29.md SAIRN-report-hank-b29.txt SAIRN-digest-hank-b29.txt",
       "claimed_at": "2026-10-20T11:29:57Z",
       "claimed_at_epoch": 1792495797.8277192,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T11:38:25Z",
       "files": [
         "SAIRN-digest-hank-b29.txt",
         "SAIRN-handoff-hank-b29.md",
