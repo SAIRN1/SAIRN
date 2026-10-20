@@ -1,0 +1,435 @@
+REPORT fourth b39 2026-10-20
+
+
+WHAT WAS ASKED, AND WHERE EACH ITEM STANDS
+
+  1  the two sairndental render fixes + the Tier A obligation
+     DONE. Both failing states REPRODUCED IN A BROWSER before a line changed,
+     per the dispatch's methodology. Obligation recorded and assigned to cc.
+     Section 1.
+
+  2  browser-verify credentialing (blank the licence key) and drive GFE
+     DONE, and the repro found something the b38 audit had MISSED. Section 1.
+
+  3  re-read the 5 sibling leg_* rows, finish the CRITICALITY-TIERS pass
+     DONE. 1 of 5 correct, 4 wrong in THREE different ways, plus a sixth
+     finding on the one that was right. Section 2.
+
+  4  SAIRNcode B1/B3/B4 off the full text of 45 CFR 170.315(b)(11)
+     DONE -- and reading it itself nearly produced a WRONG artefact, because
+     an EXPIRED criterion carries the same heading. Section 3.
+
+  5  worldwide competitive-gap audit, sairndesign
+     DONE. Two instruments read in full. Section 4.
+
+  6  push without force, confirm it landed
+     DONE -- twelve attempts, three gate refusals, all answered, one of them
+     my own bug. Section 5.
+
+  6 OF 6. NO FORCE, NO OVERRIDE OF ANY FORM, 6 files, 0 forbidden paths.
+
+
+1. ITEMS 1 AND 2 -- THE METHODOLOGY PAID FOR ITSELF TWICE
+
+  THE DISPATCH REQUIRED REPRODUCING THE FAILING STATE FIRST AND STATING THE
+  CONCEPT BEFORE THE CODE. Both were done in that order, and both repros
+  produced something a re-read would not have.
+
+  REPRO 1 -- GFE. An estimate requested 2026-09-01 is due 2026-09-04 under
+  45 CFR 149.610(b)(1)(vi)(C). Marked Issued on 2026-10-20:
+
+    days_late      46
+    Due tile       1  ->  0
+    nav badge      inline-block  ->  none
+    row badge      neutral, no trace of lateness
+    rec.issued_at  "2026-10-20"  -- STORED THE WHOLE TIME
+
+  The repro's own verdict string: "LATENESS ERASED -- issued_at is stored and
+  nothing renders it."
+
+  REPRO 2 -- CREDENTIALING, and THIS IS WHERE REPRODUCING BEAT RE-READING.
+  Licence key blanked, two credentials on file expired 21 and 28 months
+  (2025-01-31 and 2024-06-30 against 2026-10-20):
+
+    Expired 0 | Expiring Soon 0 | CE Behind Pace 0 | MATE Outstanding 0
+    nav badge hidden
+
+  b38's audit said the rows would read "Not checked yet" and they do -- BUT
+  ONLY WHEN LOCAL RECORDS EXIST. With none, the table reads "No credential
+  records yet" beside four zeros, and NOTHING ANYWHERE says the board was
+  never evaluated. That variant is strictly worse and the audit missed it. It
+  was found by driving the app, not by reading it again.
+
+  THE CONCEPTS, stated before any code:
+    GFE -- render lateness from data the record already carries: compare the
+    stored issued_at to dueDate so an Issued estimate shows "+N days LATE"
+    instead of a neutral badge, and surface a count of late-issued estimates
+    in the summary, leaving the Due tile meaning STILL OWED.
+    CREDENTIALING -- make could-not-evaluate a visible third state: the four
+    tiles read "--" not "0", the nav badge shows "?", and the panel says the
+    board was never reached, so nothing-known can never render as
+    nothing-wrong.
+
+  THREE OUTCOMES ON THE GFE ROW, NEVER TWO, AND ALL THREE WERE DRIVEN:
+
+    issued 2026-10-20 - 46 days LATE          (red)
+    issued 2026-10-16 - in time
+    issued, timing not on file                (a record predating issued_at)
+
+  The third exists because a two-outcome fix would have asserted ON TIME for
+  records where nothing established it. The Issued tile's sub-line now reads
+  "1 issued LATE, 1 timing not on file" in the danger colour, because fixing
+  only the row would have left the tiles reading clean and the tiles are what
+  gets read.
+
+  AFTER THE FIX, verified on a cache-busted URL with the fix's presence in the
+  SERVED BYTES asserted first so a cached build could not pass as a fixed one:
+
+    credentialing, 2 expired records   all four tiles "--", tooltip
+                                       "Expired was NOT evaluated: the
+                                       credential board could not be...",
+                                       nav badge "?"
+    credentialing, no records          table says "could not be evaluated"
+    GFE                                all three outcomes rendered as above
+
+  NEGATIVE CONTROL, AND IT FOUND REAL WORK. A SUCCESSFUL board must CLEAR the
+  "--" and the tooltips, or a tile that is now a real 0 keeps a tooltip saying
+  it was never checked -- the same defect inverted. Driven: could-not-run state
+  first (all four "--"), then a real board -> all four "0" with title null and
+  the badge title cleared. PASS true. WITHOUT THAT ARM, "--" STICKING FOREVER
+  WOULD HAVE LOOKED IDENTICAL TO THE FIX WORKING.
+
+  AND I OVERTURNED ONE OF MY OWN b38 FINDINGS RATHER THAN SHIPPING IT. b38
+  called `due<=today` an off-by-one. It is not: the tile is labelled "Due today
+  or overdue", so the code matches its own label. Left exactly as it was, with
+  the reason in a comment so the next reader does not re-raise it -- and the
+  Tier A entry asks the reviewer to RE-DECIDE that rather than inherit it.
+
+  THE TIER A OBLIGATION. Recorded via tier_a_review_gate --open --resources
+  dnt_gfe,dnt_credentials, ASSIGNED TO cc. The entry names five things a
+  reviewer should ATTACK rather than re-read, and says what I did NOT drive:
+  the date arithmetic including whether lateBy===0 (issued exactly ON the due
+  date) reads as in-time; whether the third outcome can leak into the "All N
+  issued in time" branch; that the negative control ran once and not across a
+  panel revisit; the due<=today decision; and that nothing server-side was
+  read, because dnt_credentials/evaluate is in api/sd-data.js, which is cody's.
+
+  Gates: checkblocks 6/0, wcag_contrast_check --gate 0 findings. Only console
+  errors are the expected Failed to fetch from dntAuth, which this clone has
+  no backend for.
+
+
+2. ITEM 3 -- THE FUNERAL SENTENCE: RIGHT ON ONE ROW OF SIX
+
+  b38 STOPPED AT EXACTLY THIS POINT ON PURPOSE. Its assertion refused a
+  file-wide replace on finding the leg_cremations confidentiality sentence on
+  SIX rows, and the corrected cell recorded that the five siblings were unread.
+  All five have now been read AT THEIR WRITE SITES.
+
+  RESULT: 1 CORRECT, 4 WRONG, IN THREE DIFFERENT WAYS -- which is precisely why
+  a single fix would have been wrong whichever way it went.
+
+  leg_deathrecords   THE SENTENCE IS CORRECT and this is the row it was
+                     written for. savePermit() (sairnlegacy.html:2967) writes
+                     decedent_full_name, date_of_death, place_of_death, county,
+                     attending_physician, cause_pending -- identity,
+                     circumstance and a cause-of-death review state, all
+                     on-row. LEFT ALONE.
+
+  leg_certs          WRONG PERSON CLASS. saveCert() (:4542) writes a STAFF
+                     certification: staff_name, cert_type, license_number,
+                     issuing_state. There is NO DECEDENT ON THIS ROW AT ALL,
+                     and the government identifier belongs to a living
+                     EMPLOYEE. Tier unchanged, because a named individual's
+                     state licence number reaches C-A on its own ground.
+
+  leg_custodylog     A-BY-CHAIN, the same shape as leg_cremations. (:2617)
+                     writes case_id, from_party, to_party, location,
+                     timestamp. Nothing about a decedent on-row; the join
+                     discloses where a named decedent's body was and in whose
+                     hands, at a known time.
+
+  leg_invoices       A-BY-CHAIN, and the old sentence never mentioned the
+                     field that matters. (:3417) writes case_id, line_items,
+                     DECLINED_ITEMS, payments. declined_items is the FTC
+                     Funeral Rule record of what a bereaved family DECLINED to
+                     buy, joined to a named decedent's case -- a stronger and
+                     far more specific ground than the sentence it replaces.
+
+  leg_preneed        THE SUBJECT IS ALIVE. (:3250) writes client_name,
+                     client_phone, client_email, plan_type, total_price,
+                     amount_paid, and linked_case_id is OPTIONAL, so there need
+                     be no decedent on it anywhere. The real ground is a living
+                     identifiable person's contact details plus the fact they
+                     have pre-purchased their own funeral.
+
+  ONE TIER QUESTION IS FLAGGED RATHER THAN DECIDED, AND THAT IS THE POINT.
+  leg_preneed reads closer to C-B than C-A by this register's OWN comparables:
+  rf_claims is C-B on "sensitive to the customer, not an elevated class" and
+  invoices is C-B on the same test, and none of the C-A classes (PHI,
+  privilege, government identifier, compensation) is on the row. A C-A TIER
+  DECIDES WHO MUST REVIEW A CHANGE TO IT, so moving one on a single session's
+  reading is exactly the blast radius this register exists to control. The cell
+  asks somebody else to decide, with both comparables named in front of them.
+
+  A SIXTH FINDING, ON THE ONE ROW WHOSE SENTENCE WAS RIGHT. leg_deathrecords'
+  INTEGRITY cell said "A decedent's identity, date of death or SSN FRAGMENT
+  wrong". THERE IS NO SSN ANYWHERE IN THE APP -- grep -ic "ssn"
+  sairnlegacy.html is 0 case-insensitively, grep -c "SSN" is 0, and no sql/
+  file for the app mentions one. Replaced with the field list the row actually
+  carries. Tier unaffected: decedent_full_name plus date_of_death plus a
+  cause-pending state is Tier A without help from an identifier that was never
+  there. The OLD WORDING IS QUOTED in the correction, because a correction that
+  deletes the history is not a correction -- and a post-check requires that
+  quote to be present exactly once.
+
+  MECHANICS, as b38: unique substring inside ONE NAMED ROW, pipe count asserted
+  identical per row, `|` used read-only to FIND the row and never to rebuild
+  it. File unchanged at 788 lines and 3241 pipes. A post-check requires the
+  shared sentence to appear EXACTLY ONCE afterwards AND to be on
+  leg_deathrecords -- any other number means a row was missed or over-reached.
+  Down from 6 to 1. criticality_tier_check PROBLEMS 6, unchanged, 0 new.
+
+
+3. ITEM 4 -- THE DSI RECORD, AND AN EXPIRED CRITERION WITH THE SAME HEADING
+
+  docs/2026-10-20-fourth-b39-sairncode-compliance-artefacts.md
+
+  b38 BUILT ITS FINDING ON A WebFetch SUMMARY and said so in its own "what
+  this did not do": "a field list built from a summary of a field list is the
+  staleness class this platform keeps paying for." This batch pulled the
+  regulation's own XML -- the eCFR renderer API, 248,888 bytes -- flattened it
+  and extracted the (b)(11) subtree.
+
+  AND READING IT ITSELF NEARLY PRODUCED A WRONG ARTEFACT, WHICH IS THE FINDING.
+  Section 170.315(a)(9)(v) ALSO carries a "Source attributes" heading, with
+  only FOUR items, and its own (a)(9)(vi) reads:
+
+    "Expiration of criterion. The adoption of this criterion for purposes of
+     the ONC Health IT Certification Program expires on January 1, 2025."
+
+  MY FIRST EXTRACTION LANDED ON THE DEAD ONE. A grep for the heading finds it
+  first. A four-attribute artefact built against an expired criterion is
+  exactly what this item was commissioned to avoid.
+
+  REAL COUNTS, from source:
+    (iv)(A) evidence-based     13 items -- b38's summary figure CONFIRMED
+    (iv)(B) predictive          9 HEADINGS carrying 31 LEAF ITEMS
+      details/output 4, purpose 4, cautioned out-of-scope 2, development and
+      input features 4, fairness process 2, external validation 4,
+      quantitative performance 5, ongoing maintenance 4, update schedule 2
+
+  B1 IS WRITTEN FOR ALL 31 LEAVES AND ITS VALUE IS THAT 15 SAY NOT ESTABLISHED.
+  (b)(11)(iv) requires the attributes be SUPPORTED, not that every answer be
+  impressive -- an aspirational entry converts a missing control into a false
+  claim, which is the one thing this criterion cannot tolerate.
+
+    external validation        NOTHING, all four leaves. The largest single
+                               gap and what a certification body opens with.
+    quantitative performance   NOTHING, all five -- and the record says so
+                               BESIDE the history that this file once carried
+                               FABRICATED 82%/71% confidence scores, since
+                               removed. An absent measure is the correct state;
+                               a manufactured one was the previous state.
+    fairness process           NOT ESTABLISHED, with a structural argument
+                               offered and explicitly NOT as a substitute.
+
+  AND TWO ENTRIES ARE GENUINELY STRONG, MEASURED NOT ASSERTED:
+
+    (B)(4)(i)   There is no training set to describe, and that is a DESIGN
+                PROPERTY rather than a gap. The prompts instruct live web
+                search only -- "do not answer from memory alone, your training
+                data may be stale for this year's code changes" -- and require
+                a source_snippet that is "the EXACT text from a search result
+                -- character-for-character from the search result, not a
+                paraphrase", with no_match:true rather than a guess.
+    (B)(4)(ii)  Use of the (A)(5)-(13) protected-class variables as input
+                features: NONE. grep -ci over sairncode.html gives ethnic 0,
+                sexual orientation 0, gender identity 0, social
+                determinant/SDOH 0, health status assessment 0, and `race`
+                returns 2 HITS THAT ARE BOTH THE WORD "traceable". dob appears
+                9 times and ONLY in the eligibility form, never as a coding
+                input.
+
+  B3 -- the two 42 CFR 422.310(g) dates specified as COMPUTED data rather than
+  a table that goes stale, with the mode switch. The asymmetry is the point:
+  before the final deadline a found GAP and a found ERROR are both actionable;
+  AFTER it only the error is, and it is MANDATORY while the gap is worth
+  nothing. An HCC panel listing both as "findings" buries the compulsory work.
+
+  B4 -- the 45 CFR 92.210(b) tool inventory, which is what an ONGOING DUTY TO
+  IDENTIFY is discharged by. Nine entries, AND IT NAMES THE PANELS IT HAS NOT
+  ASSESSED, because a partial inventory that names its gaps discharges more of
+  that duty than a complete-looking one that stops at the easy panels. EXACT
+  NEXT STEP NAMED: hcc and drg, both age/sex-weighted by construction, both the
+  rows where the answer could be YES, and NEITHER WAS READ.
+
+  sairncode.html is in 0 of this batch's commits. B1 and B4 are documents; B3
+  is specified and unimplemented, and its handler lives in api/sd-data.js,
+  which is cody's.
+
+
+4. ITEM 5 -- SAIRNDESIGN: THE PRODUCT CLAIM IS COMMERCIAL, THE LIABILITY IS PHYSICAL
+
+  docs/cloud-research/sairndesign-worldwide-competitive-gap-audit-2026-10-20.md
+
+  16 CFR PART 1640 READ WHOLE (8,741 chars of text). Authority sec. 2101 of
+  Pub. L. 116-260 and 15 U.S.C. 1193; source 86 FR 18443, 9 April 2021.
+    sec 1640.2(a)  effective 25 JUNE 2021
+    sec 1640.2(b)  the sec 1640.4 LABELLING requirement compulsory since
+                   25 JUNE 2022
+    sec 1640.5(a)  ALL upholstered furniture must comply with the California
+                   standard, TB 117-2013 -- a state test method made the
+                   national rule by incorporation
+    sec 1640.4(b)  the label must bear "Complies with U.S. CPSC requirements
+                   for upholstered furniture flammability"
+    sec 1640.5(b)  PREEMPTION -- no State may establish a different
+                   flammability requirement
+    sec 1640.3(e)  scope: indoor seating furniture, movable OR stationary,
+                   upholstered seat/back/arm, made or sold with a cushion or
+                   pillow (attached or detached) OR ABLE TO BE stuffed or
+                   filled including concealed filling, EXPRESSLY INCLUDING
+                   furniture intended for use by a child; excluding bedding
+                   products and furniture used exclusively for fitness
+
+  40 CFR PART 770 READ TARGETED out of 135,826 chars. Source 81 FR 89724, as
+  amended at 83 FR 5347 and 84 FR 43524.
+    sec 770.10  hardwood plywood 0.05 ppm | particleboard 0.09 | MDF 0.11 |
+                thin MDF 0.13
+    sec 770.45  panels imported, sold, supplied or offered for sale must be
+                labelled with the PRODUCER'S NAME, the LOT NUMBER, the EPA
+                TSCA TITLE VI TPC NUMBER and a certified statement; where a
+                panel is not individually labelled the producer, importer,
+                distributor, FABRICATOR or retailer must have a method
+                sufficient to identify the supplier and link the label
+                information -- and "This information must be made available to
+                potential customers upon request". (c) requires fabricators of
+                finished goods containing composite wood to LABEL EVERY
+                FINISHED GOOD.
+
+  "AVAILABLE TO POTENTIAL CUSTOMERS UPON REQUEST" IS THE HOOK. A designer's
+  client can ask, and the chain runs back through the designer's spec record.
+
+  THE FINDING: sdn_specitems' write (sairndesign.html:2042) stores THIRTEEN
+  FIELDS and every one is commercial --
+
+    {project_id, item, vendor, sku, cost, retail, status, lead_time_weeks,
+     one_of_a_kind, notes, created_at, reserved, reserved_for}
+
+  grep -ci over the whole file: TB 117 0 | formaldehyde 0 | TSCA 0 |
+  flame/flammab 0 | ASTM/E84 0 | Prop 65 0 | accessib 0. And ADA returns 3
+  HITS THAT ARE ALL INSIDE THE WORD "UNREADABLE" -- stated out loud because an
+  earlier alternation count of 12 looked like accessibility content and was
+  exactly that mistake. An alternation count is worthless without reading the
+  hits.
+
+  The app models the designer's business perfectly and the specified object not
+  at all. A professional using it is complete on billing and empty on the
+  questions that carry real exposure. And sdn_roomdims is a REGISTERED RESOURCE
+  while accessib is 0 -- an interior layout in a place of public accommodation
+  is governed dimensionally, and the dimension is absent.
+
+  B1-B3 HAVE NO BLOCKER, and together they are one field group, one
+  applicability predicate and one portal panel. The app already carries vendor
+  and sku per item, SO THE JOIN TO A CERTIFICATION IS ONE FIELD AWAY. Second
+  audit running whose lead recommendation is unblocked, after four that were
+  not.
+
+  THE EU LIMB IS UNSOURCEABLE FOR THE THIRD BATCH RUNNING. b37's AMLR, b38's
+  AI Act across three URL forms, and this batch -- all empty bodies from
+  EUR-Lex. NO EU INSTRUMENT IS CITED ANYWHERE in the document: not the
+  Construction Products Regulation, not the General Product Safety Regulation,
+  not REACH. A WORLDWIDE AUDIT THAT CANNOT READ EU LAW IS A US AUDIT WITH A
+  WIDER TITLE, and fixing the route is worth more than the next audit. Also
+  named unread: the 2010 ADA Standards (so NO clearance figure is quoted and
+  none should be taken from the document), 40 CFR 770's quarterly-testing,
+  third-party-certifier and import-certification subparts, and
+  interior-design licensure, which is the per-jurisdiction matrix problem named
+  rather than half-done.
+
+
+5. ITEM 6 -- TWELVE ATTEMPTS, THREE REFUSALS, ALL ANSWERED
+
+    git rev-list --left-right --count origin/main...HEAD   ->  0  0
+    21a4b3ce 1355fade 63ebc546 1d2a96c0 d9b2ec18 8c858b7b  -- all ancestors
+    git stash list -> 0        git status --porcelain -> clean
+
+  NO --force. NO --force-with-lease. NO SAIRN_SKIP, no gate_skip grant, no
+  SAIRN_GATE_EXEMPT, no SAIRN_SEED_GATE. 6 files, 0 forbidden paths, scoped to
+  my own commits.
+
+  (a) register_feed_gate DENIED the sairndental fix for having no defect
+  record. UNLIKE b38's SCHEMA RECONCILIATION, THIS ONE IS A DEFECT IN SHIPPED
+  BEHAVIOUR -- both panels ran and were wrong, and both were reproduced. So TWO
+  REAL RECORDS were filed rather than the escape trailer: injection commits
+  a002b2dc (the GFE panel, 2026-09-02) and 876bd84c (credentialing,
+  2026-08-24); FOUR FACTORS EACH and not all technical, including a
+  latent-condition factor in both (one counter carrying two meanings; a
+  half-honest panel reading as honest) and a detection factor marked
+  NOT-ACTIONABLE with the reason -- no static scanner can know that a stored
+  field ought to be compared to another. rule: not-citable WITH A NOTE that
+  proposes the rule which would cover the class ("a status rendered from a
+  subset of the fields that determine it is a finding"), because a bare
+  refusal is what makes that field meaningless. RECURRENCE LEFT OPEN ON BOTH.
+
+  (b) docs/tier-a-reviews.json CONFLICTED ON A REBASE and was resolved with
+  tools/sairn_rebase_resolve.py -- the sanctioned union-by-identity merger:
+  272 ancestor + 1 upstream-only + 1 local-only = 274, validated by
+  tier_a_review_gate --validate. NEVER A HAND-RESOLVE on a ledger four clones
+  append to.
+
+  (c) MY OWN LANDING SCRIPT HAD A REAL BUG AND THE GATE CAUGHT IT. Its fold
+  step staged docs/defect-density-register.json WITHOUT CHECKING FOR CONFLICT
+  MARKERS, so a conflicted copy was amended into a commit and became broken
+  JSON -- three conflict markers, json.load failing at line 34902. The push
+  gate refused with "the defect register could not be read, so this gate has
+  ..." WHICH IS THE GATE DOING EXACTLY ITS JOB, and it is the second time this
+  batch that a fail-closed check stopped me from shipping something wrong. The
+  register was RESTORED FROM origin/main and the two records re-added cleanly;
+  the script now REFUSES to stage a file with conflict markers or invalid JSON
+  rather than guessing, which is the same rule everything else here runs on.
+
+  THE doc-sha-reseat HOOK THEN DID ITS JOB TOO, re-pointing both records from
+  0b069085 to 21a4b3ce as the rebase moved the fix. VERIFIED rather than
+  trusted: 21a4b3ce IS an ancestor of origin/main and 0b069085 IS NOT.
+
+  Other gates: checkblocks 6/0, wcag_contrast_check --gate 0 findings,
+  criticality_tier_check PROBLEMS 6 with 0 new.
+
+
+6. WHAT b39 PROVED vs LEFT UNPROVEN
+
+  PROVED, driven or measured:
+    - both failing states REPRODUCED IN A BROWSER with real dates and counts,
+      then both fixes RE-VERIFIED on a cache-busted URL with the fix's presence
+      in the served bytes asserted first
+    - a negative control that found real work (a successful board must clear
+      the could-not-run marks)
+    - five leg_* write sites read; the shared sentence 6 -> 1; 788 lines and
+      3241 pipes unchanged; 0 new criticality_tier_check problems
+    - (b)(11) read from the regulation's own XML: (iv)(A) 13, (iv)(B) 9
+      headings / 31 leaves, and the EXPIRED (a)(9) predecessor found
+    - 16 CFR 1640 read whole; sdn_specitems' thirteen fields and seven zero
+      compliance counts measured, with the ADA-inside-"UNREADABLE" false
+      positive named rather than reported as content
+    - 6 files, 0 forbidden paths, no force, all six commits ancestors of origin
+
+  LEFT UNPROVEN:
+    - lateBy===0 -- AN ESTIMATE ISSUED EXACTLY ON ITS DUE DATE -- WAS NOT
+      DRIVEN. I intend it to read "in time"; the Tier A entry asks cc to check.
+    - The "All N issued in time" branch's unreachability while unknownIssued>0
+      is believed, not proven.
+    - The negative control ran ONCE, not twice, and not across a panel revisit.
+    - Nothing server-side was read for either fix or for SAIRNcode --
+      api/sd-data.js is cody's.
+    - The five leg_* tiers were judged from the CLIENT write site only. No SQL
+      schema and no server branch was read for any of them.
+    - No EU instrument, no 2010 ADA Standard, no 40 CFR 770 testing subpart and
+      no interior-design licensure -- all named unread in their own documents.
+    - hcc and drg were NOT read for 92.210 variables, and they are the two most
+      likely to be a yes.
+    - No screen-reader test, unchanged from b36 onward. Nothing live, unchanged
+      from b34 onward.
+
+
+END-OF-REPORT
