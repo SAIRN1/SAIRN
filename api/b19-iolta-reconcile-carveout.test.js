@@ -55,10 +55,31 @@ section('R. the two reconciliation legs go to the LEGAL SIDE and not to '
 
 verdict('R1a. owner reconciles the ledger leg', 'law_trusttx', 'owner', RECONCILE, A);
 verdict('R1b. attorney reconciles the ledger leg', 'law_trusttx', 'attorney', RECONCILE, A);
-verdict('R1c. paralegal reconciles the ledger leg', 'law_trusttx', 'paralegal', RECONCILE, A);
+// ── R1c AND R1f RE-AIMED 2026-10-19 (cody b27). THEY WERE RED BECAUSE THE
+// ── POLICY MOVED, AND THAT RED WAS THE MECHANISM WORKING ─────────────────
+// They asserted paralegal -> ALLOW. hank's b20 (89c17849e) took `paralegal`
+// OFF LAW_RECONCILE_ROLES on Michael's answer, and the module says why in
+// terms: with the grant and no attestation step "the app lets a non-lawyer
+// produce a finished reconciliation that nothing records a lawyer as having
+// reviewed -- and the duty under Rule 1.15 is the lawyer's and non-delegable."
+//
+// THE GRANT IS DEFERRED, NOT REFUSED, and these arms say which. Rule 5.3 still
+// supports the delegation and LAW_RECONCILE_ATTESTATION.candidate still names
+// the mechanism that would make it safe. So the assertion is DENY **plus** the
+// standing route: arm M2 below proves the refusal still offers C2's prepare
+// path, which is the half a paralegal can actually use today.
+//
+// RE-AIMED, NOT SUPPRESSED. The module's own comment asked for exactly this:
+// "the arm is in api/ and is re-aimed when the suite's owner updates it, not
+// suppressed here."
+verdict('R1c. paralegal CANNOT reconcile the ledger leg -- b20 deferred it '
+      + 'behind an attestation step that does not exist yet',
+        'law_trusttx', 'paralegal', RECONCILE, D);
 verdict('R1d. owner reconciles the bank leg', 'law_bankstatements', 'owner', RECONCILE, A);
 verdict('R1e. attorney reconciles the bank leg', 'law_bankstatements', 'attorney', RECONCILE, A);
-verdict('R1f. paralegal reconciles the bank leg', 'law_bankstatements', 'paralegal', RECONCILE, A);
+verdict('R1f. paralegal CANNOT reconcile the bank leg either -- same deferral, '
+      + 'and it is the SAME answer on both legs rather than one of two',
+        'law_bankstatements', 'paralegal', RECONCILE, D);
 
 // THE DELIVERABLE IS AN ABSENCE, so it is asserted as one.
 verdict('B1. BOOKKEEPER cannot reconcile the ledger leg -- the carve-out',
@@ -69,20 +90,54 @@ verdict('B2. BOOKKEEPER cannot reconcile the bank leg -- the carve-out',
 // ── R2. THE RELATIONSHIP TO THE LICENSURE TIER, ASSERTED NOT COMPUTED ─────
 // LAW_RECONCILE_ROLES is written out rather than derived from
 // LAW_BAR_ADMITTED_ROLES, so the difference is visible on the screen. This arm
-// is what stops that choice from becoming a silent divergence: the reconcile
-// set must be the tier PLUS EXACTLY `paralegal`. Same shape as
+// is what stops that choice from becoming a silent divergence. Same shape as
 // api/sd-data-sv-role-matrix.test.js arm A5b.
-section('R2. the reconcile set is the bar-admitted tier plus EXACTLY one '
-      + 'named role');
+//
+// ── RE-AIMED 2026-10-19 (cody b27): THE RELATIONSHIP IS NOW EQUALITY ─────
+// It asserted `tier PLUS EXACTLY { paralegal }` and went red when hank's b20
+// removed paralegal. The two sets are now EQUAL, and the module's own comment
+// predicted this exact red and asked for a re-aim rather than a suppression.
+//
+// THE ARM IS NOT WEAKER FOR BEING AN EQUALITY, and that is the thing to check
+// before believing it: it still fails in BOTH directions. A role added to the
+// reconcile set that is not bar-admitted lands in `extra`; a bar-admitted role
+// dropped from it lands in `missing`; either is red. What changed is only
+// WHICH set the arm expects, not how hard it is to satisfy.
+//
+// AND THE DEFERRAL IS ASSERTED AS A STRUCTURE, not left in prose: R2c below
+// requires that paralegal is absent AND that the attestation record still says
+// the mechanism is unbuilt. Re-adding paralegal without building it turns R2c
+// red, so "deferred behind a mechanism" cannot decay into "quietly granted".
+section('R2. the reconcile set is EXACTLY the bar-admitted tier -- b20 '
+      + 'deferred the one extra role');
 {
   const tier = Object.keys(lawRoles.LAW_BAR_ADMITTED_ROLES).sort();
   const rec = Object.keys(lawRoles.LAW_RECONCILE_ROLES).sort();
   const extra = rec.filter((r) => tier.indexOf(r) === -1);
   const missing = tier.filter((r) => rec.indexOf(r) === -1);
-  is(missing.length === 0 && extra.length === 1 && extra[0] === 'paralegal',
-     'R2. LAW_RECONCILE_ROLES === LAW_BAR_ADMITTED_ROLES + { paralegal }, so a '
-   + 'divergence has to be declared HERE rather than appearing',
+  is(missing.length === 0 && extra.length === 0,
+     'R2. LAW_RECONCILE_ROLES === LAW_BAR_ADMITTED_ROLES exactly, so a '
+   + 'divergence in EITHER direction has to be declared HERE rather than '
+   + 'appearing -- an extra non-bar-admitted reconciler, or a bar-admitted '
+   + 'role silently dropped',
      JSON.stringify({ tier: tier, reconcile: rec, extra: extra, missing: missing }));
+  // THE SET MUST NOT BE EMPTY. Without this, deleting every role would satisfy
+  // the equality above and read as agreement -- the vacuous-pass shape this
+  // platform keeps paying for.
+  is(tier.length >= 2 && rec.length >= 2,
+     'R2a. ...and NEITHER set is empty or a single name, so the equality above '
+   + 'is a comparison between two real sets rather than two empty ones',
+     JSON.stringify({ tier: tier.length, reconcile: rec.length }));
+  is(lawRoles.LAW_RECONCILE_ROLES.paralegal !== true
+     && lawRoles.LAW_RECONCILE_ATTESTATION.required_by_rule === true
+     && lawRoles.LAW_RECONCILE_ATTESTATION.implemented !== true,
+     'R2c. paralegal is ABSENT **and** the attestation record still says the '
+   + 'review is required by rule and NOT implemented -- so the b20 deferral is '
+   + 'a structure. Granting paralegal without building the mechanism turns '
+   + 'this red, which is what stops "deferred behind a mechanism" decaying '
+   + 'into "quietly granted"',
+     JSON.stringify({ paralegal: lawRoles.LAW_RECONCILE_ROLES.paralegal,
+                      attestation: lawRoles.LAW_RECONCILE_ATTESTATION }));
   is(Object.isFrozen(lawRoles.LAW_RECONCILE_ROLES)
      && Object.getPrototypeOf(lawRoles.LAW_RECONCILE_ROLES) === null,
      'R2b. ...and it is FROZEN with a NULL PROTOTYPE, so `constructor` is not a '

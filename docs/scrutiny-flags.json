@@ -2727,6 +2727,43 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b19-iolta-reconcile-carveout.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "44522407fadfabb5308671d31af9e0b534579f09",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b27-leg-settings.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'settings-dependent decision, so the conditional read is skipping '"
+    }
+   ],
+   "sha": "44522407fadfabb5308671d31af9e0b534579f09",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-alf-isolation.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "44522407fadfabb5308671d31af9e0b534579f09",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-leg-role-matrix.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "44522407fadfabb5308671d31af9e0b534579f09",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/ai-provenance-client-sites.test.js",
    "class": "test file",
    "level": "WEAKENING",
@@ -3723,6 +3760,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b27-leg-settings.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "5b201074e59f956b53b52c5918de7295a3d40423",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/audit-checkpoint.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -4183,6 +4228,102 @@
     }
    ],
    "sha": "6a37ed38ebe00be6e3dc3235533ab432b44d9ce1",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/defect_register_capa_control.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6a4acd089e0337124bb155c1c480079fbb2f45f5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_adversarial_prompt_corpus_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6a4acd089e0337124bb155c1c480079fbb2f45f5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_alf_read_order_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6a4acd089e0337124bb155c1c480079fbb2f45f5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_condition_coverage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6a4acd089e0337124bb155c1c480079fbb2f45f5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_dependency_graph_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6a4acd089e0337124bb155c1c480079fbb2f45f5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_rebase_resolve_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6a4acd089e0337124bb155c1c480079fbb2f45f5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_report_only_checks_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6a4acd089e0337124bb155c1c480079fbb2f45f5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_selftest_independence_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6a4acd089e0337124bb155c1c480079fbb2f45f5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_write_path_scan_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6a4acd089e0337124bb155c1c480079fbb2f45f5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairncare_compliance_window_boundary.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6a4acd089e0337124bb155c1c480079fbb2f45f5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/seam_check/run_or_default_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6a4acd089e0337124bb155c1c480079fbb2f45f5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/suite_control_backfill_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6a4acd089e0337124bb155c1c480079fbb2f45f5",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -5549,6 +5690,56 @@
     }
    ],
    "sha": "909023df7efc428df52162bb9b4fe078cdc201ce",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/routes.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "t('D2. NEGATIVE CONTROL: no session is refused BY THE BRANCH at 403, not by the "
+    }
+   ],
+   "sha": "9136677d5e5c615c5426a786131a3be61a8c7983",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b19-iolta-reconcile-carveout.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9136677d5e5c615c5426a786131a3be61a8c7983",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b27-leg-settings.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'settings-dependent decision, so the conditional read is skipping '"
+    }
+   ],
+   "sha": "9136677d5e5c615c5426a786131a3be61a8c7983",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-alf-isolation.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9136677d5e5c615c5426a786131a3be61a8c7983",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-leg-role-matrix.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9136677d5e5c615c5426a786131a3be61a8c7983",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -7267,6 +7458,56 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/_lib/routes.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "t('D2. NEGATIVE CONTROL: no session is refused BY THE BRANCH at 403, not by the "
+    }
+   ],
+   "sha": "abe43e78e608c2236d385fcaab9bab58f03241d3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b19-iolta-reconcile-carveout.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "abe43e78e608c2236d385fcaab9bab58f03241d3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b27-leg-settings.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'settings-dependent decision, so the conditional read is skipping '"
+    }
+   ],
+   "sha": "abe43e78e608c2236d385fcaab9bab58f03241d3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-alf-isolation.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "abe43e78e608c2236d385fcaab9bab58f03241d3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-leg-role-matrix.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "abe43e78e608c2236d385fcaab9bab58f03241d3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/b17-trust-lock-hard.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -8736,6 +8977,56 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/_lib/routes.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "t('D2. NEGATIVE CONTROL: no session is refused BY THE BRANCH at 403, not by the "
+    }
+   ],
+   "sha": "ce15ddaa6a3c5ab23b53c83b7ad3cba32863f25e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b19-iolta-reconcile-carveout.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ce15ddaa6a3c5ab23b53c83b7ad3cba32863f25e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b27-leg-settings.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'settings-dependent decision, so the conditional read is skipping '"
+    }
+   ],
+   "sha": "ce15ddaa6a3c5ab23b53c83b7ad3cba32863f25e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-alf-isolation.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ce15ddaa6a3c5ab23b53c83b7ad3cba32863f25e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-leg-role-matrix.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ce15ddaa6a3c5ab23b53c83b7ad3cba32863f25e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/alf-append-only-read-order.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -8921,6 +9212,102 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "d5abcf579cbc79515db8f09ea893de984443e3a3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/defect_register_capa_control.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d5edd823e0c30e43ddc752d0faf8ecb464fa1290",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_adversarial_prompt_corpus_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d5edd823e0c30e43ddc752d0faf8ecb464fa1290",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_alf_read_order_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d5edd823e0c30e43ddc752d0faf8ecb464fa1290",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_condition_coverage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d5edd823e0c30e43ddc752d0faf8ecb464fa1290",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_dependency_graph_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d5edd823e0c30e43ddc752d0faf8ecb464fa1290",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_rebase_resolve_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d5edd823e0c30e43ddc752d0faf8ecb464fa1290",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_report_only_checks_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d5edd823e0c30e43ddc752d0faf8ecb464fa1290",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_selftest_independence_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d5edd823e0c30e43ddc752d0faf8ecb464fa1290",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_write_path_scan_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d5edd823e0c30e43ddc752d0faf8ecb464fa1290",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairncare_compliance_window_boundary.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d5edd823e0c30e43ddc752d0faf8ecb464fa1290",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/seam_check/run_or_default_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d5edd823e0c30e43ddc752d0faf8ecb464fa1290",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/suite_control_backfill_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d5edd823e0c30e43ddc752d0faf8ecb464fa1290",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -9343,6 +9730,19 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "dc61bfd9060ed5fd8e49e43bd0ec39eab951c746",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/routes.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "t('D2. NEGATIVE CONTROL: no session is refused BY THE BRANCH at 403, not by the "
+    }
+   ],
+   "sha": "dce4a0a49abee7453acef92260c0a4dcfa276ad0",
    "criteria_version": "2026-10-06.1"
   },
   {

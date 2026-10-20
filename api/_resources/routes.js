@@ -31,6 +31,25 @@
 
 module.exports = {
   app: 'routes',
+  // ── NOT AN APP, SO NOT VISIBLE TO ONE. ADDED 2026-10-19 (cody b27) ──────
+  // `routes` is a pseudo-app: no licence is ever issued for it. isVisibleTo()
+  // in api/_resources/index.js had exactly two routes to visibility -- be in
+  // `shared`, or be owned by the caller's own app -- so BOTH of these names
+  // were invisible to every real licence and checkEnvelope answered 400
+  // FOREIGN_RESOURCE before the handler branch was ever reached. MEASURED:
+  // isVisibleTo('rt_routes','stonedesk') was false, and so was sairngrounds
+  // and sairnmechanical.
+  //
+  // So the handler branch landed exactly as routed and the feature was still
+  // dead, in a FOURTH place -- the registry entry, the handler branch and the
+  // extraActions declaration were all correct. Found by driving the real
+  // dispatcher rather than this module.
+  //
+  // This flag, not a move into shared.js: the header above explains why
+  // shared.js is the wrong home (the tier checker skips it by name and these
+  // rows are Tier A), and moving them would have bought reachability with
+  // invisibility to the tier arm.
+  visibleToAllApps: true,
   resources: [
     // One planned run of stops for one assignee on one date.
     // sql/rt_routes_schema.sql.
@@ -38,4 +57,20 @@ module.exports = {
     // One stop on that run. The address is the input; `seq` is the output.
     'rt_stops',
   ],
+  // ── THE THREE NON-READ VERBS, DECLARED WITH THE HANDLER AND NOT BEFORE IT ──
+  // 'upsert', 'reorder' and 'optimize' are verbs beyond read/write, and
+  // api/_resources/index.js asserts extra actions AT LOAD: a verb
+  // declared for a resource whose module does not register it is
+  // refused, and a verb declared with no handler branch asserts a
+  // capability that answers 400. So this line lands in the SAME edit as
+  // the api/sd-data.js branch -- fourth's routing document held it back
+  // on purpose for exactly that reason.
+  //
+  // rt_stops gets NO extra verbs. Every verb here operates on a ROUTE
+  // and its stop set together -- 'reorder' renumbers the whole set and
+  // 'optimize' replaces it -- so a verb aimed at a single stop would be
+  // a capability with no handler behind it.
+  extraActions: {
+    rt_routes: ['upsert', 'reorder', 'optimize'],
+  },
 };

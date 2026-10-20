@@ -34726,6 +34726,59 @@
       "recurrence_open": "E3b MEASURED THE typeof GUARD ALONE AND IT CHANGES NOTHING -- the per-step try covers it, so the guard is defence in depth and NOT the load-bearing layer. Recorded because an arm claiming otherwise would have been a green claim about a layer doing no work. And the pattern is unswept: other handlers in this file call unguarded globals after a confirmed success and nothing counts them."
     },
     {
+      "commit": "ce15ddaa6a3c",
+      "date": "2026-10-19",
+      "subject": "b27(cody): the rt_routes primitive made reachable, three routed role changes, and three routings that were incomplete",
+      "files": [
+        "api/_lib/routes.test.js",
+        "api/_resources/index.js"
+      ],
+      "lines_added": 287,
+      "lines_removed": 0,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "probe-control",
+      "summary": "api/_resources/routes.js registers rt_routes and rt_stops under the PSEUDO-APP `routes`, and isVisibleTo() in api/_resources/index.js had exactly TWO routes to visibility -- be in the `shared` registry, or be owned by the caller's own app. No licence is ever issued for `routes`, so BOTH NAMES WERE INVISIBLE TO EVERY REAL LICENCE and checkEnvelope() answered 400 FOREIGN_RESOURCE before the handler branch ran. MEASURED: isVisibleTo('rt_routes','stonedesk') === false, and the same for sairngrounds and sairnmechanical -- the wired consumers. THE SHAPE IS WHY THIS IS SEVERITY HIGH: the handler branch, the registry entry and the extraActions declaration were ALL CORRECT and the feature was DEAD, in a FOURTH place the routing document that specified the branch did not know about. b27 landed that branch exactly as routed -- asserted byte-identical to the document's own fenced block -- and the endpoint still answered 400 for every consumer. Nothing in the paste could have told anybody, and no test of api/_lib/routes.js could either: that module had 56 green arms and was correct. THE RESOURCE WAS DELIBERATELY NOT PUT IN shared.js AND THAT GOOD REASON CREATED THIS GAP: apps_with_registries() in tools/criticality_tier_check.py skips 'index' and 'shared' BY NAME, so anything declared there is invisible to the arm that refuses a registered resource with no criticality row -- and both of these are Tier A on confidentiality. Registering them as their own module kept them CHECKABLE and left them UNREACHABLE. FIXED by a third route to visibility: a registry module may declare `visibleToAllApps: true` and isVisibleTo() honours it. Opt-in, per module, and proved not to widen anything else by arm D4, which asserts CROSS_APP_NAMES is exactly the two names and that law_matters and alf_clients stay invisible to a stonedesk licence. FOUND BY DRIVING THE REAL DISPATCHER rather than the module. api/_lib/routes.test.js section 10 adds six arms (D0 a comment-stripped precondition, D1 reaches the branch, D2 the branch's own 403 rather than the allowlist 400, D2b a dispatcher-health control on a shared resource, D3 declared-vs-undeclared verb in both directions, D4 the boundary is not opened) plus D5, an ablation removing the flag in a copy of api/ that requires D1 to go RED with the exact 400 the feature had while D2b stays GREEN. D5's CONTROL WAS WRONG ON ITS FIRST SPELLING AND THE RUN CAUGHT IT: it required D2 to stay green, and D2 goes red too, because the visibility gate runs BEFORE the branch -- so with the flag gone every rt_routes arm fails together, which is precisely what \"the feature was dead\" means. A control has to sit outside the blast radius. Full account: docs/2026-10-19-cody-b27-routing-roles-and-tails.md section 1.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": "api/_lib/routes.test.js",
+      "found_by_session": null,
+      "injection": {
+        "commit": "f4208738e2f5",
+        "date": "2026-10-19",
+        "subject": "feat(routing): phase 1 -- the shared primitive, two consumers, and the one branch that is blocked",
+        "lag_days": 0
+      },
+      "phase_note": "the pseudo-app registry was a deliberate design choice made for a good reason (checkability by the tier arm), and the visibility layer had no mechanism for a module that is not an app. The choice and the gap arrived in the same commit.",
+      "contributing_factors": [
+        {
+          "factor": "isVisibleTo() in api/_resources/index.js had exactly TWO routes to visibility -- be in the `shared` registry, or be owned by the caller's own app -- and api/_resources/routes.js registers rt_routes and rt_stops under the PSEUDO-APP `routes`, which no licence is ever issued for. Measured: isVisibleTo('rt_routes','stonedesk') === false, and the same for sairngrounds and sairnmechanical. checkEnvelope() therefore answered 400 FOREIGN_RESOURCE before the handler branch ran, for every wired consumer.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "a THIRD route to visibility: a registry module may declare `visibleToAllApps: true` and isVisibleTo() honours it. Opt-in and per module, so a module without the flag behaves exactly as before -- proved by arm D4, which asserts CROSS_APP_NAMES is exactly the two names and that law_matters and alf_clients remain invisible to a stonedesk licence."
+        },
+        {
+          "factor": "THE RESOURCE WAS DELIBERATELY NOT PUT IN shared.js, FOR A GOOD REASON THAT CREATED THIS ONE. api/_resources/routes.js's own header records it: apps_with_registries() in tools/criticality_tier_check.py skips 'index' and 'shared' BY NAME, so all seven of shared.js's resources have no row in docs/CRITICALITY-TIERS.md and the completeness arm reports no finding about it. rt_routes and rt_stops are Tier A on confidentiality, so they were registered as their own module to stay CHECKABLE -- and the visibility layer had no mechanism for a module that is not an app.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "the flag closes the gap without moving the names, so the tier arm still sees them. The shared.js blind spot itself is NOT closed here and is recorded as open in docs/2026-10-19-cody-b27-routing-roles-and-tails.md."
+        },
+        {
+          "factor": "NOTHING DROVE THE DISPATCHER. api/_lib/routes.test.js had 56 arms against the module and the module was correct; the four gates a browser passes through -- envelope allowlist, app visibility, extraActions verb gate, handler branch -- had no arm at all. The routing document that specified the branch knew about three of the four, so reading it could not have found this either.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "section 10 of api/_lib/routes.test.js: six arms driving the real exported handler (D0 precondition on comment-stripped source, D1 reaches the branch, D2 the branch's own 403 rather than the allowlist 400, D2b a dispatcher-health control on a shared resource, D3 declared-vs-undeclared verb in both directions, D4 the boundary is not opened) plus D5, an ablation that removes the flag in a copy of api/ and requires D1 to go RED with the exact 400 the feature had while D2b stays green."
+        }
+      ],
+      "recurrence_open": "THE OTHER DIRECTION OF THE SAME GAP IS STILL OPEN: all seven resources registered in api/_resources/shared.js have NO row in docs/CRITICALITY-TIERS.md, because apps_with_registries() in tools/criticality_tier_check.py skips 'index' and 'shared' BY NAME. That is tools/ and is cc's. Also open: no live endpoint check exists for rt_routes, so the branch is landed, reachable in the dispatcher, and UNPROVEN against a real Supabase.",
+      "citation_reseated_2026_10_20": "THE CITED COMMIT WAS SQUASHED AWAY AND --reseat COULD NOT HELP. b27 was squashed onto origin/main to excise three bookkeeping commits that carried CONFLICT MARKERS in this very file, so the fix commit 8cd4dd52e145 ceased to exist AND its subject no longer matches any commit -- which is exactly what --check refused on: \"a dangling object kept alive by a local reflog is not a citation: in every other clone this record names nothing.\" Re-pointed by hand at the squash commit, through the register's OWN load()/save() so the serialiser cannot reformat 661 records, with the changed-line set asserted. The DEFECT and its evidence are unchanged; only the citation moved."
+    },
+    {
       "commit": "d9bbf9d472cb",
       "date": "2026-10-19",
       "subject": "fix(api b22): encode every identifier spliced into a PostgREST filter -- findings-register #1599, and the sweep found 15 sites not 3",

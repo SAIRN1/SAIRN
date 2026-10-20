@@ -16534,6 +16534,39 @@ module.exports = async (req, res) => {
       leg_merch_units: 'merch_unit_id', leg_monuments: 'monument_id', leg_obituaries: 'obituary_id',
       leg_petcases: 'petcase_id', leg_plots: 'plot_id', leg_preneed: 'preneed_id',
       leg_processions: 'procession_id', leg_tributes: 'tribute_id', leg_vehicles: 'vehicle_id'
+      // ── leg_settings IS NOT REGISTERED HERE, AND IT WAS TRIED FIRST ──────
+      // ── 2026-10-19, cody b27. ROUTED STEP 2, AND IT IS BLOCKED. ──────────
+      //
+      // hank b19's step 2 is "a `leg_settings` entry in LEG_RESOURCES with id
+      // column `settings_id`". It was added, driven, and REMOVED, because it
+      // breaks an invariant two arms of api/sd-data-leg-role-matrix.test.js
+      // assert -- measured, not predicted:
+      //
+      //   FAIL A1. the handler dispatches 36 leg_ resources and the table
+      //            carries 36 rows        -> handler=37 table=36
+      //   FAIL A2. every resource the handler dispatches has a row ...
+      //            READ from the source   -> no row: ["leg_settings"]
+      //
+      // THE SUITE IS RIGHT AND THE ROUTING IS INCOMPLETE. A2's invariant is
+      // that no leg_ resource can reach this gate without a row in
+      // LEG_ROLE_MATRIX. Satisfying it needs that row, and LEG_ROLE_MATRIX is
+      // in api/_lib/leg-roles.js -- hank's file, declared in hank's own live
+      // b22 claim, which is why it was dropped from cody's b27 claim rather
+      // than argued over. ROUTED BACK TO hank: add the row, then this entry.
+      //
+      // AND THE ENTRY IS INERT WITHOUT IT, for three independent measured
+      // reasons, so nothing is lost by waiting:
+      //   1. `leg_settings` is NOT registered in api/_resources/sairnlegacy.js,
+      //      so checkEnvelope() answers 400 before this map is consulted.
+      //   2. It is not in LEG_ROLE_MATRIX, so legRoles.decide() returns DENY --
+      //      the deliberate fail-closed answer for an unknown `leg_` name.
+      //      Measured: decide('leg_settings','owner','read') === DENY.
+      //   3. The real table is `sairnlegacy_settings`, not `leg_settings`, and
+      //      it has no `data` column, so the read branch below could not serve
+      //      it even if the first two let it through.
+      //
+      // WHAT MAKES F2 AND F3 REAL IS STEP 3, THE READ BELOW. It is landed and
+      // it does not depend on this entry at all.
     };
     // ── SAIRNLEGACY: A SESSION, NOT THE LICENCE KEY ALONE (2026-09-21) ────
     // Until today both branches below went straight from the licence hash the
@@ -16591,7 +16624,82 @@ module.exports = async (req, res) => {
         res.status(401).json({ error: { code: 'NO_SESSION', message: 'Your sign-in could not be verified, so nothing was read or saved. Sign out and sign in again, then try once more.' } });
         return;
       }
-      if (legRoles.decide(resource, legSess.role, action) === legRoles.DENY) {
+      // ── THE FIFTH ARGUMENT, AND IT IS WHAT MAKES F2 AND F3 REAL ─────────
+      // ── 2026-10-19, cody b27, routed by hank b19 ────────────────────────
+      //
+      // THE CONCEPT: this prelude must read the home's own settings row and
+      //   pass it as decide()'s fifth argument, because without it every
+      //   apprentice gets the empty default and F3's countersign branch is
+      //   unreachable in production -- and an ABSENT row must still produce
+      //   the NARROW default, so a home that has never saved settings behaves
+      //   exactly as it does today.
+      //
+      // sql/sairnlegacy_settings_schema.sql states the gap in its own words:
+      // "NOTHING READS THIS TABLE YET ... api/sd-data.js passes no `home`
+      // argument, so every apprentice currently gets the empty default and
+      // F3's countersign branch is unreachable in production." That is this
+      // call site, and this is the read.
+      //
+      // THE TABLE IS `sairnlegacy_settings`, NOT `leg_settings`. The resource
+      // vocabulary and the table name are different things here and the schema
+      // file is the authority; a read of `leg_settings` would 404.
+      //
+      // AN UNREADABLE SETTINGS TABLE FALLS TO THE NARROW DEFAULT, AND THAT IS
+      // THE SAFE DIRECTION rather than an oversight -- which is why it is not
+      // a PR 1.11 violation. Every use of `home` inside decide() can only
+      // WIDEN: liveryBilling() of a missing value is `through_the_home`, which
+      // grants nothing, and apprenticePolicy() of a missing value has an empty
+      // countersign list, which allows no prepare. So a failed read refuses
+      // MORE, never more than it should. A fail-CLOSED default here would mean
+      // refusing the whole request, and that would take all 36 resources down
+      // for every role on a settings table that is optional by design.
+      //
+      // ── THE READ IS CONDITIONAL, AND THE CONDITION IS PROVED RATHER THAN
+      // ── ASSERTED. The unconditional read was written first and DRIVEN, and
+      // ── it broke four arms that were green: ──────────────────────────────
+      //
+      //   FAIL L1. a deprecated staff token writes an invoice -> 403 ... and
+      //            NO data fetch happened          -> calls=1
+      //   and L2, L3, L4 the same way.
+      //
+      // Those arms are right: "refused on the role, with nothing fetched" is a
+      // real property of this gate and an unconditional settings read destroys
+      // it for every refused request on all 36 resources.
+      //
+      // decide() consults `home` ONLY for `apprentice` (branches 1 and 3) and
+      // `livery` (branch 4). Hardcoding those two names is a copy of a policy
+      // fact that lives in the module, and a copy goes stale in silence -- so
+      // arm H1 of api/b27-leg-settings.test.js PROVES the list is exactly
+      // right, by driving every sairnlegacy role against every leg_ resource
+      // and both actions with two OPPOSITE settings rows and requiring the
+      // answer to be IDENTICAL for every role NOT named here. A third
+      // settings-sensitive role turns that arm red.
+      // roleSet(), NOT A PLAIN LITERAL, and the guard test caught this before
+      // the push: tests/role_maps_have_no_prototype.js refused
+      // `{ apprentice: true, livery: true }` because an inherited name indexes
+      // truthy on a plain object. It was INERT here -- the lookup below uses
+      // `=== true` -- and that is exactly the guard's point: all 48 literals it
+      // was built for were inert for a distant reason too, and a new one looks
+      // exactly like them.
+      const LEG_SETTINGS_SENSITIVE_ROLES = roleSet({ apprentice: true, livery: true });
+      let legHome = null;
+      if (LEG_SETTINGS_SENSITIVE_ROLES[legSess.role] === true) {
+        const legSetR = await fetch(rest('sairnlegacy_settings?license_hash=eq.'
+          + enc(licHash) + '&select=livery_billing,apprentice&limit=1'), { headers });
+        if (legSetR.ok) {
+          const legSetRows = await legSetR.json().catch(function () { return null; });
+          legHome = (Array.isArray(legSetRows) && legSetRows[0]) || null;
+        } else if (legSetR.status !== 404 && legSetR.status !== 400) {
+          // Not provisioned (404/400) is the ordinary case for a home that has
+          // never saved settings. Anything else is worth a line, because
+          // "nobody has answered F2" and "the settings read is broken" look
+          // identical from the narrow default they both produce.
+          console.error('sd-data: sairnlegacy_settings read failed, HTTP '
+            + legSetR.status + ' -- falling back to the NARROW default for '
+            + resource + '/' + action);
+        }
+      }
+      if (legRoles.decide(resource, legSess.role, action, null, legHome) === legRoles.DENY) {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: legRoles.denyMessage(legSess.role) } });
         return;
       }
@@ -18783,9 +18891,38 @@ module.exports = async (req, res) => {
       // never be reached by a request, and a branch that cannot fire is a
       // branch nobody maintains. The defect is in the CONFIGURATION, and a
       // configuration defect is visible without a request.
-      const LAW_RECONCILE_ROLES = roleSet({ owner: true });
-      if (!LAW_RECONCILE_ROLES[recSess.role]) {
-        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Trust reconciliation is available to the firm owner' } });
+      // ── ANSWERED IN THE MODULE THAT OWNS LAW ROLE POLICY (2026-10-19, b27)
+      //
+      // THE CONCEPT: this gate must READ the policy from api/_lib/law-roles.js
+      //   rather than re-list it, because the hand-written literal above said
+      //   OWNER-ONLY while the module's LAW_RECONCILE_ROLES has said
+      //   { owner, attorney } since b19 -- so an attorney was refused in
+      //   production by a copy the policy owner had already superseded.
+      //
+      // MEASURED: api/_lib/law-roles.js:222 is
+      // Object.freeze({ owner: true, attorney: true }). The literal here was
+      // roleSet({ owner: true }). THE OPEN QUESTION THE PARAGRAPH ABOVE
+      // DESCRIBES IS CLOSED -- b19 closed it, in the module, and this call site
+      // never heard. Two copies of one policy is how that happens, which is
+      // why the fix is to delete the copy rather than to edit it.
+      //
+      // `=== true` and not truthiness: LAW_RECONCILE_ROLES is a
+      // null-prototype frozen object, so an inherited name cannot index
+      // truthy, and the explicit comparison says that is deliberate rather
+      // than incidental.
+      //
+      // THE MESSAGE IS DERIVED TOO. denyMessage() names the resource, the role
+      // and the verb from the same module, so a reader refused here and a
+      // reader refused by the role table get the same vocabulary -- the old
+      // literal said "available to the firm owner", which became untrue the
+      // moment attorney was added and nothing would have caught it.
+      //
+      // `roleSet` IS STILL USED ELSEWHERE IN THIS FILE (api/sd-data.js:8988
+      // among others), so the import stays. Checked before deleting anything.
+      if (lawRoles.LAW_RECONCILE_ROLES[recSess.role] !== true) {
+        res.status(403).json({ error: { code: 'FORBIDDEN',
+          message: lawRoles.denyMessage('law_trusttx', recSess.role,
+                                        lawRoles.LAW_RECONCILE_ACTION) } });
         return;
       }
       const readLaw = async (table) => {
@@ -19490,6 +19627,158 @@ module.exports = async (req, res) => {
         res.status(200).json({ ok: true });
         return;
       }
+    }
+
+    // ── SHARED ROUTING PRIMITIVE (rt_routes / rt_stops) ────────────────────────
+    // Module: api/_lib/routes.js. Schema: sql/rt_routes_schema.sql.
+    // Tier A on confidentiality both rows — docs/CRITICALITY-TIERS.md, `routes`.
+    // Consumers: stonedesk.html fmRunOptimize(), sairngrounds.html
+    // grdRouteOptimize(). Neither app owns it.
+    //
+    // LICENCE **AND** SESSION on every verb, not licence-only: a licence proves
+    // the shop, and an address list joined to a named employee is not shop
+    // metadata.
+    if (resource === 'rt_routes' || resource === 'rt_stops') {
+      const RT = require('./_lib/routes.js');
+      const p = payload || {};
+      const session = verifySessionToken(tokenFromRequest(req), licHash, p.app_id);
+      if (!session) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'A valid employee session is required' } });
+        return;
+      }
+      const keyErr = RT.validateRouteKey(p);
+      if (keyErr) { res.status(400).json({ error: { code: 'BAD_REQUEST', message: keyErr } }); return; }
+
+      const routeFilter = 'license_hash=eq.' + enc(licHash)
+        + '&app_id=eq.' + enc(p.app_id)
+        + '&assignee_id=eq.' + enc(p.assignee_id)
+        + '&route_date=eq.' + enc(p.route_date);
+
+      async function loadRoute() {
+        const r = await fetch(rest('rt_routes?' + routeFilter + '&select=*&limit=1'), { headers });
+        if (r.status === 404 || r.status === 400) return { notProvisioned: true };
+        const rows = await r.json();
+        if (!r.ok) return { upstream: rows };
+        return { row: (Array.isArray(rows) && rows[0]) || null };
+      }
+      async function loadStops(routeId) {
+        const r = await fetch(rest('rt_stops?route_id=eq.' + enc(routeId)
+          + '&license_hash=eq.' + enc(licHash) + '&select=*&order=seq.asc'), { headers });
+        if (r.status === 404 || r.status === 400) return { notProvisioned: true };
+        const rows = await r.json();
+        if (!r.ok) return { upstream: rows };
+        return { rows: rows || [] };
+      }
+
+      if (action === 'read') {
+        const got = await loadRoute();
+        if (got.notProvisioned) { res.status(200).json({ ok: true, data: null, provisioned: false }); return; }
+        if (got.upstream) return upstream(res, got.upstream);
+        if (!got.row) { res.status(200).json({ ok: true, data: null, provisioned: true }); return; }
+        const st = await loadStops(got.row.id);
+        if (st.notProvisioned) { res.status(200).json({ ok: true, data: null, provisioned: false }); return; }
+        if (st.upstream) return upstream(res, st.upstream);
+        res.status(200).json({ ok: true, data: { route: got.row, stops: st.rows }, provisioned: true });
+        return;
+      }
+
+      if (action === 'upsert') {
+        const stopErr = RT.validateStops(p.stops);
+        if (stopErr) { res.status(400).json({ error: { code: 'BAD_REQUEST', message: stopErr } }); return; }
+        const rr = await fetch(rest('rt_routes?on_conflict=license_hash,app_id,assignee_id,route_date'), {
+          method: 'POST',
+          headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+          body: JSON.stringify({
+            license_hash: licHash, app_id: p.app_id, assignee_id: p.assignee_id,
+            route_date: p.route_date, updated_at: new Date().toISOString()
+          })
+        });
+        const rrows = await rr.json();
+        if (!rr.ok) return upstream(res, rrows);
+        const routeId = (Array.isArray(rrows) ? rrows[0] : rrows).id;
+        // REPLACE the stop set. The delete is bounded by route_id -- it reaches
+        // only the stops of one route of one licence. See the grant note in
+        // sql/rt_routes_schema.sql for why this is a hard delete and not a flag.
+        await fetch(rest('rt_stops?route_id=eq.' + enc(routeId) + '&license_hash=eq.' + enc(licHash)),
+          { method: 'DELETE', headers });
+        const toInsert = p.stops.map((s, i) => ({
+          route_id: routeId, license_hash: licHash, seq: i + 1,
+          job_ref: s.job_ref || null, address: s.address,
+          lat: s.lat === undefined ? null : s.lat,
+          lng: s.lng === undefined ? null : s.lng,
+          accuracy_m: s.accuracy_m === undefined ? null : s.accuracy_m,
+          status: s.status || 'pending', locked: s.locked === true
+        }));
+        const si = await fetch(rest('rt_stops'), {
+          method: 'POST',
+          headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+          body: JSON.stringify(toInsert)
+        });
+        const srows = await si.json();
+        if (!si.ok) return upstream(res, srows);
+        res.status(200).json({ ok: true, route_id: routeId, stops: srows });
+        return;
+      }
+
+      if (action === 'reorder') {
+        // MANUAL reorder. Sets source='manual' and deliberately does NOT touch
+        // optimized_at or saved_seconds -- a human reordering a route does not
+        // invalidate the record that an optimiser once ran, and it does not
+        // create a saving either.
+        const got = await loadRoute();
+        if (got.upstream) return upstream(res, got.upstream);
+        if (!got.row) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No route for that app/assignee/date' } }); return; }
+        const st = await loadStops(got.row.id);
+        if (st.upstream) return upstream(res, st.upstream);
+        const ordered = RT.applyOrder(st.rows, (p.seq || []).map(
+          (id) => st.rows.findIndex((r) => String(r.id) === String(id))));
+        if (!ordered) { res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'seq must list every stop of this route exactly once' } }); return; }
+        for (const s of ordered) {
+          await fetch(rest('rt_stops?id=eq.' + enc(s.id)), {
+            method: 'PATCH', headers, body: JSON.stringify({ seq: s.seq })
+          });
+        }
+        await fetch(rest('rt_routes?id=eq.' + enc(got.row.id)), {
+          method: 'PATCH', headers,
+          body: JSON.stringify({ source: 'manual', updated_at: new Date().toISOString() })
+        });
+        res.status(200).json({ ok: true, stops: ordered });
+        return;
+      }
+
+      if (action === 'optimize') {
+        const stopErr = RT.validateStops(p.stops);
+        if (stopErr) { res.status(400).json({ error: { code: 'BAD_REQUEST', message: stopErr } }); return; }
+        const result = await RT.optimize(p.stops, {});
+        // THE THIRD STATE IS RETURNED AS A 200, NOT AN ERROR STATUS, and that is
+        // deliberate: "I could not compute an ordering" is a successful answer to
+        // the question asked. A 502 here would make the client's catch arm the
+        // place this lands, which is exactly where the old maps-optimize call died
+        // under a message about the wrong environment variable.
+        // NOTHING IS WRITTEN when basis is 'unavailable' -- the stored order must
+        // not move.
+        if (result.basis !== 'unavailable') {
+          const rr = await fetch(rest('rt_routes?on_conflict=license_hash,app_id,assignee_id,route_date'), {
+            method: 'POST',
+            headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+            body: JSON.stringify({
+              license_hash: licHash, app_id: p.app_id, assignee_id: p.assignee_id,
+              route_date: p.route_date,
+              optimized_at: new Date().toISOString(),
+              saved_seconds: result.saved_seconds,   // NULL means NOT COMPUTED
+              source: result.basis,
+              updated_at: new Date().toISOString()
+            })
+          });
+          const rrows = await rr.json();
+          if (!rr.ok) return upstream(res, rrows);
+        }
+        res.status(200).json(Object.assign({ ok: true }, result));
+        return;
+      }
+
+      res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'action must be read, upsert, reorder or optimize for ' + resource } });
+      return;
     }
 
     // Should be unreachable given the guards above.

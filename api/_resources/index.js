@@ -270,8 +270,52 @@ function resourceListTextFor(appId) {
 // customer nobody can enumerate. The handler LOGS every such request, so the
 // set stops being unknown; once the logs show it is empty the fallback can be
 // tightened, and sd-data.js carries the env switch to do it.
+// ── A THIRD ROUTE TO VISIBILITY, AND IT CLOSES A FEATURE THAT WAS LANDED
+// ── AND UNREACHABLE (2026-10-19, cody b27) ────────────────────────────────
+//
+// THE CONCEPT: a registry module may declare `visibleToAllApps: true`, and
+//   isVisibleTo must honour it -- so a genuinely cross-app resource can be
+//   reachable by every licence WITHOUT being hidden in shared.js, where
+//   tools/criticality_tier_check.py skips it by name and its tier goes
+//   unchecked.
+//
+// MEASURED, NOT REASONED. There were exactly TWO routes to visibility: be in
+// `shared`, or be owned by the caller's own app. `api/_resources/routes.js`
+// registers rt_routes and rt_stops under a PSEUDO-APP `routes` that no licence
+// is ever issued for, so:
+//
+//   isVisibleTo('rt_routes', 'stonedesk')      -> false
+//   isVisibleTo('rt_routes', 'sairngrounds')   -> false
+//   isVisibleTo('rt_routes', 'sairnmechanical')-> false
+//
+// Every one of the wired consumers got 400 FOREIGN_RESOURCE from checkEnvelope
+// BEFORE the handler branch was ever reached. b27 landed that branch exactly as
+// routed and the feature was STILL dead, and nothing in the paste could have
+// told anybody: the branch is correct, the registry entry is correct, the
+// extraActions declaration is correct, and the visibility layer -- a fourth
+// place, which fourth's own routing document did not know about -- refused it.
+// FOUND BY DRIVING THE REAL DISPATCHER rather than the module, which is the
+// one arm item 1 asked for.
+//
+// WHY NOT MOVE THE TWO NAMES INTO shared.js, which is the existing mechanism:
+// api/_resources/routes.js's own header argues against it at length and is
+// right. apps_with_registries() in tools/criticality_tier_check.py skips
+// 'index' and 'shared' BY NAME, so all seven of shared.js's resources have no
+// row in docs/CRITICALITY-TIERS.md and the completeness arm reports no finding
+// about it. rt_routes and rt_stops are Tier A on confidentiality. Moving them
+// would have made them reachable by making them unchecked, which is trading
+// one silent failure for another.
+//
+// THE FLAG IS OPT-IN AND PER MODULE, not a wildcard: a module without it
+// behaves exactly as before, which is what the ablation in
+// api/_lib/routes.test.js proves.
+const CROSS_APP_NAMES = REGISTRY_MODULES.reduce((all, mod) => (
+  mod.visibleToAllApps === true ? all.concat(mod.resources) : all
+), []);
+
 function isVisibleTo(resource, appId) {
   if (RESOURCE_NAMES_BY_APP[SHARED_APP].indexOf(resource) !== -1) return true;
+  if (CROSS_APP_NAMES.indexOf(resource) !== -1) return true;
   if (!isKnownApp(appId)) return true;          // cannot attribute -> cannot judge
   return RESOURCE_NAMES_BY_APP[normApp(appId)].indexOf(resource) !== -1;
 }
@@ -296,4 +340,8 @@ module.exports = {
   resourceNamesFor,
   resourceListTextFor,
   isVisibleTo,
+  // EXPORTED so the suites can assert the FLAG's effect directly as well as
+  // through isVisibleTo -- an arm that only drives the function cannot tell
+  // "the flag was read" from "the name happens to be in shared".
+  CROSS_APP_NAMES,
 };

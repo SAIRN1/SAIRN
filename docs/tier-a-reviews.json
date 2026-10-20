@@ -7021,6 +7021,41 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-20T05:51:44Z",
+      "opened_at_sha": "df02190ff76cd42961b6e509548e567e02fce50f",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 13,
+      "resources": [
+        "alf_clients",
+        "employees",
+        "law_bankstatements",
+        "law_matters",
+        "law_trusttx",
+        "leg_cremations",
+        "leg_deathrecords",
+        "leg_invoices",
+        "rt_routes",
+        "rt_stops"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/_lib/routes.test.js",
+        "api/_resources/routes.js",
+        "api/b19-iolta-reconcile-carveout.test.js",
+        "api/b27-leg-settings.test.js",
+        "api/sd-data.js"
+      ],
+      "what": "b27: the rt_routes/rt_stops handler branch landed in api/sd-data.js exactly as fourth's b34 routing document specified it, and the two names were then made REACHABLE -- api/_resources/index.js's isVisibleTo() had only two routes to visibility and both resources were invisible to every real licence, so checkEnvelope answered 400 FOREIGN_RESOURCE before the branch ever ran. Both rows are Tier A on confidentiality (an address list joined to a named employee). Also in range: the legRoles.decide() fifth argument (the home's sairnlegacy_settings row) on the 36-resource SAIRNlegacy gate, the law_trust_reconcile gate reading api/_lib/law-roles.js instead of re-listing owner-only, and office_manager added to the alf_facility non-management arm set. WHAT TO TRY TO BREAK: (1) that visibleToAllApps did not widen anything but rt_routes/rt_stops -- arm D4 asserts CROSS_APP_NAMES is exactly those two and that law_matters and alf_clients stay invisible to a stonedesk licence; (2) that the rt_routes branch requires a SESSION and not a licence alone on every one of its four verbs -- arm D2 asserts the 403 comes from inside the branch and not from the allowlist; (3) that an ABSENT sairnlegacy_settings row still produces the NARROW default, so no home that never saved settings had anything widened -- arm S0; (4) that the settings read cannot change any decision for a role outside apprentice/livery -- arm H1 drives 648 comparisons. NOT VERIFIED BY ME: nothing establishes rt_routes answers a real request against a real Supabase. No live endpoint check and no live render.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-20T05:51:44Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

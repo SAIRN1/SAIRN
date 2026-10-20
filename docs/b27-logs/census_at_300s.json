@@ -1,0 +1,472 @@
+{
+ "measured": "2026-10-19",
+ "by": "cody b26",
+ "tool": "docs/b26-logs/known_red_tail_census.py",
+ "comparison": "tools/known_red_check.py::_same_reason, imported",
+ "registered_entries": 65,
+ "driven": 65,
+ "summary": {
+  "TAIL_MATCHES": 37,
+  "GREEN_RECOVERED": 5,
+  "SKIPPED": 1,
+  "TAIL_UNPRODUCIBLE": 12,
+  "TIMEOUT": 10
+ },
+ "verdicts": [
+  {
+   "file": "api/sd-data-customer-soft-delete.test.js",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "5 passed",
+   "stored": "5 passed"
+  },
+  {
+   "file": "api/sd-data-family-contacts.test.js",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "FAILURES ABOVE",
+   "stored": "FAILURES ABOVE"
+  },
+  {
+   "file": "api/sd-data-scp-licence-only.test.js",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "15 passed, 9 failed",
+   "stored": "23 passed, 1 failed"
+  },
+  {
+   "file": "api/sf-auth.test.js",
+   "verdict": "GREEN_RECOVERED",
+   "exit": 0,
+   "observed": "40 passed, 0 failed",
+   "stored": "39 passed, 1 failed"
+  },
+  {
+   "file": "tests/claims/run_claim_retype_mutation_control.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 2,
+   "observed": "3 passed, 2 failed",
+   "stored": "3 passed, 2 failed"
+  },
+  {
+   "file": "tests/claims/run_push_verify_probe.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "68 passed, 1 failed",
+   "stored": "68 passed, 1 failed"
+  },
+  {
+   "file": "tests/claims/run_registry_claim_sabotage_probe.py",
+   "verdict": "SKIPPED",
+   "exit": 3,
+   "observed": "where <name> is one of the session names already used by this platform.",
+   "stored": "FAIL 0. the suite is GREEN in the worktree before anything is planted (exit 1) -- 'The baseline is red, so no mutation below would mean anything. Stopping.'"
+  },
+  {
+   "file": "tests/defect_register_capa_control.py",
+   "verdict": "TAIL_UNPRODUCIBLE",
+   "exit": 1,
+   "observed": "  ok   malformed JSON is refused rather than stored as a string",
+   "stored": "3 failure(s)"
+  },
+  {
+   "file": "tests/faults/transport_timeout_sweep.js",
+   "verdict": "GREEN_RECOVERED",
+   "exit": 0,
+   "observed": "ALL 81 TRANSPORT TIMEOUT ARMS PASS (15 apps)",
+   "stored": "77 passed, 4 FAILED"
+  },
+  {
+   "file": "tests/hover_quotable_session_vocab_check.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "    have gone unnoticed. Add the name to QUOTABLE.",
+   "stored": "    have gone unnoticed. Add the name to QUOTABLE."
+  },
+  {
+   "file": "tests/install_git_hooks_check_probe.py",
+   "verdict": "TIMEOUT",
+   "exit": null,
+   "observed": "",
+   "stored": "TIMED OUT after 300s -- a hang is not a pass"
+  },
+  {
+   "file": "tests/law_reconcile_role_vocab_check.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 2,
+   "observed": "This is exit 2. Nothing was checked, and that is not a pass.",
+   "stored": "This is exit 2. Nothing was checked, and that is not a pass."
+  },
+  {
+   "file": "tests/law_reconcile_role_vocab_control.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "CRITERIA LOCKED BEFORE THE REAL RUN",
+   "stored": "CRITERIA LOCKED BEFORE THE REAL RUN"
+  },
+  {
+   "file": "tests/local_only_self_evidence_probe.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "1 ARM(S) FAILED",
+   "stored": "1 ARM(S) FAILED"
+  },
+  {
+   "file": "tests/local_only_shape_probe.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "2 ARM(S) FAILED",
+   "stored": "2 ARM(S) FAILED"
+  },
+  {
+   "file": "tests/push_gate/check12_probe.py",
+   "verdict": "TIMEOUT",
+   "exit": null,
+   "observed": "",
+   "stored": "TIMED OUT after 300s -- a hang is not a pass"
+  },
+  {
+   "file": "tests/push_gate/check8_probe.py",
+   "verdict": "TIMEOUT",
+   "exit": null,
+   "observed": "",
+   "stored": "TIMED OUT after 300s -- a hang is not a pass  || THIS SUITE CHANGED: .git\\config"
+  },
+  {
+   "file": "tests/push_gate/check9_probe.py",
+   "verdict": "TIMEOUT",
+   "exit": null,
+   "observed": "",
+   "stored": "FAILED  check9_probe: 10 failed"
+  },
+  {
+   "file": "tests/push_gate/preauth_exemption_anchor_probe.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "FAILED  preauth_exemption_anchor_probe: 1 failed",
+   "stored": "FAILED  preauth_exemption_anchor_probe: 1 failed"
+  },
+  {
+   "file": "tests/rebase_resolve_merge_control.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": " a1_clean_append",
+   "stored": " a1_clean_append"
+  },
+  {
+   "file": "tests/run_adversarial_prompt_corpus_probe.py",
+   "verdict": "TAIL_UNPRODUCIBLE",
+   "exit": 1,
+   "observed": "3 arm(s) FAILED: 4. the sweep runs and classifies: zero unfenced, 5 reported as fenced, 8. emptying the untrusted-field list cannot produce a CLEAN sweep -- the lock refuses first, so the criteria cannot go quiet, 10. emptying the fence-call hints moves all 5 fenced sites to at-risk -- none vanishes, so a clean sweep is not blindness",
+   "stored": "3 arm(s) FAILED: 4. the sweep runs and classifies: zero unfenced, 5 reported as fenced, 8. emptying the untrusted-field list cannot produce a CLEAN sweep -- the"
+  },
+  {
+   "file": "tests/run_alf_read_order_sabotage_probe.py",
+   "verdict": "TAIL_UNPRODUCIBLE",
+   "exit": 1,
+   "observed": "  - 5. THE FIX IS STILL THERE BUT THE ARM CAN NO LONGER SEE IT: the alf_mar read is hoisted into a local, so the arm finds ZERO list reads for that table. A sweep over a read it never found is not a pass and must say so",
+   "stored": "  - 5. THE FIX IS STILL THERE BUT THE ARM CAN NO LONGER SEE IT: the alf_mar read is hoisted into a local, so the arm finds ZERO list reads for that table. A swe"
+  },
+  {
+   "file": "tests/run_baseline_readiness_probe.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "  - ...and says NO ENTITY IS READY rather than printing a table and stopping",
+   "stored": "  - ...and says NO ENTITY IS READY rather than printing a table and stopping"
+  },
+  {
+   "file": "tests/run_checker_control_probe.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "  EVERY CONTROLS_FOR under tests/ parses to a subject (these declare nothing: ['tests/criticality_rollup_list_review_probe.py'])",
+   "stored": "  EVERY CONTROLS_FOR under tests/ parses to a subject (these declare nothing: ['tests/criticality_rollup_list_review_probe.py'])"
+  },
+  {
+   "file": "tests/run_completeness_probe.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "  6b  ...and the finding it exits 1 for is the real one, not any line that happens to be printed",
+   "stored": "  6b  ...and the finding it exits 1 for is the real one, not any line that happens to be printed"
+  },
+  {
+   "file": "tests/run_concurrency_retry_probe.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "B. the retry is driven with synthetic files, not the real three",
+   "stored": "B. the retry is driven with synthetic files, not the real three"
+  },
+  {
+   "file": "tests/run_condition_coverage_probe.py",
+   "verdict": "TAIL_UNPRODUCIBLE",
+   "exit": 1,
+   "observed": "5. THE PLANTED GAP -- it must find an operand no test covers",
+   "stored": "4b  and it says WHY -- a restore cannot be verified against a modified baseline"
+  },
+  {
+   "file": "tests/run_copy_exactly_gate_probe.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "0 passed, 1 failed",
+   "stored": "0 passed, 1 failed"
+  },
+  {
+   "file": "tests/run_defect_dispersion_probe.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "  ok   layer has a population of exactly three",
+   "stored": "ok   layer has a population of exactly three"
+  },
+  {
+   "file": "tests/run_dependency_graph_probe.py",
+   "verdict": "TAIL_UNPRODUCIBLE",
+   "exit": 1,
+   "observed": "  7q  a PAST-DUE date prints REVIEW DUE and does NOT fail -- failing a push because a calendar date passed punishes whoever pushes next, which is how a date column gets set to 2099",
+   "stored": "7e  CONTROL: the same rows marked OPEN pass -- 7d is not a checker that refuses everything"
+  },
+  {
+   "file": "tests/run_dispatch_state_probe.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "  FAILED: ...and NO subprocess.run, so it never invokes sairn_claim.py to ask the claim matcher",
+   "stored": "  FAILED: ...and NO subprocess.run, so it never invokes sairn_claim.py to ask the claim matcher"
+  },
+  {
+   "file": "tests/run_eaten_substitution_probe.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "eaten_substitution_check: 2 ARM(S) FAILED",
+   "stored": "eaten_substitution_check: 2 ARM(S) FAILED"
+  },
+  {
+   "file": "tests/run_export_coverage_probe.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "  - sairnmechanical declares mech_credentials in its registry, and it resolves",
+   "stored": "  - sairnmechanical declares mech_credentials in its registry, and it resolves"
+  },
+  {
+   "file": "tests/run_financial_invariant_probe.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "  7f  a judgment for a file the checker no longer flags is called out as stale, not left to look current",
+   "stored": "  7f  a judgment for a file the checker no longer flags is called out as stale, not left to look current"
+  },
+  {
+   "file": "tests/run_first_article_probe.py",
+   "verdict": "TIMEOUT",
+   "exit": null,
+   "observed": "",
+   "stored": "- NO RECORDED INSPECTION is stale, incomplete, or cites an arm that does not exist -- the half this probe controls"
+  },
+  {
+   "file": "tests/run_githook_install_probe.py",
+   "verdict": "TIMEOUT",
+   "exit": null,
+   "observed": "",
+   "stored": "  - --check passes once the clone is really installed"
+  },
+  {
+   "file": "tests/run_harness_stage_diagnosis_probe.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "1 failure(s)",
+   "stored": "3 failure(s)"
+  },
+  {
+   "file": "tests/run_index_duplicate_probe.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "  7a  the real index has no undeclared duplicate pairs",
+   "stored": "  7a  the real index has no undeclared duplicate pairs"
+  },
+  {
+   "file": "tests/run_nhi_clone_enumeration_probe.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "5 passed, 3 failed",
+   "stored": "5 passed, 3 failed"
+  },
+  {
+   "file": "tests/run_nhi_register_write_flag_probe.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "4 passed, 8 failed",
+   "stored": "5 passed, 7 failed"
+  },
+  {
+   "file": "tests/run_rebase_resolve_probe.py",
+   "verdict": "TAIL_UNPRODUCIBLE",
+   "exit": 1,
+   "observed": "  - ...and says nothing was staged",
+   "stored": "  - MIXED: one source + one generated -> REFUSES, exit 1"
+  },
+  {
+   "file": "tests/run_removal_path_probe.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "1 FAILED",
+   "stored": "1 FAILED"
+  },
+  {
+   "file": "tests/run_report_only_checks_probe.py",
+   "verdict": "TAIL_UNPRODUCIBLE",
+   "exit": 1,
+   "observed": "report-only mechanism: 85 checks, 4 failed",
+   "stored": "TIMED OUT after 300s -- a hang is not a pass"
+  },
+  {
+   "file": "tests/run_rewrite_convergence_probe.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "  FAILED: E1 --derive: nothing is derived that is neither declared nor exempted",
+   "stored": "  FAILED: E1 --derive: nothing is derived that is neither declared nor exempted"
+  },
+  {
+   "file": "tests/run_secrets_inventory_probe.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "  6c  SILENT: against the real committed document the same entry point exits 0 -- the pair is what makes 6a evidence rather than an observation",
+   "stored": "6c  SILENT: against the real committed document the same entry point exits 0 -- the pair is what makes 6a evidence rather than an observation"
+  },
+  {
+   "file": "tests/run_selftest_sweep_probe.py",
+   "verdict": "TIMEOUT",
+   "exit": null,
+   "observed": "",
+   "stored": "44 self-tests, 5 ARM(S) FAILED (exit 1, 246s)"
+  },
+  {
+   "file": "tests/run_stored_data_criticality_probe.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "2 ARM(S) FAILED: an ESCAPED pipe inside a cell is content, not a boundary, THE PAIRED POSITIVE: both real rows are still parsed and counted",
+   "stored": "2 ARM(S) FAILED: an ESCAPED pipe inside a cell is content, not a boundary, THE PAIRED POSITIVE: both real rows are still parsed and counted"
+  },
+  {
+   "file": "tests/run_subprocess_decode_probe.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "  - zero text-mode subprocess calls without an explicit encoding",
+   "stored": "  - zero text-mode subprocess calls without an explicit encoding"
+  },
+  {
+   "file": "tests/run_tool_selftest_probe.py",
+   "verdict": "TIMEOUT",
+   "exit": null,
+   "observed": "",
+   "stored": "129 passed, 0 failed, 1 could-not-run (exit 3)"
+  },
+  {
+   "file": "tests/run_write_path_scan_probe.py",
+   "verdict": "TAIL_UNPRODUCIBLE",
+   "exit": 1,
+   "observed": "1 ARM(S) FAILED: the shipped baseline PASSES today -- a ratchet that fails on a clean tree is one somebody turns off",
+   "stored": "2 ARM(S) FAILED: the shipped baseline PASSES today -- a ratchet that fails on a clean tree is one somebody turns off, a count that FELL is not a regression"
+  },
+  {
+   "file": "tests/sairncare/test-compliance-rules.js",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "47 passed, 3 failed",
+   "stored": "47 passed, 3 failed"
+  },
+  {
+   "file": "tests/sairnfreedom_auth_review_probe.js",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "  ? 15:11 (2) -- the sf-auth setup guard anchor has moved -- this arm is not reporting agreement it did not check",
+   "stored": "  ? 15:11 (2) -- the sf-auth setup guard anchor has moved -- this arm is not reporting agreement it did not check"
+  },
+  {
+   "file": "tests/sairnfreedom_segregation_of_duties.js",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "FAIL -- 25 passed, 1 failed",
+   "stored": "FAIL -- 25 passed, 1 failed"
+  },
+  {
+   "file": "tests/schema_provisioning_probe.py",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "3 ARM(S) FAILED",
+   "stored": "3 ARM(S) FAILED"
+  },
+  {
+   "file": "tests/scp_quotes_review_probe.js",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "  NOT REPRODUCED -- this finding appears to be closed.",
+   "stored": "  NOT REPRODUCED -- this finding appears to be closed."
+  },
+  {
+   "file": "tests/seam_check/run_or_default_probe.py",
+   "verdict": "TAIL_UNPRODUCIBLE",
+   "exit": 1,
+   "observed": "2 ARM(S) FAILED",
+   "stored": "2 ARM(S) FAILED  [re-driven on a restored tree]"
+  },
+  {
+   "file": "tests/seam_check/run_ref_probe.py",
+   "verdict": "TIMEOUT",
+   "exit": null,
+   "observed": "",
+   "stored": "3 ARM(S) FAILED  [re-driven on a restored tree]"
+  },
+  {
+   "file": "tests/sql_preflight/run_probe.py",
+   "verdict": "GREEN_RECOVERED",
+   "exit": 0,
+   "observed": "PASS -- 4 defects caught, control clean, 7 exit codes correct, 3 gate cases correct (blocks a phantom column, silent on clean, does not block any existing file in sql/), 6 --require-live cases correct (4 fail-closed, clean silent, MISSING_TABLE blocks)",
+   "stored": "dead_bare_tables_evidence_2026-09-05.sql: UNDECLARED_TABLE webhook_events"
+  },
+  {
+   "file": "tests/suite_control_backfill_probe.py",
+   "verdict": "TAIL_UNPRODUCIBLE",
+   "exit": 1,
+   "observed": "CONTROLS THAT DID NOT BITE: ['2. a failed read is treated as an empty one', '3. the server copy clobbers local records instead of merging', '4. a no-op boot writes anyway', '1. hydrate runs with no licence key']",
+   "stored": "CONTROLS THAT DID NOT BITE: ['0. green on the unmodified file']"
+  },
+  {
+   "file": "tests/write_readback_shape_probe.py",
+   "verdict": "TIMEOUT",
+   "exit": null,
+   "observed": "",
+   "stored": "2 ARM(S) FAILED  [re-driven on a restored tree]"
+  },
+  {
+   "file": "tests/run_selftest_independence_probe.py",
+   "verdict": "TAIL_UNPRODUCIBLE",
+   "exit": 1,
+   "observed": "  - nhi_register.py: the self-test passes again after restore, so the mutants left nothing behind",
+   "stored": "  - git status is still readable"
+  },
+  {
+   "file": "tests/sd_tax_money_coercion.js",
+   "verdict": "TAIL_MATCHES",
+   "exit": 1,
+   "observed": "12 passed, 1 failed",
+   "stored": "12 passed, 1 failed"
+  },
+  {
+   "file": "tests/run_b12_routed_findings_probe.py",
+   "verdict": "GREEN_RECOVERED",
+   "exit": 0,
+   "observed": "NO FINDINGS -- all 8 arm(s) hold.",
+   "stored": "8 arm(s): 4 holding, 4 finding(s)"
+  },
+  {
+   "file": "tests/sairncare_compliance_window_boundary.test.js",
+   "verdict": "TAIL_UNPRODUCIBLE",
+   "exit": 1,
+   "observed": "X1 and X2 are EXPECTED RED and are routed to hank (api/ is hank's). If they are the only failures, this suite is in the state docs/known-red-suites.json records.",
+   "stored": "- X1 (RED UNTIL hank CORRECTS THE COMMENT): no comment in api/_lib/compliance-rules.js claims the exact-anniversary evaluation is NON-COMPLIANT, because measured it is meets === null - X2 (RED UNTIL hank EXPOSES THE FIELD): the finding carries the field its own withholding message tells the reader to consult"
+  },
+  {
+   "file": "tests/sd_data_not_provisioned_misclass.js",
+   "verdict": "GREEN_RECOVERED",
+   "exit": 0,
+   "observed": "16 passed, 0 failed",
+   "stored": "C1 ALONE IS EXPECTED RED, since 2026-10-17: the alf_op_audits APPEND-ONLY EXISTENCE CHECK is still raw. The row in docs/known-red-suites.json names it. ANY OTHER failure here is NEW -- A1 or B1 means a LANDED FIX HAS BEEN REVERTED and P5 says which call site; a P arm means an anchor or the ALF_OPA_TYPES allowlist moved; A0/B0/B2/C2 mean the branch was not reached; and A2 means the ablation can no longer make A1 fail, which makes a green A1 worthless."
+  }
+ ]
+}

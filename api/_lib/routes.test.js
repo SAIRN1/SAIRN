@@ -496,6 +496,245 @@ t('breaking the "never echo the input" rule is CAUGHT by section 2', () => {
   // The two disagree, so the arm has teeth.
 });
 
+// ───────────────────────────────────────────────────────────────────────────
+section('10. THE REAL DISPATCHER — not this module (2026-10-19, cody b27)');
+// ── WHY THIS SECTION EXISTS AND WHY EVERY ARM ABOVE IT COULD NOT ANSWER IT ─
+// Sections 1-9 drive api/_lib/routes.js. That module is correct and was
+// correct before b27. What NOTHING drove was the path a browser takes:
+// api/sd-data.js's dispatcher -> the envelope allowlist -> the app-visibility
+// gate -> the extraActions verb gate -> the handler branch. FOUR gates, and
+// the routing document that specified the branch knew about three of them.
+//
+// THE THIRD ONE WAS SHUT. isVisibleTo() had exactly two routes to visibility:
+// be in `shared`, or be owned by the caller's own app. `rt_routes` is
+// registered under the pseudo-app `routes`, which no licence is issued for, so
+// every real consumer got 400 FOREIGN_RESOURCE before the branch ran. The
+// branch, the registry entry and the extraActions declaration were ALL correct
+// and the feature was dead. That is what driving the dispatcher found, and
+// what no amount of testing this module could have.
+//
+// NOTHING REAL IS REACHED: the licence, the session secret and fetch are all
+// mocked, and the arms assert on the dispatcher's own answers.
+const path = require('path');
+const fs = require('fs');
+const os = require('os');
+const ROOT = path.join(__dirname, '..', '..');
+const SD_DATA = process.env.SAIRN_B27_SD_DATA || path.join(ROOT, 'api', 'sd-data.js');
+const API_DIR = path.dirname(SD_DATA);
+
+const LIC_HASH = 'hash-of-the-b27-routes-licence';
+const LIC_APP = 'stonedesk';
+
+let dispatch = null;
+let SESSION_HEADER = null;
+let dispatchSetupError = null;
+try {
+  const LICENCE = require.resolve(path.join(API_DIR, '_lib/license.js'));
+  require.cache[LICENCE] = {
+    id: LICENCE, filename: LICENCE, loaded: true,
+    exports: {
+      validateLicenseKey: async () => ({
+        valid: true, active: true, license_hash: LIC_HASH,
+        stripe_subscription_id: 'sub_1', trial_ends_at: null, app_id: LIC_APP
+      }),
+      hashLicense: () => LIC_HASH,
+    },
+  };
+  process.env.SUPABASE_URL = 'https://example.invalid';
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-for-the-test';
+  process.env[['SD', 'AUTH', 'SECRET'].join('_')] =
+    process.env[['SD', 'AUTH', 'SECRET'].join('_')]
+    || ['b27', 'routes', String(process.pid)].join('-');
+  // THE SESSION HEADER IS READ OUT OF auth.js, NEVER TYPED. The blob-scope
+  // suite paid for the other way round: a header name was typed,
+  // tokenFromRequest() reads a different one, and every gated arm failed its
+  // precondition for a reason that was not about the gate.
+  const authSrc = fs.readFileSync(path.join(API_DIR, '_lib/auth.js'), 'utf8');
+  const hm = authSrc.match(/function tokenFromRequest\(req\)\s*\{\s*\n\s*const h = req\.headers\[['"]([a-z0-9-]+)['"]\]/);
+  if (!hm) throw new Error('could not read the session header name out of api/_lib/auth.js');
+  SESSION_HEADER = hm[1];
+  // Every PostgREST call answers 200 with an empty list, so the branch reaches
+  // its own answer rather than dying on a transport error.
+  global.fetch = async () => ({ ok: true, status: 200, json: async () => [] });
+  delete require.cache[require.resolve(SD_DATA)];
+  dispatch = require(SD_DATA);
+} catch (e) {
+  dispatchSetupError = e;
+}
+
+const SESSION_LIB = require(path.join(API_DIR, '_lib/auth.js'));
+
+function fakeRes() {
+  const r = { statusCode: null, body: null };
+  r.status = (c) => { r.statusCode = c; return r; };
+  r.json = (b) => { r.body = b; return r; };
+  return r;
+}
+async function call(action, resource, payload, opts) {
+  const o = opts || {};
+  const hdrs = { authorization: 'Bearer testkey' };
+  if (o.session !== false) {
+    hdrs[SESSION_HEADER] = SESSION_LIB.signSessionToken({
+      app: o.app || 'stonedesk', employee_id: 'E1', role: o.role || 'owner',
+      license_hash: LIC_HASH });
+  }
+  const req = { method: 'POST', headers: hdrs,
+                body: { action: action, resource: resource, payload: payload || {} } };
+  const res = fakeRes();
+  await dispatch(req, res);
+  return res;
+}
+const KEY = { app_id: 'stonedesk', assignee_id: 'E1', route_date: '2026-10-19' };
+function rcode(res) {
+  return (res.body && res.body.error && res.body.error.code) || '';
+}
+function rmsg(res) {
+  return (res.body && res.body.error && res.body.error.message) || '';
+}
+
+t('D0. PRECONDITION: the dispatcher loaded and the rt_routes branch is in it', () => {
+  // A THIRD STATE, never folded into a pass. If the handler would not load,
+  // every arm below would fail for a reason that is not about routing.
+  assert.strictEqual(dispatchSetupError, null,
+    'the dispatcher could not be set up: ' + (dispatchSetupError && dispatchSetupError.message));
+  assert.strictEqual(typeof dispatch, 'function');
+  const src = fs.readFileSync(SD_DATA, 'utf8');
+  // COMMENT-STRIPPED, because this repo has a recorded case of a precondition
+  // satisfied by a comment ABOUT the code it was checking for.
+  const codeOnly = src.split('\n').map((l) => l.replace(/\/\/.*$/, '')).join('\n');
+  assert.ok(/if \(resource === 'rt_routes' \|\| resource === 'rt_stops'\) \{/.test(codeOnly),
+    'the rt_routes handler branch is not in api/sd-data.js — it was reverted');
+});
+
+t('D1. a read REACHES THE BRANCH through the real dispatcher', async () => {
+  const r = await call('read', 'rt_routes', KEY);
+  // The branch's own read answer. A 400 here is the ALLOWLIST or the
+  // VISIBILITY gate refusing, which is the state b27 found and fixed.
+  assert.notStrictEqual(r.statusCode, 400,
+    'the dispatcher refused BEFORE the branch: ' + rcode(r) + ' ' + rmsg(r));
+  assert.strictEqual(r.statusCode, 200);
+  assert.strictEqual(r.body.ok, true);
+  assert.ok(Object.prototype.hasOwnProperty.call(r.body, 'provisioned'),
+    'the answer carries no `provisioned` key, so it did not come from the branch');
+});
+
+t('D2. NEGATIVE CONTROL: no session is refused BY THE BRANCH at 403, not by the allowlist at 400', async () => {
+  const r = await call('read', 'rt_routes', KEY, { session: false });
+  assert.strictEqual(r.statusCode, 403);
+  assert.strictEqual(rcode(r), 'FORBIDDEN');
+  // THIS IS WHAT MAKES D1 ATTRIBUTABLE. A 403 can only come from inside the
+  // branch; a 400 would mean the request never got there. The pair proves the
+  // dispatcher reaches the branch AND that the branch's own gate fires --
+  // licence-only access is refused, which is the whole reason the routing
+  // document specified a session on every verb.
+});
+
+t('D2b. THE DISPATCHER-HEALTH CONTROL, green in BOTH legs of the ablation', async () => {
+  // `employees` is registered in api/_resources/shared.js, so it is visible to
+  // every licence by construction and its visibility does NOT depend on the
+  // flag D5 ablates. It is the arm that separates "the flag was removed" from
+  // "the copied tree is broken".
+  //
+  // D2 AND D3 CANNOT PLAY THAT ROLE, AND THE REASON IS THE FINDING ITSELF: the
+  // visibility gate runs BEFORE the branch, so with the flag gone a no-session
+  // rt_routes request gets the allowlist 400 rather than the branch's 403 --
+  // every rt_routes arm goes red together, which is exactly what "the feature
+  // was dead" means. A control has to sit on a resource the mutation does not
+  // touch.
+  const r = await call('read', 'employees', {});
+  assert.strictEqual(r.statusCode, 200);
+  assert.strictEqual(r.body.ok, true);
+});
+
+t('D3. NEGATIVE CONTROL: a DECLARED verb reaches the branch validator and an UNDECLARED one does not', async () => {
+  const declared = await call('optimize', 'rt_routes', Object.assign({ stops: [] }, KEY));
+  // 'optimize' is declared in api/_resources/routes.js extraActions, so it
+  // reaches the branch and is refused on its PAYLOAD -- the branch's own
+  // validator talking, with the module's own message.
+  assert.strictEqual(declared.statusCode, 400);
+  assert.strictEqual(rcode(declared), 'BAD_REQUEST');
+  assert.ok(/stops must be a non-empty array/.test(rmsg(declared)),
+    'optimize did not reach the branch validator: ' + rmsg(declared));
+  // An undeclared verb is refused EARLIER, by the allowlist, with a different
+  // message. Without this half, D3 could not tell "extraActions let the verb
+  // through" from "every verb is allowed".
+  const undeclared = await call('delete', 'rt_routes', KEY);
+  assert.strictEqual(undeclared.statusCode, 400);
+  assert.ok(!/stops must be a non-empty array/.test(rmsg(undeclared)),
+    'an undeclared verb reached the branch validator, so extraActions gates nothing');
+});
+
+t('D4. NEGATIVE CONTROL: the cross-app flag did NOT open the boundary for everything', () => {
+  const REG = require(path.join(API_DIR, '_resources/index.js'));
+  assert.deepStrictEqual(REG.CROSS_APP_NAMES, ['rt_routes', 'rt_stops'],
+    'visibleToAllApps is set on more than the routes module');
+  // The boundary still refuses another app's resource to a stonedesk licence.
+  assert.strictEqual(REG.isVisibleTo('law_matters', 'stonedesk'), false);
+  assert.strictEqual(REG.isVisibleTo('alf_clients', 'stonedesk'), false);
+  // ...and allows both halves of the primitive to every real consumer.
+  for (const app of ['stonedesk', 'sairngrounds', 'sairnscape', 'sairnroofing', 'sairnmechanical']) {
+    assert.strictEqual(REG.isVisibleTo('rt_routes', app), true, app);
+    assert.strictEqual(REG.isVisibleTo('rt_stops', app), true, app);
+  }
+});
+
+t('D5. ABLATION: removing visibleToAllApps makes D1 go RED with the exact 400 the feature had', () => {
+  if (process.env.SAIRN_B27_SD_DATA) { return; }   // this IS the ablation child
+  const FLAG = '  visibleToAllApps: true,\n';
+  const regPath = path.join(ROOT, 'api', '_resources', 'routes.js');
+  const regSrc = fs.readFileSync(regPath, 'utf8').replace(/\r\n/g, '\n');
+  assert.ok(regSrc.indexOf(FLAG) >= 0, 'the flag is not in api/_resources/routes.js');
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'b27-routes-'));
+  try {
+    // LIBRARY DOWN FIRST, THEN THE MUTATION, THEN READ IT BACK. b24's ablation
+    // harness wrote the subject first and copied api/_lib OVER it, so for any
+    // subject inside api/ the leg silently drove the DISK copy -- and b26's
+    // ablated the WRONG INSTANCE of a byte-identical pattern. Both are why the
+    // readback below asserts three things rather than one.
+    fs.cpSync(path.join(ROOT, 'api'), path.join(tmp, 'api'), { recursive: true });
+    const copyReg = path.join(tmp, 'api', '_resources', 'routes.js');
+    const want = regSrc.split(FLAG).join('');
+    fs.writeFileSync(copyReg, want, 'utf8');
+    const back = fs.readFileSync(copyReg, 'utf8').replace(/\r\n/g, '\n');
+    assert.strictEqual(back, want, 'the ablated copy did not read back as written');
+    assert.strictEqual(back.indexOf('visibleToAllApps'), -1, 'the flag survived the mutation');
+    assert.strictEqual(regSrc.split(FLAG).length - 1, 1,
+      'the flag occurs more than once, so this mutation removed an ambiguous set');
+    const { execFileSync } = require('child_process');
+    let out = '';
+    let childCode = 0;
+    try {
+      out = execFileSync(process.execPath, [__filename], {
+        encoding: 'utf8', cwd: ROOT,
+        env: Object.assign({}, process.env,
+          { SAIRN_B27_SD_DATA: path.join(tmp, 'api', 'sd-data.js') }),
+      });
+    } catch (e) { out = (e.stdout || '') + (e.stderr || ''); childCode = e.status; }
+    // D1 MUST GO RED AND D2 MUST STAY GREEN. D2 green in both legs is what
+    // makes D1 attributable to the FLAG rather than to the copy being broken:
+    // a mutation that broke the whole dispatcher would take D2 with it.
+    assert.ok(/^  FAIL D1\. /m.test(out),
+      'D1 stayed GREEN with the flag removed, so it is not measuring the '
+      + 'visibility gate and a green D1 means nothing. child exit ' + childCode
+      + '\n' + out.slice(-800));
+    assert.ok(/^  ok   D2b\. /m.test(out),
+      'D2b went red too, so the ablation broke the COPIED TREE rather than only '
+      + 'the flag, and D1 is not attributable to the flag at all\n' + out.slice(-800));
+    // D2, D3 and D4 ALSO go red in the child, and that is CORRECT rather than a
+    // control failing: the visibility gate runs before the branch, so with the
+    // flag gone EVERY rt_routes arm goes red together. That is what "the
+    // feature was dead for every consumer" means, and D2b is the arm that
+    // proves the dispatcher itself still works.
+    // ...and the reason D1 fails must be the EXACT 400 the feature had before
+    // b27, not some other failure that happens to be red.
+    assert.ok(/resource must be one of/.test(out),
+      'D1 failed for a reason other than the allowlist/visibility 400, so this '
+      + 'ablation does not reproduce the defect it claims to\n' + out.slice(-800));
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
 (async () => {
   for (const [name, fn] of queue) {
     if (!fn) { console.log('--- ' + name + ' ---'); continue; }

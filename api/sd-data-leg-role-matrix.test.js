@@ -343,12 +343,46 @@ console.log('SAIRNlegacy role matrix -- 36 resources, 8 roles, criteria '
          got + ' ' + eCode(r.res) + ' / ' + eMsg(r.res)
          + ' / posts=' + r.calls.filter((c) => c.method === 'POST').length);
     } else if (t[4] === 403) {
+      // ── RE-AIMED 2026-10-19 (cody b27): "NO DATA FETCH" IS NOW ASSERTED ON
+      // ── THE RESOURCE TABLES, WHICH IS WHAT IT ALWAYS MEANT ──────────────
+      // It asserted `r.calls.length === 0`. b27 landed the F2/F3 settings read
+      // -- one SELECT on `sairnlegacy_settings`, needed BEFORE decide() can
+      // consult a home's policy -- and L2 (livery) and L3 (apprentice) went
+      // red at calls=1. Those are exactly the two roles whose decision depends
+      // on the setting.
+      //
+      // THE PROPERTY THAT MATTERS IS UNCHANGED AND IS STILL ASSERTED: a
+      // role-refused request must not touch a RESOURCE table -- no death
+      // record, no custody log, no invoice. `sairnlegacy_settings` is this
+      // home's own CONFIGURATION, holds nothing about a decedent or a case,
+      // and is not one of the 36.
+      //
+      // THIS IS THE NARROWER, TRUER PROPERTY RATHER THAN A LOOSENING, and the
+      // file already contains the precedent: L6's own comment says "The token
+      // lookup itself IS a fetch, so `calls.length === 0` cannot be asserted
+      // here -- `no POST` is the property that matters." Same situation, same
+      // answer, one layer over.
+      //
+      // THE TABLE LIST IS DERIVED from LEG_RESOURCES via handlerResources(),
+      // never retyped, so a 37th resource is covered the day it is added and
+      // the permitted set stays exactly {the configuration read}.
+      const legTables = handlerResources() || [];
+      const resourceHits = r.calls.filter(
+        (c) => legTables.some((n) => c.url.indexOf('/' + n + '?') !== -1
+                                  || c.url.indexOf(n + '?') !== -1));
+      const strayHits = r.calls.filter(
+        (c) => resourceHits.indexOf(c) === -1
+            && c.url.indexOf('sairnlegacy_settings?') === -1);
       is(got === 403 && eCode(r.res) === 'FORBIDDEN'
-         && eMsg(r.res).indexOf(t[3]) !== -1 && r.calls.length === 0,
-         t[0] + '. ' + t[5] + ' -> 403, the body NAMES THE ROLE, and NO data '
-       + 'fetch happened',
+         && eMsg(r.res).indexOf(t[3]) !== -1
+         && resourceHits.length === 0 && strayHits.length === 0,
+         t[0] + '. ' + t[5] + ' -> 403, the body NAMES THE ROLE, and NO '
+       + 'RESOURCE-TABLE fetch happened (the F2/F3 settings read is the only '
+       + 'permitted call, and anything else is a stray)',
          got + ' ' + eCode(r.res) + ' / ' + eMsg(r.res)
-         + ' / calls=' + r.calls.length);
+         + ' / resource-hits=' + resourceHits.length
+         + ' strays=' + strayHits.length
+         + ' urls=' + JSON.stringify(r.calls.map((c) => c.url.slice(-46))));
     } else {
       is(got === 200,
          t[0] + '. ' + t[5] + ' -> 200',

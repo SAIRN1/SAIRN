@@ -358,8 +358,22 @@ function marEntry(licHash, entryId, residentId, assignee, tenant) {
   // EVERY ARM ASSERTS NOTHING WAS WRITTEN as well as the status. A 403 issued
   // after the upsert has already gone is the shape this suite's own UNREACHED
   // bookkeeping exists to catch elsewhere.
+  // ── office_manager ADDED 2026-10-19 (cody b27), ROUTED BY hank's 522h REVIEW
+  // THE CONCEPT: the alf_facility write gate must refuse every non-management
+  //   SAIRNcare role, and this loop must NAME all of them -- an excluded role
+  //   nothing drives is an exclusion nobody is testing.
+  //
+  // THE FINDING, in hank's words (SAIRN-handoff-hank-b21.md section 4A):
+  // "`office_manager` is a real sairncare role, offered in BOTH sairncare.html
+  // role dropdowns, present in ROLES_BY_APP.sairncare, with ZERO roleSet()
+  // hits -- and it is not in ALF_NON_MGMT ... Five of seven roles are excluded
+  // from the gate and only four are asserted."
+  //
+  // ALF_MANAGEMENT_ROLES is roleSet({ owner: true, billing: true }) at
+  // api/sd-data.js:8988, and ROLES_BY_APP.sairncare at api/_lib/auth.js:291 is
+  // seven names. 7 - 2 = 5 excluded; four were driven.
   const ALF_MGMT = ['owner', 'billing'];
-  const ALF_NON_MGMT = ['nursing', 'med_aide', 'caregiver', 'activities'];
+  const ALF_NON_MGMT = ['nursing', 'med_aide', 'caregiver', 'activities', 'office_manager'];
 
   for (const role of ALF_NON_MGMT) {
     await test('alf_facility [ROLE] ' + role + ' CANNOT write the facility profile, '
@@ -376,6 +390,40 @@ function marEntry(licHash, entryId, residentId, assignee, tenant) {
           role + ' was refused AFTER the upsert was sent -- the row is already changed');
       });
   }
+
+  // ── THE COMPLETENESS ARM, AND IT IS THE ONE THAT CLOSES THE CLASS ────────
+  // Adding the token fixes today's gap. This arm is why the SIXTH role cannot
+  // repeat it: the two lists above must together be EXACTLY
+  // ROLES_BY_APP.sairncare, read out of api/_lib/auth.js rather than retyped.
+  // A hand-maintained list of excluded roles goes stale the day a role is
+  // added, in silence, which is exactly how office_manager sat undriven -- and
+  // "nothing announces the day a check stops testing anything" is the standing
+  // discipline this arm exists to honour.
+  await test('alf_facility [ROLE-all] the two role lists together are EXACTLY '
+    + "ROLES_BY_APP.sairncare, read from api/_lib/auth.js -- so the next role "
+    + 'added cannot be silently undriven', async () => {
+      const fsx = require('fs');
+      const pathx = require('path');
+      const authSrc = fsx.readFileSync(
+        pathx.join(__dirname, '_lib', 'auth.js'), 'utf8');
+      const m = authSrc.match(/\n\s*sairncare:\s*\[([^\]]*)\]/);
+      assert.ok(m, 'ROLES_BY_APP.sairncare could not be read out of '
+        + 'api/_lib/auth.js -- this arm is COULD NOT RUN, not a pass');
+      const declared = m[1].split(',')
+        .map((s) => s.trim().replace(/^['"]|['"]$/g, ''))
+        .filter(Boolean);
+      assert.ok(declared.length >= 5,
+        'only ' + declared.length + ' sairncare roles parsed, so the regex has '
+        + 'stopped matching and this arm would pass vacuously: '
+        + JSON.stringify(declared));
+      assert.deepStrictEqual(
+        ALF_MGMT.concat(ALF_NON_MGMT).slice().sort(), declared.slice().sort(),
+        'the gate role lists in this suite no longer cover every sairncare '
+        + 'role. Declared: ' + JSON.stringify(declared.slice().sort())
+        + ' -- driven: ' + JSON.stringify(ALF_MGMT.concat(ALF_NON_MGMT).slice().sort())
+        + '. Add the missing name to ALF_MGMT or ALF_NON_MGMT, whichever the '
+        + 'gate at api/sd-data.js:8988 actually puts it in.');
+    });
 
   await test('alf_facility [ROLE-ctl] CONTROL: management roles still CAN, so the '
     + 'arms above are not refusing everybody', async () => {
