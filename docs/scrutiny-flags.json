@@ -661,6 +661,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b33-route-map.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0f036c0770307e0517557f697c5670a820ef9c91",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/sairn_push_gate_hook.py",
    "class": "push-gate logic",
    "level": "CHANGE",
@@ -4294,6 +4302,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b33-route-map.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "638126f87bfb5ea3f505318ce34280e9382fdb6a",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sairnbiz_benefits_and_overtime.js",
    "class": "test file",
    "level": "WEAKENING",
@@ -6078,6 +6094,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "8943d787bb4c279eb86a8bfcd08f7de6ff72010d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b33-route-map.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "8969ab4e0b9859e6f23c2b30e64421530d2acc35",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -8187,6 +8211,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "a93a3e8576fb47315eafab5ba8182520f934e295",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b27-sen-straight-time-floor-fixtures.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "aa1a9e3e727f1578094211f22475329802c0b736",
    "criteria_version": "2026-10-06.1"
   },
   {

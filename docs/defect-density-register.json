@@ -35616,6 +35616,64 @@
       "recurrence_open": "NOT CLOSED. Nothing sweeps the platform for clock-derived ids; stonedesk.html still mints INV-+Date.now() at two sites (hank holds stonedesk.html). The two-tab counter race from b42 still applies."
     },
     {
+      "commit": "aa1a9e3e727f",
+      "date": "2026-10-20",
+      "subject": "fix(sairnsenior b33): a pay-period close answers 503 because the live audit CHECK predates pay_period_closed",
+      "files": [
+        "api/b27-sen-straight-time-floor-fixtures.test.js",
+        "docs/2026-10-20-hank-b27-sen-straight-time-floor-live-probe.py",
+        "sql/sairnsenior_audit_log_event_types_widen_2026-10-20.sql",
+        "sql/sairnsenior_audit_log_schema.sql"
+      ],
+      "lines_added": 96,
+      "lines_removed": 1,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "live-verification",
+      "summary": "Closing a SAIRNsenior pay period answered 503 AUDIT_UNAVAILABLE on production because the live CHECK constraint on sairnsenior_audit_log does not include pay_period_closed: b17 added it inside create table if not exists, which skips the existing table (snapshot 2026-10-20 shows five values). The close path is right to refuse. The live straight-time-floor probe's B1/B2/B4 failures follow from the missing closing, not from the sign guard -- reproduced offline exactly, B3 still holding.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "config",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "9f30a3690982",
+        "date": "2026-10-16",
+        "subject": "feat(b17 carry-over): the pay-period close write path, H8 resolved, and the practitioner answers in one place each",
+        "lag_days": 4
+      },
+      "citation_note": "No standing rule says a CHECK widened inside create-table-if-not-exists must ship with an ALTER; the lesson exists only as a comment in the sairnlaw schema file.",
+      "contributing_factors": [
+        {
+          "factor": "b17 put pay_period_closed and pay_period_reopened into the CHECK inside `create table if not exists public.sairnsenior_audit_log`. That statement skips an existing table, constraint and all, and the table was created on 2026-10-12, so the live constraint never gained the two values (db/schema_snapshot.json, 2026-10-20 07:55, five values). Every pay-period close inserted an audit row the database rejected, and the close path refused 503 AUDIT_UNAVAILABLE.",
+          "kind": "technical",
+          "action_status": "planned",
+          "action": "sql/sairnsenior_audit_log_event_types_widen_2026-10-20.sql drops and re-adds the constraint with all seven values, in one transaction, with a verify select. Planned until Michael runs it."
+        },
+        {
+          "factor": "The same trap was already written up at the bottom of sql/sairnlaw_employee_auth_schema.sql ('create table if not exists does NOT amend an existing table') and nothing carried that lesson to the next table whose CHECK was widened in place.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The schema file now says at its foot that its CHECK does nothing on an existing table and names the widening file."
+        },
+        {
+          "factor": "tools/audit_event_type_check.py compares emitted event types with the CHECK written in the SQL file, so it passed: the file was right and the database was not. The only thing that could see the drift was the snapshot, and nothing compares the snapshot's constraint text with the file's.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "Route to the owner of audit_event_type_check.py: compare against db/schema_snapshot.json constraints as well as the SQL text."
+        },
+        {
+          "factor": "The live probe reported B1/B2/B4 as FAILED when their precondition (the closed period) was absent, which read as a sign-guard defect. The fixture test's section 4 reproduces exactly that pattern from the missing closing alone, with B3 still holding.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The probe reports B as NOT MEASURED, in words, when the closing is not on the server; the run still fails on A."
+        }
+      ],
+      "recurrence_open": "The widening is not applied until Michael runs it; any other table whose CHECK was widened in a create-table-if-not-exists has the same drift and nothing finds it but a snapshot comparison."
+    },
+    {
       "commit": "bc5ca0d18cb4",
       "date": "2026-10-20",
       "subject": "b29(cody): the database's error message is not the client's, three caps that were never this gate's business, and a policy nothing passed the arguments to",
@@ -36133,6 +36191,20 @@
       "limits": "THIS IS NOT AN INDEPENDENT CONFIRMATION AND MUST NOT BE READ AS ONE: cc wrote the bridge check, the board publisher and this record, so every arm above is the author checking his own work. The one structurally independent element is the Drive-side API read, which goes through Google rather than the mount, and the one independent OBSERVATION is that hover2's clone -- not cc's -- published the board that was read back. H1/H2's own re-drive is still OWED and the handoff names the exact three commands. Further limits: the stale-board tolerance is 90 seconds and now merely visible rather than tighter; --api-published-at compares ONE field, so two boards with the same stamp and different bodies would pass it; the race guard cannot stop a clone running a publisher older than revision 2026-10-19.1, because such a clone neither writes nor reads the field; and no live deployed-URL check applies, since none of this touches api/, sql/ or an app file.",
       "confirmed": "2026-10-19",
       "confirmed_by": "cc"
+    },
+    {
+      "commit": "7e43c9dab7dc",
+      "date": "2026-10-20",
+      "subject": "b28(cody): the role in the token is not the role in the roster, a photo cap that was never the real ceiling, and a hook that finally runs",
+      "app": "sairnlaw",
+      "layer": "product",
+      "method": "live-verification",
+      "claim": "The SAIRNlaw trust hard-lock holds on the deployed endpoint after cody b28 changed role handling in api/sd-data.js: a paralegal is refused law_trusttx and law_bankstatements (403 FORBIDDEN), a paralegal write to law_trusttx gets the DIFFERENT refusal 403 COUNTERSIGN_REQUIRED (C2 carve-out), and the owner and the allowed resources answer 200.",
+      "driven": "tools/law_trust_lock_live_probe.py at b32 (6093e83a6), run by Michael on 2026-10-20 against https://sairn.vercel.app on LAW-AUDIT-2026, signed in as audit-owner and hank-b23-paralegal with both identities confirmed by whoami from the credential row; every arm passed: A1-A3 hard lock, B1 carve-out, C1-C5 negative controls, D1-D2 teardown read back by a refused login.",
+      "verdict": "sound-with-limits",
+      "limits": "One licence, one paralegal, one moment: it shows the lock on the deployed build of that morning, not that every role-map path is covered, and the run's raw output was reported to me rather than read by me.",
+      "confirmed": "2026-10-20",
+      "confirmed_by": "hank"
     }
   ]
 }
