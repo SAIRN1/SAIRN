@@ -6,7 +6,6 @@
     python tools/sairn_path_manifest.py --check <path> [<path> ...]
     python tools/sairn_path_manifest.py --check --agent cody <path> ...
     python tools/sairn_path_manifest.py --outgoing        # what this push ships
-    python tools/sairn_path_manifest.py --history 200     # what it WOULD have
     python tools/sairn_path_manifest.py --fixtures        # the criteria lock
 
 Exit 0 every path in scope, 1 at least one out of scope, 2 COULD NOT RUN.
@@ -37,6 +36,39 @@ scope check that cannot read the scope has not checked anything. An
 unestablished identity is also exit 2 -- the question "is this path mine" has
 no answer when "who am I" has none, and answering it as yes would make the
 whole check a formality.
+
+── `--history` WAS REMOVED, AND THAT IS A DECISION WITH A MEASUREMENT ──────
+THE CONCEPT, IN ONE LINE: a mode that cannot attribute must not attribute, so
+the per-population table is gone rather than reframed, and the knowledge that
+produced it is kept here.
+
+It existed to answer a fair question -- "a scope rule nobody measured against
+the past is a rule that refuses the present on its first day" -- and it
+answered it with a number nobody could act on. It took each commit's
+population from the first build-agent name in the COMMIT SUBJECT.
+
+WHY IT CANNOT BE FIXED RATHER THAN REMOVED, measured rather than argued:
+
+  * THE SUBJECT IS NOT AN AUTHOR. b24's table reported `cody 50 path(s), 14
+    REFUSED`. All 13 of those `.html` paths come from ONE commit, 50f67cfe,
+    whose subject is "fix(contrast): 153 findings down to 3, app by app, and
+    the 3 left are cody's file" -- fourth's commit, fourth's own files,
+    entirely in scope, with `cody` appearing only as a possessive. 100% false
+    positives for that population, and the DECISION-NEEDED it produced had to
+    be withdrawn in b25.
+  * THE AUTHOR FIELD IS NO BETTER. Every commit in this repository is authored
+    by `Michael Dibert`, `SAIRN1` or `fx`. git carries no per-population
+    signal at all, so switching fields replaces one wrong answer with another.
+  * THE CLAIM FILES ARE DEFINITIVE AND DO NOT HELP. A commit touching exactly
+    one `.claude/claims/<session>.json` is unambiguously that session's -- 237
+    of the last 800 -- but those are claim and release commits and they carry
+    no work paths. The work sits in the commits BETWEEN them, and attributing
+    by interval is an inference, not a reading.
+
+SO THE QUESTION IS ANSWERED A DIFFERENT WAY, by `--check --agent <who>` and
+`--outgoing`, both of which classify PATHS and attribute nothing. The flag
+still prints an explanation rather than an unknown-argument error, because a
+removed flag that silently does nothing is the same defect one layer out.
 
 ── AND THE ONE DECISION THAT IS NOT MINE ───────────────────────────────────
 The manifest's own `_the_deviation_michael_should_decide` records that cody
@@ -178,6 +210,9 @@ def check(paths, agent, manifest):
     return rows, sum(1 for _p, v, _r in rows if v not in ALLOWED)
 
 
+# `--history` is kept here AFTER its removal on purpose: an old
+# invocation must not have its count argument classified as a path,
+# which is the very defect b25 fixed one flag over.
 FLAGS_WITH_VALUES = ('--agent', '--history')
 
 
@@ -391,6 +426,17 @@ def run_fixtures():
        [a for a in ['--agent', 'cody', 'a.html'] if not a.startswith('--')],
        ['cody', 'a.html'])
 
+    # ── --history IS REMOVED AND ITS ARGUMENT MUST STILL NOT BE A PATH (b26)
+    # The flag is kept in FLAGS_WITH_VALUES after its removal precisely so an
+    # old invocation does not classify its count. Without this arm, a later
+    # tidy-up that drops the name from that tuple would reintroduce the b25
+    # defect one flag over, silently.
+    ck('a removed flag\'s VALUE is still not a path -- `--check --history 200 '
+       'a.html` gives one path, not two',
+       paths_from_argv(['--check', '--history', '200', 'a.html']), ['a.html'])
+    ck('...and `--history` is still named in FLAGS_WITH_VALUES, which is what '
+       'makes the arm above true', '--history' in FLAGS_WITH_VALUES, True)
+
     print('  %d/%d arms classify correctly' % (total - bad, total))
     return EXIT_FINDING if bad else EXIT_CLEAN
 
@@ -412,68 +458,6 @@ def _print_rows(rows, agent):
               % (len(rows), agent))
 
 
-def cmd_history(n, agent_hint=None):
-    """What this manifest WOULD have refused over real history.
-
-    A scope rule nobody measured against the past is a rule that refuses the
-    present on its first day. This is the measurement, per population.
-    """
-    m, why = load_manifest()
-    if m is None:
-        print('COULD NOT RUN: %s' % why)
-        return EXIT_COULD_NOT_RUN
-    import re
-    # THE FORMAT IS NOT A PYTHON FORMAT STRING. The first version wrote
-    # `--format=%%H%%x1f%%s`, which git received literally, so no line
-    # contained the separator, every commit's population read as unknown, and
-    # the report printed an EMPTY TABLE under a confident heading -- a
-    # measurement that silently measured nothing.
-    r = subprocess.run(['git', 'log', '-%d' % n, '--format=%H%x1f%s',
-                        '--name-only'], cwd=REPO, capture_output=True,
-                       text=True, encoding='utf-8', errors='replace')
-    if r.returncode != 0:
-        print('COULD NOT RUN: git log failed')
-        return EXIT_COULD_NOT_RUN
-    who = re.compile(r'\b(hank|cc|cody|fourth)\b', re.I)
-    cur, per = None, {}
-    for line in (r.stdout or '').splitlines():
-        if '\x1f' in line:
-            _sha, subj = line.split('\x1f', 1)
-            mm = who.search(subj)
-            cur = mm.group(1).lower() if mm else None
-            continue
-        p = line.strip()
-        if not p or cur is None:
-            continue
-        verdict = classify(p, cur, m)[0]
-        d = per.setdefault(cur, {})
-        d[verdict] = d.get(verdict, 0) + 1
-    print('WHAT THIS MANIFEST WOULD HAVE SAID over the last %d commit(s), by '
-          'the population named in the commit subject:' % n)
-    print('  (a commit whose subject names no population is SKIPPED and is '
-          'not counted as clean)')
-    for a in sorted(per):
-        d = per[a]
-        ref = sum(v for k, v in d.items() if k not in ALLOWED)
-        print('  %-7s %4d path(s), %3d REFUSED   %s'
-              % (a, sum(d.values()), ref,
-                 ', '.join('%s %d' % (k, d[k]) for k in sorted(d))))
-    print('')
-    print('A NON-ZERO REFUSED COLUMN IS NOT PROOF THE MANIFEST IS WRONG, and '
-          'it is not proof it is right either. Read the paths.')
-    print('')
-    print('AND THE ATTRIBUTION HERE IS A PROXY, WHICH LIMITS THIS WHOLE '
-          'TABLE: the population is taken from the first build-agent name in')
-    print('the COMMIT SUBJECT, so a subject naming two agents is attributed '
-          'to the wrong one. Measured on this corpus, that is real -- a')
-    print('`batch-manifest-fourth-b31.json` path lands under `cody` because '
-          'cody\'s name appears earlier in that commit\'s subject. The live')
-    print('check does not use this proxy at all: it reads the pushing clone\'s '
-          'own .git/sairn-session marker. Use this for the SHAPE of the')
-    print('answer, never as a count of real violations.')
-    return EXIT_CLEAN
-
-
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     if '--fixtures' in argv or '--selftest' in argv:
@@ -487,10 +471,27 @@ def main(argv=None):
         return EXIT_COULD_NOT_RUN
     print('')
 
+    # ── --history WAS REMOVED, AND THAT IS THE DECISION (b26) ──────────────
+    # See the module docstring. A named flag that now does nothing would be
+    # worse than its absence, so it is answered rather than ignored.
     if '--history' in argv:
-        i = argv.index('--history')
-        n = int(argv[i + 1]) if len(argv) > i + 1 else 200
-        return cmd_history(n)
+        print('REMOVED: --history was removed in b26 and the reason is in the '
+              'module docstring. It attributed each commit to a population by '
+              'searching the COMMIT SUBJECT for an agent name, and MEASURED, '
+              'git carries no per-population signal in this repo at all -- '
+              'every commit is authored by "Michael Dibert", "SAIRN1" or '
+              '"fx". Its b24 table reported cody at 14 REFUSED and all 13 of '
+              'those .html paths were ONE commit belonging to fourth, whose '
+              'subject named cody possessively: 100% false positives for that '
+              'population, and it produced a DECISION-NEEDED that had to be '
+              'withdrawn.')
+        print('')
+        print('What to use instead, and it answers the question this was asked '
+              'for without attributing anything:')
+        print('    python tools/sairn_path_manifest.py --check --agent <who> '
+              '<path> ...')
+        print('    python tools/sairn_path_manifest.py --outgoing')
+        return EXIT_COULD_NOT_RUN
 
     agent = (argv[argv.index('--agent') + 1] if '--agent' in argv else None)
     if agent is None:
