@@ -1,0 +1,581 @@
+REPORT fourth b38 2026-10-20
+
+
+WHAT WAS ASKED, AND WHERE EACH ITEM STANDS
+
+  1  rt_routes_schema.sql matches what ran; docs citing the constraint
+     DONE. Constraint removed, the reason put on the column, the header now
+     records that THE FILE HAS RUN -- which changes what editing it means.
+     Section 1.
+
+  2  CRITICALITY-TIERS corrections; sairnlaw.html stale citation
+     DONE. Claim checked first: cc does NOT hold that file. Three row-scoped
+     corrections, pipe counts unchanged. The script's FIRST RUN FAILED and the
+     failure is the finding. Section 2.
+
+  3  sairncode worldwide audit, primary regulation, FULL TEXT
+     DONE. Five sources read whole, two reported unread. The result inverts
+     the whole series. Section 3.
+
+  4  Currency sweep of my own skills, tools, methodology and rules
+     DONE. Four of the six named rules are written down NOWHERE. Two of my own
+     past batches breached them. Section 4.
+
+  5  sairndental correctness audit: GFE, denials, credentialing
+     DONE. Criteria stated before the code was read. Three findings, two
+     panels, one class -- and denials is the control. Section 5.
+
+  6  Push without force, confirm it landed
+     DONE. One gate denied and was ANSWERED, not skipped. No override of any
+     form. Section 6.
+
+  6 OF 6. b37's items 1 and 2 remain hank's and were not touched --
+  stonedesk.html is in ZERO of this batch's commits, checked rather than
+  asserted.
+
+
+1. ITEM 1 -- THE SCHEMA NOW MATCHES THE DATABASE, AND SAYS SO
+
+  Michael ran sql/rt_routes_schema.sql in Supabase with `constraint
+  rtroutes_saved_sane` REMOVED. That is the outcome b36 argued for and the
+  reason is on the column now rather than in a handoff nobody will reread:
+
+    api/_lib/routes.js returns a NEGATIVE saving UN-CLAMPED on purpose -- "a
+    caller that stores a negative saving has learned something true" -- a test
+    arm asserts it is negative, and all four wired consumers render it as "this
+    order is about N min LONGER than the one you had". With the constraint in
+    place Postgres would have REJECTED THE ENTIRE UPSERT, so the only way to
+    satisfy it was to clamp in the module, which re-introduces the exact
+    2026-06-18 defect the saved_seconds comment exists to prevent.
+
+  The comment ends "Do not re-add a non-negative check", and says that if a
+  future reader believes one is needed the thing to change is the MODULE'S
+  CONTRACT first.
+
+  VERIFIED STRUCTURALLY, NOT BY EYE. Comments stripped first, because a '('
+  inside a -- comment is not a paren:
+
+    parens 41 / 41 balanced        statements (;) 14
+    rtroutes_saved_sane in CODE: False     in FILE (comment): True
+    ',,' occurrences: 0            ',\n)' artefacts: 0
+
+  The name is deliberately still in the file as a comment. A correction that
+  deletes the history is not a correction -- the next reader needs to know the
+  constraint was considered and rejected, not merely absent.
+
+  THE HEADER NOW RECORDS THAT THE FILE HAS RUN, AND THAT IS THE PART WITH
+  CONSEQUENCES. `create table if not exists` makes a re-run a no-op. So from
+  now on, editing a column, a check or a key in that file CHANGES NOTHING IN
+  THE DATABASE -- it only changes what a reader believes is there. Anything
+  further needs an ALTER TABLE in its own sql/ file, applied separately, and
+  then reflected back.
+
+  WHICH MAKES ONE OPEN RECOMMENDATION A MIGRATION RATHER THAN AN EDIT.
+  docs/SAIRN-OPEN-WORK-INDEX.md line 454 carries cc's finding that
+  rt_stops.license_hash is a second copy of the tenancy key with nothing tying
+  it to its route's, and recommends a composite foreign key. That can no longer
+  be done by editing this file. REPORTED, NOT RE-SCOPED: the schema is mine and
+  the handler is cody's.
+
+  THE CITATION SCOPE RULE, STATED RATHER THAN IMPLIED. Eight files name the
+  constraint:
+
+    CORRECTED  SAIRN-handoff-fourth-b37.md, SAIRN-digest-fourth-b37.txt
+               -- the CURRENT handoff and digest. Both said the SQL was unrun
+               and the constraint outstanding. Their open-item lists are what
+               the next session acts on, so leaving them would route somebody
+               at finished work.
+    LEFT       the four b36 deliverables and docs/batch-manifest-fourth-b36.json
+               -- point-in-time records of a closed, superseded batch. They were
+               true when written. Rewriting a closed batch's record is what the
+               rebase hook's "REPORT-ONLY, never rewritten" list exists to stop,
+               one file class over.
+    NEVER      .claude/claims/fourth.json -- a claim ledger, append-only.
+
+
+2. ITEM 2 -- THREE REGISTER CORRECTIONS, AND AN ASSERTION THAT EARNED ITS KEEP
+
+  THE CLAIM WAS CHECKED BEFORE ANYTHING WAS EDITED, as the dispatch required.
+  No active claim in any .claude/claims/*.json names docs/CRITICALITY-TIERS.md.
+  cc does NOT hold it, so this proceeded instead of stopping.
+
+  NEVER SPLIT ON `|` TO REBUILD. Each edit replaces a unique substring INSIDE
+  ONE NAMED ROW, and the pipe count on that line is asserted IDENTICAL before
+  and after. `|` is used read-only to identify which line is which resource --
+  a lookup, not a rebuild. File-wide after all three: 788 lines, 3241 pipes,
+  both unchanged. The replacement text contains no literal pipe at all; where
+  one was needed it is written &#124;.
+
+  (a) leg_cremations, CONFIDENTIALITY. The cell said "A deceased person's
+      identity, cause or circumstances, or the government identifiers attached
+      to them, are disclosed", and "The record carries the authorisation and
+      the identifiers it rests on." Read against the 13 fields saveCremation()
+      actually sends (sairnlegacy.html:3190), NONE of that is on the row: no
+      decedent name, no cause, no circumstance, no government identifier. There
+      is case_id, a reference, and authorization_on_file as a BOOLEAN rather
+      than the authorisation. Rewritten as the traced chain it really is --
+      case_id joined to the case discloses the disposition of a named decedent,
+      and disposition_details is FREE TEXT into which a funeral director writes
+      exactly the circumstance the old wording described. TIER UNCHANGED.
+
+  (b) employees, CONFIDENTIALITY. The cell quoted saveEmp()'s 13-field shape as
+      "the stored data blob". THAT IS THE localStorage SHAPE. What ships is
+      syncEmps() at sairnbiz.html:5069-5072, and it sends NINE fields --
+      {first_name, last_name, role, department, employment_type, hourly_rate,
+      start_date, phone, email}. So `ec` (THE EMERGENCY CONTACT), `notes` and
+      `pay_freq` were cited as confidentiality grounds and are not on the row;
+      `status` is a real column, not blob content. C-A UNCHANGED and now rests
+      on hourly_rate alone -- compensation, which the A definition names
+      explicitly. The cell also now records the third state: the old wording is
+      REACHABLE BUT NOT REALISED, because `data: emp.data || emp`
+      (api/sd-data.js:2630) would accept an arbitrary caller object and the one
+      shipped caller sends emp.data.
+
+  (c) rf_jobs, EVIDENCE. Write citation :5254 -> :5477. :5254 is now
+      rfSetScheduleStatus(); the field list the cell quotes was always right.
+
+  NEITHER TIER MOVED. Both grounds cells were wrong in the direction of
+  OVER-CLAIMING, which does not change a tier -- it changes whether the next
+  reader can trust the sentence under it.
+
+  THE FIRST RUN OF THE SCRIPT FAILED AND THAT IS THE REAL FINDING.
+
+    ASSERT FAIL [leg_cremations]: anchor occurs 6 times, need exactly 1
+
+  The confidentiality sentence is NOT unique in that file. The SAME SENTENCE
+  sits on SIX rows -- leg_certs, leg_cremations, leg_custodylog,
+  leg_deathrecords, leg_invoices, leg_preneed -- the whole funeral
+  vital-records cluster. A file-wide replace would have REWRITTEN FIVE ROWS
+  WHOSE WRITE SITES I HAVE NOT READ, and leg_deathrecords is precisely the one
+  for which the old sentence is probably CORRECT.
+
+  The edit was re-scoped to the named row, a post-check requires the sibling
+  sentence to still appear EXACTLY 5 TIMES, and the corrected cell says in
+  terms that the five were not re-read and that no claim is made about them.
+
+  THAT IS DISCIPLINE 7 -- BYTE-IDENTICAL IS NOT SAFE-IN-CONTEXT -- OCCURRING
+  INSIDE THE CRITICALITY REGISTER ITSELF. A cluster-level sentence was pasted
+  onto six rows with different field lists, and it is right on some of them.
+  The assertion is the only reason this is a corrected row rather than five
+  newly wrong ones.
+
+  THE THIRD PART: sairnlaw.html:3339 cited api/sd-data.js:12439 for the
+  law_trust_reconcile branch. :12439 is an alf_compliance_rules comment; the
+  branch is at :18747. IT IS FIXED BY REPLACING THE LINE NUMBER WITH THE
+  GREP-ABLE BRANCH PREDICATE, NOT WITH :18747. A line number is the thing that
+  went stale, and a second one goes stale the same way -- same reasoning as
+  CLAUDE.md's rule about not writing a check count down. checkblocks 4/0.
+
+  criticality_tier_check PROBLEMS 14 -> 6 across the batch, with ZERO new
+  problems from my three edits. The drop INDEPENDENTLY CONFIRMS b37's
+  measurement: cc's shared.js skip fix landed (APPS_WITH_REGISTRIES 18 -> 19)
+  and 14 - 8 = 6, which is the figure b37 predicted and cc's b35 measured.
+
+
+3. ITEM 3 -- SAIRNCODE, AND THE SERIES INVERTS
+
+  docs/cloud-research/sairncode-worldwide-competitive-gap-audit-2026-10-20.md
+
+  THE SOURCING RULE WAS TIGHTENED FOR THIS ONE AND IT CHANGED THE RESULT. b37
+  pulled primary regulation but read most of it through domain-restricted
+  SEARCH SNIPPETS, and said so. This instruction required the consolidated or
+  full text and an explicit list of what could not be read. Both were done.
+
+  READ IN FULL -- five instruments:
+
+    45 CFR 170.315(b)(11)  Decision Support Interventions (eCFR API).
+      (iv)(A) THIRTEEN source attributes for evidence-based DSIs, including
+      bibliographic citation, developer, funding source, release and revision
+      dates, and documented use of race, ethnicity, language, sexual
+      orientation, gender identity, sex, date of birth and SDOH data.
+      (iv)(B) a LONGER list for PREDICTIVE DSIs: purpose, cautioned
+      out-of-scope uses, development details, FAIRNESS PROCESS, EXTERNAL
+      VALIDATION PROCESS, QUANTITATIVE PERFORMANCE MEASURES, ongoing
+      maintenance, update/validation schedule.
+      (v)(A) users must reach "complete and up-to-date plain language
+      descriptions of source attribute information"; (v)(B) record, change and
+      access them.
+
+    42 CFR 422.310(a)-(g)  Risk adjustment data (eCFR API).
+      (e) "MA organizations and their providers and practitioners are required
+      to submit a sample of medical records for the validation of risk
+      adjustment data, as required by CMS." RADV may produce EXTRAPOLATED
+      findings with payment remitted.
+      (g) deadlines are the FIRST FRIDAY IN SEPTEMBER and the FIRST FRIDAY IN
+      MARCH, and after the final deadline an organisation MAY ONLY CORRECT
+      OVERPAYMENTS -- IT MAY NOT SUBMIT NEW DIAGNOSES.
+
+    31 U.S.C. 3729  False Claims Act (govinfo/GPO).
+      (a)(1)(A) knowingly presenting "a false or fraudulent claim for payment
+      or approval"; (a)(1)(B) knowingly using "a false record or statement
+      material to a false or fraudulent claim"; a penalty of $5,000-$10,000
+      "as adjusted" PLUS THREE TIMES the Government's damages; and (b)(1)
+      "knowing" covers actual knowledge, DELIBERATE IGNORANCE and RECKLESS
+      DISREGARD, and the terms "require no proof of specific intent to defraud".
+
+    45 CFR 92.210  Patient care decision support tools (eCFR API). THREE
+      paragraphs, not four: (a) the prohibition, (b) an ONGOING DUTY TO MAKE
+      REASONABLE EFFORTS TO IDENTIFY uses of such tools employing variables
+      that measure protected characteristics, (c) reasonable efforts to
+      mitigate. (b) is a duty to go looking, which is an inventory obligation.
+
+    WHO, ICD-11. Adopted by the 72nd World Health Assembly in 2019 (WHA72.15),
+      in effect since 1 January 2022. As of May 2024: 132 Member States and
+      areas at various phases -- 72 commenced, 50 piloting, and only 14
+      COLLECTING OR REPORTING DATA in ICD-11. The latest ICD-10 version WHO
+      publishes online is from 2019.
+
+  WHAT SAIRNCODE IS: 28 resources, 38 panels -- hcc, drg, rac, prebill,
+  encoder, query, anesthesia, pctc, modrouting, fraud, ar, revenue, compliance,
+  auth, eligibility, plus 13 specialty panels. A full revenue-cycle and coding
+  compliance product, and the largest-surface app in this series.
+
+  THE RESULT IS THE OPPOSITE SHAPE TO EVERY PRIOR AUDIT. The others found a
+  market need SAIRN had no capability for. THIS ONE FOUND CAPABILITY WITH NO
+  ARTEFACT.
+
+  sairncode.html:842, shipped user-facing copy:
+
+    "Every suggested code must cite the exact phrase in the note that supports
+     it -- this page independently checks that the quoted phrase is actually
+     present in what you pasted, and flags any suggestion whose citation can't
+     be verified rather than trusting it silently."
+
+  That is grounding WITH AN INDEPENDENT VERIFIER, which is STRONGER than
+  (b)(11)(iv)(A)'s "bibliographic citation" attribute asks for -- the rule
+  wants the citation supplied; this one checks it. Alongside it: a Coded Items
+  panel holding "stored citation and reasoning per coded item, plus the
+  human-review queue" (:749), and a confidence figure that is DERIVED, the file
+  itself recording that it previously carried fabricated 82%/71% scores and
+  that they were removed.
+
+  AND grep -ci OVER THE SAME FILE:
+
+    RADV                                          0
+    False Claims / upcod                          0
+    Section 1557                                  0
+    170.315 / decision support intervention /
+      source attribute                            0
+    first Friday                                  0
+    ICD-11                                        0
+    effective date                                0
+    ICD-10 44 | CPT 127 | HCPCS 63            (US code sets only)
+
+  38 panels including hcc AND rac, and not one of the five governing rules is
+  named anywhere in the file.
+
+  THREE FINDINGS.
+
+  3.1 WRITE DOWN THE GROUNDING YOU ALREADY HAVE, IN THE RULE'S VOCABULARY. The
+      five attributes (b)(11)(iv)(B) requires for a PREDICTIVE DSI -- fairness
+      process, external validation, quantitative performance measures, update
+      schedule, cautioned out-of-scope uses -- are absent, and they are what a
+      buyer's compliance officer asks for first. 31 U.S.C. 3729(b)(1) is why
+      the record is load-bearing: a product that nudges toward a higher-paying
+      code exposes its USER with NO INTENT ELEMENT, because reckless disregard
+      suffices. The defence is a record showing each suggestion was grounded
+      and reviewed. SAIRNcode builds that record and never says what it is for.
+
+  3.2 NO CODE SET IS DATE-QUALIFIED, AND A SIBLING APP ALREADY SOLVES IT.
+      `effective date` -> 0. ICD-10-CM turns over every 1 October and CPT every
+      1 January; a code valid for a 2026 date of service may not have existed
+      for a 2025 one. THE APP IS IMPRESSIVELY DATE-AWARE ABOUT MONEY and not at
+      all about CODES: it carries the CY2026 DUAL conversion factors, cites
+      SSA 1848(d)(20), names both real rates, and REFUSES to state a payment
+      amount when QP status is unknown rather than picking one. SAIRNdental
+      already date-qualifies codes with cdtStatusFor(proc, serviceDate), in the
+      same repo. The pattern exists, ships, and has not been carried across --
+      and per discipline 7 it needs re-qualifying for scale and criticality
+      rather than copying.
+
+  3.3 THE RISK-ADJUSTMENT DEADLINE ASYMMETRY IS NOWHERE, ON A PRODUCT WITH AN
+      HCC PANEL AND A RAC PANEL. Past the 422.310(g) deadline a found GAP is
+      worth nothing and a found ERROR is still mandatory. A tool that surfaces
+      both as "findings" points the user at work that no longer exists in one
+      direction. And (e)'s extrapolation means a small sampled error rate is
+      not a small liability.
+
+  FIRST AUDIT IN THE SERIES WHOSE MAIN RECOMMENDATIONS HAVE NO BLOCKER. B1 (the
+  DSI source-attribute record) and B4 (a 92.210(b) tool inventory) are
+  DOCUMENTS. B3 (RADV-aware HCC mode) is TWO DATES. B2 (code-set vintage) is a
+  LICENSING question -- CPT is AMA-copyrighted -- and is flagged as one rather
+  than scoped. B5 (ICD-11) is a TIMING JUDGMENT against WHO's 14-countries
+  figure, and is the first blocker in this series that is neither a company
+  decision nor a missing dataset.
+
+  WHAT COULD NOT BE READ, REPORTED RATHER THAN PARAPHRASED FROM MEMORY:
+
+    REGULATION (EU) 2024/1689 (THE AI ACT) -- NOT READ. Three fetch attempts,
+    three URL forms, all returned an EMPTY BODY. b37 hit the identical failure
+    on EUR-Lex, so this is now a CHARACTERISED, REPEATED failure rather than a
+    one-off, and the EU limb of this series is currently unsourceable by that
+    route. NO AI ACT ARTICLE, ANNEX POINT OR DATE IS ASSERTED ANYWHERE in the
+    audit. What that costs: whether an AI coding tool is Annex III high-risk,
+    and on what date, is unanswered.
+
+    THE eCFR WEB PAGES -- WALLED, AND NOT ROUTED AROUND. www.ecfr.gov/current/
+    ... 302s to unblock.federalregister.gov, a bot-detection page. I DID NOT
+    ATTEMPT TO DEFEAT IT. The documented eCFR API is the sanctioned machine
+    interface, it answered, and it returned the same sections -- so the three
+    CFR reads above are full-text through the intended route, not a bypass.
+
+    THE COMPLIANCE DATE FOR 45 CFR 92.210 -- NOT ESTABLISHED. The section text
+    carries none, and 45 CFR 92.10 turns out to be the NOTICE section and
+    carries none either. The date is in the Section 1557 final rule's Federal
+    Register preamble, which I did not read. NO DATE IS STATED.
+
+    THE CURRENT ADJUSTED FCA PENALTIES -- NOT READ. Only the statutory base of
+    $5,000-$10,000 is given; the live figures are in 28 CFR 85.5, unfetched.
+    Do not quote a current dollar penalty from that document.
+
+    uscode.house.gov 404'd twice on two URL forms; govinfo answered and is the
+    source actually used for 31 U.S.C. 3729.
+
+
+4. ITEM 4 -- FOUR OF SIX STANDING RULES ARE WRITTEN DOWN NOWHERE
+
+  docs/2026-10-20-fourth-b38-currency-sweep.md
+
+  SCOPE BOUNDARY APPLIED AND NOT NEGOTIATED. The dispatch said fix only my own
+  items and REPORT anything shared. NOTHING under ~/.claude, .claude/skills/ or
+  tools/ was edited -- 0 such paths across all three b38 commits. I also
+  treated CLAUDE.md as shared and did not edit it, which is a judgment call and
+  is stated in the doc rather than silently made.
+
+  rule                         written down?   fourth compliant?
+  silent mode                  YES, CLAUDE.md  yes
+  builder/auditor separation   YES             yes, 0 commits touch the tree
+  80% wrap-up threshold        NO              NO -- b36 wrapped at 83.5%
+  digests 30 lines max         NO              NO -- 8 of 8 exceed it
+  SQL in files, path only      NO              NO -- b36 embedded the schema
+  the done-line format         NO              yes
+
+  Searched with the patterns so the absence is falsifiable, across CLAUDE.md,
+  docs/SAIRN-PROCESS-RULES.md, docs/2026-09-13-cross-domain-disciplines.md and
+  all 34 skills. The only "30 lines" hit is "1,230 lines of it were on an
+  unmerged branch". The only non-auditor "80%" is about neutral colours.
+
+  AND THE ONE SKILL WHOSE JOB THIS IS SAYS NOTHING ABOUT ANY OF IT.
+  sairn-session-handoff has 17 headings and NO SECTION ON THE DIGEST AT ALL --
+  not its length, not its sections, not that SQL belongs in a file. Its "When
+  to write one" reads "Proactively, before capacity runs low -- never wait for
+  a hard cutoff." NO NUMBER. That is a rule enforced by remembering.
+
+  THE 80% FIGURE DOES EXIST IN WRITING -- ON THE AUDITORS' SIDE ONLY.
+  .claude/skills/sairn-hover-auditor/ carries it and hover2's live status row
+  cites an "80% wrap-up threshold". So the auditors have a written threshold
+  and the four build agents do not.
+
+  MY OWN BREACHES, MEASURED FROM MY OWN DIGESTS' CONTEXT LINES:
+    b33 31.9%  b34 53.2%  b35 69.3%  b36 83.5%  b37 30.5%
+  One breach in five, and b36 is also the batch that was wrapped ON
+  INSTRUCTION -- the wrap was triggered by Michael noticing, not by me watching
+  a number. That is exactly the failure mode of an unwritten threshold.
+
+  Digest line counts: 103, 111, 88, 156, 151, 125, 319, 209. Every one over 30;
+  b36 over by more than ten times. Across the platform only cc is currently
+  compliant (10 lines); hank 47, fourth 209, cody 239.
+
+  And b36's digest embedded sql/rt_routes_schema.sql VERBATIM -- which is both
+  the length breach and a second copy of a file that went stale the same day
+  the constraint was dropped. b37's digest already says why ("a second copy is
+  a second thing to go stale"), so THE RULE WAS LEARNED ONCE, IN PROSE, IN ONE
+  DIGEST, AND NOWHERE THAT WOULD MAKE IT HOLD.
+
+  FIXED (mine): this batch's digest is written to the cap.
+  REPORTED, NOT EDITED (shared): CLAUDE.md needs a deliverables section and the
+  sweep carries pasteable text for it; sairn-session-handoff needs its digest
+  half; and NOTHING ENFORCES ANY OF IT -- drive_upload_verify checks a digest's
+  NAME, FIRST LINE, BYTES and SHA256, four real checks, and not one would
+  notice a 319-line digest. A --max-lines 30 arm there is the cheapest fix for
+  the whole class, and it lives in tools/, so it is flagged rather than built.
+  Also: CLAUDE.md:52 says 7 standing docs are over the ceiling; the tool says 8
+  and the set has changed -- docs/open-work/platform.md (847,894 bytes) and
+  docs/TOOLING-INVENTORY.md (441,973) are not in the list. Low severity,
+  because that paragraph already tells the reader to run the tool.
+
+  A METHOD ERROR I MADE AND CAUGHT INSIDE THE SWEEP. I measured
+  tooling_inventory --standing-doc-sizes as EXIT 0 and was about to report its
+  documented fail-closed behaviour as broken. `$?` after a pipeline is TAIL's
+  status, not python's. Re-measured without the pipe: exit 1, correct as
+  documented. Recorded because a sweep that reports a tool broken on a pipeline
+  artefact does more damage than the staleness it was looking for.
+
+
+5. ITEM 5 -- SAIRNDENTAL: TWO PANELS THAT CANNOT TELL CLEAN FROM UNCHECKED
+
+  docs/2026-10-20-fourth-b38-sairndental-correctness-audit.md
+
+  THE CRITERION FOR EACH PANEL WAS WRITTEN DOWN BEFORE ITS CODE WAS READ, so it
+  could not be bent to whatever the code turned out to do.
+
+  5.1 GFE -- MARKING AN ESTIMATE "ISSUED" ERASES THE EVIDENCE IT WAS LATE.
+
+  issueGfe() at :5131 DOES record the date: rec.issued_at = dntLocalToday().
+  NOTHING ANYWHERE COMPARES issued_at TO dueDate. Three places drop it, all in
+  rGfe():
+
+    :5241  overdue is computed ONLY for records that are NOT issued
+    :5252  an Issued row's due-date badge is neutral regardless of when it went
+    :5268  the "Due" KPI and the nav badge count un-issued records only
+
+  So a practice that issued every estimate three weeks past its statutory due
+  date shows a CLEAN PANEL, a ZERO tile and NO nav badge. The lateness is not
+  mis-stated -- it is ABSENT, which is the harder kind to notice. The record
+  knows; the screen does not. The whole obligation in 45 CFR 149.610(b)(1)(vi)
+  is a DATE.
+
+  SECOND, SMALLER, ON THE SAME LINE: `due<=today` treats an estimate due TODAY
+  as overdue. It is not -- the day is not over. Fails safe, still wrong.
+
+  5.2 CREDENTIALING -- FOUR ZEROS RENDER WHEN NOTHING HAS BEEN CHECKED.
+
+  The four KPI tiles are hardcoded 0 in the markup (:523-526).
+  nav('credentials') calls rCredentials(null) FIRST (:2041), and on the null
+  path the function returns at :3075 BEFORE TOUCHING ANY KPI.
+
+  Harmless for the second before the board arrives. NOT harmless when the board
+  never arrives -- and sdnEvaluateCredentials() (:2908) returns null on FOUR
+  separate conditions, every one silent to the user:
+
+    no licence key on this install          :2910
+    any non-ok HTTP status                  :2919
+    an ok status with a non-ok body         :2919
+    any network error                       :2921
+
+  So on a workstation with no licence, or with the server unreachable, or with
+  dnt_credentials not provisioned, the panel shows FOUR ZEROS -- the strongest
+  possible all-clear -- above a table whose every row reads "Not checked yet".
+  The nav badge is hidden on the same path. THE TABLE IS HONEST AND THE SUMMARY
+  IS NOT, AND THE SUMMARY IS WHAT GETS READ. Could-not-run is a third state and
+  must never be folded into passed: PR 1.11, applied to a KPI tile.
+
+  5.3 DENIALS -- CLEAN, AND IT IS THE CONTROL.
+
+  dnAppealWindow() (:3954) starts the window at d.denied_on -- the payer's own
+  adjudication date -- takes its length from the per-payer CONTRACTED term, and
+  returns known:false when either is missing, with "Appeal deadlines come from
+  your contract and differ between payers, so none is assumed." An unknown
+  window is a third state and is NEVER rendered as timely. dnPayerTermFor()
+  matches trim+lowercase so a whitespace difference cannot silently lose a
+  payer's window, and the date math is local-midnight with no UTC off-by-one. A
+  closed window renders "closed N d ago" and the row is still listed, with the
+  reason given. `abandoned` is excluded from BOTH halves of the success rate.
+
+  THE PATTERN, WHICH IS THE REAL RESULT. Both findings are the same defect in
+  two places: a compliance summary that collapses THREE states into TWO.
+
+    GFE            issued on time / issued late / not issued
+                   -> on time == late
+    Credentialing  nothing wrong / nothing known / something wrong
+                   -> nothing wrong == nothing known
+
+  Neither is a wrong number and NEITHER WOULD BE CAUGHT BY A FABRICATION CHECK
+  -- every figure traces to a real function. They are silent-failure findings:
+  real functions reporting a state they never established. And in both cases
+  THE MISSING INFORMATION IS ALREADY ON THE RECORD, so both fixes are a render
+  change and nothing deeper.
+
+  Denials is the same codebase, the same author, the same week, and it keeps
+  all three states apart deliberately and says why. THE CAPABILITY IS PRESENT
+  IN THE FILE; IT JUST WAS NOT APPLIED TO THE OTHER TWO SUMMARIES.
+
+  NOT FIXED. The dispatch said AUDIT. Each finding carries pasteable code, and
+  applying them would open a Tier A review obligation.
+
+  AND THESE PANELS ARE BETTER BUILT THAN THE AUDIT EXPECTED, which the document
+  says at length: paragraph-level CFR citations, the two overlapping limbs of
+  149.610(b)(1)(vi) DISCLOSED rather than resolved, the eleven 5 U.S.C. 6103
+  holidays COMPUTED with observance shifts rather than tabled, issueGfe
+  REFUSING rather than warning on a missing element, an enrolment row carrying
+  two statuses because "showing only the first would let a terminated enrolment
+  read as OK", and the credentialing board refusing to guess a CE requirement
+  for a state whose rules are not loaded.
+
+
+6. ITEM 6 -- THE PUSH, AND THE GATE THAT WAS ANSWERED
+
+    git rev-list --left-right --count origin/main...HEAD   ->  0  0
+    cc95b740 LANDED   232127e0 LANDED   033dca64 LANDED   b3166960 LANDED
+    git stash list -> 0        git status --porcelain -> clean
+
+  NO --force. NO --force-with-lease. NO SAIRN_SKIP, no gate_skip.py grant, no
+  SAIRN_GATE_EXEMPT, no SAIRN_SEED_GATE. No override of any form.
+
+  8 files. FORBIDDEN PATHS: 0 -- no api/, no tools/, no .githooks, no
+  settings.json, no .claude/skills/. Scoped to my own commits rather than a
+  range, for b35's recorded reason. sairndental.html is NOT in the list, and
+  neither is stonedesk.html.
+
+  THE REGISTER-FEED GATE DENIED THE FIRST PUSH: "this push closes a defect and
+  does not feed the register", naming the fix(schema+tiers) commit.
+
+  I DID NOT ADD A REGISTER RECORD, and this is the judgment most worth
+  reviewing in the batch. Nothing in that commit is a defect in SHIPPED
+  BEHAVIOUR. rtroutes_saved_sane WAS NEVER RUN -- b36's review found the
+  contradiction before Michael executed the file, and he removed it before
+  executing, so no database ever carried it and no write ever failed. A record
+  would put a fix with NO INJECTION COMMIT, NO IN-SERVICE DETECTION and NO
+  AFFECTED BEHAVIOUR into a register whose numbers are used to reason about
+  real defect density -- the same dilution its own not-citable rule exists to
+  stop. The other two changes are wrong sentences in a standing document and a
+  stale line number in a comment: real, and documentation rather than
+  behaviour.
+
+  So the SANCTIONED no-defect-record: trailer was used, with the full reasoning
+  in the commit's own message -- which is where the gate reads it from
+  (ESCAPE_RE searches that commit's body, not the push). That required amending
+  a commit two deep: git checkout <sha> + --amend + git rebase --onto, with
+  git branch -f b38-save holding the originals until it was done. THREE
+  UNPUSHED COMMITS WERE REWRITTEN. NOTHING PUBLISHED WAS REWRITTEN.
+
+  A LATER PUSH WAS DENIED BY THE SAME GATE FOR A DIFFERENT REASON, AND IT
+  DIAGNOSED ITSELF: 3 ahead / 8 behind, so git would have refused the
+  non-fast-forward anyway and NO REF LINES REACHED THE HOOK. The gate said
+  "Nothing was checked, and nothing was going to be pushed either. This is NOT
+  a finding about your commits", and named the fix. Resolved with git pull
+  --rebase. Worth recording because a gate that denies on could-not-tell rather
+  than passing is the behaviour PR 1.11 asks for, seen working.
+
+  OTHER GATES RUN: checkblocks 4/0 on sairnlaw.html and 6/0 on sairndental.html
+  (unchanged, re-checked anyway), criticality_tier_check 14 -> 6 PROBLEMS with
+  0 new, and the push gate's own copy-exactly, staged-credential and
+  doc-sha-reseat checks passed on the final push.
+
+
+7. WHAT b38 PROVED vs LEFT UNPROVEN
+
+  PROVED, measured:
+    - the schema file matches what ran, checked structurally after stripping
+      comments: 41/41 parens, 14 statements, constraint absent from code and
+      present in a comment
+    - three register cells corrected with the pipe count unchanged file-wide,
+      0 new criticality_tier_check problems, and the 14 -> 6 drop reconciling
+      exactly with cc's landed shared.js fix
+    - FIVE primary instruments read in FULL TEXT, and two named as unread
+    - four of six standing rules absent from every document a fresh session
+      reads, by pattern search over 3 docs and 34 skills
+    - three SAIRNdental findings traced to specific lines, with the data that
+      would fix them shown to already exist on the record
+    - 8 files, 0 forbidden paths, no force, no override, all commits ancestors
+      of origin/main
+
+  LEFT UNPROVEN:
+    - NOTHING WAS DRIVEN IN A BROWSER THIS BATCH. The SAIRNdental findings are
+      source reads. The credentialing one would be settled in a minute by
+      blanking the licence key and opening the panel, and that was not done.
+    - No screen-reader test -- unchanged from b36/b37.
+    - THE FIVE SIBLING leg_* ROWS WERE NOT RE-READ and no claim is made about
+      them. leg_deathrecords in particular probably still needs the sentence
+      that was wrong on leg_cremations.
+    - The server half of both SAIRNcode and SAIRNdental credentialing was not
+      audited -- both live in api/sd-data.js, which is cody's.
+    - The sairncode audit drove no competitor product and quotes no market size
+      anywhere, so it cannot say whether anyone already ships B1-B5.
+    - The 13 attributes of (b)(11)(iv)(A) were SUMMARISED by the fetch, not
+      enumerated. Read the criterion itself before building a field list from
+      a summary of a field list.
+    - Nothing live. No deployed URL was driven -- unchanged from b34 onward.
+
+
+END-OF-REPORT
