@@ -4341,8 +4341,8 @@
       "task": "b29: 18 missing schema files for 23 tables api queries (sql/ new files only); root-cause why prod not broken; batch-manifest-cc-b29; Tier A dnt_gfe + dnt_credentials review starting lateBy===0; push.  FILES: sql/ docs/tier-a-reviews.json docs/batch-manifest-cc-b29.json docs/2026-10-20-cc-b29-notes.md SAIRN-handoff-cc-b29.md SAIRN-report-cc-b29.txt SAIRN-digest-cc-b29.txt NOT-api NOT-html NOT-tests NOT-defect-register-fourths",
       "claimed_at": "2026-10-20T11:20:07Z",
       "claimed_at_epoch": 1792495207.1659725,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T11:46:47Z",
       "files": [
         "SAIRN-digest-cc-b29.txt",
         "SAIRN-handoff-cc-b29.md",
