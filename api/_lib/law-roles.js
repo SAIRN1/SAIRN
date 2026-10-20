@@ -230,8 +230,47 @@ const LAW_RECONCILE_ROLES = Object.freeze(Object.assign(Object.create(null), {
 const LAW_RECONCILE_ATTESTATION = Object.freeze({
   // Is a lawyer's review required by the rules this routing is based on?
   required_by_rule: true,
-  // Does this app record one? NO. Measured, not hoped.
-  implemented: false,
+  // ── b23: THIS FLIPPED FROM false TO true AND IT MAKES AN ARM RED ────────
+  // Does this app record an attestation? YES, as of b23: api/law-attest.js
+  // (the route), api/_lib/law-attest.js (the policy) and
+  // sql/sairnlaw_trust_attestations.sql (the record).
+  //
+  // ARM A1 OF api/b19-iolta-reconcile-carveout.test.js ASSERTS
+  // `implemented === false` AND THEREFORE GOES RED ON THIS LINE. That red is
+  // the mechanism working -- the two booleans exist so "we know and have not
+  // built it" cannot decay into "it is fine", and they equally must not let
+  // "we built it" pass unnoticed. The arm is to be RE-AIMED with the new
+  // expected answer written down, NOT deleted to go green. That suite is
+  // cody's (b27) and the re-aim is routed there; the same thing happened to
+  // arm R2 in b20 and is recorded in that batch's notes.
+  //
+  // `implemented` MEANS "THE MECHANISM EXISTS IN THIS CODEBASE". It does NOT
+  // mean a firm can use it today -- see `inert_until` below, which is the
+  // F1 distinction: armed in code and inert in the database are different
+  // facts and one structure must not report them as one.
+  implemented: true,
+  // THE TWO STEPS BETWEEN "BUILT" AND "USABLE", named rather than left to be
+  // discovered. Neither is in this file and neither is hank's to do.
+  inert_until: '(1) sql/sairnlaw_trust_attestations.sql is run -- until then '
+             + 'api/law-attest.js answers 503 NOT_PROVISIONED on every write; '
+             + 'and (2) api/sd-data.js:18804\'s law_trust_reconcile gate reads '
+             + 'LAW_RECONCILE_ROLES instead of its hand-written '
+             + 'roleSet({ owner: true }), which is cody\'s file and is already '
+             + 'in their lane.',
+  // ── AND WHY `paralegal` IS STILL OFF LAW_RECONCILE_ROLES ────────────────
+  // The design note's goal 3 is to re-open b20's withdrawn delegation once an
+  // attestation exists. IT IS NOT RE-OPENED IN b23, deliberately. Granting it
+  // now would set a trap rather than deliver a feature: the grant is inert
+  // today (the gate above does not read this list), so it would take effect on
+  // the day cody wires that gate -- which may be before the SQL has been run,
+  // and a paralegal producing a finished reconciliation that NO attestation
+  // can be recorded against is exactly the state b20 withdrew the grant to
+  // avoid. The grant is one line and it is the LAST step, not the first.
+  delegation_reopens_when: 'both inert_until steps are done; then `paralegal: '
+                         + 'true` goes back on LAW_RECONCILE_ROLES and arm R2 '
+                         + 'of api/b19-iolta-reconcile-carveout.test.js is '
+                         + 're-aimed to the tier-plus-paralegal relationship '
+                         + 'it asserted in b19.',
   basis: 'ABA Model Rule 1.15 (the duty is the lawyer\'s and non-delegable) '
        + 'read with Rule 5.3 (the work is delegable under supervision). State '
        + 'bar guidance mandating periodic three-way reconciliation also puts '
@@ -241,22 +280,31 @@ const LAW_RECONCILE_ATTESTATION = Object.freeze({
   // than none. The gap did NOT close when `paralegal` came off the list -- it
   // narrowed. Only a bar-admitted person can now run a leg, so the person doing
   // the work is qualified; what is still absent is the RECORD.
-  gap: 'Nothing in this app records an attestation. A reconciliation run by a '
-     + 'bar-admitted person answers "the three legs agree" and never "a lawyer '
-     + 'has attested that they agree", and the app must not present the first '
-     + 'as the second. Separately, DELEGATION IS NOT AVAILABLE AT ALL until '
-     + 'that record exists: `paralegal` was granted in b19 and withdrawn in '
-     + 'b20 for exactly this reason, so a firm that delegates the arithmetic '
-     + 'in practice cannot do it in the app.',
-  // The mechanism that would close it, named rather than invented here.
-  candidate: 'the same countersignature lock api/_lib/countersign.js already '
-           + 'runs for C2 -- prepared by one role, attested by a bar-admitted '
-           + 'one, bound to a hash of the exact reconciliation',
+  // b23: RESTATED, because the b20 wording said "nothing in this app records
+  // an attestation" and that stopped being true. A stale true-sounding
+  // sentence in an exported constant is worse than none -- and so is a stale
+  // gap-sounding one, which is what this would now be if left alone.
+  gap: 'The RECORD exists as of b23 and is NOT YET REACHABLE BY A FIRM: the '
+     + 'table is unprovisioned and the reconcile gate is still owner-only, so '
+     + 'the app must still never present "the three legs agree" as "a lawyer '
+     + 'has attested that they agree". DELEGATION IS ALSO STILL UNAVAILABLE: '
+     + '`paralegal` was granted in b19, withdrawn in b20, and is deliberately '
+     + 'NOT restored in b23 -- see delegation_reopens_when.',
+  // The mechanism, now BUILT rather than named as a candidate.
+  candidate: 'BUILT in b23 -- api/law-attest.js, its own countersignature '
+           + 'profile on law_trust_attestation in MODE_ALWAYS, bound to a hash '
+           + 'of the exact comparison, PLUS a named single-signer mode for a '
+           + 'firm with exactly one active owner/attorney which is stored as '
+           + 'signer_mode on the row so the record never claims two people '
+           + 'looked when one did.',
   recorded: '2026-10-19 (b19), hank -- raised as DECISION-NEEDED, not built. '
           + 'DECIDED 2026-10-19 (b20) by Michael: the delegation grant comes '
-          + 'OFF until the attestation step exists. The mechanism is still not '
-          + 'built; what changed is that the app no longer relies on it being '
-          + 'absent.'
+          + 'OFF until the attestation step exists. DESIGNED 2026-10-19 (b21), '
+          + 'docs/2026-10-19-hank-b21-attestation-design.md, with one open '
+          + 'question -- the solo practitioner. ANSWERED AND BUILT 2026-10-19 '
+          + '(b23) by Michael: a per-firm setting, accepted only while the '
+          + 'firm has exactly one active owner/attorney, recorded as '
+          + 'single-signer on every such attestation.'
 });
 
 /** Is this resource one of the reconciliation legs? */
