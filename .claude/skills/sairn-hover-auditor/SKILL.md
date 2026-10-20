@@ -2893,22 +2893,33 @@ project `CLAUDE.md` and `docs/SAIRN-PROCESS-RULES.md` returned nothing for
 three of the four. Written here now because this file is the one document
 this role is guaranteed to be pointed at.
 
-**1. WRAP UP AT 80% OF REAL, MEASURED CONTEXT -- and measure it, never
-estimate it.** `python hover_context_measure.py` reads the real
-`input_tokens + cache_read_input_tokens` from this session's own
-transcript. At or past 80% it prints its own refusal and the correct
-response is to stop STARTING items and close out what is open. The
-threshold was 70% until b68 and is 80% now; the tool is the only place
-that number should ever be read from, which is why it is not repeated as a
-constant anywhere else. **Declare the window rather than letting it be
+**1. WRAP UP AT 85% OF REAL, MEASURED CONTEXT -- and measure it, never
+estimate it.** `python hover_context_watch.py` is the watcher (b72): it
+borrows the measurement from `hover_context_measure.py`, fires an ADVISORY
+at 78% and the WRAP alert at 85%, prints the ordered close-out checklist
+with the alert, and `--assert-under` turns it into a gate that exits
+non-zero. **It has NO HOOKS and therefore cannot fire by itself** -- call
+it between items; it says so in its own output on every run.
+
+**THE THRESHOLD HAS MOVED THREE TIMES AND THE TWO ROLES NOW DIFFER. READ
+THE TOOLS, NOT THIS PARAGRAPH.** 70% until b68, 80% from b68, **85% from
+b72 for THIS role** -- and the platform's own `CLAUDE.md` "Batch
+deliverables" section sets **80%** for the four build agents, with
+`tools/context_verify.py --digest-line` as their source and push-gate
+CHECK 5c enforcing it. **That check explicitly excludes hover and hover2 by
+the separation boundary**, which is why this role still reads its own
+figure from its own tool and is not in breach by doing so. Two roles, two
+numbers, both written down: do not "reconcile" them by changing one.
+*b70 started ZERO of six dispatched items because it opened at 81.7% of
+the then-80% threshold. The gate works; it is not decorative.*
+
+**Declare the window rather than letting it be
 inferred:** the transcript records the model as `claude-opus-5` with no
 `[1m]` suffix, so the tool infers the smallest window the observed prompt
 fits -- a FLOOR on the window and therefore a CEILING on the percentage,
 which it says out loud. On a 1M session that reads as 34% when the truth
 is 7%. Write the session's real window into `.git/sairn-context-window`
 (untracked, one `<session-uuid> <tokens>` line) and re-measure.
-*b70 started ZERO of six dispatched items because it opened at 81.7%. The
-gate works; it is not decorative.*
 
 **2. THE DIGEST IS 30 LINES MAXIMUM.** Not a target, a cap. The report
 carries the detail; the digest is what gets read. Its CONTEXT line comes
