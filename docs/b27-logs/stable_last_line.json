@@ -6,74 +6,74 @@
   {
    "file": "tests/defect_register_capa_control.py",
    "exit": 1,
-   "tail": "  ok   malformed JSON is refused rather than stored as a string",
-   "stable": false
+   "tail": "SUITE-RESULT tests/defect_register_capa_control.py END",
+   "stable": true
   },
   {
    "file": "tests/run_adversarial_prompt_corpus_probe.py",
    "exit": 1,
-   "tail": "3 arm(s) FAILED: 4. the sweep runs and classifies: zero unfenced, 5 reported as fenced, 8. emptying the untrusted-field list cannot produce a CLEAN sweep -- the lock refuses first, so the criteria cannot go quiet, 10. emptying the fence-call hints moves all 5 fenced sites to at-risk -- none vanishes, so a clean sweep is not blindness",
-   "stable": false
+   "tail": "SUITE-RESULT tests/run_adversarial_prompt_corpus_probe.py END",
+   "stable": true
   },
   {
    "file": "tests/run_alf_read_order_sabotage_probe.py",
    "exit": 1,
-   "tail": "  - 5. THE FIX IS STILL THERE BUT THE ARM CAN NO LONGER SEE IT: the alf_mar read is hoisted into a local, so the arm finds ZERO list reads for that table. A sweep over a read it never found is not a pass and must say so",
-   "stable": false
+   "tail": "SUITE-RESULT tests/run_alf_read_order_sabotage_probe.py END",
+   "stable": true
   },
   {
    "file": "tests/run_condition_coverage_probe.py",
    "exit": 1,
-   "tail": "5. THE PLANTED GAP -- it must find an operand no test covers",
-   "stable": false
+   "tail": "SUITE-RESULT tests/run_condition_coverage_probe.py END",
+   "stable": true
   },
   {
    "file": "tests/run_dependency_graph_probe.py",
    "exit": 1,
-   "tail": "  7q  a PAST-DUE date prints REVIEW DUE and does NOT fail -- failing a push because a calendar date passed punishes whoever pushes next, which is how a date column gets set to 2099",
-   "stable": false
+   "tail": "SUITE-RESULT tests/run_dependency_graph_probe.py END",
+   "stable": true
   },
   {
    "file": "tests/run_rebase_resolve_probe.py",
    "exit": 1,
-   "tail": "  - ...and says nothing was staged",
-   "stable": false
+   "tail": "SUITE-RESULT tests/run_rebase_resolve_probe.py END",
+   "stable": true
   },
   {
    "file": "tests/run_report_only_checks_probe.py",
    "exit": 1,
-   "tail": "report-only mechanism: 85 checks, 4 failed",
-   "stable": false
+   "tail": "SUITE-RESULT tests/run_report_only_checks_probe.py END",
+   "stable": true
   },
   {
    "file": "tests/run_write_path_scan_probe.py",
    "exit": 1,
-   "tail": "1 ARM(S) FAILED: the shipped baseline PASSES today -- a ratchet that fails on a clean tree is one somebody turns off",
-   "stable": false
+   "tail": "SUITE-RESULT tests/run_write_path_scan_probe.py END",
+   "stable": true
   },
   {
    "file": "tests/seam_check/run_or_default_probe.py",
    "exit": 1,
-   "tail": "2 ARM(S) FAILED",
-   "stable": false
+   "tail": "SUITE-RESULT tests/seam_check/run_or_default_probe.py END",
+   "stable": true
   },
   {
    "file": "tests/suite_control_backfill_probe.py",
-   "exit": 1,
-   "tail": "CONTROLS THAT DID NOT BITE: ['2. a failed read is treated as an empty one', '3. the server copy clobbers local records instead of merging', '4. a no-op boot writes anyway', '1. hydrate runs with no licence key']",
-   "stable": false
+   "exit": 3,
+   "tail": "SUITE-RESULT tests/suite_control_backfill_probe.py END",
+   "stable": true
   },
   {
    "file": "tests/run_selftest_independence_probe.py",
-   "exit": 1,
-   "tail": "  - nhi_register.py: the self-test passes again after restore, so the mutants left nothing behind",
-   "stable": false
+   "exit": 0,
+   "tail": "SUITE-RESULT tests/run_selftest_independence_probe.py END",
+   "stable": true
   },
   {
    "file": "tests/sairncare_compliance_window_boundary.test.js",
    "exit": 1,
-   "tail": "X1 and X2 are EXPECTED RED and are routed to hank (api/ is hank's). If they are the only failures, this suite is in the state docs/known-red-suites.json records.",
-   "stable": false
+   "tail": "SUITE-RESULT tests/sairncare_compliance_window_boundary.test.js END",
+   "stable": true
   }
  ]
 }

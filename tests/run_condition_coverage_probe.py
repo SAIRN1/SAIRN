@@ -17,6 +17,39 @@ its findings. They are about whether it can be trusted to put the file back:
   * and the harness must find a PLANTED gap: an operand added to a copy of an
     engine with no test covering it must come back SURVIVED.
 """
+
+# ── A STABLE LAST LINE (2026-10-20, cody b28) ─────────────────────────────
+# AT THE TOP, NOT THE END, FOR TWO REASONS. (1) This probe calls sys.exit()
+# at module level; SystemExit propagates out of the module body, so an
+# atexit.register() below it is never reached -- b27 appended it and
+# measured 0 of 12. (2) atexit runs handlers in REVERSE registration order,
+# so being registered FIRST is what makes this line print LAST.
+# THE CONCEPT: this probe must print ONE deterministic final line on every
+#   exit path, so docs/known-red-suites.json can record a tail the runner
+#   really produces -- b26 measured this file's stored tail as one it CANNOT.
+#
+# atexit fires after the summary AND after sys.exit(1), which is the path an
+# arm failure takes here. The line carries NO DIGITS on purpose:
+# known_red_check.py normalises digits away, so a count would make a red run
+# and a green run compare EQUAL. It is a CONSTANT rather than a verdict for
+# two reasons, the second of which was a real bug in the first draft:
+#   1. known_red_check.py decides RECOVERED from the run's GREEN list, by
+#      exit code, so the tail's only job is to identify the last line.
+#   2. atexit handlers receive NO exit code, and sys.last_value is an
+#      interactive-mode artefact of an uncaught exception -- it is NOT set
+#      by sys.exit(1), which is the path this probe takes. Reading it would
+#      have printed one verdict for every run.
+import atexit as _b27_atexit
+
+
+def _b27_stable_last_line():
+    try:
+        print('SUITE-RESULT tests/run_condition_coverage_probe.py END')
+    except Exception:
+        pass
+
+
+_b27_atexit.register(_b27_stable_last_line)
 # REQUIREMENT: condition coverage counts each sub-condition of a compound test
 #   separately, so a branch that is never exercised on one operand is not
 #   reported as covered

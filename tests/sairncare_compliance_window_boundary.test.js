@@ -75,6 +75,25 @@
 // point in the window would be a product decision. Not the hire-date regex's
 // shape-only weakness (fourth's smaller finding), which is a different arm.
 
+
+// ── A STABLE LAST LINE (2026-10-20, cody b28) ─────────────────────────────
+// AT THE TOP, NOT THE END. b27 appended this and measured 0 of 12: these
+// files exit at module level, so nothing after that line ever runs.
+// THE CONCEPT: this suite must print ONE deterministic final line on every
+//   exit path, so docs/known-red-suites.json can record a tail the runner
+//   really produces -- b26 measured this file's stored tail as one it CANNOT.
+//
+// `process.on('exit')` fires after the summary AND after process.exit(1),
+// which is the path an arm failure takes here. The line carries NO DIGITS on
+// purpose: known_red_check.py normalises digits away, so a count would make a
+// red run and a green run compare EQUAL. It is a CONSTANT rather than a
+// verdict: known_red_check.py decides RECOVERED from the run's GREEN list,
+// by exit code, so the tail's only job is to identify the last line.
+process.on('exit', function () {
+  try { console.log('SUITE-RESULT tests/sairncare_compliance_window_boundary.test.js END'); }
+  catch (e) { /* a suite that cannot log its own last line must not
+                 change its verdict by trying to */ }
+});
 'use strict';
 const fs = require('fs');
 const path = require('path');

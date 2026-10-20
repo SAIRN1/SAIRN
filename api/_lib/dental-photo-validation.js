@@ -27,6 +27,26 @@ var DATA_URL_RE = /^data:image\/[a-zA-Z0-9.+-]+;base64,([A-Za-z0-9+/=]+)$/;
 // the only measure the database constraint actually sees.
 var MAX_PATIENT_NOTES_JSON_BYTES = 8192;
 
+// ── THE STORAGE CEILING, NOW NAMED RATHER THAN RETYPED (b28) ───────────────
+// `sql/sairndental_appointments_photo_size_migration.sql` derives
+// dnt_appointments' DB constraint as MAX_PHOTOS_PAYLOAD_BYTES + 32 KiB for
+// everything else = 1291059 bytes, and says in full why that is one constant
+// plus one stated allowance rather than a round number that looked big enough.
+//
+// IT IS EXPORTED BECAUSE api/sd-data.js NEEDS THE SAME NUMBER and the b28
+// defect was that it did not have it: the generic 64KB write cap refused every
+// staff write carrying a photo this endpoint had already accepted, so a 300KB
+// booking photo could be neither confirmed nor rejected. A second literal
+// `1291059` in sd-data.js would be a third copy of one derivation.
+//
+// THE TEST'S COPY STAYS A COPY, DELIBERATELY. The drift arm in
+// api/_lib/dental-photo-validation.test.js holds `1291059` as a LITERAL and
+// asserts the relationship. Importing this constant there would make the arm
+// compare the derivation to itself -- always true, and blind to the SQL file
+// it exists to guard. Item 8 of docs/2026-09-13-cross-domain-disciplines.md.
+var NON_PHOTO_ALLOWANCE_BYTES = 32 * 1024;
+var STORAGE_CEILING_BYTES = MAX_PHOTOS_PAYLOAD_BYTES + NON_PHOTO_ALLOWANCE_BYTES;
+
 function jsonByteLength(s) {
   return Buffer.byteLength(JSON.stringify(String(s)), 'utf8');
 }
@@ -105,5 +125,7 @@ module.exports = {
   jsonByteLength: jsonByteLength,
   MAX_PHOTOS: MAX_PHOTOS,
   MAX_PHOTOS_PAYLOAD_BYTES: MAX_PHOTOS_PAYLOAD_BYTES,
-  MAX_PATIENT_NOTES_JSON_BYTES: MAX_PATIENT_NOTES_JSON_BYTES
+  MAX_PATIENT_NOTES_JSON_BYTES: MAX_PATIENT_NOTES_JSON_BYTES,
+  NON_PHOTO_ALLOWANCE_BYTES: NON_PHOTO_ALLOWANCE_BYTES,
+  STORAGE_CEILING_BYTES: STORAGE_CEILING_BYTES
 };

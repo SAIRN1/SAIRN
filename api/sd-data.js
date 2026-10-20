@@ -393,10 +393,102 @@ const SCP_QC_AUTHORITY_ROLES = ['owner', 'crew_lead'];
 // slabs-specific 500KB override was tried first (photos don't fit in 64KB), reached this API
 // fine, then got rejected by Postgres anyway with a much less clear error. There's no per-
 // resource override at the DB layer, so there can't usefully be one here either -- this cap
-// stays uniform across every resource. The real fix for slabs' photo data lives client-side
+// stays uniform across every resource.
+// ^^ TRUE OF SLABS, NOT TRUE OF THE PLATFORM, AND CORRECTED IMMEDIATELY BELOW
+// (b28). `dnt_appointments` does have a DB-layer override, so it now has one
+// here too; read PAYLOAD_CAP_BY_RESOURCE before quoting the sentence above.
+// The real fix for slabs' photo data lives client-side
 // instead: stonedesk.html's bsuCompressUnderBudget() downscales/recompresses each photo to fit
 // well under this ceiling before it's ever sent.
 const MAX_PAYLOAD_BYTES = 64 * 1024; // 65536
+
+// ── AND THE ONE RESOURCE FOR WHICH 64KB WAS NEVER THE REAL CEILING (b28) ──
+// THE DEFECT. The paragraph above is right about slabs and was applied as
+// though it were right about everything: "this cap stays uniform across every
+// resource." The reasoning for uniformity is that the DB has no per-resource
+// override -- and `dnt_appointments` HAS ONE. It carries
+// `dntap_data_size check (octet_length(data::text) <= 1291059)`
+// (sql/sairndental_appointments_photo_size_migration.sql), because patients
+// attach photos to a self-scheduled booking and
+// api/sairndental/public-book.js accepts up to 1.2MB of them. That endpoint
+// does not pass through this file, so the two writers of one table had caps
+// twenty times apart.
+//
+// WHAT THAT COST, AND IT IS NOT "LARGE PHOTOS ARE REFUSED". A 300KB photo
+// booking lands in the table, through the public form, exactly as designed.
+// The staff then open it and cannot act on it: sairndental.html's pending
+// queue reads the row whole, photos included, and sends it back on confirm or
+// decline -- so EVERY staff write on a photo-bearing booking was answered 413
+// PAYLOAD_TOO_LARGE. Not confirmable AND not declinable. A real patient
+// request stuck in a queue nobody can empty, with a size error that points at
+// the staff member's own click rather than at the photo.
+//
+// AND THE BRANCH'S OWN PHOTO CHECK COULD NEVER FIRE ON SIZE. The
+// dnt_appointments write branch calls validatePhotosPayload, whose
+// PHOTOS_TOO_LARGE answer is sized at 1.2MB -- unreachable from behind a 64KB
+// gate for any payload large enough to trigger it. It still decides count and
+// format, which is why the branch check stays exactly as it is.
+//
+// THE NUMBER IS IMPORTED, NEVER TYPED. `STORAGE_CEILING_BYTES` is the same
+// derivation the SQL constraint carries, exported from one place for this
+// call site. Raising the API cap ABOVE the DB constraint is the specific
+// mistake the slabs paragraph records paying for -- a clear 413 traded for an
+// opaque Postgres error -- so the two are now one value.
+//
+// `Object.create(null)` AND NOT A LITERAL. This is indexed by a
+// client-supplied resource name, so on a plain literal
+// `PAYLOAD_CAP_BY_RESOURCE['constructor']` would be a FUNCTION and
+// `payloadBytes > thatFunction` is `false` -- the cap silently disabled by a
+// resource name. Inert today because the envelope gate whitelists the resource
+// first, which is exactly how all 48 role literals
+// tests/role_maps_have_no_prototype.js was built for were inert.
+// Deliberately NOT named `*_ROLES` and NOT built with `roleSet()`: that guard
+// requires every value in a role map to be `true`, and these are byte counts.
+//
+// ── AND IT IS EIGHT RESOURCES, NOT ONE. MEASURED, NOT ESTIMATED ───────────
+//     grep -rhoE "constraint [a-z_]+ check \(octet_length\(data::text\) <= [0-9]+\)" sql/*.sql | sort -u
+// returns EIGHT tables whose DB constraint is ABOVE 64KB, every one of them
+// written through the cap above:
+//
+//   dnt_appointments        1291059   <- entered below
+//   rf_claim_photos         1572864   <- entered below
+//   rf_claim_agreements     1572864   sql/sairnroofing_agreements_schema.sql
+//   rf_photos               1572864   sql/sairnroofing_photos_schema.sql
+//   rf_proposals            1572864   sql/sairnroofing_billing_schema.sql
+//   rf_invoices              262144   sql/sairnroofing_billing_schema.sql
+//   sd_progress_photos      1572864   sql/sd_progress_photos_schema.sql
+//   sd_quote_request_photos 1572864   sql/stonedesk_intake_photos_2026-09-03.sql
+//
+// ONLY THE FIRST TWO ARE ENTERED HERE, AND THAT IS A DECISION RATHER THAN AN
+// OVERSIGHT. Those two are the ones b28 was sent at, reproduced and driven.
+// The other six are the same SHAPE and that is not the same as being safe to
+// change: byte-identical is not safe-in-context (item 7 of
+// docs/2026-09-13-cross-domain-disciplines.md -- Ariane 5 flew correct,
+// faithfully-copied software into the ground). Each needs its write branch
+// confirmed to pass through this gate, its client confirmed to send the field,
+// and its DB number confirmed to be current intent rather than an abandoned
+// plan, before its cap moves. They are registered as open work rather than
+// swept in, and arm C7 of api/b28-photo-cap.test.js PINS the uncovered count
+// at six so that neither closing one nor adding a ninth can happen quietly.
+//
+// sd_locations runs the OTHER WAY and is not in this table: `sdlocations_data_size`
+// is 16384, so the API already permits FOUR TIMES what the database will
+// accept, and a per-resource entry would have to LOWER a cap rather than raise
+// one. Different fix, different risk, named here so it is not mistaken for one
+// of the eight. Arm C8 asserts it is absent.
+const PAYLOAD_CAP_BY_RESOURCE = Object.create(null);
+PAYLOAD_CAP_BY_RESOURCE.dnt_appointments =
+  require('./_lib/dental-photo-validation').STORAGE_CEILING_BYTES;
+// 1.5MB, the value `rfcph_data_size` carries in
+// sql/sairnroofing_claims_schema.sql. The b28 report found this one through
+// its DEAD ERROR HANDLER: the write branch answers 413 'This photo is over
+// the 1.5MB limit' on a `rfcph_data_size` violation, and no payload that got
+// past a 64KB gate could ever violate a 1.5MB constraint -- so the branch was
+// unreachable from above AND from below. A second cap that never fires is
+// worse than none, because it reads as protection; the same sentence is
+// already written at the sd_approvals signature check further down, about the
+// same mistake. Entering the resource here is what makes that handler real.
+PAYLOAD_CAP_BY_RESOURCE.rf_claim_photos = 1572864;
 
 // Pairs already reported by the app-boundary log, so a caller cannot drive an
 // unbounded number of log lines. Capped so the set itself cannot be grown
@@ -799,11 +891,20 @@ module.exports = async (req, res) => {
   // above for why this is uniform across every resource, including slabs ──
   if (action === 'write') {
     const payloadBytes = Buffer.byteLength(JSON.stringify(payload), 'utf8');
-    if (payloadBytes > MAX_PAYLOAD_BYTES) {
+    // PER-RESOURCE, WITH 64KB AS THE DEFAULT FOR ALL BUT ONE -- see
+    // PAYLOAD_CAP_BY_RESOURCE above for the defect and the derivation.
+    const payloadCap = PAYLOAD_CAP_BY_RESOURCE[resource] || MAX_PAYLOAD_BYTES;
+    if (payloadBytes > payloadCap) {
       res.status(413).json({
         error: {
           code: 'PAYLOAD_TOO_LARGE',
-          message: 'Payload is ' + payloadBytes + ' bytes; the limit is ' + MAX_PAYLOAD_BYTES + ' (64KB)'
+          // THE MESSAGE CARRIES THE CAP THAT ACTUALLY APPLIED, not the constant.
+          // It used to read "the limit is 65536 (64KB)" unconditionally, which
+          // would now be a lie on the one resource whose limit is different --
+          // and a wrong number in a size error sends the reader to recompress
+          // against a budget that is not the one being enforced.
+          message: 'Payload is ' + payloadBytes + ' bytes; the limit is '
+                 + payloadCap + ' for ' + resource
         }
       });
       return;
@@ -3546,8 +3647,14 @@ module.exports = async (req, res) => {
       }
       // NO SEPARATE SIGNATURE SIZE CHECK HERE, DELIBERATELY. One was written
       // (200KB) and it was DEAD CODE: this handler already refuses any write
-      // over MAX_PAYLOAD_BYTES (64KB) near the top of the file, uniformly, so a
-      // larger second limit further down could never be reached. Found by the
+      // over the per-resource cap near the top of the file, which for
+      // `sd_approvals` is MAX_PAYLOAD_BYTES (64KB) -- so a larger second limit
+      // further down could never be reached. "UNIFORMLY" IS WHAT THIS LINE
+      // USED TO SAY AND IT STOPPED BEING TRUE IN b28, when dnt_appointments
+      // got the per-resource entry its DB constraint always had; corrected
+      // here rather than left to read as a platform-wide fact. The conclusion
+      // is unchanged for this branch, which is exactly why the sentence would
+      // have survived unnoticed. Found by the
       // test expecting a 400 and getting the 413. A second cap that never
       // fires is worse than none -- it reads as protection.
       // The client checks the signature against the REAL 64KB budget before
@@ -9854,6 +9961,34 @@ module.exports = async (req, res) => {
         const msg = (bj && (bj.message || bj.details || bj.hint)) || bt || '';
         if (/relation .* does not exist|PGRST205|does not exist/i.test(msg)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Claims are not set up yet — run sql/sairnroofing_claims_schema.sql in Supabase first.' } }); return; }
         if (/duplicate key|unique constraint/i.test(msg)) { res.status(409).json({ error: { code: 'DUPLICATE_ENTRY', message: 'A photo with this id already exists. Evidence is append-only — capture a new photo, do not reuse an id.' } }); return; }
+        // ── THIS LINE WAS UNREACHABLE IN BOTH DIRECTIONS, AND IT IS KEPT
+        //    ANYWAY. THE REASONING IS THE POINT (b28) ────────────────────
+        // It answers a `rfcph_data_size` violation -- the 1.5MB constraint in
+        // sql/sairnroofing_claims_schema.sql -- and until b28 nothing could
+        // produce one. The generic write cap at the top of this file was
+        // 65536 for every resource, so no payload capable of violating a
+        // 1,572,864-byte constraint could reach the insert: unreachable from
+        // ABOVE. And nothing else in the stack refuses on that constraint, so
+        // it was unreachable from BELOW too. A 24x gap meant the feature could
+        // not store a real photo at all, which is the defect; this dead
+        // handler is how it was found.
+        //
+        // IT IS STILL NOT REACHABLE ON A HONEST PAYLOAD, AND THAT IS CORRECT
+        // RATHER THAN A HALF FIX. `rf_claim_photos` is now entered in
+        // PAYLOAD_CAP_BY_RESOURCE at exactly 1572864, so the API refuses at
+        // the same number the database would -- with a clear 413 instead of an
+        // opaque Postgres error, which is the trade the slabs paragraph up
+        // there records paying for the hard way. And the two measures are not
+        // the same measure: the cap counts the WHOLE payload while the
+        // constraint counts `data`, which is `storedBlob(payload, ['id'])`
+        // with photo_id/claim_id/captured_by promoted to columns -- a SUBSET.
+        // So the API refusal always arrives first.
+        //
+        // WHICH LEAVES THIS AS A DRIFT BACKSTOP AND NOTHING ELSE. If it ever
+        // fires, the API cap and the constraint have stopped agreeing, and
+        // this message is still the right thing to say to a caller. Arm C6 of
+        // api/b28-photo-cap.test.js asserts the agreement against the SQL file
+        // itself, so the thing keeping this inert is a check and not a habit.
         if (/rfcph_data_size/i.test(msg)) { res.status(413).json({ error: { code: 'PAYLOAD_TOO_LARGE', message: 'This photo is over the 1.5MB limit — recompress before upload' } }); return; }
         console.error('rf_claim_photos write error (status ' + r.status + '):', msg);
         // ── A 23xxx IS NOT "TRY AGAIN" (2026-10-15, b17) ──────────────────

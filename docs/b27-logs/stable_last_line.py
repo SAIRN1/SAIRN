@@ -53,6 +53,43 @@
 #      purpose is to make a tail trustworthy.
 #
 # The path is in the line, so each row's tail is still unique to its file.
+#
+# ══ b28: THE HOOK GOES AT THE TOP, AND b27's PLACEMENT WAS WRONG TWICE ═════
+# b27 appended the hook to the END of each file, drove it, measured 0 of 12 and
+# REVERTED. Two independent errors, and the second is the one worth keeping:
+#
+#   1. UNREACHABLE. These probes call `sys.exit(...)` at MODULE LEVEL.
+#      `sys.exit` raises SystemExit, which propagates out of the module body,
+#      so every line after it -- INCLUDING the `atexit.register()` call -- is
+#      never executed. Measured: tests/run_rebase_resolve_probe.py:213 is the
+#      exit, :215 was the hook.
+#
+#   2. THE REASONING WAS ALSO BACKWARDS. b27's own comment said the end of the
+#      file is "the earliest registration, so it fires last". It is the
+#      LATEST registration. `atexit` runs handlers in REVERSE registration
+#      order, so the LAST registered fires FIRST -- the end of the file would
+#      have printed the line BEFORE every cleanup handler even if it had run.
+#      TOP placement is therefore correct on BOTH counts: it is reached, and
+#      being the first registration it fires last.
+#
+# So a fix that was reverted for being inert was ALSO aimed the wrong way, and
+# only driving it could have said so. A committed fix that does nothing is
+# worse than an open item.
+#
+# ── WHERE "THE TOP" IS, PRECISELY ─────────────────────────────────────────
+# Not line 1. A Python module's docstring must stay the FIRST statement or it
+# stops being a docstring -- and tools/live_probe_declaration_check.py reads
+# these docstrings, so demoting one would break a different check. A
+# JavaScript `'use strict'` directive must stay first in its prologue or it
+# silently stops applying. The insertion point is therefore computed:
+#   .py  -- after the module docstring (located with `ast`, not a regex)
+#   .js  -- after the `'use strict';` directive if there is one, else after
+#           the leading comment block
+#
+# ── AND THE ARM THAT WOULD HAVE CAUGHT b27 ────────────────────────────────
+# `assert_reached()` below refuses to write any file where the hook would land
+# AFTER a module-level `sys.exit(`/`process.exit(`. That is the b27 defect
+# expressed as a precondition, so it cannot recur silently in either file type.
 
 import io
 import os
@@ -83,7 +120,9 @@ MARK = 'SUITE-RESULT'
 
 def js_hook(rel):
     return (
-        "\n// ── A STABLE LAST LINE (2026-10-19, cody b27) ─────────────────────────────\n"
+        "\n// ── A STABLE LAST LINE (2026-10-20, cody b28) ─────────────────────────────\n"
+        "// AT THE TOP, NOT THE END. b27 appended this and measured 0 of 12: these\n"
+        "// files exit at module level, so nothing after that line ever runs.\n"
         "// THE CONCEPT: this suite must print ONE deterministic final line on every\n"
         "//   exit path, so docs/known-red-suites.json can record a tail the runner\n"
         "//   really produces -- b26 measured this file's stored tail as one it CANNOT.\n"
@@ -103,7 +142,12 @@ def js_hook(rel):
 
 def py_hook(rel):
     return (
-        "\n# ── A STABLE LAST LINE (2026-10-19, cody b27) ─────────────────────────────\n"
+        "\n# ── A STABLE LAST LINE (2026-10-20, cody b28) ─────────────────────────────\n"
+        "# AT THE TOP, NOT THE END, FOR TWO REASONS. (1) This probe calls sys.exit()\n"
+        "# at module level; SystemExit propagates out of the module body, so an\n"
+        "# atexit.register() below it is never reached -- b27 appended it and\n"
+        "# measured 0 of 12. (2) atexit runs handlers in REVERSE registration order,\n"
+        "# so being registered FIRST is what makes this line print LAST.\n"
         "# THE CONCEPT: this probe must print ONE deterministic final line on every\n"
         "#   exit path, so docs/known-red-suites.json can record a tail the runner\n"
         "#   really produces -- b26 measured this file's stored tail as one it CANNOT.\n"
@@ -132,6 +176,81 @@ def py_hook(rel):
         "_b27_atexit.register(_b27_stable_last_line)\n")
 
 
+# ── WHERE THE HOOK GOES, COMPUTED RATHER THAN ASSUMED ─────────────────────
+def py_insert_line(src, rel):
+    """0-based line index to insert at: after the module docstring.
+
+    `ast` AND NOT A REGEX. A triple-quoted docstring that itself contains a
+    triple-quote sequence -- which several of these do, quoting shell and
+    JSON -- defeats every regex short of a parser, and getting it wrong means
+    inserting INSIDE a docstring, which is a silent no-op: the file still
+    compiles, still runs, and the hook is a few words in a comment.
+    """
+    import ast
+    try:
+        tree = ast.parse(src)
+    except SyntaxError as e:
+        return None, 'will not parse before any edit (%s)' % e
+    body = tree.body
+    if not body:
+        return None, 'has no statements'
+    first = body[0]
+    is_doc = (isinstance(first, ast.Expr)
+              and isinstance(getattr(first, 'value', None), ast.Constant)
+              and isinstance(first.value.value, str))
+    if not is_doc:
+        # No docstring: line 0 is safe, EXCEPT after a shebang or a coding
+        # declaration, both of which must stay on their own first lines.
+        lines = src.split('\n')
+        i = 0
+        while i < len(lines) and (lines[i].startswith('#!')
+                                  or 'coding' in lines[i][:40]
+                                  and lines[i].lstrip().startswith('#')):
+            i += 1
+        return i, None
+    return first.end_lineno, None       # end_lineno is 1-based == index after
+
+
+def js_insert_line(src, rel):
+    """0-based line index: after `'use strict';`, else after the leading comments.
+
+    A `'use strict'` directive is only a directive while it is first in the
+    prologue. Inserting above it turns strict mode OFF for the whole file --
+    which would not fail, it would QUIETLY CHANGE THE SEMANTICS of the suite
+    under test, and a probe whose behaviour this tool altered is worse than a
+    probe with an unstable tail.
+    """
+    lines = src.split('\n')
+    for i, ln in enumerate(lines[:40]):
+        if ln.strip() in ("'use strict';", '"use strict";'):
+            return i + 1, None
+    i = 0
+    while i < len(lines) and (lines[i].lstrip().startswith('//')
+                              or not lines[i].strip()):
+        i += 1
+    return i, None
+
+
+# THE PRECONDITION THAT IS THE b27 DEFECT, WRITTEN AS A REFUSAL.
+MODULE_EXIT_RE = re.compile(r'^(?:sys\.exit\(|process\.exit\()')
+
+
+def assert_reached(src, insert_at, rel):
+    """Refuse if the hook would land after a module-level exit call.
+
+    Column 0 only: an indented `sys.exit(...)` is inside a function and does
+    not run at import. An unindented one runs as the module executes, and
+    everything below it is unreachable -- which is exactly what made b27's
+    twelve appended hooks inert while every file still looked edited.
+    """
+    for n, ln in enumerate(src.split('\n')):
+        if MODULE_EXIT_RE.match(ln) and n < insert_at:
+            return ('line %d is a MODULE-LEVEL `%s` and the hook would be '
+                    'inserted at line %d, below it -- unreachable, which is '
+                    'the b27 defect' % (n + 1, ln.strip()[:30], insert_at + 1))
+    return None
+
+
 missing = [t for t in TARGETS if not os.path.isfile(t)]
 if missing:
     print('COULD NOT RUN: ' + str(len(missing)) + ' subject(s) are not on '
@@ -141,8 +260,10 @@ if missing:
 print('STABLE LAST LINE -- b27 item 4')
 print('  subjects  ' + str(len(TARGETS)) + ', read from ' + REG
       + ' (tail_verdict_2026_10_19 == UNPRODUCIBLE)')
-print('  marker    ' + MARK + ' <path> PASSED|FAILED   -- no digits, so the '
-      'register\'s digit-normalising comparison sees one constant')
+print('  marker    ' + MARK + ' <path> END   -- no digits and no verdict, so '
+      'the register\'s digit-normalising comparison sees one constant')
+print('  placement AT THE TOP (b28). b27 appended and measured 0 of 12: these '
+      'files exit at module level.')
 print('')
 
 planned = []
@@ -155,34 +276,62 @@ for rel in TARGETS:
     if MARK in src:
         print('  %-54s already has a stable last line' % rel[:54])
         continue
-    if rel.endswith('.py'):
-        # ── THE PYTHON HOOK GOES AT THE *END* OF THE FILE, NOT THE TOP ────
-        # A top-of-file atexit registration runs LAST among atexit handlers
-        # (they run in reverse registration order), and these probes register
-        # their own cleanup. Registering at the end means this one runs FIRST
-        # -- which would put the line BEFORE a cleanup handler's output. The
-        # end of the file is the earliest registration, so it fires last.
-        new = src.rstrip('\n') + '\n' + py_hook(rel)
-    else:
-        new = src.rstrip('\n') + '\n' + js_hook(rel)
-    planned.append((rel, src, new))
-    print('  %-54s + %d lines' % (rel[:54],
-                                  len(new.split('\n')) - len(src.split('\n'))))
+    is_py = rel.endswith('.py')
+    at, why = (py_insert_line(src, rel) if is_py else js_insert_line(src, rel))
+    if at is None:
+        print('  %-54s COULD NOT RUN -- %s' % (rel[:54], why))
+        sys.exit(2)
+    unreachable = assert_reached(src, at, rel)
+    if unreachable:
+        print('  %-54s REFUSED -- %s' % (rel[:54], unreachable))
+        sys.exit(1)
+    hook = py_hook(rel) if is_py else js_hook(rel)
+    lines = src.split('\n')
+    new = '\n'.join(lines[:at]) + '\n' + hook + '\n'.join(lines[at:])
+    planned.append((rel, src, new, at))
+    print('  %-54s + %d lines at line %d'
+          % (rel[:54], len(new.split('\n')) - len(src.split('\n')), at + 1))
 
 if not planned:
     print('\nNothing to do -- every subject already prints a stable last line.')
 else:
     # ── POST-CONDITIONS BEFORE ANYTHING IS WRITTEN ────────────────────────
     bad = []
-    for rel, src, new in planned:
-        if not new.startswith(src.rstrip('\n')):
-            bad.append(rel + ': the original content is not a prefix of the '
-                             'result, so this is not an append')
-        if new.count(MARK) != 2:   # once in the hook, once in the comment? no:
-            # the marker appears exactly ONCE, inside the printed string.
-            if new.count(MARK) != 1:
-                bad.append(rel + ': the marker appears ' + str(new.count(MARK))
-                           + ' times, not once')
+    for rel, src, new, at in planned:
+        is_py = rel.endswith('.py')
+        hook = py_hook(rel) if is_py else js_hook(rel)
+        # ── NOTHING WAS CHANGED EXCEPT THE INSERTION ────────────────────
+        # b27 could assert "the original is a PREFIX of the result" because it
+        # appended. An insert cannot use that, and the weaker check it invites
+        # -- "the file got longer" -- is what let an earlier sweep on this
+        # platform delete 1,465 lines while an assertion stayed green. So the
+        # hook is REMOVED from the result and the remainder must be the
+        # original, byte for byte.
+        if new.replace(hook, '', 1) != src:
+            bad.append(rel + ': removing the hook from the result does not '
+                             'give back the original file, so this edit '
+                             'changed something else')
+        if new.count(MARK) != 1:
+            bad.append(rel + ': the marker appears ' + str(new.count(MARK))
+                       + ' times, not once')
+        # ── AND IT STILL PARSES. A docstring-boundary mistake does not raise;
+        # it produces a file that compiles and does nothing, which is b27's
+        # failure mode wearing different clothes.
+        if is_py:
+            try:
+                compile(new, rel, 'exec')
+            except SyntaxError as e:
+                bad.append(rel + ': the result does not compile -- %s' % e)
+        # ── AND THE HOOK IS ABOVE EVERY MODULE-LEVEL EXIT IN THE RESULT,
+        # re-checked on the NEW text rather than inferred from the old.
+        hook_line = new.split('\n').index(
+            [l for l in new.split('\n') if MARK in l][0])
+        for n, ln in enumerate(new.split('\n')):
+            if MODULE_EXIT_RE.match(ln) and n < hook_line:
+                bad.append(rel + ': in the RESULT, line %d is a module-level '
+                           'exit above the hook at line %d'
+                           % (n + 1, hook_line + 1))
+                break
     if bad:
         print('\nREFUSED -- NOTHING written:')
         for b in bad:
@@ -191,12 +340,13 @@ else:
     if CHECK:
         print('\n--check: nothing written.')
     else:
-        for rel, src, new in planned:
+        for rel, src, new, at in planned:
             io.open(rel, 'wb').write(new.encode('utf-8'))
             if io.open(rel, 'rb').read().decode('utf-8') != new:
                 print('REFUSED: ' + rel + ' read back differently.')
                 sys.exit(1)
-        print('\nWRITTEN: ' + str(len(planned)) + ' file(s), appended only.')
+        print('\nWRITTEN: ' + str(len(planned)) + ' file(s), inserted at the '
+              'top of each.')
 
 if DRIVE:
     print('')

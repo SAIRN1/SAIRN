@@ -190,6 +190,49 @@ function isPreparer(profile, role) {
   return extra[role] === true;
 }
 
+// ── ONE PLACE THAT ASKS THE ROSTER WHAT AN EMPLOYEE IS **NOW** (b28) ───────
+// Returns `{ role }` or `{ refusal }` and never both, so a caller cannot read
+// a role out of a result that is actually a refusal. Three outcomes and they
+// are not two:
+//
+//   refusal 503  the roster could not be read. NOT "no longer qualified" and
+//                NOT "still qualified" -- it is could-not-tell, and on an
+//                irreversible write the only safe answer to that is refusal.
+//   refusal 403  no active row for this employee. `active=eq.true` is in the
+//                filter, so "deactivated" and "not on the roster at all" arrive
+//                identically here and share one message, which is honest: both
+//                mean nobody currently employed stands behind this.
+//   { role }     the role the roster holds for them at this instant.
+//
+// THE COLUMN LIST IS `employee_id,role` AND THAT IS THE WHOLE b28 FIX in the
+// settling step -- it selected `employee_id` alone, so the one check that did
+// reach the database was asking the wrong question. A disbarred attorney still
+// on the payroll is `active`.
+async function currentStanding(profile, ctx, employeeId) {
+  const enc = encodeURIComponent;
+  const r = await fetch(ctx.rest(profile.employeeTable
+    + '?license_hash=eq.' + enc(ctx.licHash)
+    + '&employee_id=eq.' + enc(employeeId)
+    + '&active=eq.true&select=employee_id,role&limit=1'), { headers: ctx.headers });
+  const rows = await r.json().catch(() => null);
+  if (!r.ok) {
+    return { refusal: { status: 503, body: { error: {
+      code: 'COUNTERSIGN_CHECK_FAILED',
+      message: 'Whether the signing employee still holds that role could not '
+             + 'be verified, so nothing was written. This is not the same as '
+             + 'the record being unsigned.' } } } };
+  }
+  const row = (Array.isArray(rows) && rows[0]) || null;
+  if (!row) {
+    return { refusal: { status: 403, body: { error: {
+      code: 'COUNTERSIGN_NO_LONGER_ACTIVE',
+      message: 'An employee who signed this record is no longer active. Have '
+             + 'it signed again by a current employee -- the record was not '
+             + 'saved.' } } } };
+  }
+  return { role: row.role };
+}
+
 /**
  * THE HALF api/sd-data.js CALLS, and it returns A REFUSAL OR NULL -- never a
  * boolean. A boolean invites `if (!ok) { /* log and continue *\/ }`, and this
@@ -219,7 +262,50 @@ async function requireCountersignature(profile, ctx) {
   // MODE_ALWAYS: every write, including the owner's. F1's answer is that the
   // paperwork takes a second named person, and a rule the owner is exempt from
   // is not that.
+  // ── AND THE ROLE IN THE TOKEN IS NOT THE ROLE IN THE ROSTER (b28) ───────
+  // THE DEFECT THIS CLOSES. The line below used to be
+  //
+  //     if (mode === MODE_PREPARED_ONLY && isSigner(profile, ctx.callerRole))
+  //
+  // and `ctx.callerRole` is `gateSession.role` -- the role inside the SIGNED
+  // SESSION TOKEN. The signature is unforgeable, which is exactly what made
+  // this easy to miss: every instinct saying "that token is valid" was right.
+  // A token proves WHO ASKED and WHEN THEY SIGNED IN. It cannot prove what
+  // they may do NOW, because it was minted before now. Authentication survives
+  // in a token; authorisation does not.
+  //
+  // So an attorney demoted to paralegal went on moving client trust money,
+  // with no countersignature and no second person, for as long as the token
+  // lived -- SESSION_TTL_MS, **12 hours** (api/_lib/auth.js:104). The firm
+  // does the one thing it can do about a person it no longer trusts with
+  // trust money, and the platform honours the old answer until tomorrow.
+  //
+  // ── IT ONLY EVER REFUSES MORE, AND THAT IS A DECISION ──────────────────
+  // The roster role is required IN ADDITION to the token role, not INSTEAD of
+  // it. A paralegal PROMOTED to attorney still presents a paralegal token and
+  // still gets COUNTERSIGN_REQUIRED until they sign in again -- a refusal with
+  // an obvious remedy, and the b28 arm R3 asserts it. Reading authority purely
+  // from the roster would have been tidier and would have WIDENED who can
+  // write from a path that refuses today, which is not what the defect report
+  // asked for and is not a change to make inside a security fix.
+  //
+  // ── AND IT FAILS CLOSED, WHICH DIFFERS FROM THE CHECK ABOVE IT ─────────
+  // api/sd-data.js's per-request active-credential re-check LOGS and CONTINUES
+  // when the roster cannot be read ("NO_ACTIVE_CHECK ... NOT an admission").
+  // That is right for a request that something downstream will still gate.
+  // It is wrong here: this IS the downstream gate, the write is money out of a
+  // client trust account, and the only safe answer to could-not-tell on an
+  // irreversible write is refusal (PR 1.11).
   if (mode === MODE_PREPARED_ONLY && isSigner(profile, ctx.callerRole)) {
+    const standing = await currentStanding(profile, ctx, ctx.callerEmployeeId);
+    if (standing.refusal) return standing.refusal;
+    if (!isSigner(profile, standing.role)) {
+      return { status: 403, body: { error: { code: 'COUNTERSIGN_ROLE_REVOKED',
+        message: 'Your sign-in still says ' + profile.signerLabel + ', and the '
+               + 'employee roster no longer does. Nothing was written. Sign in '
+               + 'again to pick up your current role -- or have this record '
+               + 'countersigned by someone who is.' } } };
+    }
     return null;
   }
 
@@ -306,24 +392,35 @@ async function requireCountersignature(profile, ctx) {
   // cremation authorisation, has their licence pulled, and the write still
   // lands attributed to them inside the next ten minutes -- on a record with
   // no undo and no amended version that helps.
-  const attesters = [row.prepared_by, row.countersign_employee_id];
-  for (const who of attesters) {
-    if (!who) continue;
-    const ar = await fetch(rest(profile.employeeTable + '?license_hash=eq.' + enc(licHash) +
-      '&employee_id=eq.' + enc(who) + '&active=eq.true&select=employee_id&limit=1'),
-      { headers });
-    const arows = await ar.json().catch(() => null);
-    if (!ar.ok) {
-      return { status: 503, body: { error: { code: 'COUNTERSIGN_CHECK_FAILED',
-        message: 'Whether the signing employee is still active could not be '
-               + 'verified, so nothing was written. This is not the same as the '
-               + 'record being unsigned.' } } };
-    }
-    if (!(Array.isArray(arows) && arows[0])) {
-      return { status: 403, body: { error: { code: 'COUNTERSIGN_NO_LONGER_ACTIVE',
-        message: 'An employee who signed this record is no longer active. Have '
-               + 'it signed again by a current employee -- the record was not '
-               + 'saved.' } } };
+  // ── AND IT ASKED ABOUT `active` AND NOTHING ABOUT ROLE (b28) ──────────
+  // This loop selected `employee_id` under `active=eq.true` and nothing else,
+  // so the whole argument above -- the world has up to TOKEN_TTL_MS to move --
+  // was being applied to ONE of the two ways it can move. A struck-off
+  // attorney who is still on the payroll is `active`, and the write landed
+  // attributed to a signature that no longer means what the record claims.
+  //
+  // TWO DIFFERENT QUESTIONS, NOT ONE ASKED TWICE. The signer must still be
+  // QUALIFIED TO FILE (`isSigner`); the preparer must still be QUALIFIED TO
+  // PREPARE (`isPreparer`, the wider set). Asking `isSigner` of both would
+  // refuse every paralegal-prepared record, which is the normal C2 case.
+  //
+  // AND IT IS "STILL QUALIFIED", NEVER "STILL THE SAME STRING". An attorney
+  // promoted to owner is more qualified, not less, and a string match would
+  // have refused them -- arm S4 of api/b28-role-from-token.test.js is that
+  // case and it must stay green.
+  const attesters = [
+    { who: row.prepared_by, qualified: isPreparer, what: 'prepare' },
+    { who: row.countersign_employee_id, qualified: isSigner, what: 'sign' }
+  ];
+  for (const a of attesters) {
+    if (!a.who) continue;
+    const standing = await currentStanding(profile, ctx, a.who);
+    if (standing.refusal) return standing.refusal;
+    if (!a.qualified(profile, standing.role)) {
+      return { status: 403, body: { error: { code: 'COUNTERSIGN_ROLE_REVOKED',
+        message: 'An employee who signed this record no longer holds the role '
+               + 'that let them ' + a.what + ' it. Have it prepared and signed '
+               + 'again -- the record was not saved.' } } };
     }
   }
 
