@@ -4262,6 +4262,24 @@
         "docs/sairn-path-manifest.json",
         "tools/sairn_path_manifest.py"
       ]
+    },
+    {
+      "id": "cc-1792474982",
+      "session": "cc",
+      "subject": "cc",
+      "task": "b26 decide and document --history: it attributes commits to populations from the commit subject and git carries no reliable per-population signal, so the mode stops attributing and becomes a per-path ownership census; sabotage-test pre-push CHECK 5d from a scratch clone for all four build populations plus an auditor path; currency sweep of cc-owned skills tools and methodology against the standing rules plus the Agents.md status report; register status for four named items; the next 11 FMEA drafts. FILES: tools/sairn_path_manifest.py docs/fmea/ docs/2026-10-20-cc-b26-notes.md docs/batch-manifest-cc-b26.json SAIRN-handoff-cc-b26.md SAIRN-report-cc-b26.txt SAIRN-digest-cc-b26.txt NOT-api-NOT-tests-NOT-html",
+      "claimed_at": "2026-10-20T05:43:02Z",
+      "claimed_at_epoch": 1792474982.942479,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-cc-b26.txt",
+        "SAIRN-handoff-cc-b26.md",
+        "SAIRN-report-cc-b26.txt",
+        "docs/2026-10-20-cc-b26-notes.md",
+        "docs/batch-manifest-cc-b26.json",
+        "tools/sairn_path_manifest.py"
+      ]
     }
   ],
   "refusals": [
