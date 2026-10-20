@@ -5,6 +5,7 @@
 
     python tools/drive_upload_verify.py --agent cc --batch b7
     python tools/drive_upload_verify.py --agent cc --batch b7 --verify-only
+    python tools/drive_upload_verify.py --agent cc --batch b7 --max-lines 30
     python tools/drive_upload_verify.py --audit
     python tools/drive_upload_verify.py --fixtures
 
@@ -49,6 +50,21 @@ PR 1.11 one layer out -- so the tool prints the limit and names the one thing
 that closes it: a Drive-side read from the chat turn, which goes through the
 API rather than the mount.
 
+── AND A FIFTH, ADDED 2026-10-20: THE DIGEST'S LENGTH ──────────────────────
+`--max-lines`, defaulting to **30 for the digest and unlimited for the other
+two**. The 30-line cap on a digest was a standing rule followed by remembering
+for months, written down nowhere a fresh session reads, and breached by more
+than one agent the first time a batch got long -- fourth's b38 currency sweep
+measured 8 of 8 of its own digests over it, one by 10x. The four checks above
+would pass a 319-line digest without a word: name, first line, bytes and
+sha256 are all silent about length.
+
+A digest over the cap is a FINDING AND THE UPLOAD STILL HAPPENS. That is a
+decision and not an oversight: the failure this tool was built for is cc's b6,
+where nothing was uploaded and the batch was reported closed, and a missing
+deliverable is worse than a long one. Exit 1 says do not mark the batch
+closed; the folder still has the file.
+
 ── IT REFUSES TO OVERWRITE ANOTHER AGENT'S CONTENT ─────────────────────────
 If the destination already exists and ITS first line names a different agent,
 the copy is REFUSED. That is the b6 handoff exactly: the fix is a differently
@@ -69,7 +85,7 @@ try:
 except Exception:                                                # noqa: BLE001
     EXIT_CLEAN, EXIT_FINDING, EXIT_COULD_NOT_RUN = 0, 1, 2
 
-CRITERIA_VERSION = '2026-10-13.1'
+CRITERIA_VERSION = '2026-10-20.1'   # +the line cap; was 2026-10-13.1
 NL = chr(10)
 
 # The shared Drive directory, same resolution as tools/compaction_brief.py.
@@ -84,6 +100,26 @@ KINDS = {
     'report': '.txt',
     'digest': '.txt',
 }
+
+# Per-kind line cap, 0 meaning no cap. ONLY the digest carries one: it is a
+# routing document and the cap is the rule. A report is as long as the batch
+# was and a handoff is as long as the open work is, so capping either would
+# push content out of the place it belongs.
+MAX_LINES_DEFAULT = {'handoff': 0, 'report': 0, 'digest': 30}
+
+
+def count_lines(data):
+    """Lines in raw bytes, decoded leniently.
+
+    `splitlines()`, so a final line with no trailing newline COUNTS -- `wc -l`
+    counts newlines and would report one fewer for that file. The two differ
+    by exactly one at the boundary, which is the only place a cap is ever
+    argued about, so the tool says which it used rather than leaving it to be
+    inferred.
+    """
+    if isinstance(data, bytes):
+        data = data.decode('utf-8', 'replace')
+    return len(data.splitlines())
 
 # Agent token in a filename -> other spellings of the same agent that are
 # acceptable in a first line. The auditors' Drive tokens are NOT their session
@@ -203,9 +239,10 @@ def names_agent_and_batch(line, agent, batch):
 
 # ── THE ONE DELIVERABLE ─────────────────────────────────────────────────────
 def verify_one(kind, agent, batch, local_path, directory, upload=True,
-               overwrite_foreign=False, out=None):
+               overwrite_foreign=False, out=None, max_lines=None):
     """-> list of findings for one deliverable. Empty means clean."""
     say = out.append if out is not None else (lambda _s: None)
+    cap = MAX_LINES_DEFAULT.get(kind, 0) if max_lines is None else max_lines
     bad = []
     want = expected_name(kind, agent, batch)
     got_name = os.path.basename(local_path)
@@ -243,6 +280,24 @@ def verify_one(kind, agent, batch, local_path, directory, upload=True,
         bad.append('%s: %s is empty (%d bytes). An empty file uploads cleanly '
                    'and says nothing.' % (kind, local_path, len(local)))
         return bad
+
+    # 2b. THE LENGTH. Checked on the LOCAL bytes, before the copy, because
+    # that is the copy the author can still shorten. Not re-checked on the
+    # Drive: step 6 proves the sha256 matches, so a second count there would
+    # be the same number wearing a different label.
+    n_lines = count_lines(local)
+    if cap and n_lines > cap:
+        bad.append('%s: %d lines, over the %d-line cap by %d (counted with '
+                   'splitlines, so a final line with no newline counts and '
+                   '`wc -l` may say %d).%s THE UPLOAD STILL HAPPENS: a '
+                   'missing deliverable is worse than a long one, and exit 1 '
+                   'is what says do not mark this batch closed.'
+                   % (kind, n_lines, cap, n_lines - cap, max(0, n_lines - 1),
+                      (' A digest is a ROUTING document, not a second report '
+                       '-- if it does not fit, the content belongs in the '
+                       'report.') if kind == 'digest' else
+                      (' Nothing caps a %s by default; this run passed '
+                       '--max-lines.' % kind)))
 
     local_line = first_line(local)
     ok, why = names_agent_and_batch(local_line, agent, batch)
@@ -329,14 +384,16 @@ def verify_one(kind, agent, batch, local_path, directory, upload=True,
         bad.append('%s (on the Drive): %s' % (kind, why))
 
     if not bad:
-        say('  PASS %-34s %7d bytes  sha256 %s  first line: %r'
-            % (want, len(remote), rsha[:16], rline[:60]))
+        say('  PASS %-34s %7d bytes  %3d lines%s  sha256 %s  first line: %r'
+            % (want, len(remote), n_lines,
+               ('/%d' % cap) if cap else ' (no cap)',
+               rsha[:16], rline[:60]))
     return bad
 
 
 # ── THE THREE DELIVERABLES ──────────────────────────────────────────────────
 def cmd_verify(agent, batch, paths, upload=True, overwrite_foreign=False,
-               why=''):
+               why='', max_lines=None):
     directory = drive_dir()
     print('DRIVE UPLOAD VERIFY -- criteria %s' % CRITERIA_VERSION)
     print('  agent %s   batch %s   %s'
@@ -363,12 +420,22 @@ def cmd_verify(agent, batch, paths, upload=True, overwrite_foreign=False,
               'mechanism.')
         return EXIT_COULD_NOT_RUN
 
+    if max_lines == 0:
+        print('  NOTE: --max-lines 0, so the %d-line digest cap is NOT '
+              'checked in this run. A pass here says nothing about length.'
+              % MAX_LINES_DEFAULT['digest'])
+    elif max_lines is not None:
+        print('  line cap: %d for EVERY kind, overriding the default (digest '
+              '%d, handoff and report uncapped)'
+              % (max_lines, MAX_LINES_DEFAULT['digest']))
+
     out = []
     findings = []
     for kind in ('handoff', 'report', 'digest'):
         findings += verify_one(kind, agent, batch, paths[kind], directory,
                                upload=upload,
-                               overwrite_foreign=overwrite_foreign, out=out)
+                               overwrite_foreign=overwrite_foreign, out=out,
+                               max_lines=max_lines)
     print('')
     for line in out:
         print(line)
@@ -500,6 +567,34 @@ def run_fixtures():
         check('first line REJECTS %r for %s %s' % (line[:40], ag, ba),
               names_agent_and_batch(line, ag, ba)[0], False)
 
+    # ── THE LINE CAP, added 2026-10-20 ─────────────────────────────────────
+    # The boundary in both directions, and the splitlines-vs-wc-l difference
+    # stated as a fixture rather than as a comment, because that one line is
+    # the only thing the cap is ever argued about.
+    check('counts a final line with NO trailing newline',
+          count_lines(b'a' + NL.encode() + b'b') == 2, True)
+    check('a trailing newline does NOT add a phantom line',
+          count_lines(b'a' + NL.encode() + b'b' + NL.encode()) == 2, True)
+    check('CRLF counts as one line break, not two',
+          count_lines(b'a\r\nb\r\n') == 2, True)
+    check('an empty file is 0 lines', count_lines(b'') == 0, True)
+    exactly = (NL.join(['x'] * 30) + NL).encode()
+    check('EXACTLY the cap is not over it', count_lines(exactly) == 30, True)
+    check('one line over the cap is over it',
+          count_lines(exactly + b'x' + NL.encode()) == 31, True)
+    check('the DEFAULT caps the digest at 30', MAX_LINES_DEFAULT['digest'] == 30,
+          True)
+    check('...and caps NEITHER the handoff nor the report, so content pushed '
+          'out of a digest has somewhere to go',
+          MAX_LINES_DEFAULT['handoff'] == 0 and MAX_LINES_DEFAULT['report'] == 0,
+          True)
+    check('ABLATION: without the cap the four original checks are silent '
+          'about a 319-line digest -- name, first line, bytes and sha256 all '
+          'pass on it',
+          NAME_RE.match('SAIRN-digest-cc-b7.txt') is not None
+          and names_agent_and_batch('DIGEST cc b7', 'cc', 'b7')[0]
+          and count_lines((NL.join(['x'] * 319)).encode()) == 319, True)
+
     # The name predicate, in both directions.
     for name, ok in (
             ('SAIRN-handoff-cc-b7.md', True),
@@ -592,6 +687,18 @@ def main(argv=None):
               % (agent, ', '.join(sorted(ALIASES))))
         return EXIT_COULD_NOT_RUN
 
+    max_lines = None
+    if '--max-lines' in argv:
+        raw = opt('--max-lines')
+        if raw is None or not re.match(r'^\d+$', str(raw)):
+            print('COULD NOT RUN: --max-lines takes a non-negative integer '
+                  '(got %r). 0 disables the cap and SAYS SO in the output; '
+                  'omitting the flag uses the default, which is %d for the '
+                  'digest and no cap for the other two.'
+                  % (raw, MAX_LINES_DEFAULT['digest']))
+            return EXIT_COULD_NOT_RUN
+        max_lines = int(raw)
+
     base = opt('--from', REPO)
     paths = {}
     for kind in KINDS:
@@ -600,7 +707,8 @@ def main(argv=None):
     return cmd_verify(agent, batch, paths,
                       upload='--verify-only' not in argv,
                       overwrite_foreign='--overwrite-foreign' in argv,
-                      why=opt('--why', '') or '')
+                      why=opt('--why', '') or '',
+                      max_lines=max_lines)
 
 
 if __name__ == '__main__':

@@ -243,7 +243,15 @@ PURPOSES = {
         'the bytes are in the sync set and NOT that Google acknowledged them '
         '-- a could-not-tell, kept out of the pass. batch_manifest.py --close '
         'refuses without it, and is exit 2 when this file is absent rather '
-        'than skipping the check.'),
+        'than skipping the check. AS OF 2026-10-20 A FIFTH CHECK: --max-lines, '
+        'defaulting to 30 for the DIGEST and uncapped for the other two, '
+        'because the 30-line digest cap was a standing rule followed by '
+        'remembering and the four checks above are all silent about length -- '
+        'a 319-line digest passes every one of them. Over the cap is a FINDING '
+        'AND THE UPLOAD STILL HAPPENS, which is a decision: the failure this '
+        'tool exists for is the b6 one where nothing was uploaded, and a '
+        'missing deliverable is worse than a long one. --max-lines 0 disables '
+        'it and SAYS SO in the output.'),
     'sairn_status_line.py': ('REPORTER',
         'a session that does not know how close it is to the end of its '
         'window. Every long batch here has ended the same way -- a compaction '

@@ -49,10 +49,17 @@ piecemeal before being named: **PR §1.11**.
        grep -n "<app or subject>" SAIRN-ACTIVE-WORK-*.md
        sed -n '<hit-20>,<hit+20>p' SAIRN-ACTIVE-WORK-<session>.md
 
-   Note that **7 tracked documents are over the ceiling, not one** — these four,
-   `docs/SAIRN-OPEN-WORK-INDEX.md`, `docs/CRITICALITY-TIERS.md` and the
-   unsuffixed `SAIRN-ACTIVE-WORK.md`. Run the tool rather than trusting this
-   list; it is the thing that moves.
+   Note that **8 tracked documents are over the ceiling, not one** — and the
+   set is not the one this paragraph named until 2026-10-20. Measured, exit 1:
+   `docs/SAIRN-OPEN-WORK-INDEX.md`, **three** of the four active-work files
+   (`-fourth` dropped off, having been split into `-closed-1`/`-closed-2`),
+   the unsuffixed `SAIRN-ACTIVE-WORK.md`, `docs/CRITICALITY-TIERS.md`, and
+   **two this list never carried at all — `docs/open-work/platform.md` and
+   `docs/TOOLING-INVENTORY.md`**, which are the ones a reader would not think
+   to be careful with. Fourth's b38 sweep reported the drift and could not fix
+   it (shared file); cc b27 held the file and fixed it. **Run the tool rather
+   than trusting this list; it is the thing that moves** — which is why the
+   paragraph survived being wrong.
 3. **Read the shared status registry.** It is handed to you automatically at
    session start by a `SessionStart` hook, so you should already have it --
    but if you did not, or you want it again mid-session:
@@ -308,9 +315,11 @@ TIME rather than design: nothing announces the day a check stops testing
 anything** -- a string anchor that no longer matches, a generator's `--check`
 comparing a document to its own output, a snapshot whose verdicts are as of a
 capture hours ago. Re-reference against the SOURCE, on a cadence taken from a
-MEASURED drift rate. **Re-measured 2026-09-15: 6 of 50, down from 23 of 39 on
-2026-09-13** (`python tools/sabotage_control_check.py`). Do not quote either
-figure from here — run it. **Part of that improvement was the TOOL, not the
+MEASURED drift rate. **Re-measured 2026-10-20: 8 unguarded of 107, from 6 of 50
+on 2026-09-15 and 23 of 39 on 2026-09-13** (`python
+tools/sabotage_control_check.py`, exit 1). Do not quote any of those three
+figures from here — run it; this sentence has now been stale twice and the
+instruction is the only part of it that was never wrong. **Part of that improvement was the TOOL, not the
 controls:** it did not recognise the UNIQUENESS guard (`count(anchor) != 1`),
 which is *stronger* than the `anchor in src` shape it did accept, so five
 well-written controls were being reported as unguarded and the signal was
@@ -376,6 +385,44 @@ here without a trigger word:
 - `sairn-training-needs-assessment` — employee training-needs / skills-gap
   tooling. Per-app role vocabulary still needs an explicit judgment call each
   time, not a silent copy.
+
+## Batch deliverables — the shape, not just the existence
+
+**These four rules were followed for months by remembering, were written down
+in no file a fresh session reads, and each was breached the first time a batch
+got long.** Measured rather than asserted: fourth's b38 currency sweep
+(`docs/2026-10-20-fourth-b38-currency-sweep.md`) searched `CLAUDE.md`,
+`docs/SAIRN-PROCESS-RULES.md`, `docs/2026-09-13-cross-domain-disciplines.md`
+and all of `.claude/skills/` for each of them and found **nothing on the build
+side** — the 80% figure existed in writing only inside
+`.claude/skills/sairn-hover-auditor/`, so the auditors had a written threshold
+and the four build agents did not. This section is the source. Do not
+re-derive any of it from a handoff.
+
+- **Wrap up at 80% of REAL context, and real means measured:**
+
+      python tools/context_verify.py --digest-line
+
+  80% is a **wrap-up trigger, not a hard cutoff** — the handoff, report and
+  digest all have to fit inside the remaining 20%, so the trigger fires while
+  there is still room to write them. The tool is the source of the digest's
+  `CONTEXT` line and nothing else should ever write one (push-gate CHECK 5c
+  enforces that). It is **exit 2 COULD NOT RUN** until the window is declared
+  once per clone-and-session — `--provision-window <tokens>` — because an
+  inferred window makes the percentage ambiguous while the token count stays
+  exact. cc breached this in b25 (81.9%) and b26 (89.0%).
+- **The digest is 30 lines maximum.** It is a **routing** document — what the
+  next session has to know and where to look — not a second report. If it does
+  not fit, the content belongs in the report, which has no cap for exactly
+  that reason. **Mechanically checked as of 2026-10-20:**
+  `tools/drive_upload_verify.py` defaults to `--max-lines 30` on the digest,
+  and over the cap is a finding. It still uploads: a missing deliverable is
+  worse than a long one.
+- **SQL goes in `sql/<name>.sql`. The digest gives the PATH ONLY.** A digest
+  that embeds a schema is a second copy of it, and the second copy is the one
+  that goes stale with nothing to say it has.
+- **The final chat message is exactly `done b<n> <Drive file id of the
+  digest>`** — the id, not the filename, and nothing else on the line.
 
 ## Response style
 

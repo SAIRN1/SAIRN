@@ -85,10 +85,37 @@ Then:
     python tools/drive_upload_verify.py --agent cc --batch b<N>
     python tools/batch_manifest.py --close --agent cc --batch b<N>
 
-**The digest ceiling is 150 words and it is real.** `digest_lint` is
-report-only, so nothing blocks an over-length digest — cc's own b14 and b16
-digests were ten times the ceiling. The detail belongs in the report, which is
-what `EVIDENCE-path` points at.
+**THERE ARE TWO DIGEST CEILINGS AND THEY ARE NOT THE SAME NUMBER. Corrected
+2026-10-20 (cc b27) — this paragraph previously named only the first.**
+
+| ceiling | where | enforced |
+|---|---|---|
+| **150 words** | `tools/digest_lint.py`, `MAX_WORDS` | exits 1, but **no gate runs it** |
+| **30 lines** | `CLAUDE.md` *"Batch deliverables"*, the standing rule | `tools/drive_upload_verify.py --max-lines`, default 30, **finding** |
+
+**NEEDS MICHAEL'S CALL, and it is stated here rather than resolved quietly:**
+the two are complementary in intent and far apart in practice. Measured
+2026-10-20 over the newest digest of each of four agents — hank b23 **30 lines
+/ 356 words**, fourth b38 **13 / 541**, cody b26 **239 / 2011**, cc b26 **10 /
+213**. **Nobody meets 150 words and the figure has not been met in months**, so
+it is a ceiling in writing only. Write to **30 lines**, which is the rule the
+dispatches name and the one now mechanically checked, and expect
+`digest_lint` to report over-length until the two are reconciled.
+
+**What changed, so a stale sentence here is not read as current:** this file
+used to say *"nothing blocks an over-length digest."* Since 2026-10-20
+`drive_upload_verify` raises a finding at over 30 lines and exits 1, which is
+what says do not mark the batch closed. It still uploads the file — a missing
+deliverable is worse than a long one. The detail belongs in the report, which
+is what `EVIDENCE-path` points at and which has no cap for that reason.
+
+**And three more deliverable rules that lived in no file a fresh session reads
+until 2026-10-20 — they are now in `CLAUDE.md` *"Batch deliverables"*, which
+is the source:** wrap up at **80% of real context** (`python
+tools/context_verify.py --digest-line`, measured, not estimated — cc breached
+it at 81.9% in b25 and 89.0% in b26); **SQL goes in `sql/<name>.sql` and the
+digest gives the path only**; and the **final chat message is exactly `done
+b<n> <Drive file id of the digest>`**.
 
 **The mount is not the API.** `drive_upload_verify` proves the bytes are in the
 sync set. Only a Drive-side read from a chat turn proves Google acknowledged

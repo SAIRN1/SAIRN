@@ -8,11 +8,15 @@ goes red. The sabotage is almost always `src.replace(anchor, ...)`. When the
 target is refactored the anchor stops matching, **str.replace silently does
 nothing**, and the control runs the checker against an unmodified file.
 
-`tools/sabotage_control_check.py` measures how widespread that is. Measured
-2026-09-15: **50 probes sabotage a real source file, 39 verify the sabotage
-applied, 11 do not.** (The figure quoted in the 2026-09-13 write-up was 23 of
-39; the class has improved since, and re-measuring rather than repeating the
-remembered number is the whole point.)
+`tools/sabotage_control_check.py` measures how widespread that is. **Re-measured
+2026-10-20: 107 probes sabotage a real source file, 99 verify the sabotage
+applied, 8 do not.** (This paragraph said *50 / 39 / 11, measured 2026-09-15*
+for five weeks; the 2026-09-13 write-up before it said 23 of 39. The population
+has more than doubled and the unguarded count has fallen in absolute terms.
+Three stale figures in one place is why the next line exists.) **Run the tool;
+do not quote any of these numbers from here** — re-measuring rather than
+repeating the remembered number is the whole point and this file was not
+exempt from it.
 
 That tool answers *"is this control guarded?"*. This module is the other half:
 **the thing to reach for so the next control is guarded by construction rather

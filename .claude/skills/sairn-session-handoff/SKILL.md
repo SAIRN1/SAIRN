@@ -149,9 +149,52 @@ to.
 
 ## When to write one
 
-- Proactively, before capacity runs low — never wait for a hard cutoff.
+- **At 80% of real context, measured — `python tools/context_verify.py
+  --digest-line`.** This line used to read *"before capacity runs low"* with no
+  number, which is a rule enforced by remembering, and the agents that breached
+  it were not being careless: there was nothing to be careless about. 80% is a
+  **wrap-up trigger, not a hard cutoff** — all three deliverables have to fit
+  inside the remaining 20%.
 - At any natural stopping point where a session might not resume immediately.
 - Before switching between local and cloud sessions, or before opening a fresh session for any reason.
+
+## The digest — added 2026-10-20, and it was missing entirely
+
+**This skill is invoked for three deliverables and covered one.** A handoff, a
+report and a digest are written at the same moment by the same session, and
+until this section existed the digest's shape lived nowhere a fresh session
+reads — measured in `docs/2026-10-20-fourth-b38-currency-sweep.md`, which found
+no threshold, no digest shape and no done-line in `CLAUDE.md`,
+`docs/SAIRN-PROCESS-RULES.md`, the cross-domain disciplines or any of the 34
+skills on the build side.
+
+**The three are not three lengths of the same document.**
+
+| | what it is for | length |
+|---|---|---|
+| **handoff** | the next session in **this** clone: committed state, what is open and why, claims held, the exact next step per open item, the transcript path | as long as the open work is |
+| **report** | the record of what this batch actually did and how each claim was verified | as long as the batch was |
+| **digest** | **routing** — what the other five sessions need to know and where to look | **30 lines, maximum** |
+
+- **30 lines is a cap, not a target.** The digest is read by sessions that are
+  not going to open the report. If it does not fit, the content belongs in the
+  report — which is uncapped for exactly that reason, so nothing is ever lost
+  by shortening a digest.
+- **SQL goes in `sql/<name>.sql` and the digest gives the PATH ONLY.** A digest
+  that pastes a schema is a second copy, and the second copy goes stale with
+  nothing to announce it. Same for a diff, a config block or a long refusal
+  message: name the file.
+- **The `CONTEXT` line is MEASURED, never typed:** `python
+  tools/context_verify.py --digest-line` emits it and nothing else should ever
+  write one. b20 measured all four build agents under-reporting their own
+  context by 7 to 12 points; push-gate CHECK 5c now checks the line against a
+  real turn in the session's own transcript, to the token.
+- **Checked mechanically as of 2026-10-20:** `python
+  tools/drive_upload_verify.py --agent <you> --batch b<n>` defaults to
+  `--max-lines 30` on the digest. Over the cap is a finding and the file still
+  uploads, because a missing deliverable is worse than a long one.
+- **The final chat message is exactly `done b<n> <Drive file id of the
+  digest>`** — the Drive file id, not the filename, and nothing else.
 
 ## The one rule that matters most
 
