@@ -669,6 +669,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b33-fieldmap-toggle.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0ff033a3fba61500cc0bd42af3c1f9a292b4b7a5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/sairn_push_gate_hook.py",
    "class": "push-gate logic",
    "level": "CHANGE",
