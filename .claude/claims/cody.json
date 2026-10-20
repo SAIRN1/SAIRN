@@ -4214,6 +4214,28 @@
         "api/sd-data.js",
         "docs/2026-10-20-cody-b29-notes.md"
       ]
+    },
+    {
+      "id": "cody-1792495699",
+      "session": "cody",
+      "subject": "platform",
+      "task": "b30: split EXTRA_ACTIONS into write-class and compute-only and cap the payload gate per (resource,action) instead of per resource -- cody's own b29 finding that the gate reads only action equals write; CONFIRM BY DIFF which real commit the dangling b27 citation ce15ddaa6a3c should name and route the one-field reseat to fourth, who holds docs/defect-density-register.json on a live claim -- the diagnosis is done here and the EDIT is not; split SAIRN-ACTIVE-WORK-cody.md at 795KB into closed parts under the 400KB ceiling; HOLD the CLAUDE.md:33 handoff-naming recording for cc's decision rather than acting unilaterally; push. FILES: api/sd-data.js api/_resources/index.js api/b30-cap-per-action.test.js api/b28-photo-cap.test.js SAIRN-ACTIVE-WORK-cody.md SAIRN-ACTIVE-WORK-cody-closed-1.md docs/2026-10-20-cody-b30-notes.md SAIRN-handoff-cody-b30.md SAIRN-report-cody-b30.txt SAIRN-digest-cody-b30.txt NOT-docs-defect-density-register-json-FOURTHS-ROUTED NOT-CLAUDE-md-HELD-FOR-CC NOT-dot-claude-skills-HELD-FOR-CC NOT-sql-ccs NOT-tools-shared-REPORT-ONLY NOT-html-fourths",
+      "claimed_at": "2026-10-20T11:28:19Z",
+      "claimed_at_epoch": 1792495699.5565062,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody-closed-1.md",
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "SAIRN-digest-cody-b30.txt",
+        "SAIRN-handoff-cody-b30.md",
+        "SAIRN-report-cody-b30.txt",
+        "api/_resources/index.js",
+        "api/b28-photo-cap.test.js",
+        "api/b30-cap-per-action.test.js",
+        "api/sd-data.js",
+        "docs/2026-10-20-cody-b30-notes.md"
+      ]
     }
   ],
   "refusals": [
@@ -4538,6 +4560,36 @@
       "other_claimed_at": "2026-10-19T20:48:53Z",
       "shared_files": [
         "api/_lib/leg-roles.js"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-20T11:27:42Z",
+      "my_subject": "platform",
+      "my_task": "b30: split EXTRA_ACTIONS into write-class and compute-only and cap the payload gate per (resource,action) instead of per resource -- cody's own b29 finding that the gate reads only action==='write'; hand-reseat the dangling b27 citation ce15ddaa6a3c in docs/defect-density-register.json after confirming by diff which real commit it names; split SAIRN-ACTIVE-WORK-cody.md at 795KB into closed parts under the 400KB ceiling; HOLD the CLAUDE.md:33 handoff-naming recording for cc's decision rather than acting unilaterally; push. FILES: api/sd-data.js api/_resources/index.js api/b30-cap-per-action.test.js api/b28-photo-cap.test.js docs/defect-density-register.json SAIRN-ACTIVE-WORK-cody.md SAIRN-ACTIVE-WORK-cody-closed-1.md docs/2026-10-20-cody-b30-notes.md SAIRN-handoff-cody-b30.md SAIRN-report-cody-b30.txt SAIRN-digest-cody-b30.txt NOT-CLAUDE-md-HELD-FOR-CC NOT-dot-claude-skills-HELD-FOR-CC NOT-sql-ccs NOT-tools-shared-REPORT-ONLY NOT-html-fourths",
+      "other_session": "fourth",
+      "other_subject": "fourth",
+      "other_task": "b43: sairnbiz vendor ids sbNextId; frame-buster across unprotected root apps; sairndesign worldwide audit next increment + live verify; push. FILES: sairnbiz.html sairnbuild.html sairncare.html sairncash.html sairndental.html sairndesign.html sairnfreedom.html sairngrounds.html sairnlaw.html sairnlegacy.html sairnmechanical.html sairnroofing.html sairnscape.html sairnsenior.html sairnvet.html docs/cloud-research/sairndesign-worldwide-competitive-gap-audit-2026-10-20.md docs/defect-density-register.json docs/batch-manifest-fourth-b43.json SAIRN-handoff-fourth-b43.md SAIRN-report-fourth-b43.txt SAIRN-digest-fourth-b43.txt NOT-stonedesk-html NOT-sairncode-html-ALREADY-PROTECTED NOT-api-ANYTHING NOT-tests NOT-tools NOT-vercel-json-NO-REWRITE-MIGRATION NOT-CLAUDE-md NOT-dot-claude-skills",
+      "other_claimed_at": "2026-10-20T11:04:52Z",
+      "shared_files": [
+        "docs/defect-density-register.json"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-20T11:27:42Z",
+      "my_subject": "platform",
+      "my_task": "b30: split EXTRA_ACTIONS into write-class and compute-only and cap the payload gate per (resource,action) instead of per resource -- cody's own b29 finding that the gate reads only action==='write'; hand-reseat the dangling b27 citation ce15ddaa6a3c in docs/defect-density-register.json after confirming by diff which real commit it names; split SAIRN-ACTIVE-WORK-cody.md at 795KB into closed parts under the 400KB ceiling; HOLD the CLAUDE.md:33 handoff-naming recording for cc's decision rather than acting unilaterally; push. FILES: api/sd-data.js api/_resources/index.js api/b30-cap-per-action.test.js api/b28-photo-cap.test.js docs/defect-density-register.json SAIRN-ACTIVE-WORK-cody.md SAIRN-ACTIVE-WORK-cody-closed-1.md docs/2026-10-20-cody-b30-notes.md SAIRN-handoff-cody-b30.md SAIRN-report-cody-b30.txt SAIRN-digest-cody-b30.txt NOT-CLAUDE-md-HELD-FOR-CC NOT-dot-claude-skills-HELD-FOR-CC NOT-sql-ccs NOT-tools-shared-REPORT-ONLY NOT-html-fourths",
+      "other_session": "fourth",
+      "other_subject": "fourth",
+      "other_task": "b43: sairnbiz vendor ids; anti-framing across 16 root apps incl sairncode (its buster measured ineffective); sairndesign audit increment + live verify; push. FILES: sairnbiz.html sairnbuild.html sairncare.html sairncash.html sairncode.html sairndental.html sairndesign.html sairnfreedom.html sairngrounds.html sairnlaw.html sairnlegacy.html sairnmechanical.html sairnroofing.html sairnscape.html sairnsenior.html sairnvet.html docs/cloud-research/sairndesign-worldwide-competitive-gap-audit-2026-10-20.md docs/defect-density-register.json docs/batch-manifest-fourth-b43.json SAIRN-handoff-fourth-b43.md SAIRN-report-fourth-b43.txt SAIRN-digest-fourth-b43.txt NOT-stonedesk-html-HANKS NOT-api-ANYTHING NOT-tests NOT-tools NOT-vercel-json-NO-REWRITE-MIGRATION NOT-CLAUDE-md NOT-dot-claude-skills",
+      "other_claimed_at": "2026-10-20T11:18:37Z",
+      "shared_files": [
+        "docs/defect-density-register.json"
       ],
       "source": "status-registry",
       "why": "same declared FILES",
