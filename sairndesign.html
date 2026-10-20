@@ -410,7 +410,7 @@ label.chk input{width:auto;}
   </div></div>
   <div class="card"><div class="ch"><span class="ct">AI Compliance Check</span></div><div class="cb" id="s-compliance"><div style="color:var(--muted)">Run a check to review this project's spec list against budget, lead times, and install sequencing before the proposal ships.</div></div></div>
   <div class="card"><div class="cb">
-    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Item</th><th>Vendor</th><th>SKU</th><th>Cost</th><th>Retail</th><th>Markup</th><th>Lead Time</th><th>Status</th><th>Actions</th></tr></thead>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Item</th><th>Vendor</th><th>SKU</th><th>Cost</th><th>Retail</th><th>Markup</th><th>Lead Time</th><th>Compliance</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody id="stbody"></tbody></table></div>
   </div></div>
 </div>
@@ -418,14 +418,28 @@ label.chk input{width:auto;}
   <div class="mbox">
     <div class="mtitle">Add / Edit Spec Item</div>
     <div class="fg"><label>Project</label><select id="spproject"></select></div>
-    <div class="fr"><div class="fg"><label>Item</label><input id="spitem" placeholder="Vintage Persian Rug, 9x12"></div><div class="fg"><label>Vendor</label><input id="spvendor" placeholder="Restoration Hardware" oninput="specDiscountHint()"></div></div>
-    <div class="fr"><div class="fg"><label>SKU</label><input id="spsku" placeholder="RH-4471"></div><div class="fg"><label>Lead Time (weeks)</label><input id="spleadtime" type="number" placeholder="6"></div></div>
+    <div class="fr"><div class="fg"><label>Item</label><input id="spitem" placeholder="Vintage Persian Rug, 9x12"></div><div class="fg"><label>Vendor</label><input id="spvendor" placeholder="Restoration Hardware" oninput="specDiscountHint();specCertJoinHint()"></div></div>
+    <div class="fr"><div class="fg"><label>SKU</label><input id="spsku" placeholder="RH-4471" oninput="specCertJoinHint()"></div><div class="fg"><label>Lead Time (weeks)</label><input id="spleadtime" type="number" placeholder="6"></div></div>
     <div class="fg"><label>List Price ($, optional)</label><input id="splistprice" type="number" placeholder="4000" oninput="specDiscountHint()"></div>
     <div class="fg" id="spdiscount-hint" style="font-size:12px;color:var(--muted);margin-top:-8px"></div>
     <div class="fr"><div class="fg"><label>Cost ($, wholesale)</label><input id="spcost" type="number" placeholder="2400" oninput="specMarkupPreview()"></div><div class="fg"><label>Retail ($, client price)</label><input id="spretail" type="number" placeholder="4200" oninput="specMarkupPreview()"></div></div>
     <div class="fg"><div class="srow" style="border:none;padding:0"><span class="slbl">Markup</span><span class="sval" id="spmarkup-preview">0%</span></div></div>
     <div class="fg"><label>Status</label><select id="spstatus"><option>Specified</option><option>Ordered</option><option>Received</option><option>Installed</option></select></div>
     <div class="fg"><label class="chk"><input type="checkbox" id="spooak">One-of-a-kind / limited-stock / vintage item</label></div>
+    <details class="fg" id="spcert"><summary style="cursor:pointer;font-weight:600">Product compliance &middot; 16 CFR 1640 &middot; 40 CFR 770 <span id="spc-overall"></span></summary>
+      <div style="font-size:12px;color:var(--muted);margin:6px 0 10px">An unanswered question is <b>not established</b> &mdash; never &ldquo;not applicable&rdquo; and never compliant.</div>
+      <div class="fg"><b>Upholstered furniture</b> &mdash; TB 117-2013 and the &sect;1640.4(b) label <span id="spc-ufl-state"></span></div>
+      <div class="fr"><div class="fg"><label for="spc-ufl_seat">Indoor seating that supports a person sitting or reclining?</label><select id="spc-ufl_seat" onchange="specCertPreview()"><option value="">Not answered</option><option value="yes">Yes</option><option value="no">No</option></select></div><div class="fg"><label for="spc-ufl_uph">Upholstered seat, back or arm?</label><select id="spc-ufl_uph" onchange="specCertPreview()"><option value="">Not answered</option><option value="yes">Yes</option><option value="no">No</option></select></div></div>
+      <div class="fr"><div class="fg"><label for="spc-ufl_fill">Made or sold with a cushion or pillow, or stuffed / able to be stuffed?</label><select id="spc-ufl_fill" onchange="specCertPreview()"><option value="">Not answered</option><option value="yes">Yes</option><option value="no">No</option></select></div><div class="fg"><label for="spc-ufl_excl">A mattress, foundation, bedding product, or used only for exercise?</label><select id="spc-ufl_excl" onchange="specCertPreview()"><option value="">Not answered</option><option value="yes">Yes</option><option value="no">No</option></select></div></div>
+      <div class="fr"><div class="fg"><label for="spc-ufl_pre2021">Made, imported or reupholstered before 25 Jun 2021?</label><select id="spc-ufl_pre2021" onchange="specCertPreview()"><option value="">Not answered</option><option value="yes">Yes</option><option value="no">No</option></select></div><div class="fg"><label for="spc-ufl_label">&sect;1640.4(b) label on the piece</label><select id="spc-ufl_label" onchange="specCertPreview()"><option value="">Not checked</option><option value="sighted">Sighted</option><option value="absent">Absent</option></select></div></div>
+      <div class="fg"><label for="spc-ufl_evidence">Evidence for the label (who saw it, where, photo ref)</label><input id="spc-ufl_evidence" oninput="specCertPreview()"></div>
+      <div style="font-size:12px;color:var(--muted);margin:-6px 0 12px">Children&rsquo;s furniture is included (&sect;1640.3(e)(2)).</div>
+      <div class="fg"><b>Composite wood</b> &mdash; the &sect;770.45(c) finished-good label <span id="spc-cw-state"></span></div>
+      <div class="fr"><div class="fg"><label for="spc-cw_contains">Contains hardwood plywood, MDF or particleboard?</label><select id="spc-cw_contains" onchange="specCertPreview()"><option value="">Not answered</option><option value="yes">Yes</option><option value="no">No</option></select></div><div class="fg"><label for="spc-cw_pre2018">Composite wood made before 1 Jun 2018 (e.g. a vintage piece)?</label><select id="spc-cw_pre2018" onchange="specCertPreview()"><option value="">Not answered</option><option value="yes">Yes</option><option value="no">No</option></select></div></div>
+      <div class="fr"><div class="fg"><label for="spc-cw_fabricator">Fabricator named on the label</label><input id="spc-cw_fabricator" oninput="specCertPreview()"></div><div class="fg"><label for="spc-cw_produced">Month/year produced (on the label)</label><input id="spc-cw_produced" type="month" oninput="specCertPreview()"></div></div>
+      <div class="fr"><div class="fg"><label for="spc-cw_label">&ldquo;TSCA Title VI compliant&rdquo; label</label><select id="spc-cw_label" onchange="specCertPreview()"><option value="">Not checked</option><option value="sighted">Sighted</option><option value="absent">Absent</option></select></div><div class="fg"><label for="spc-cw_evidence">Evidence for the label</label><input id="spc-cw_evidence" oninput="specCertPreview()"></div></div>
+      <div id="spc-join" style="font-size:12px;margin-top:4px"></div>
+    </details>
     <div class="fg"><label>Notes</label><textarea id="spnotes" rows="2"></textarea></div>
     <div class="perr" id="spec-err" role="alert" aria-live="polite"></div>
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
@@ -744,6 +758,7 @@ label.chk input{width:auto;}
     <div class="card"><div class="ch"><span class="ct">Proposals</span></div><div class="cb" id="cp-proposals"></div></div>
     <div class="card"><div class="ch"><span class="ct">Invoices</span></div><div class="cb" id="cp-invoices"></div></div>
     <div class="card"><div class="ch"><span class="ct">E-Sign a Pending Approval</span></div><div class="cb" id="cp-esign"></div></div>
+    <div class="card"><div class="ch"><span class="ct">Product Compliance &middot; on request</span></div><div class="cb" id="cp-compliance"></div></div>
   </div>
 </div>
 
@@ -2012,7 +2027,7 @@ function openSpecModal(){
   ['spitem','spvendor','spsku','spleadtime','spcost','spretail','spnotes','splistprice'].forEach(function(f){var el=$(f);if(el)el.value='';});
   $('spstatus').value='Specified';$('spooak').checked=false;$('spec-err').textContent='';$('spdiscount-hint').textContent='';
   var pj=$('specproject').value;if(pj)$('spproject').value=pj;
-  specMarkupPreview();
+  specMarkupPreview();sdnFillCertForm({});
   $('specmodal').classList.add('on');
 }
 function closeSpecModal(){$('specmodal').classList.remove('on');}
@@ -2022,7 +2037,7 @@ function editSpec(id){
   $('spproject').value=s.project_id;$('spitem').value=s.item;$('spvendor').value=s.vendor;
   $('spsku').value=s.sku;$('spleadtime').value=s.lead_time_weeks;$('spcost').value=s.cost;$('spretail').value=s.retail;
   $('spstatus').value=s.status;$('spooak').checked=!!s.one_of_a_kind;$('spnotes').value=s.notes||'';$('splistprice').value='';
-  $('spec-err').textContent='';specMarkupPreview();specDiscountHint();
+  $('spec-err').textContent='';specMarkupPreview();specDiscountHint();sdnFillCertForm(s.cert);
   $('specmodal').classList.add('on');
 }
 async function saveSpec(){
@@ -2043,7 +2058,8 @@ async function saveSpec(){
     id:speid||newId('SP'),project_id:$('spproject').value,item:item,vendor:$('spvendor').value.trim(),
     sku:sku,cost:Number($('spcost').value)||0,retail:Number($('spretail').value)||0,
     status:$('spstatus').value,lead_time_weeks:Number($('spleadtime').value)||0,
-    one_of_a_kind:ooak,notes:$('spnotes').value.trim(),created_at:sdnLocalToday()
+    one_of_a_kind:ooak,notes:$('spnotes').value.trim(),created_at:sdnLocalToday(),
+    cert:sdnReadCertForm()
   };
   if(speid){
     var existing=list.find(function(x){return x.id===speid;});
@@ -2057,6 +2073,121 @@ async function saveSpec(){
   closeSpecModal();rSpec();rDash();
   var syncResult=await sdnData('write','sdn_specitems',rec);
   toast(syncResult?'Spec item saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
+}
+
+// ── PRODUCT COMPLIANCE ON THE SPEC RECORD (b41) ──────────────────────────
+// B1-B3 of docs/cloud-research/sairndesign-worldwide-competitive-gap-audit-
+// 2026-10-20.md. The spec record carried thirteen commercial fields and
+// nowhere to answer the two questions a regulator or a client would ask.
+// Both rules below were read from the CFR text, not a summary:
+//
+//   16 CFR 1640 -- upholstered furniture must meet TB 117-2013 (1640.5(a))
+//     and carry the 1640.4(b) label. Scope is 1640.3(e): seating, indoor,
+//     upholstered seat/back/arm, cushion/pillow or stuffed/fillable, body
+//     support; INCLUDES children's furniture, EXCLUDES mattresses,
+//     foundations, bedding and exercise-only furniture. Applies to furniture
+//     made, imported or reupholstered on/after 25 Jun 2021 (1640.2(a)).
+//   40 CFR 770 -- a FINISHED GOOD containing composite wood (hardwood
+//     plywood, MDF, particleboard: 770.3) carries the 770.45(c)(2) label:
+//     fabricator, month/year produced, "TSCA Title VI compliant". That is
+//     the designer's link in the 770.45 chain; the panel label (producer,
+//     lot, TPC number: 770.45(a)) sits one step back, with the fabricator.
+//     The audit's B1 named the panel fields; a designer specifies finished
+//     goods, so the finished-good label is what is recorded here. Composite
+//     wood made before 1 Jun 2018 may be sold at any time (770.2(e)(4)).
+//
+// THREE STATES, NEVER TWO. An unanswered question is "not established",
+// never "not applicable" and never "compliant" -- a blank form must not read
+// as a clean one. A label marked sighted with nothing recorded to back it is
+// also not established.
+var SDN_CERT_FIELDS=['ufl_seat','ufl_uph','ufl_fill','ufl_excl','ufl_pre2021','ufl_label','ufl_evidence',
+  'cw_contains','cw_pre2018','cw_fabricator','cw_produced','cw_label','cw_evidence'];
+// Facts about the PRODUCT (same vendor + SKU, same answer) versus facts about
+// the UNIT in hand (a label sighted, a production month, a vintage date).
+// Only the first kind joins across spec items: copying a sighting from
+// another project's sofa would certify a label nobody looked at.
+var SDN_CERT_PRODUCT_FIELDS=['ufl_seat','ufl_uph','ufl_fill','ufl_excl','cw_contains','cw_fabricator'];
+
+function sdnUflScope(c){
+  c=c||{};
+  if(c.ufl_seat==='no'||c.ufl_uph==='no'||c.ufl_fill==='no'||c.ufl_excl==='yes'||c.ufl_pre2021==='yes')return 'not_applicable';
+  if(c.ufl_seat==='yes'&&c.ufl_uph==='yes'&&c.ufl_fill==='yes'&&c.ufl_excl==='no'&&c.ufl_pre2021==='no')return 'applies';
+  return 'undetermined';
+}
+function sdnCwScope(c){
+  c=c||{};
+  if(c.cw_contains==='no'||c.cw_pre2018==='yes')return 'not_applicable';
+  if(c.cw_contains==='yes'&&c.cw_pre2018==='no')return 'applies';
+  return 'undetermined';
+}
+// One regime -> {state, why}; state is compliant | not_compliant |
+// not_established | not_applicable.
+function sdnRegimeState(scope,label,need){
+  if(scope==='not_applicable')return {state:'not_applicable',why:'outside scope'};
+  if(scope==='undetermined')return {state:'not_established',why:'scope not determined'};
+  if(label==='absent')return {state:'not_compliant',why:'label absent'};
+  if(label!=='sighted')return {state:'not_established',why:'label not checked'};
+  var missing=need.filter(function(n){return !n[1];}).map(function(n){return n[0];});
+  if(missing.length)return {state:'not_established',why:'label marked sighted but no '+missing.join(', ')+' recorded'};
+  return {state:'compliant',why:'label sighted'};
+}
+function sdnCertState(s){
+  var c=(s&&s.cert)||{};
+  var t=function(v){return String(v||'').trim();};
+  var ufl=sdnRegimeState(sdnUflScope(c),c.ufl_label,[['evidence',t(c.ufl_evidence)]]);
+  var cw=sdnRegimeState(sdnCwScope(c),c.cw_label,
+    [['fabricator',t(c.cw_fabricator)],['production month',t(c.cw_produced)],['evidence',t(c.cw_evidence)]]);
+  var rank={not_compliant:3,not_established:2,compliant:1,not_applicable:0};
+  return {ufl:ufl,cw:cw,overall:rank[ufl.state]>=rank[cw.state]?ufl.state:cw.state};
+}
+function sdnCertWhy(cs){return '16 CFR 1640: '+cs.ufl.why+' / 40 CFR 770: '+cs.cw.why;}
+var SDN_CERT_BADGE={compliant:['bg','Compliant'],not_compliant:['br','Not compliant'],
+  not_established:['bw','Not established'],not_applicable:['bx','N/A']};
+function sdnCertBadge(state){var b=SDN_CERT_BADGE[state];return '<span class="badge '+b[0]+'">'+b[1]+'</span>';}
+
+function sdnReadCertForm(){
+  var c={};
+  SDN_CERT_FIELDS.forEach(function(f){var el=$('spc-'+f);c[f]=el?String(el.value||'').trim():'';});
+  return c;
+}
+function sdnFillCertForm(c){
+  c=c||{};
+  SDN_CERT_FIELDS.forEach(function(f){var el=$('spc-'+f);if(el)el.value=c[f]||'';});
+  specCertPreview();
+}
+function specCertPreview(){
+  var cs=sdnCertState({cert:sdnReadCertForm()});
+  $('spc-overall').innerHTML=sdnCertBadge(cs.overall);
+  $('spc-ufl-state').innerHTML=sdnCertBadge(cs.ufl.state)+' <span style="font-size:12px;color:var(--muted)">'+H(cs.ufl.why)+'</span>';
+  $('spc-cw-state').innerHTML=sdnCertBadge(cs.cw.state)+' <span style="font-size:12px;color:var(--muted)">'+H(cs.cw.why)+'</span>';
+  specCertJoinHint();
+}
+function sdnProductKey(vendor,sku){return String(vendor||'').trim().toLowerCase()+'|'+String(sku||'').trim().toLowerCase();}
+// The last OTHER spec item in the list with the same vendor + SKU that has
+// any product fact recorded. Vendor and SKU are both required: a SKU alone
+// collides across vendors.
+function sdnCertForProduct(vendor,sku,excludeId){
+  if(!String(vendor||'').trim()||!String(sku||'').trim())return null;
+  var key=sdnProductKey(vendor,sku);
+  var hits=specItems().filter(function(s){
+    return s.id!==excludeId&&s.cert&&sdnProductKey(s.vendor,s.sku)===key&&
+      SDN_CERT_PRODUCT_FIELDS.some(function(f){return s.cert[f];});
+  });
+  return hits.length?hits[hits.length-1]:null;
+}
+function specCertJoinHint(){
+  var el=$('spc-join');if(!el)return;
+  var src=sdnCertForProduct($('spvendor').value,$('spsku').value,speid);
+  var cur=sdnReadCertForm();
+  if(!src||!SDN_CERT_PRODUCT_FIELDS.some(function(f){return src.cert[f]&&src.cert[f]!==cur[f];})){el.innerHTML='';return;}
+  el.innerHTML='Same vendor + SKU on &ldquo;'+H(src.item)+'&rdquo; ('+H(projectLabel(src.project_id))+') has product facts recorded. '+
+    '<button type="button" class="btn bo bs" onclick="specCertUseProduct(\''+src.id+'\')">Use them</button> '+
+    '<span style="color:var(--muted)">Label sightings, dates and evidence belong to the unit in hand and are not copied.</span>';
+}
+function specCertUseProduct(id){
+  var src=specItems().find(function(x){return x.id===id;});if(!src||!src.cert)return;
+  SDN_CERT_PRODUCT_FIELDS.forEach(function(f){var el=$('spc-'+f);if(el&&src.cert[f])el.value=src.cert[f];});
+  specCertPreview();
 }
 
 var complianceCheckSeq=0;
@@ -2167,6 +2298,7 @@ function rSpec(){
   $('s-ooak').textContent=ooakCount;
   var tb=$('stbody');
   tb.innerHTML=list.length?list.map(function(s){
+    var cs=sdnCertState(s);
     var lateFlag=false;
     if(pj&&pj.target_install_date){
       var arriveMs=new Date(sdnLocalToday()+'T00:00:00').getTime()+(Number(s.lead_time_weeks)||0)*7*24*60*60*1000;
@@ -2177,9 +2309,10 @@ function rSpec(){
       '<td>'+fmt(s.cost)+'</td><td>'+fmt(s.retail)+'</td>'+
       '<td>'+itemMarkupPct(s.cost,s.retail)+'%</td>'+
       '<td'+(lateFlag?' style="color:var(--danger);font-weight:700"':'')+'>'+s.lead_time_weeks+' wks'+(lateFlag?' &#9888;':'')+'</td>'+
+      '<td title="'+H(sdnCertWhy(cs))+'">'+sdnCertBadge(cs.overall)+'</td>'+
       '<td><span class="badge bx">'+H(s.status)+'</span></td>'+
       '<td><button class="btn bo bs" onclick="editSpec(\''+s.id+'\')">Edit</button></td></tr>';
-  }).join(''):'<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px;">'+(pjId?'No spec items on this project yet':'Select a project above')+'</td></tr>';
+  }).join(''):'<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:24px;">'+(pjId?'No spec items on this project yet':'Select a project above')+'</td></tr>';
 }
 
 // ── ROOM DIMENSIONS / AR CAPTURE ─────────────────────────────────────────
@@ -3428,7 +3561,7 @@ function rClientPortal(){
   fillProjectSelects();
   var pjId=$('cpproject').value;
   if(!pjId){
-    ['cp-moodboards','cp-proposals','cp-invoices','cp-esign'].forEach(function(id){$(id).innerHTML='<div style="color:var(--muted)">Select a project above</div>';});
+    ['cp-moodboards','cp-proposals','cp-invoices','cp-esign','cp-compliance'].forEach(function(id){$(id).innerHTML='<div style="color:var(--muted)">Select a project above</div>';});
     return;
   }
   var mbStatusColors={Draft:'bx','Sent to Client':'bb',Approved:'bg',Revise:'bw'};
@@ -3449,6 +3582,8 @@ function rClientPortal(){
     return '<div class="srow"><span class="slbl">'+H(i.invoice_number)+' ('+fmt(i.amount)+')</span><span class="badge '+(invStatusColors[i.status]||'bx')+'">'+H(i.status)+'</span></div>';
   }).join(''):'<div style="color:var(--muted)">No invoices</div>';
 
+  $('cp-compliance').innerHTML=sdnPortalCompliance(pjId);
+
   var pendingBoards=mbs.filter(function(m){return m.status==='Sent to Client';});
   var pendingProposals=prs.filter(function(p){return p.status==='Sent';});
   if(!pendingBoards.length&&!pendingProposals.length){
@@ -3462,6 +3597,37 @@ function rClientPortal(){
     '<div class="fg"><label>Client Typed Name (e-sign)</label><input id="cpesign-name" placeholder="Sarah Whitfield"></div>'+
     '<button class="btn bp bs" onclick="cpEsignApprove()">Record Approval</button>';
 }
+// B3: the answer to 40 CFR 770.45's "made available to potential customers
+// upon request", read from the spec record (B1) rather than typed again.
+// 770.45(c): where a finished good is not individually labelled, the retailer
+// must keep a copy of the label and make it available on request -- a
+// designer reselling at retail is in that chain. Evidence notes are internal
+// and are not shown here. The denominator stays on screen: "established" is
+// counted out of the items where a rule applies or might.
+function sdnPortalCompliance(pjId){
+  var items=specItems().filter(function(s){return s.project_id===pjId;});
+  if(!items.length)return '<div style="color:var(--muted)">No spec items on this project</div>';
+  var inScope=0,settled=0;
+  var rows=items.map(function(s){
+    var cs=sdnCertState(s),c=s.cert||{},lines=[];
+    [['16 CFR 1640',cs.ufl],['40 CFR 770',cs.cw]].forEach(function(r){
+      if(r[1].state==='not_applicable')return;
+      if(r[1].state==='compliant'){
+        lines.push(r[0]==='16 CFR 1640'
+          ?'16 CFR 1640: &ldquo;Complies with U.S. CPSC requirements for upholstered furniture flammability&rdquo; &mdash; label sighted'
+          :'40 CFR 770: '+H(c.cw_fabricator)+', produced '+H(c.cw_produced)+' &mdash; TSCA Title VI compliant');
+      }else{
+        lines.push(r[0]+': '+SDN_CERT_BADGE[r[1].state][1].toLowerCase()+' &mdash; '+H(r[1].why));
+      }
+    });
+    if(cs.overall!=='not_applicable'){inScope++;if(cs.overall==='compliant')settled++;}
+    if(!lines.length)lines.push('Outside 16 CFR 1640 and 40 CFR 770');
+    return '<div class="srow"><span class="slbl">'+H(s.item)+'<br><span style="font-size:12px;color:var(--muted)">'+lines.join('<br>')+'</span></span>'+sdnCertBadge(cs.overall)+'</div>';
+  }).join('');
+  return '<div style="font-size:12px;color:var(--muted);margin-bottom:8px">'+settled+' of '+inScope+' item(s) where a rule applies or may apply are established compliant'+
+    (items.length-inScope?' &middot; '+(items.length-inScope)+' outside both rules':'')+'.</div>'+rows;
+}
+
 // Real, honest, minimal e-sign stand-in -- a typed name + timestamp, not a
 // fabricated cryptographic signature system. Same "honest minimal stand-in,
 // not a fabricated multi-user account system" precedent SAIRNvet's Photo
