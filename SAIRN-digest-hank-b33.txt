@@ -1,0 +1,18 @@
+HANK b33 DIGEST -- 2026-10-20 -- root cause found; SQL for Michael; page work HELD for fourth
+CONTEXT 70.8% of 1,000,000 -- 708,071 tokens, measured.
+STATUS: LANDED on origin/main (re-derive the tip), NOT FORCED, zero overrides.
+1. A2/A2b 503 = SCHEMA DRIFT (hypothesis stated first, confirmed): live CHECK on sairnsenior_audit_log
+   lacks pay_period_closed (create-table-if-not-exists skipped the widening). SQL path:
+   sql/sairnsenior_audit_log_event_types_widen_2026-10-20.sql -- NOT RUN.
+2. B1/B2/B4 = THE MISSING CLOSING, not the sign guard: reproduced offline exactly (B3 still holds).
+   Probe now says B NOT MEASURED without the closing.
+3. Trust-lock: CONFIRMED CLEAN in the register (7e43c9dab).
+4. Field Map image: api/route-map.js LANDED (server-drawn, key stays server-side, gated, 17 arms).
+5. Page toggle + anti-framing (stonedesk + stonedesk-hr, LAYER 4 out): HELD -- fourth claimed
+   stonedesk.html mid-batch. Patch: docs/2026-10-20-hank-b33-stonedesk-held.patch.
+DECISION-NEEDED (Michael): run the SQL, then re-run the probe; enable Static Maps on the Maps key.
+DECISION-NEEDED (fourth): apply the held patch, or release stonedesk.html.
+NEXT: handoff sec.4, items A-F.
+CHANGED: 1 SQL + schema pointer, api/route-map.js + test, fixture test sec.4, senior probe, notes.
+EVIDENCE-path: docs/2026-10-20-hank-b33-notes.md
+UNVERIFIED: the SQL; the probe re-run; a Google-drawn image; the held page half.

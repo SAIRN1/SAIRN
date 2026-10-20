@@ -1,0 +1,29 @@
+HANK b33 REPORT -- 2026-10-20 -- the live straight-time-floor failure explained; page work held for fourth
+
+1. HYPOTHESIS (before code): 503 AUDIT_UNAVAILABLE is schema drift, not an app bug. CONFIRMED.
+   b17 widened the CHECK on sairnsenior_audit_log inside `create table if not exists`, which skips the
+   existing table (created 2026-10-12). db/schema_snapshot.json (07:55 UTC today) shows the live CHECK
+   with five event types and no pay_period_closed/reopened, so the audit insert is rejected and the
+   close path refuses 503 -- by design. FIX: sql/sairnsenior_audit_log_event_types_widen_2026-10-20.sql
+   (NOT RUN -- Michael runs it). Register record, high, four factors.
+
+2. B1/B2/B4: a PROBE PRECONDITION, NOT the sign guard. With the close refused there is no closed period,
+   so no carry-forward exists. The fixture test's new section 4 runs the real payroll module with the
+   closing absent and reproduces exactly the live pattern -- B1, B2, B4 fail, B3 still holds. With the
+   closing present the same visits land correctly. The probe now reports B as NOT MEASURED, in words,
+   when the closing is missing. Re-run the probe after the SQL.
+
+3. TRUST-LOCK: recorded as proof landed in the register's CONFIRMED CLEAN population (7e43c9dab,
+   sound-with-limits, Michael's run, identities confirmed by whoami).
+
+4. FIELD MAP image + link: SERVER HALF LANDED -- api/route-map.js draws a Static Maps image on the
+   server so the key never reaches the page; licence, app and session gated; 17 arms; live refusals
+   checked (401 without a licence, 405 on GET). PAGE HALF HELD -- see 5.
+
+5. ANTI-FRAMING on stonedesk.html + stonedesk-hr.html, LAYER 4 removed: written and passing locally,
+   HELD. fourth claimed stonedesk.html (Field Map optimiser) after this batch was dispatched; pushing
+   would have collided in fmRenderMap. Everything is in docs/2026-10-20-hank-b33-stonedesk-held.patch
+   (git am-able) plus its 8-arm test; fourth has been told in the status registry.
+
+6. PUSHED without force, confirmed by sha. Two gate refusals on the way, both mine and both fixed by
+   rewriting unpushed commits. Handoff: SAIRN-handoff-hank-b33.md.

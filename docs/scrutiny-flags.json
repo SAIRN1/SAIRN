@@ -1690,6 +1690,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b33-route-map.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "24687a8e003250a89ecf79b02a6e0d0c5c7ce54d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/bld_draws_role_arms.test.js",
    "class": "test file",
    "level": "CHANGE",

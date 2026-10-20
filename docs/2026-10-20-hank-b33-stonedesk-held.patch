@@ -1,0 +1,160 @@
+From 7dd44915116855b55e1fe96e9ce6039250aa464d Mon Sep 17 00:00:00 2001
+From: fx <fx@example.invalid>
+Date: Tue, 20 Oct 2026 09:11:37 -0400
+Subject: [PATCH] fix(stonedesk b33): anti-framing on stonedesk and
+ stonedesk-hr, the LAYER 4 buster removed, and the Field Map image as an
+ option
+
+- Routed from fourth b43: the same hide-until-top-window block the 16 root apps carry, at the
+  top of <head> in both files. LAYER 4 removed: Chrome blocks its top.location reassignment
+  from a cross-origin frame, so the app stayed clickable (fourth measured it live).
+- Field Map: the directions link always, the server-drawn image behind a "Show map image"
+  toggle (Michael's call). 8 arms lift the shipped functions.
+- stonedesk-hr.html declared in hank's assigned_overrides.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ docs/sairn-path-manifest.json |  4 ++-
+ stonedesk-hr.html             | 11 ++++++
+ stonedesk.html                | 67 +++++++++++++++++++++++++++++++----
+ 3 files changed, 74 insertions(+), 8 deletions(-)
+
+diff --git a/docs/sairn-path-manifest.json b/docs/sairn-path-manifest.json
+index 9ec58f78b..502c3a893 100644
+--- a/docs/sairn-path-manifest.json
++++ b/docs/sairn-path-manifest.json
+@@ -24,6 +24,7 @@
+ "_it_collided_a_SECOND_time_on_2026_10_20_cody_b29_vs_fourth_b42": "THE KEY THE NOTE ABOVE PREDICTED WOULD KEEP COLLIDING, COLLIDED AGAIN IN THE SAME DAY. cody b29 REPLACED its own cody list (b28 -> b29) while fourth b42 ADDED a new `fourth` list, and git produced markers across both. RESOLVED BY HAND, BY UNION OF THE TWO POPULATIONS AND REPLACEMENT WITHIN cody's OWN: fourth's two tests/ entries and its _b42 explanation are present untouched, hank's five are untouched, and cody's list is the b29 set because replacing rather than appending is the discipline the note above asks for -- an override list that only grows becomes the split not existing. docs/b27-logs/ was DROPPED from cody's list in the same resolution: b29 does not touch it, and carrying it forward through a conflict resolution is exactly how a short-lived entry becomes permanent. NOTHING WAS RESOLVED WITH --theirs or --ours: a conflict in an OWNERSHIP manifest must not silently drop one side's permission, which is the same conclusion the b24/b27 collision reached. The note above is right that pruning on batch close is the real fix; two of the three populations here are still carrying entries from batches that have closed.",
+     "_b26_added_stonedesk_html_for_hank": "hank b26, 2026-10-20. stonedesk.html -- ASSIGNED in the b26 dispatch by file and line (delete the dead pos_sale push at :7795; the Field Map catch arm that named the Maps key). Two edits, no other change to the file. *.html is fourth's by the split and no active claim names stonedesk.html. EXACT FILENAME, not a glob. REMOVE once fourth has reviewed the two edits.",
+   "_b42_added_two_sairnbiz_test_files_for_fourth": "fourth b42, 2026-10-20, APPROVED BY MICHAEL in-session. tests/sairnbiz_ot_threshold_coalesce.js and tests/sairnbiz_benefits_and_overtime.js -- ASSIGNED in the b42 dispatch (fix the sbOtThreshold off-by-one, n>168, one arm). Both suites pinned the old bound (168 honoured) and had to change with the fix; the old reasoning is quoted in place, not deleted. tests/ is cody's by the split and no active claim names either file. EXACT FILENAMES. REMOVE once cody has reviewed the two arms.",
++  "_b33_added_stonedesk_hr_html_for_hank": "hank b33, 2026-10-20. stonedesk-hr.html -- ROUTED FROM fourth b43 (e137c3bc1 names it as not touched because hank holds stonedesk) and assigned in the b33 dispatch: the same anti-framing block the 16 root apps carry, inserted at the top of <head>. No other change to the file. EXACT FILENAME. REMOVE once fourth has reviewed it.",
+   "assigned_overrides": {
+     "hank": [
+       "tools/law_trust_lock_live_probe.py",
+@@ -31,7 +32,8 @@
+       "tools/law_attest_live_probe.py",
+       "sairnbiz.html",
+       "tests/sairnbiz_incidents_kpi.js",
+-      "stonedesk.html"
++      "stonedesk.html",
++      "stonedesk-hr.html"
+     ],
+     "cody": [
+       "api/sd-data.js",
+diff --git a/stonedesk-hr.html b/stonedesk-hr.html
+index 2892b95c4..9fabe7046 100644
+--- a/stonedesk-hr.html
++++ b/stonedesk-hr.html
+@@ -2,6 +2,17 @@
+ <html lang="en">
+ <head>
+ <meta charset="UTF-8">
++<!-- ANTI-FRAMING (b33 hank, routed from fourth b43 -- the same block the 16 root
++     apps carry since e137c3bc1). The page is HIDDEN until it proves it is the
++     top window. Framed, it tries to break out and otherwise STAYS hidden, so a
++     framed copy -- including a sandboxed frame with scripts switched off -- has
++     nothing to click. fourth measured stonedesk clickable inside a cross-origin
++     frame on the live site even though it already reassigned top.location:
++     Chrome silently blocks that navigation from a cross-origin frame without a
++     user gesture, and the app keeps rendering. No <noscript> fallback on
++     purpose: a sandboxed frame without scripts would render it. -->
++<style id="sairn-antiframe">html{display:none!important}</style>
++<script>(function(){if(window.self===window.top){var s=document.getElementById('sairn-antiframe');if(s)s.parentNode.removeChild(s);return;}try{window.top.location.replace(window.self.location.href);}catch(e){}})();</script>
+ <meta name="viewport" content="width=device-width,initial-scale=1.0">
+ <title>StoneDesk HR — Employee Management & Compliance</title>
+ <style>
+diff --git a/stonedesk.html b/stonedesk.html
+index 60508df5e..c94df5bcb 100644
+--- a/stonedesk.html
++++ b/stonedesk.html
+@@ -1,6 +1,17 @@
+ <!DOCTYPE html>
+ <html lang="en">
+ <head>
++<!-- ANTI-FRAMING (b33 hank, routed from fourth b43 -- the same block the 16 root
++     apps carry since e137c3bc1). The page is HIDDEN until it proves it is the
++     top window. Framed, it tries to break out and otherwise STAYS hidden, so a
++     framed copy -- including a sandboxed frame with scripts switched off -- has
++     nothing to click. fourth measured stonedesk clickable inside a cross-origin
++     frame on the live site even though it already reassigned top.location:
++     Chrome silently blocks that navigation from a cross-origin frame without a
++     user gesture, and the app keeps rendering. No <noscript> fallback on
++     purpose: a sandboxed frame without scripts would render it. -->
++<style id="sairn-antiframe">html{display:none!important}</style>
++<script>(function(){if(window.self===window.top){var s=document.getElementById('sairn-antiframe');if(s)s.parentNode.removeChild(s);return;}try{window.top.location.replace(window.self.location.href);}catch(e){}})();</script>
+ <script>
+ /* ── LICENCE KEY ON EVERY AI CALL (added 2026-09-05) ───────────────────────
+    api/claude.js accepted requests with NO credential at all and spent the
+@@ -3096,12 +3107,13 @@ document.addEventListener('DOMContentLoaded', function() {
+   });
+ });
+ 
+-// LAYER 4 — Clickjacking Protection (Frame-Busting)
+-if (window !== window.top) {
+-  window.top.location = window.location;
+-  document.body.innerHTML = '<h2 style="padding:40px;font-family:sans-serif">SAIRN Security: Embedded framing not permitted.</h2>';
+-  saLog('L4-FRAME', 'Clickjacking attempt detected', 'critical');
+-}
++// LAYER 4 — Clickjacking Protection: REMOVED 2026-10-20 (hank b33, routed from
++// fourth b43). It reassigned window.top.location, which Chrome silently blocks
++// from a cross-origin frame without a user gesture, so the app kept rendering
++// and stayed clickable -- measured live by fourth. Its fallback replaced
++// document.body.innerHTML, which is the shape that wiped sairncode's guard
++// mid-parse. The anti-framing block at the top of <head> replaces it: the page
++// stays hidden unless it is the top window.
+ 
+ // LAYER 5 — Session Timeout & Auto-Lock
+ // ACTIVITY NO LONGER DISMISSES THE LOCK — corrected 2026-09-01, found while
+@@ -12813,7 +12825,48 @@ function fmRenderMap(containerId, stops){
+   if(mid.length) u+='&waypoints='+mid.map(encodeURIComponent).join('%7C');
+   el.innerHTML='<div class="fm-map-placeholder"><a href="'+escHtml(u)+'" target="_blank" rel="noopener noreferrer">Open this route in Google Maps</a>'
+     +'<div style="margin-top:6px">'+addrs.length+' stop'+(addrs.length===1?'':'s')+', in the order listed.'
+-    +(dropped?' '+dropped+' stop'+(dropped===1?'':'s')+' between the first '+(MAXWAY+1)+' and the last '+(dropped===1?'is':'are')+' left off the link.':'')+'</div></div>';
++    +(dropped?' '+dropped+' stop'+(dropped===1?'':'s')+' between the first '+(MAXWAY+1)+' and the last '+(dropped===1?'is':'are')+' left off the link.':'')+'</div>'
++    // ── THE IMAGE, AS AN OPTION (b33, Michael's call: both, as a toggle) ────
++    // The link above stays whatever the toggle says -- it needs no key and no
++    // server. The image is drawn by api/route-map.js on the server, so the Maps
++    // key never reaches this page, and only for a signed-in employee.
++    +'<label style="display:block;margin-top:8px;font-size:12px;cursor:pointer"><input type="checkbox" '+(fmMapImageOn()?'checked ':'')
++    +'onchange="fmSetMapImage(this.checked)"> Show map image</label>'
++    +(fmMapImageOn()?'<div id="'+escHtml(containerId)+'-img" style="margin-top:8px">Loading map image...</div>':'')
++    +'</div>';
++  fmLastMap[containerId]=stops;
++  if(fmMapImageOn()) fmLoadMapImage(containerId+'-img', addrs);
++}
++
++var fmLastMap={};
++function fmMapImageOn(){ try{ return localStorage.getItem('sd_fm_map_image')==='1'; }catch(e){ return false; } }
++function fmSetMapImage(on){
++  stRaw('sd_fm_map_image', on?'1':'0');
++  Object.keys(fmLastMap).forEach(function(id){ fmRenderMap(id, fmLastMap[id]); });
++}
++// Every outcome is said in words; none of them is an empty box.
++function fmLoadMapImage(targetId, addrs){
++  var out=function(html){ var t=document.getElementById(targetId); if(t) t.innerHTML=html; };
++  var hdrs={'Content-Type':'application/json','Authorization':'Bearer '+(typeof sdLicenseKey==='function'?(sdLicenseKey()||''):'')};
++  try{ var tok=sessionStorage.getItem('sd_session_token'); if(tok) hdrs['X-SD-Auth']=tok; }catch(e){}
++  fetch('https://sairn.vercel.app/api/route-map',{method:'POST',headers:hdrs,body:JSON.stringify({addresses:addrs})})
++    .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(d){ return {status:r.status, d:d}; }); })
++    .then(function(x){
++      if(x.status===200 && x.d && typeof x.d.image==='string' && x.d.image.indexOf('data:image/')===0){
++        out('<img src="'+escHtml(x.d.image)+'" alt="Map of the stops in the order listed" style="max-width:100%;border-radius:8px">'
++          +(x.d.drawn<x.d.stops?'<div style="font-size:12px;margin-top:4px">The image shows the first '+x.d.drawn+' of '+x.d.stops+' stops.</div>':''));
++        return;
++      }
++      var code=x.d&&x.d.error&&x.d.error.code;
++      var why={NO_MAPS_KEY:'no map key is configured on the server',
++               NO_SESSION:'sign in to see the map image',
++               NO_LICENSE:'this install has no licence key',
++               UPSTREAM:'the map service refused the request',
++               UPSTREAM_TIMEOUT:'the map service did not answer in time',
++               BAD_STOPS:'one of the addresses could not be used'}[code]||('the server answered HTTP '+x.status);
++      out('<div class="fm-map-placeholder">Map image unavailable -- '+escHtml(why)+'. The link above still works.</div>');
++    })
++    .catch(function(){ out('<div class="fm-map-placeholder">Map image unavailable -- the server could not be reached. The link above still works.</div>'); });
+ }
+ 
+ // HARD GATE (2026-08-06): a stop cannot be marked Done until a QC-APPROVED
+-- 
+2.54.0.windows.1
+
