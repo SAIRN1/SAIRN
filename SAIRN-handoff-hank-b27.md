@@ -7,7 +7,7 @@ SQL and the straight-time-floor fixtures ready to run the moment the key exists.
 Written before the report, with nothing half-finished. Notes: `docs/2026-10-20-hank-b27-notes.md`.
 
 ## 1. PUSHED STATE
-`origin/main` = **`565daf33c`** (re-derive before quoting: five clones push to one branch),
+`origin/main` = **`73c36e3c1`** after the handoff push (re-derive before quoting: five clones push to one branch),
 `0 ahead, 0 behind`, **NOT FORCED, ZERO gate overrides.** The b27 work is `436c11f02`
 (the fix), `2a02d2267` (derived docs + register), `565daf33c` (wording fix + ledgers).
 Gates met: **register-feed** (fed: one record, three factors), **derived-docs** (MASTER-PLAN
@@ -42,7 +42,7 @@ hover, hover2 hold theirs. **I edited none of cc's files.**
    **directions link**. Live DOM (Chrome, spy on `fetch`): 0 stops → "No stops to map yet."
    (control); 1/3/12 stops → correct origin/destination/waypoints, `rel=noopener noreferrer`,
    **zero network calls, none to `api/bridge`.** Found and fixed my own wording bug on the
-   12-stop note; re-verified offline (1/3/10/11/12), live re-check below.
+   12-stop note; re-verified offline, then **re-driven live after the fix deployed**: 3/10/11/12 stops read "1 stop … is left off" / "2 stops … are left off" correctly, 8 waypoints, zero network calls.
 5. **Comments + fixtures.** `api/bridge.js` and the b21 test annotated (REPOINTED/DELETED).
    Fixtures: one JSON, **18 arms** against the real `sen-payroll.js` + `sen-evv-clock.js` incl. the
    guard ablated (H2's invariant breaks). The live probe is driven against a **fake server only**
