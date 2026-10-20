@@ -4303,8 +4303,8 @@
       "task": "b42: sairnbiz Z1 sequential unique invoice+employee ids; Z2 timesheet day seven + start/end + sbOtThreshold off-by-one; sairncode queue line rejected-as-cleared; sairndental addCredential repaint + settle race + A3; push. stonedesk sairnSyncAll item HELD -- hank b26 holds stonedesk.html. FILES: sairnbiz.html sairncode.html sairndental.html docs/defect-density-register.json docs/batch-manifest-fourth-b42.json SAIRN-handoff-fourth-b42.md SAIRN-report-fourth-b42.txt SAIRN-digest-fourth-b42.txt NOT-stonedesk-html-HANKS-b26 NOT-api-ANYTHING-codys NOT-tools-shared-REPORT-ONLY NOT-CLAUDE-md-ccs NOT-dot-claude-skills-ccs NOT-docs-tier-a-reviews-json-ccs",
       "claimed_at": "2026-10-20T09:28:47Z",
       "claimed_at_epoch": 1792488527.4984815,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T10:00:18Z",
       "files": [
         "SAIRN-digest-fourth-b42.txt",
         "SAIRN-handoff-fourth-b42.md",
@@ -4323,8 +4323,8 @@
       "task": "b42: sairnbiz Z1 ids; sbOtThreshold off-by-one; sairncode queue line; sairndental x3; push. HELD: timesheet day seven + start/end (server validator in api/sd-data.js is cody's b29), stonedesk sairnSyncAll (hank b26). FILES: sairnbiz.html sairncode.html sairndental.html tests/sairnbiz_ot_threshold_coalesce.js tests/sairnbiz_benefits_and_overtime.js docs/defect-density-register.json docs/batch-manifest-fourth-b42.json SAIRN-handoff-fourth-b42.md SAIRN-report-fourth-b42.txt SAIRN-digest-fourth-b42.txt NOT-stonedesk-html-HANKS-b26 NOT-api-sd-data-js-CODYS-b29 NOT-tools-shared-REPORT-ONLY NOT-CLAUDE-md-ccs NOT-dot-claude-skills-ccs NOT-docs-tier-a-reviews-json-ccs",
       "claimed_at": "2026-10-20T09:36:43Z",
       "claimed_at_epoch": 1792489003.1856494,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T10:00:18Z",
       "files": [
         "SAIRN-digest-fourth-b42.txt",
         "SAIRN-handoff-fourth-b42.md",
