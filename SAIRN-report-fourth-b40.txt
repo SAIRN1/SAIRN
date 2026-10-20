@@ -1,0 +1,398 @@
+REPORT fourth b40 2026-10-20
+
+
+WHAT WAS ASKED, AND WHERE EACH ITEM STANDS
+
+  1  drive lateBy===0; make credentialing distinguish its four null conditions
+     DONE. The boundary needed NO FIX and is now proven; the credentialing fix
+     shipped through a facility the app already had, after I threw away a
+     design that duplicated it. Section 1.
+
+  2  fix the EUR-Lex route via an official API; read the AI Act and AMLR
+     DONE. The route is the Publications Office CELEX content-negotiation
+     endpoint, and the AI Act turns out to have been IN APPLICATION since
+     2 August 2026. Section 2.
+
+  3  sairncode: read hcc and drg for 92.210; build the citation-rejection rate
+     DONE. My own b39 next-step pointed at the WRONG TWO PANELS. Section 3.
+
+  4  sairndesign B1-B3: add certification recording to spec items
+     NOT STARTED -- stopped by the standing 85% wrap rule, not skipped and not
+     claim-blocked. Fully specified for the next session. Section 5.
+
+  5  worldwide competitive-gap audit: sairnbiz
+     NOT STARTED -- same reason, and it is the larger of the two. Section 5.
+
+  6  push without force and confirm it landed
+     DONE. One gate refusal, answered. Section 4.
+
+  4 OF 6. NO FORCE, NO OVERRIDE OF ANY FORM, 4 files, 0 forbidden paths.
+
+
+1. ITEM 1 -- THE BOUNDARY, AND A DESIGN I THREW AWAY
+
+  1.1 lateBy===0 NEEDED NO FIX AND IS NOW PROVEN.
+
+  b39 shipped the GFE lateness fix with this case undriven and said so in the
+  Tier A entry it opened against itself. Driven now across SEVEN trigger dates,
+  deliberately, so a weekend shift in gfeAddBusinessDays cannot make the answer
+  an accident of one calendar position. In every case issued_at == dueDate gives
+  lateBy 0 and renders "in time" with the green bg badge. 7/7.
+
+  AND A NEIGHBOUR CONTROL, because 7/7 "in time" proves nothing if the branch
+  fires unconditionally. Same trigger date, due 2026-10-08:
+
+    offset  issued_at     rendered                    badge
+      -1    2026-10-07    issued ... -- in time       bg
+       0    2026-10-08    issued ... -- in time       bg
+      +1    2026-10-09    issued ... -- 1 day LATE    br
+     +14    2026-10-22    issued ... -- 14 days LATE  br
+
+  Four distinct renderings, correct singular/plural, and the Issued tile
+  sub-line moved from "All 7 issued in time" to "2 issued LATE" in the danger
+  colour. CONTROL_PASS true.
+
+  NO CODE CHANGED FOR THIS HALF. The b39 open question is ANSWERED, not
+  patched, and the Tier A entry's first attack point can be struck.
+
+  1.2 THE FOUR NULL CONDITIONS -- AND MY FIRST DESIGN WAS WRONG.
+
+  I wrote a new `dntCredFailure` module variable with six reason codes. A
+  COUNTED ASSERTION TRIPPED on code:'NO_LICENCE' appearing twice in the file,
+  and that is what found the real answer:
+
+    dntLastErr (sairndental.html:1647) ALREADY IS THIS FACILITY. It is a
+    per-resource failure record, read by dntLastErrCode(), dntLastErrText() and
+    dntWriteRefused(), and its own comments carry the SAME reasoning I was
+    reinventing -- "a stale server sentence reads as a real diagnosis and is
+    worse than the generic fallback".
+
+    sdnEvaluateCredentials() WAS SIMPLY A SECOND FETCH PATH THAT NEVER FED IT.
+    The defect is not a missing reason. It is a missing wire.
+
+  A parallel variable would have been a second copy of a working facility, and
+  the second copy is the one that goes stale. The first design was abandoned
+  before it reached disk, and the shipped script's post-check now asserts
+  `dntCredFailure=` appears ZERO times.
+
+  THE `status` CONVENTION IS KEPT EXACTLY, because dntLastErrText() depends on
+  it: status PRESENT means a server answered and its words may be shown; ABSENT
+  means the sentence is browser-authored and must not be. The no-licence and
+  catch paths deliberately set no status, same as sdnData. Success deletes the
+  key.
+
+  DRIVEN BY STUBBING fetch AND AWAITING THE REAL PROMISE rather than sleeping
+  -- which matters, because the first attempt at this drive slept and
+  snapshotted a stale paint. Four distinct codes, four distinct sentences, each
+  naming WHOSE problem it is:
+
+    FORBIDDEN (403)  "not authorised ... this panel is owner-only"  your sign-in
+    UPSTREAM  (500)  "the server refused ... run its schema first"  the server
+    NETWORK          "could not be reached ... check the connection" the connection
+    NO_LICENCE       "no licence key on this install"               this practice
+
+  A 200-carrying-ok:false is separated as well (REFUSED, status 200), because
+  the server looked and said no, which is not a fault.
+
+  NEGATIVE CONTROL: a SUCCESSFUL board clears the record, restores 0 0 0 0, and
+  HIDES the badge. Without that arm, "--" and "?" sticking forever would look
+  identical to the fix working -- the same control b39 needed for the same
+  reason.
+
+  AND DRIVING IT FOUND A SECOND-ORDER DEFECT I THEN FIXED. The first panel
+  drive showed NO_LICENCE on screen while a 403 was in flight:
+  nav('credentials') paints rCredentials(null) BEFORE the evaluation resolves,
+  so the first paint renders the PREVIOUS attempt's reason. The key is now
+  cleared ON ENTRY, which shrinks the window to the request itself. THE FLASH
+  IS NARROWED, NOT ELIMINATED, and both the code comment and the defect record
+  say so rather than claiming it closed.
+
+  checkblocks 6/0. wcag_contrast_check --gate 0 findings.
+
+
+2. ITEM 2 -- THE EUR-LEX ROUTE, AND WHAT IT BOUGHT
+
+  docs/cloud-research/2026-10-20-eu-law-route-and-the-three-audits-eu-limbs.md
+
+  THE PROBLEM, THREE BATCHES RUNNING. eur-lex.europa.eu HTML pages returned an
+  EMPTY BODY to every attempt: b37 on the AMLR summary, b38 on the AI Act across
+  THREE URL forms, b39 again. Each audit reported that no EU instrument could
+  be cited, and I twice wrote that fixing the route was worth more than the next
+  audit.
+
+  THE FIX IS THE OFFICIAL MACHINE INTERFACE, NOT A WORKAROUND. The EU
+  Publications Office exposes CELLAR with HTTP content negotiation on a CELEX
+  identifier:
+
+    GET http://publications.europa.eu/resource/celex/<CELEX>
+    Accept: application/xhtml+xml
+    Accept-Language: eng
+
+    32024R1689  AI Act  -> HTTP 200, 1,257,134 bytes
+    32024R1624  AMLR    -> HTTP 200, 1,165,026 bytes
+
+  Both 303 to a Cellar resource, which is the documented behaviour of the
+  identifier service. NO BOT WALL IS INVOLVED AND NONE IS CIRCUMVENTED. This is
+  the EU equivalent of the eCFR renderer API that b38 and b39 used after eCFR's
+  web pages 302'd to unblock.federalregister.gov, and the rule was the same both
+  times: STOP AT THE WALL, FIND THE PUBLISHED MACHINE INTERFACE. Re-runnable in
+  scratchpad/b40/eu_fetch.py.
+
+  THE HEADLINE: THE AI ACT IS NOT A FUTURE CLIFF. Article 113, read from source:
+
+    "It shall apply from 2 August 2026. However: (a) Chapters I and II shall
+     apply from 2 February 2025; (b) Chapter III Section 4, Chapter V, Chapter
+     VII and Chapter XII and Article 78 shall apply from 2 August 2025, with the
+     exception of Article 101; (c) Article 6(1) and the corresponding
+     obligations in this Regulation shall apply from 2 August 2027."
+
+  Done at Brussels, 13 June 2024. TODAY IS 2026-10-20, SO THE GENERAL
+  APPLICATION DATE IS ELEVEN WEEKS PAST. All three prior audits treated the AI
+  Act as something ahead. Only Article 6(1) -- the Annex I safety-component
+  limb -- is still future, at 2 August 2027.
+
+  AND THE ANSWER FOR SAIRNCODE IS A NEGATIVE ONE, ON THE ACTOR TEST RATHER THAN
+  THE SUBJECT MATTER. Annex III point 5, read verbatim:
+
+    5(a)  "by public authorities or on behalf of public authorities" to evaluate
+          eligibility for essential public assistance "including healthcare
+          services"
+    5(b)  creditworthiness, except fraud detection
+    5(c)  "risk assessment and pricing in relation to natural persons in the
+          case of life and health insurance"
+    5(d)  emergency call triage and dispatch, including "emergency healthcare
+          patient triage systems"
+
+  A dental or medical practice coding its OWN claims is not a public authority,
+  is not pricing insurance, and is not triaging emergencies. Article 6(1) needs
+  an Annex I product under third-party conformity assessment. SO SAIRNCODE IS
+  NOT ANNEX III HIGH-RISK.
+
+  IT IS STATED AS A BOUNDARY RATHER THAN A CLEARANCE, AND THAT IS THE USEFUL
+  PART: the moment SAIRNcode were sold to, or operated on behalf of, A PAYER OR
+  A PUBLIC AUTHORITY making eligibility or pricing determinations, 5(a) or 5(c)
+  would engage and the full high-risk regime would follow. That is a COMMERCIAL
+  line, not a technical one, and a vertical sale crosses it without anybody
+  filing a code change.
+
+  WHICH ALSO MEANS b38's B1 ARTEFACT IS RIGHT FOR THE WRONG-SHAPED REASON. It
+  was built against 45 CFR 170.315(b)(11), a US certification criterion. It is
+  also, almost item for item, what AI Act Article 11 / Annex IV technical
+  documentation would ask for if 5(a) or 5(c) ever engaged -- intended purpose,
+  intended users, foreseeable misuse, training-data provenance, validation,
+  performance metrics, post-market monitoring. ONE ARTEFACT, TWO REGIMES.
+
+  AMLR ARTICLE 90 CONFIRMS b37's DATES FROM SOURCE rather than from a snippet:
+
+    "It shall apply from 10 July 2027, except in relation to obliged entities
+     referred to in Article 3, points (3)(n) and (o), to which it shall apply
+     from 10 July 2029."
+
+  b37 asserted exactly that from a search snippet; b38 and b39 then refused to
+  cite it. IT WAS RIGHT, and now it is sourced -- which is the difference
+  between a figure that survives a reviewer and one that does not.
+
+  AND THE PRIVILEGE CARVE-OUT HAS A CLAUSE NO AUDIT HAD. The carve-out covers
+  information received from a client in the course of ascertaining their legal
+  position or defending them in proceedings -- "whether such information is
+  received or obtained BEFORE, DURING OR AFTER such proceedings". And the
+  exception to it ends:
+
+    "Such knowledge and purpose can be inferred from objective factual
+     circumstances."
+
+  THE CARVE-OUT IS NOT SELF-CERTIFYING. b38's sairnlaw audit flagged AML as a
+  company decision because "a product that prompts a lawyer to report is
+  prompting a privilege determination". This sharpens it in both directions: the
+  determination is not purely the lawyer's subjective call, and A
+  PRACTICE-MANAGEMENT SYSTEM IS WHERE THOSE OBJECTIVE CIRCUMSTANCES ARE
+  RECORDED. It makes the decision harder to defer, not easier.
+
+  REPORTED NOT DONE: only TWO instruments were fetched. The Construction
+  Products Regulation, the General Product Safety Regulation and REACH --
+  b39's sairndesign B5 -- are STILL UNREAD, one CELEX identifier each; that is a
+  budget fact and not a finding. Both documents were read by TARGETED
+  EXTRACTION out of 585,353 and 424,875 flattened characters; the surrounding
+  obligations (AI Act Articles 8-15 and Annex IV, the AMLR's customer
+  due-diligence chapter) were NOT read. AND THE AMLR PRIVILEGE TEXT IS A
+  RECITAL, NOT AN ARTICLE -- a recital is interpretive, the operative provision
+  was not located, and the document says not to build a reporting flow on it
+  until it is. No consolidated-version check on either.
+
+
+3. ITEM 3 -- MY OWN NEXT STEP POINTED AT THE WRONG TWO PANELS
+
+  Appended to docs/2026-10-20-fourth-b39-sairncode-compliance-artefacts.md
+
+  b39's B4 inventory said: "EXACT NEXT STEP: hcc and drg. Both are
+  age/sex-weighted by construction, both the rows where the answer could be
+  yes." READ NOW, AND THE PREDICTION WAS WRONG IN BOTH DIRECTIONS.
+
+    hcc        NO 92.210 variable. renderHcc() (sairncode.html:4497) reads
+               {cat, patient, value, status}. The panel body is a 1,434-char
+               shell with a four-column table.
+    drg        NO 92.210 variable. Same shape, 1,391 chars.
+    transport  YES -- AGE, determinatively. id="tr-age", "Patient age
+               (months)", :1386.
+    esrd       YES -- AGE, determinatively. id="esrd-age", "Age at end of
+               month", :1690, and the panel's own copy: "The code is fixed by
+               the age at the END OF THE MONTH".
+
+  `sex` and `gender`: ZERO occurrences anywhere in the file. So there is no sex
+  variable in SAIRNcode at all, and AGE is the only 92.210 variable in use.
+
+  THE USE IS LAWFUL AND THAT IS NOT THE POINT. A dialysis MCP code and a
+  paediatric transport code are FIXED BY AGE BY THE RULE BEING IMPLEMENTED --
+  the clearest possible legitimate use, and 92.210(c)'s mitigation duty has
+  little to bite on. But 92.210(b) is a duty to IDENTIFY, and AN INVENTORY THAT
+  MISSES THE ONLY TWO PANELS USING A PROTECTED-CLASS VARIABLE HAS FAILED AT ITS
+  ONE JOB.
+
+  AND THE SERVER CAVEAT IS LOAD-BEARING, NOT A HEDGE: "no 92.210 variable on
+  the client" is not "no 92.210 variable". hcc and drg could read age or sex
+  server-side and the client would look exactly like this. api/sd-data.js is
+  cody's and was NOT READ -- named as the next step rather than guessed.
+
+  (B)(7) GETS ITS FIRST MEASURED LEAF, specified from a store that already
+  exists. scRouteCodedItems() (:7393) partitions on review_status, and
+  reviewCodedItem() (:7345) refuses any value but reviewed_accepted /
+  reviewed_rejected, so a decided item is settled whichever way it went:
+
+    HUMAN-REJECTION RATE = rejected / (rejected + accepted)
+
+  DECIDED ITEMS ONLY IN THE DENOMINATOR. needs_human_review is NOT a rejection
+  -- it is an item nobody has looked at, and counting it either way is the
+  collapse-three-states-into-two defect this platform keeps finding.
+  auto_assigned is NOT an acceptance either. A second, sharper figure comes
+  from confidence_basis, already a structured per-item array at :7201.
+
+  IT IS A GENUINE (B)(7) LEAF AND NOT A VANITY METRIC: (B)(7)(i) asks for
+  validity in test data derived from the training source, THERE IS NO TRAINING
+  DATA, and the nearest honest analogue is validity in LOCAL data under human
+  adjudication -- which is also what (B)(8)(ii) asks for by name.
+
+  NOT BUILT: sairncode.html is DOCS-ONLY in this batch's claim and is in 0 of
+  b40's commits. AND IT MUST SHIP WITH ITS DENOMINATOR VISIBLE -- a 0% rate
+  over two decided items would make (B)(7) WORSE than the honest NOT
+  ESTABLISHED it replaces. Render it "N of M decided", or not at all.
+
+
+4. ITEM 6 -- THE PUSH
+
+    git rev-list --left-right --count origin/main...HEAD  ->  0  0
+    cc919c30  953d70a3  ac3f5fc8  a6be552b   -- all ancestors of origin/main
+    git stash list -> 0        git status --porcelain -> clean
+
+  NO --force. NO --force-with-lease. NO SAIRN_SKIP, no gate_skip grant, no
+  SAIRN_GATE_EXEMPT, no SAIRN_SEED_GATE. 4 files: sairndental.html, two docs,
+  and docs/defect-density-register.json. 0 FORBIDDEN PATHS.
+
+  AND THE FORBIDDEN-PATH CHECK INCLUDES docs/tier-a-reviews.json THIS BATCH,
+  DELIBERATELY. cc's b27 claim says "THE SIX TIER A VERDICTS ARE DEFERRED, NOT
+  DROPPED -- docs/tier-a-reviews.json is held LIVE by fourth b39 and will be
+  claimed separately when fourth releases." I released it at the end of b39, so
+  it is cc's to take. It was declared NOT- in my claim and touched 0 times.
+  api/ likewise: cody holds the sairndental SERVER half this batch.
+
+  ONE GATE REFUSAL, ANSWERED NOT SKIPPED. register_feed_gate denied the fix
+  commit EIGHT TIMES for having no defect record, and this one IS a defect in
+  shipped behaviour -- unlike b38's schema reconciliation, which took the
+  no-defect-record trailer because the constraint was never run. So a record
+  was filed: injection 876bd84c (the credentialing panel, 2026-08-24), severity
+  LOW because nothing was mis-stated -- the panel already said nothing had been
+  checked, and what was missing was WHICH failure, i.e. who could fix it.
+  rule: not-citable WITH A NOTE proposing the rule that would cover the class --
+  "a fetch path that can fail must write the same per-resource error record
+  every other fetch path in the file writes" -- because a bare refusal is what
+  makes that field meaningless. FOUR FACTORS, TWO OF THEM ABOUT MY OWN PROCESS
+  rather than the code: the abandoned parallel-variable design that a counted
+  assertion caught, and the first-paint flash that only driving it found.
+  RECURRENCE LEFT OPEN ON THREE COUNTS.
+
+  THE CLAIM MATCHER ALSO BLOCKED THIS BATCH, AND THE RESOLUTION IS RECORDED.
+  Three sessions matched on the app name "sairndental" -- cc, cody and hank --
+  and NOT ONE OF THE THREE LISTS sairndental.html. hank's claim explicitly
+  declares NOT-sairndental-html-fourths; cody's dental files are all api/
+  (public-book.js, dental-photo-validation.js), which is the SERVER half to my
+  client half; cc's are tools/, docs/fmea/, Agents.md and CLAUDE.md. Re-running
+  with a declared FILES list returned CLEAR, which is the tool's own sanctioned
+  resolution and the same route b38 and b39 took.
+
+
+5. WHY ITEMS 4 AND 5 DID NOT RUN
+
+  THE DISPATCH SET AN AUTOMATIC WRAP AT 85% REAL CONTEXT. Measured with
+  tools/context_verify.py --digest-line, not estimated:
+
+    batch opened   67.9%
+    item 1 closed  72.4%
+    item 2 closed  73.8%
+    item 3 closed  76.2%
+
+  About NINE POINTS remained, against wrap deliverables -- handoff, Drive
+  upload, report, digest, manifest, push -- that have historically cost SIX TO
+  SEVEN across b37, b38 and b39.
+
+  ITEM 4 IS A CODE CHANGE to sairndesign.html, and the dispatch's own
+  methodology requires reproducing the failing state, then fixing, then driving
+  every branch. Starting that would have crossed the 85% trigger MID-EDIT,
+  which is the single state the wrap rule exists to prevent. ITEM 5 is a
+  worldwide audit, and in this series one costs FIVE TO EIGHT POINTS on its own
+  (b37 sairnlaw, b38 sairncode, b39 sairndesign).
+
+  NEITHER IS CLAIM-BLOCKED. The claim check was CLEAR on sairnbiz, and nobody
+  holds sairndesign.html. THIS IS THE WRAP RULE WORKING, NOT A REFUSAL, and the
+  stop was taken at a safe point: three items complete, committed and landed,
+  nothing half-finished, working tree clean.
+
+  AND NEITHER COSTS THE NEXT SESSION ANY RE-DERIVATION. Item 4 is fully
+  specified in docs/cloud-research/sairndesign-worldwide-competitive-gap-audit-
+  2026-10-20.md section 4 -- the field group, the applicability predicate from
+  16 CFR 1640.3(e), and the 40 CFR 770.45 chain (producer name, lot number, EPA
+  TSCA Title VI TPC number) -- with the write site at sairndesign.html:2042 and
+  vendor and sku already on the row, so the join is one field away. Item 5
+  inherits something better than a spec: the EUR-Lex route now works, so a
+  sairnbiz audit will be THE FIRST IN THE SERIES THAT CAN CITE EU LAW FROM
+  SOURCE rather than reporting it unread.
+
+
+6. WHAT b40 PROVED vs LEFT UNPROVEN
+
+  PROVED, driven or measured:
+    - lateBy===0 renders "in time" across SEVEN trigger dates, with a
+      -1/0/+1/+14 neighbour control giving four distinct renderings and correct
+      singular/plural
+    - four distinct credential-board failure codes with four distinct
+      sentences, driven by stubbing fetch and awaiting the real promise, plus a
+      negative control that clears the record, restores 0 0 0 0 and hides the
+      badge on success
+    - THE EUR-LEX ROUTE: two instruments, HTTP 200, 1.26MB and 1.17MB, from the
+      official CELEX content-negotiation endpoint, re-runnable
+    - AI Act Article 113, Article 6 and Annex III point 5, and AMLR Article 90
+      and the privilege recitals, READ FROM SOURCE
+    - hcc and drg carry NO 92.210 variable on the client; transport and esrd
+      carry AGE determinatively; sex and gender are ZERO file-wide
+    - 4 files, 0 forbidden paths, no force, all four commits ancestors of origin
+
+  LEFT UNPROVEN:
+    - ITEMS 4 AND 5 WERE NOT STARTED. Section 5.
+    - THE CREDENTIALING FIRST-PAINT FLASH IS NARROWED, NOT ELIMINATED. A
+      sub-second render of "the reason was not recorded" remains, and closing
+      it needs a pending state the panel does not have.
+    - NOTHING SERVER-SIDE WAS READ. api/sd-data.js is cody's, so no claim about
+      the credential board itself when it DOES arrive, and none about whether
+      hcc or drg read age or sex server-side.
+    - The EU documents were read by TARGETED EXTRACTION, not whole. AI Act
+      Articles 8-15 and Annex IV, and the AMLR's CDD chapter, were not read.
+    - THE AMLR PRIVILEGE TEXT IS A RECITAL, NOT AN ARTICLE, and the operative
+      provision was not located. Do not build a reporting flow on it yet.
+    - No consolidated-version check on either EU instrument.
+    - No legal review. The Annex III conclusion is a reading of the text
+      against a product description, and is the kind of thing a lawyer should
+      confirm before it appears anywhere customer-facing.
+    - The Construction Products Regulation, the GPSR and REACH remain unread.
+    - No screen-reader test, unchanged from b36 onward. Nothing live, unchanged
+      from b34 onward.
+
+
+END-OF-REPORT
