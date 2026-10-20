@@ -1,0 +1,17 @@
+HANK b29 DIGEST -- 2026-10-20 -- 2 of 2 defects closed, driven live before and after, zero overrides
+CONTEXT 50.1% of 1,000,000 -- 500,616 tokens, measured.
+STATUS: LANDED on origin/main (re-derive the tip), NOT FORCED.
+CONCEPT: a sync is reported as done only when the server said ok; non-ok is a shown failure and the
+  Last sync time is left alone.
+1. sairnSyncAll FIXED. Live BEFORE: bridge 400, "All apps synced", time stamped. Live AFTER: bridge 400,
+   "Sync failed (HTTP 400) -- nothing was synced", time untouched. 17 offline arms incl. ablation.
+2. sendToNetwork REMOVED. The bridge has no learn action and api/network.js is identifier-only by
+   design, so the endpoint must NOT be taught to take the question+answer text. Anonymised path intact.
+OPEN: the sync button can never succeed (bridge has no full-sync); its catch says "will retry" and
+  nothing retries; NET_URL is a dead constant. Product decisions, not mine.
+HELD AS INSTRUCTED: straight-time-floor and trust-lock live probes (need PINs).
+DECISION-NEEDED (Michael): keep or remove the sync button; confirm PINs for the two held probes.
+NEXT: handoff sec.4 has the exact step per open item (A-G).
+CHANGED: stonedesk.html (2 edits), api/bridge.js comments, 1 new test, notes, ledgers.
+EVIDENCE-path: docs/2026-10-20-hank-b29-notes.md
+UNVERIFIED: both held live probes.

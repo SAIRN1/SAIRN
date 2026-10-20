@@ -1,0 +1,20 @@
+HANK b29 REPORT -- 2026-10-20 -- two stonedesk.html defects closed, driven live before and after
+
+CONCEPT (item 3, stated before the code): a sync is reported as done only when the server said ok;
+a non-ok answer is shown as a failure and the "Last sync" time is left alone.
+
+1. SAIRNSYNCALL: FIXED. fetch resolves on a 4xx, so the try/catch never saw the bridge's 400.
+   BEFORE, on the deployed page with the real fetch: bridge 400, toast "All apps synced", Last sync
+   "--" became "7:32:13 AM". AFTER the deploy, same drive: bridge 400, toast "Sync failed (HTTP 400) --
+   nothing was synced", Last sync stays "--". 17 offline arms lift the shipped function; a 200 still
+   succeeds; removing the ok check reproduces the bug. The request still cannot succeed (the bridge has
+   no full-sync action), so every click now shows a true failure -- the next decision is the product's.
+2. SENDTONETWORK: REMOVE, not accept. The bridge has no learn action. api/network.js is the Intelligence
+   Network and accepts only identifier-shaped patterns by construction so free text cannot be stored;
+   sendToNetwork posted the user's AI question (100 chars) and answer (200 chars). The anonymised path
+   (sendNetworkInsight) is live and unchanged. Deleted the function and its one call; local memory
+   storage unchanged; learnFromResponse now makes no network call. Deployed page: typeof sendToNetwork
+   is undefined.
+3. CONCEPT: above.
+4. PUSHED without force, confirmed by sha. Handoff: SAIRN-handoff-hank-b29.md. The two live-credential
+   probes were held as instructed.
