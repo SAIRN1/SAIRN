@@ -1037,8 +1037,8 @@
       "task": "b72 H1-ONLY independent build, parallel-by-design with H2 b75 per the dispatch's own 'build it independently, share no code' instruction; block verified not reworded, reasoning in chain #1629. FILES: .claude/skills/sairn-hover-auditor/ .claude/settings.local.json SAIRN-handoff-H1-b72.md SAIRN-report-H1-b72.txt SAIRN-digest-H1-b72.txt NOT-tools-hover2 NOT-dot-claude-user-store-REPORT-ONLY NOT-tools-shared-REPORT-ONLY NOT-api-NOT-html-NOT-sql-NOT-docs NOT-H2-files",
       "claimed_at": "2026-10-20T07:48:39Z",
       "claimed_at_epoch": 1792482519.0302176,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T08:48:50Z",
       "files": [
         ".claude/settings.local.json",
         "SAIRN-digest-H1-b72.txt",
