@@ -7056,6 +7056,29 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-10-20T06:38:48Z",
+      "opened_at_sha": "cc95b740c7a4e05cf4a785458a81259547c9b185",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 4,
+      "resources": [
+        "dnt_credentials",
+        "dnt_gfe"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "docs/CRITICALITY-TIERS.md"
+      ],
+      "what": "b39: two RENDER-ONLY fixes in sairndental.html, both verified in a browser against reproduced failing states. (1) dnt_gfe -- rGfe() now compares the stored rec.issued_at to the 149.610(b)(1)(vi) due date and renders three outcomes (issued LATE with the day count / issued in time / issued with timing not on file), plus a late count in the Issued tile's sub-line. Reproduced first: an estimate due 2026-09-04 marked Issued 2026-10-20 was 46 DAYS LATE and the Due tile went 1 -> 0 with the nav badge disappearing, while issued_at had been stored all along. (2) dnt_credentials -- rCredentials(null) now sets the four KPI tiles to '--' with a per-tile tooltip, shows the nav badge as '?', and says in the table that the board could not be evaluated. Reproduced first: licence key blanked, two credentials expired 21 and 28 months, panel read Expired 0 / Expiring 0 / CE 0 / MATE 0 with the badge hidden. WHAT A REVIEWER SHOULD ATTACK, in order: (a) THE DATE ARITHMETIC. lateBy is (issued_at at local midnight) - dueDate in ms / 86400000, rounded. dueDate comes from gfeAddBusinessDays which returns a Date built by gfeDateOnly; check there is no DST hour that makes a 46-day gap round to 45, and check lateBy===0 (issued ON the due date) renders as IN TIME and not as late, which is what I intend and did not drive. (b) THE THIRD OUTCOME. A record with status Issued and no issued_at renders 'timing not on file' and is counted separately -- confirm it is NOT counted as on time anywhere, including in the sub-line's 'All N issued in time' branch, which I believe is unreachable while unknownIssued>0 but did not prove. (c) THE NEGATIVE CONTROL'S SCOPE. I proved a successful board clears the '--' and the tooltips. I did NOT prove the reverse path twice in a row, nor that a board arriving AFTER a null board on a different panel visit cannot leave a stale '?'. (d) I DID NOT TOUCH due<=today, having decided b38's off-by-one finding was wrong because the tile is labelled 'Due today or overdue' -- re-decide that rather than inheriting it. (e) NOTHING SERVER-SIDE WAS READ: dnt_credentials/evaluate lives in api/sd-data.js, which is cody's, so I make no claim about the board's own correctness -- only about what the client does when it does not arrive.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-20T06:38:48Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
