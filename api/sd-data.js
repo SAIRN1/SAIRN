@@ -549,6 +549,88 @@ PAYLOAD_CAP_BY_RESOURCE.rf_photos = 1572864;
 // name would be inert, and inert protection is worse than none.
 PAYLOAD_CAP_BY_RESOURCE.locations = 16384;
 
+// ══ b30: AND THE CAP NOW APPLIES TO EVERY VERB, NOT JUST `write` ═══════════
+// THE CONCEPT: a payload cap belongs to the (resource, action) PAIR that
+//   writes, because "which verb writes" is a fact about the handler and "how
+//   big a row may be" is a fact about the table -- and this gate asked
+//   NEITHER. It read `if (action === 'write')`.
+//
+// THE DEFECT, which is cody's own b29 finding and is quoted from that batch's
+// notes §3.1: 37 declared verbs across 77 resources bypassed the cap
+// entirely. `rf_invoices` carries `rfinv_data_size <= 262144` and writes
+// through `issue`, `add_payment`, `reconcile_claim` and `gl_export`, so it was
+// not under-capped, IT WAS UNCAPPED -- a 10MB `issue` payload reached Postgres
+// and came back as an opaque constraint error, which is the exact failure the
+// slabs paragraph above records paying for.
+//
+// ── THE GATE IS NOW FAIL-CLOSED ON THE VERB, WHICH IS THE WHOLE SAFETY
+//    ARGUMENT ──────────────────────────────────────────────────────────────
+// It caps EVERY action except `read`, rather than every action on a declared
+// write-class list. That ordering matters: a verb MISCLASSIFIED in
+// api/_resources/index.js's ACTION_CLASS is still capped, so a wrong entry
+// there costs a comment and not a hole. `read` is excluded because a read
+// payload is a FILTER -- it writes no row, and capping it would be a new
+// restriction on something that was never the defect.
+//
+// ── AND WHY THAT DOES NOT BREAK A WORKING CLIENT ─────────────────────────
+// For every resource, a verb's cap now resolves in three steps:
+//
+//   1. PAYLOAD_CAP_BY_ACTION['<resource>|<action>']   the narrow entry
+//   2. PAYLOAD_CAP_BY_RESOURCE['<resource>']          b28/b29's entries
+//   3. MAX_PAYLOAD_BYTES                              64KB
+//
+// Step 2 is why `dnt_appointments`, `rf_claim_photos`, `rf_claim_agreements`,
+// `rf_proposals`, `rf_photos` and `locations` keep the caps b28 and b29 gave
+// them on EVERY verb rather than only on `write`. Step 3 is the same 64KB that
+// the `write` verb on the same resource has always enforced, so any payload a
+// client can already send through `write` fits -- which is the argument that
+// this raises protection without refusing anything that works.
+//
+// THE ONE PLACE THAT ARGUMENT FAILS IS rt_routes, AND IT IS WHY STEP 1
+// EXISTS. `upsert` and `optimize` carry the whole stop LIST, not one row, and
+// `api/_lib/routes.js` bounds it at 200 stops (:464) with addresses up to 500
+// characters (:470). A 200-stop route is therefore ~124KB of legitimate
+// payload and would have been refused at the 64KB default -- a regression
+// introduced by a security fix, which is the shape b29's notes named as the
+// reason NOT to close this without measuring first.
+//
+// THE NUMBER IS DERIVED, NOT CHOSEN: 200 stops x 700 bytes per stop at worst
+// (500 address + ~200 for job_ref, lat, lng, accuracy_m, status, locked and
+// their keys) + 32768 for the envelope and the route key, which is the same
+// "one bound plus one stated allowance" form
+// sql/sairndental_appointments_photo_size_migration.sql uses and defends.
+// `reorder` carries a `seq` array of ids rather than stops and does not need
+// it, so it is deliberately absent and falls to the default.
+const RT_STOPS_MAX = 200;              // api/_lib/routes.js:464
+const RT_STOP_WORST_BYTES = 700;       // 500-char address (:470) + the rest
+const RT_ROUTE_CAP_BYTES = RT_STOPS_MAX * RT_STOP_WORST_BYTES + 32768;
+
+// `Object.create(null)` for the same reason the per-resource table is: this is
+// indexed by a key built from a CLIENT-SUPPLIED resource and action, and on a
+// plain literal a crafted pair could resolve to an inherited function, which
+// `payloadBytes > thatFunction` reads as false -- the cap switched off by a
+// name. Inert today because the envelope gate whitelists both first; that is
+// exactly how all 48 role literals
+// tests/role_maps_have_no_prototype.js was built for were inert.
+const PAYLOAD_CAP_BY_ACTION = Object.create(null);
+PAYLOAD_CAP_BY_ACTION['rt_routes|upsert'] = RT_ROUTE_CAP_BYTES;
+PAYLOAD_CAP_BY_ACTION['rt_routes|optimize'] = RT_ROUTE_CAP_BYTES;
+PAYLOAD_CAP_BY_ACTION['rt_stops|upsert'] = RT_ROUTE_CAP_BYTES;
+PAYLOAD_CAP_BY_ACTION['rt_stops|optimize'] = RT_ROUTE_CAP_BYTES;
+
+// ONE FUNCTION, SO THE THREE STEPS CANNOT BE SPELLED DIFFERENTLY AT TWO CALL
+// SITES. There is one call site today and that is the point at which a second
+// one would start to drift -- the same reasoning that moved the law reconcile
+// role list into api/_lib/law-roles.js after a hand-written copy refused an
+// attorney in production for eight batches.
+function payloadCapFor(resource, action) {
+  const pair = PAYLOAD_CAP_BY_ACTION[String(resource) + '|' + String(action)];
+  if (typeof pair === 'number') return pair;
+  const byResource = PAYLOAD_CAP_BY_RESOURCE[resource];
+  if (typeof byResource === 'number') return byResource;
+  return MAX_PAYLOAD_BYTES;
+}
+
 // Pairs already reported by the app-boundary log, so a caller cannot drive an
 // unbounded number of log lines. Capped so the set itself cannot be grown
 // without bound -- past the cap the warning simply repeats, which is the safe
@@ -948,11 +1030,15 @@ module.exports = async (req, res) => {
 
   // ── 64KB payload cap on writes (reject early, before any DB call) — see MAX_PAYLOAD_BYTES
   // above for why this is uniform across every resource, including slabs ──
-  if (action === 'write') {
+  // EVERY ACTION EXCEPT `read` (b30). It read `if (action === 'write')`, so
+  // all 37 declared verbs bypassed the cap -- see PAYLOAD_CAP_BY_ACTION above
+  // for the measurement and why this is fail-closed on the verb rather than
+  // gated on a classification being right.
+  if (action !== 'read') {
     const payloadBytes = Buffer.byteLength(JSON.stringify(payload), 'utf8');
-    // PER-RESOURCE, WITH 64KB AS THE DEFAULT FOR ALL BUT ONE -- see
-    // PAYLOAD_CAP_BY_RESOURCE above for the defect and the derivation.
-    const payloadCap = PAYLOAD_CAP_BY_RESOURCE[resource] || MAX_PAYLOAD_BYTES;
+    // PER (RESOURCE, ACTION), falling back to per-resource and then to 64KB --
+    // see payloadCapFor() and PAYLOAD_CAP_BY_ACTION above.
+    const payloadCap = payloadCapFor(resource, action);
     if (payloadBytes > payloadCap) {
       res.status(413).json({
         error: {
@@ -962,8 +1048,11 @@ module.exports = async (req, res) => {
           // would now be a lie on the one resource whose limit is different --
           // and a wrong number in a size error sends the reader to recompress
           // against a budget that is not the one being enforced.
+          // THE MESSAGE NAMES THE PAIR, because the cap is now a fact about
+          // (resource, action) and a reader told only the resource would
+          // recompress against the wrong budget on a sibling verb.
           message: 'Payload is ' + payloadBytes + ' bytes; the limit is '
-                 + payloadCap + ' for ' + resource
+                 + payloadCap + ' for ' + resource + '/' + action
         }
       });
       return;

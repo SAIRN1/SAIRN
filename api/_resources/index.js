@@ -158,6 +158,121 @@ function assertExtraActionsAreOwned(modules) {
 // resource -> array of verbs allowed beyond the universal 'read'/'write'.
 const EXTRA_ACTIONS = assertExtraActionsAreOwned(REGISTRY_MODULES);
 
+// ══ b30: WHICH DECLARED VERBS WRITE ═══════════════════════════════════════
+// THE CONCEPT: a payload cap belongs to the (resource, action) PAIR that
+//   writes, because "which verb writes" is a fact about the handler and "how
+//   big a row may be" is a fact about the table -- and api/sd-data.js's cap
+//   gate asked neither. It read `if (action === 'write')`, so every one of the
+//   37 declared verbs below bypassed it entirely.
+//
+// cody's own b29 finding, recorded in docs/2026-10-20-cody-b29-notes.md §3.1:
+// rf_invoices carries `rfinv_data_size <= 262144` and writes through `issue`,
+// `add_payment`, `reconcile_claim` and `gl_export`, so it was not
+// under-capped, it was UNCAPPED. Same for rt_routes' upsert/reorder/optimize.
+//
+// ── WHY THIS LIST IS A DECLARATION AND NOT A DERIVATION ──────────────────
+// The honest first attempt was to derive it: scan api/sd-data.js for each
+// verb's `action === '<verb>'` branch and test whether the span contains a
+// POST/PATCH/DELETE or an /rpc/ call. THAT SCAN IS NOT TRUSTWORTHY AND THE
+// MEASUREMENT SAID SO -- it reported `consolidate` as having NO branch at all
+// (0 found), and `reserve` and `release_retainage` as compute-only, which is
+// wrong for a verb whose whole job is to reserve a slab. The span ends at the
+// next `if (resource ===` boundary, and several branches put the write after
+// a nested resource test.
+//
+// So the class is DECLARED here, by a human, and arm M1 of
+// api/b30-cap-per-action.test.js runs that same scan and reports every
+// DISAGREEMENT in both directions rather than asserting the scan is right. A
+// derivation that is wrong in a way nobody can see is worse than a
+// declaration somebody has to defend.
+//
+// ── AND THE GATE DOES NOT DEPEND ON THIS BEING RIGHT ─────────────────────
+// This is the important half. api/sd-data.js caps EVERY action except `read`,
+// so a verb misclassified here is still capped. What the class buys is the
+// REASON: a write-class verb's cap must be sized from what the table accepts,
+// while a compute-only verb's cap is a request-size bound and the 64KB default
+// is simply fine. Getting an entry wrong costs a comment, not a hole.
+const ACTION_CLASS = Object.freeze(Object.assign(Object.create(null), {
+  // ── WRITE-CLASS: the branch inserts, updates or deletes a row ──────────
+  add_payment: 'write-class',
+  approve_clock_correction: 'write-class',
+  delete: 'write-class',
+  issue: 'write-class',
+  mar_access_grant: 'write-class',
+  optimize: 'write-class',
+  propose_clock_correction: 'write-class',
+  release: 'write-class',
+  release_retainage: 'write-class',
+  reorder: 'write-class',
+  reserve: 'write-class',
+  set_status: 'write-class',
+  soft_delete: 'write-class',
+  upsert: 'write-class',
+  wip: 'write-class',
+  write_batch: 'write-class',
+  consolidate: 'write-class',
+  preview_move: 'compute-only',
+  // ── COMPUTE-ONLY: the branch reads and returns a computation ───────────
+  // Capped anyway, and the number is a request-size bound rather than a row
+  // bound. Named rather than defaulted, because "nobody classified it" and
+  // "somebody decided it computes" are different facts.
+  agreement_status: 'compute-only',
+  assess_damage: 'compute-only',
+  board: 'compute-only',
+  capacity: 'compute-only',
+  crew_check: 'compute-only',
+  crew_load: 'compute-only',
+  derive_charges: 'compute-only',
+  eligibility: 'compute-only',
+  evaluate: 'compute-only',
+  family_mar: 'compute-only',
+  gl_export: 'compute-only',
+  match: 'compute-only',
+  payroll: 'compute-only',
+  portfolio: 'compute-only',
+  readiness: 'compute-only',
+  reconcile: 'compute-only',
+  reconcile_claim: 'compute-only',
+  route: 'compute-only',
+  therapy_accumulator: 'compute-only',
+  tombstones: 'compute-only'
+}));
+
+// COMPLETENESS, ASSERTED AT LOAD AND NOT IN A TEST. A verb added to any
+// api/_resources/<app>.js and not classified here would otherwise be silently
+// absent from the class map, and the next reader would take the map's silence
+// for "it computes". This throws instead, naming the verb, the same way
+// assertExtraActionsAreOwned throws on an unowned resource.
+//
+// IT DOES NOT THROW ON AN EXTRA ENTRY. A verb classified here and since
+// removed from every registry is dead weight and worth knowing about, but
+// refusing to load the module over it would make deleting a resource fail --
+// arm C2 of api/b30-cap-per-action.test.js reports it instead.
+(function assertEveryDeclaredVerbIsClassified() {
+  const missing = [];
+  for (const resource of Object.keys(EXTRA_ACTIONS)) {
+    for (const verb of EXTRA_ACTIONS[resource]) {
+      if (ACTION_CLASS[verb] !== 'write-class'
+          && ACTION_CLASS[verb] !== 'compute-only') {
+        if (missing.indexOf(verb) === -1) missing.push(verb);
+      }
+    }
+  }
+  if (missing.length) {
+    throw new Error(
+      'api/_resources/index.js: ACTION_CLASS does not classify ' +
+      missing.length + ' declared verb(s): ' + missing.sort().join(', ') +
+      '. Add each as write-class or compute-only. A verb the class map does ' +
+      'not know is a verb whose payload cap nobody chose -- say which it is ' +
+      'rather than letting the map\'s silence read as "it computes".'
+    );
+  }
+})();
+
+function isWriteClassAction(verb) {
+  return ACTION_CLASS[verb] === 'write-class';
+}
+
 // Ordered list, app by app, in the registration order above.
 const RESOURCE_NAMES = REGISTRY_MODULES.reduce(
   (all, mod) => all.concat(mod.resources), []
@@ -327,6 +442,8 @@ module.exports = {
   OWNER_BY_RESOURCE,
   REGISTRY_MODULES,
   EXTRA_ACTIONS,
+  ACTION_CLASS,
+  isWriteClassAction,
   RESOURCE_NAMES_BY_APP,
   APP_NAMES,
   // EXPORTED 2026-09-23 so api/_lib/license.js can compare a licence's app_id
