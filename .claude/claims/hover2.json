@@ -878,8 +878,8 @@
       "task": "b77 hover2-only: stage0 fail-closed gate + parser audit, vendor full re-sample, witness-tested planted bugs + salted real-fix-revert scoring track, semgrep SAIRN risk rule pack + stryker wiring, deny-rule collision verification. FILES: SAIRN-handoff-H2-b77.md SAIRN-report-H2-b77.txt SAIRN-digest-H2-b77.txt tools-hover2/ NOT-tools-shared-REPORT-ONLY NOT-dot-claude-REPORT-ONLY NOT-api-NOT-html-NOT-sql NOT-H1-skill-dir",
       "claimed_at": "2026-10-20T10:56:51Z",
       "claimed_at_epoch": 1792493811.4795458,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T12:41:20Z",
       "files": [
         "SAIRN-digest-H2-b77.txt",
         "SAIRN-handoff-H2-b77.md",
