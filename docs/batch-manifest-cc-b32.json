@@ -1,0 +1,38 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "cc",
+  "batch": "b32",
+  "id_lock": "acc5585cac164c2c",
+  "items": [
+    {
+      "id": 1,
+      "title": "Concept: deterministic Tier A refusal vs transient failure",
+      "status": "done",
+      "evidence": "docs/2026-10-20-cc-b32-notes.md section 1"
+    },
+    {
+      "id": 2,
+      "title": "Fix the push-retry bug: never retry deterministic refusals",
+      "status": "done",
+      "evidence": "tools/push_retry.py classify_refusal + cmd_loop; python tools/push_retry.py --selftest (11 new arms); notes section 2"
+    },
+    {
+      "id": 3,
+      "title": "Discharge fourth's rt_routes optimiser Tier A obligation",
+      "status": "done",
+      "evidence": "docs/tier-a-reviews.json record fourth 2026-10-20T13:42:06Z; notes section 3"
+    },
+    {
+      "id": 4,
+      "title": "Finish the last FMEA drafts; document the refused ones",
+      "status": "open",
+      "evidence": ""
+    },
+    {
+      "id": 5,
+      "title": "Push, no force, confirm landed",
+      "status": "open",
+      "evidence": ""
+    }
+  ]
+}
