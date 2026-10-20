@@ -4243,8 +4243,8 @@
       "task": "b25: api/agent/register.js revoke-window atomic write; stripe-webhook zero-row PATCH truthful logging; api/claude.js auth+rate-limit fail-closed on missing/unknown setting plus deployed probes; report the two b24 items the digest omitted; drive the OSHA duplicate warning in a real browser; push. FILES: api/agent/register.js api/agent/stripe-webhook.js api/claude.js api/b25-agent-revoke-race.test.js api/b25-claude-settings-failclosed.test.js docs/2026-10-20-hank-b25-notes.md SAIRN-handoff-hank-b25.md SAIRN-report-hank-b25.txt SAIRN-digest-hank-b25.txt SAIRN-ACTIVE-WORK-hank.md NOT-api-sd-data-js-codys NOT-sairndental-html-fourths NOT-CLAUDE-md-ccs NOT-dot-claude-REPORT-ONLY",
       "claimed_at": "2026-10-20T08:11:24Z",
       "claimed_at_epoch": 1792483884.5044973,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T09:02:13Z",
       "files": [
         "SAIRN-ACTIVE-WORK-hank.md",
         "SAIRN-digest-hank-b25.txt",
