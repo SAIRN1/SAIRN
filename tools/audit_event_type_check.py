@@ -49,6 +49,7 @@ MISS, not a false accusation. A CLEAN ROW IS WEAKER EVIDENCE THAN A DIRTY ONE,
 and that asymmetry is stated because the opposite assumption is what a green bar
 invites.
 """
+import base64
 import io
 import json
 import os
@@ -56,12 +57,19 @@ import re
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CRITERIA_VERSION = '2026-10-07.1'
+CRITERIA_VERSION = '2026-10-20.1'
 
 # Both spellings the platform uses for an emitted event, plus the ternary form.
 EV_DIRECT = re.compile(r"event_type:\s*'([a-z0-9_]+)'")
 EV_HELPER = re.compile(r"\baudit\(\s*'([a-z0-9_]+)'")
-EV_TERNARY = re.compile(r"event_type:\s*[^,']*\?\s*'([a-z0-9_]+)'\s*:\s*'([a-z0-9_]+)'")
+# b34: the condition may itself be quoted -- `kind === 'close' ? 'a' : 'b'` --
+# and the old `[^,']*` could not cross that quote, so the pay-period events in
+# api/sd-data.js were never seen as emitted at all.
+EV_TERNARY = re.compile(r"event_type:\s*[^,?]*\?\s*'([a-z0-9_]+)'\s*:\s*'([a-z0-9_]+)'")
+# b34: a call that names its table through the map, e.g.
+# `table: closeAudit.AUDIT_TABLE_BY_APP.sairnsenior`, attributed per CALL.
+TBL_MAPPED = re.compile(r"AUDIT_TABLE_BY_APP\.([a-z0-9_]+)")
+SQL_LINE_COMMENT = re.compile(r"--[^\n]*")
 TBL_CONST = re.compile(r"AUDIT_TABLE\s*=\s*'(\w+)'")
 TBL_LITERAL = re.compile(r"table:\s*'(\w+_audit_log)'")
 DDL = re.compile(r'create table if not exists (?:public\.)?(\w*audit_log)\b')
@@ -160,7 +168,11 @@ def scan(repo):
         s = io.open(os.path.join(sql_dir, f), encoding='utf-8',
                     errors='replace').read()
         for m in DDL.finditer(s):
-            tail = s[m.end():m.end() + 4000]
+            # b34: comments stripped first. The b17 CHECK on sairnsenior_audit_log
+            # carries "(503 AUDIT_UNAVAILABLE)" in a comment inside its value
+            # list, and CHK's `[^)]*` stopped there -- so this tool read five
+            # allowed values where the file declares seven.
+            tail = SQL_LINE_COMMENT.sub('', s[m.end():m.end() + 6000])
             cm = CHK.search(tail)
             tables[m.group(1)] = {
                 'ddl': f,
@@ -216,7 +228,31 @@ def scan(repo):
                 continue
             if 'writeAuditLog' not in s:
                 continue
-            ev = emitted_in(s)
+            # ── PER-CALL ATTRIBUTION THROUGH THE MAP (b34) ─────────────────
+            # A writeAuditLog call whose `table:` is AUDIT_TABLE_BY_APP.<app>
+            # sends ITS events to that app's table, not to the file's default.
+            # The events are read from the text between the nearest preceding
+            # `writeAuditLog(` and the map reference, and are then REMOVED from
+            # the file-wide pass below so they are not also charged to the
+            # default table.
+            mapped = set()
+            for mm in TBL_MAPPED.finditer(s):
+                win = s[max(0, mm.start() - 1500):mm.start()]
+                k = win.rfind('writeAuditLog(')
+                if k == -1:
+                    continue
+                ev_call = emitted_in(win[k:])
+                if not ev_call:
+                    continue
+                if appmap is None:
+                    return None, None, mapwhy
+                t = appmap.get(mm.group(1))
+                if not t:
+                    return None, None, ('%s writes through AUDIT_TABLE_BY_APP.%s, which '
+                                        'has no entry in the map.' % (rel, mm.group(1)))
+                emits.setdefault(t, {}).setdefault(rel, set()).update(ev_call)
+                mapped |= ev_call
+            ev = emitted_in(s) - mapped
             if not ev:
                 continue
             tgt = set(TBL_CONST.findall(s)) | set(TBL_LITERAL.findall(s))
@@ -243,6 +279,84 @@ def findings(tables, emits):
                         'emitted_by': sorted(files),
                         'allowed': allowed})
     return out
+
+
+# -- THE LIVE HALF (b34, hank) ---------------------------------------------
+# CONCEPT: a check that reads the file the database was built from cannot see a
+# database that was never rebuilt from it -- so the CHECK is also read from
+# db/schema_snapshot.json, which is exported FROM the database.
+#
+# Paid for on 2026-10-20: b17 widened sairnsenior_audit_log's CHECK inside a
+# `create table if not exists`, which skips an existing table. This tool read
+# the file, saw pay_period_closed allowed, and passed; production refused every
+# pay-period close 503 AUDIT_UNAVAILABLE. The snapshot already said so.
+#
+# THE SNAPSHOT IS A POINT IN TIME and its age is printed on every run. A table
+# with no snapshot entry is NOT COMPARED, said by name, never counted as clean.
+LIVE_VALUE = re.compile(r"'([a-z0-9_]+)'::text")
+
+
+def live_checks(snapshot):
+    """{table: sorted allowed values} from a parsed snapshot dict.
+
+    `_constraints[table][name]` is base64 of the constraint definition. Only a
+    definition that names event_type counts; an unreadable one is skipped and
+    the table then reads as having no live CHECK."""
+    out = {}
+    cons = (snapshot or {}).get('_constraints') or {}
+    for table, defs in cons.items():
+        if not table.endswith('audit_log') or not isinstance(defs, dict):
+            continue
+        for _name, enc in defs.items():
+            # Snapshots before 2026-10-20 13:00 stored the definition as PLAIN
+            # text; later ones base64. Both are read, so an old snapshot can be
+            # replayed against today's code.
+            if 'event_type' in str(enc):
+                text = str(enc)
+            else:
+                try:
+                    text = base64.b64decode(''.join(str(enc).split())).decode('utf-8', 'replace')
+                except Exception:
+                    continue
+            if 'event_type' in text:
+                out[table] = sorted(set(LIVE_VALUE.findall(text)))
+    return out
+
+
+def live_findings(tables, emits, live):
+    """(rejected, drift, not_compared). Values emitted to a table whose LIVE
+    CHECK rejects them; values a FILE's CHECK allows that the live one does not;
+    and emitting tables the snapshot does not cover."""
+    rejected, drift, not_compared = [], [], []
+    for t in sorted(set(tables) | set(emits)):
+        files = emits.get(t, {})
+        got = set()
+        for v in files.values():
+            got |= v
+        if t not in live:
+            if got:
+                not_compared.append(t)
+            continue
+        bad = sorted(got - set(live[t]))
+        if bad:
+            rejected.append({'table': t, 'rejected': bad,
+                             'emitted_by': sorted(files), 'live_allows': live[t]})
+        file_allowed = (tables.get(t) or {}).get('allowed')
+        if file_allowed is not None:
+            missing = sorted(set(file_allowed) - set(live[t]))
+            if missing:
+                drift.append({'table': t, 'in_file_not_live': missing,
+                              'ddl': tables[t]['ddl']})
+    return rejected, drift, not_compared
+
+
+def load_snapshot(repo):
+    p = os.path.join(repo, 'db', 'schema_snapshot.json')
+    try:
+        with io.open(p, encoding='utf-8') as fh:
+            return json.load(fh), None
+    except Exception as e:
+        return None, '%s could not be read (%s)' % (p, e)
 
 
 def _limits():
@@ -402,6 +516,46 @@ const AUDIT_TABLE_BY_APP = {
                                      'allowed': ['pin_setup']}},
            {'zz_fixture_audit_log': {'api/zz-auth.js': {'pin_setup'}}}))
 
+    # -- F. THE THREE BLIND SPOTS b34 FOUND BY REPLAYING b33 ------------------
+    ck('F1. a quoted ternary condition no longer hides both events',
+       emitted_in("event_type: kind === 'close' ? 'pay_period_closed' : 'pay_period_reopened',")
+       == {'pay_period_closed', 'pay_period_reopened'})
+    dd = ("create table if not exists public.zz_audit_log (\n event_type text not null check "
+          "(event_type in (\n 'a',\n -- a comment with (parentheses) in it\n 'b'\n )),\n x int);")
+    tl = SQL_LINE_COMMENT.sub('', dd[DDL.search(dd).end():])
+    ck('F2. a comment holding ")" inside the value list no longer truncates the CHECK',
+       sorted(set(re.findall(r"'([a-z0-9_]+)'", CHK.search(tl).group(1)))) == ['a', 'b'])
+    ck('F3. the map reference is recognised for per-call attribution',
+       TBL_MAPPED.findall("table: closeAudit.AUDIT_TABLE_BY_APP.sairnsenior") == ['sairnsenior'])
+
+    # -- E. THE LIVE HALF ----------------------------------------------------
+    def enc(vals):
+        text = ("CHECK ((event_type = ANY (ARRAY["
+                + ", ".join("'%s'::text" % v for v in vals) + "])))")
+        return base64.b64encode(text.encode()).decode()
+    snap = {'_constraints': {'zz_fixture_audit_log': {
+        'zz_fixture_audit_log_event_type_check': enc(['pin_setup'])}}}
+    live = live_checks(snap)
+    ck('E1. the snapshot constraint is decoded to its values',
+       live == {'zz_fixture_audit_log': ['pin_setup']}, live)
+    tb = {'zz_fixture_audit_log': {'ddl': 'f.sql',
+                                   'allowed': ['pin_setup', 'pay_period_closed']}}
+    em = {'zz_fixture_audit_log': {'api/sd-data.js': {'pay_period_closed'}}}
+    r, d, n = live_findings(tb, em, live)
+    ck('E2. THE b33 SHAPE: the FILE allows the value and the LIVE CHECK does not '
+       '-> a live rejection', [x['rejected'] for x in r] == [['pay_period_closed']], r)
+    ck('E3. ...and the file/live drift is named with the file it came from',
+       d == [{'table': 'zz_fixture_audit_log', 'in_file_not_live': ['pay_period_closed'],
+              'ddl': 'f.sql'}], d)
+    live2 = live_checks({'_constraints': {'zz_fixture_audit_log': {
+        'c': enc(['pin_setup', 'pay_period_closed'])}}})
+    r2, d2, _n2 = live_findings(tb, em, live2)
+    ck('E4. CONTROL: once the live CHECK carries the value, no rejection and no drift',
+       not r2 and not d2, (r2, d2))
+    r3, _d3, n3 = live_findings(tb, em, {})
+    ck('E5. a table the snapshot does not cover is NOT COMPARED, never clean',
+       n3 == ['zz_fixture_audit_log'] and not r3, n3)
+
     print('\n%d passed, %d failed' % (npass, nfail))
     return 1 if nfail else 0
 
@@ -415,14 +569,24 @@ def main(argv):
         print('This is NOT "every event type is allowed". Nothing was compared.')
         return 2
     fs = findings(tables, emits)
+    snap, snapwhy = load_snapshot(REPO)
+    if snap is None:
+        live_r, live_d, live_n, gen = [], [], None, None
+    else:
+        live_r, live_d, live_n = live_findings(tables, emits, live_checks(snap))
+        gen = snap.get('_generated_at')
     checked = [t for t in tables if tables[t]['allowed'] is not None]
     nochk = [t for t in tables if tables[t]['allowed'] is None]
     if '--json' in argv:
         print(json.dumps({'criteria': CRITERIA_VERSION,
                           'tables_with_check': sorted(checked),
                           'tables_without_check': sorted(nochk),
-                          'findings': fs}, indent=1))
-        return 1 if fs else 0
+                          'findings': fs,
+                          'live': {'snapshot_generated_at': gen,
+                                   'snapshot_problem': snapwhy,
+                                   'rejected': live_r, 'drift': live_d,
+                                   'not_compared': live_n}}, indent=1))
+        return 1 if (fs or live_r) else 0
 
     print('AUDIT event_type vs its CHECK CONSTRAINT -- criteria %s'
           % CRITERIA_VERSION)
@@ -436,6 +600,31 @@ def main(argv):
     print('  tables WITHOUT one              : %d  %s'
           % (len(nochk), ', '.join(sorted(nochk))))
     print('')
+    # -- THE LIVE HALF, PRINTED BEFORE THE FILE VERDICT ----------------------
+    if snap is None:
+        print('LIVE: NOT COMPARED -- %s. Only the file comparison below ran, and it'
+              % snapwhy)
+        print('      cannot see a database that was not rebuilt from the file.')
+    else:
+        print('LIVE: db/schema_snapshot.json, generated %s -- a point in time.' % gen)
+        for f in live_r:
+            print('! %s  the LIVE CHECK rejects %s (emitted by %s)'
+                  % (f['table'], ', '.join(f['rejected']), ', '.join(f['emitted_by'])))
+        for f in live_d:
+            print('~ %s  allowed in %s but NOT in the live CHECK: %s'
+                  % (f['table'], f['ddl'], ', '.join(f['in_file_not_live'])))
+        if live_n:
+            print('  NOT COMPARED (no snapshot entry): %s' % ', '.join(live_n))
+        if not live_r and not live_d:
+            print('  every emitted value is in the live CHECK, and no file CHECK is '
+                  'ahead of it')
+    print('')
+    if live_r and not fs:
+        print('%d table(s) whose LIVE CHECK rejects an emitted value -- see above.'
+              % len(live_r))
+        print('')
+        _limits()
+        return 1
     if not fs:
         print('Every event_type emitted to a table with a CHECK constraint '
               'appears in that constraint.')
