@@ -825,6 +825,21 @@
       "status": "released",
       "released_at": "2026-10-19T22:55:38Z",
       "files": null
+    },
+    {
+      "id": "hover2-1792475176",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "b74 hover2-only: verify cc 38bbd455 three claims; currency sweep scoped to hover-audit-log/ and tools-hover2/ only; CORS/CSRF sweep; path-traversal/upload sweep; 3+ scorable findings resolved cross-instrument. FILES: SAIRN-handoff-H2-b74.md SAIRN-report-H2-b74.txt SAIRN-digest-H2-b74.txt tools-hover2/ NOT-tools-shared-REPORT-ONLY NOT-dot-claude-REPORT-ONLY NOT-api-NOT-html-NOT-sql NOT-H1-skill-dir",
+      "claimed_at": "2026-10-20T05:46:16Z",
+      "claimed_at_epoch": 1792475176.7027462,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-H2-b74.txt",
+        "SAIRN-handoff-H2-b74.md",
+        "SAIRN-report-H2-b74.txt"
+      ]
     }
   ],
   "refusals": [
