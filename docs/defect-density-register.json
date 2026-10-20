@@ -35009,7 +35009,7 @@
       "recurrence_open": "NOT CLOSED FOR THE CLASS, and it is the same open class as the GFE record filed against this commit: a summary that cannot distinguish nothing-wrong from nothing-known. Specifically still open here: the four null conditions are still not distinguished from each other in the UI, so a practice cannot tell a missing licence key from an unreachable server. And nothing sweeps the platform for hardcoded KPI defaults that an early return leaves standing -- every app on this platform renders tiles from markup defaults the same way."
     },
     {
-      "commit": "250099e90013",
+      "commit": "f92444ddf917",
       "date": "2026-10-20",
       "subject": "fix(hover b71): a passing restore drill now discharges its own push-count mark",
       "files": [
@@ -35489,7 +35489,7 @@
       "recurrence_open": "NOT CLOSED. No suite in tests/ covers the coded-items panel at all; the b42 drive lives in the scratchpad, not the repo."
     },
     {
-      "commit": "aabc1c659b5b",
+      "commit": "0543598cd4b0",
       "date": "2026-10-20",
       "subject": "control(sabotage b27): a probe must prove the path under test ran before it reports a verdict",
       "files": [
