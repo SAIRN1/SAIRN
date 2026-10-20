@@ -429,6 +429,23 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/push_gate_path_scope_sabotage_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "timeout=600,"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(base, ignore_errors=True)"
+    }
+   ],
+   "sha": "0543598cd4b01b489234a7f15932a419f40721f1",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_tier_a_open_basis_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -4716,6 +4733,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/push_gate_path_scope_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "794ffcc70b89234b43939f461e639807de1b38b0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_blob_coverage_scope_sabotage.py",
    "class": "test file",
    "level": "CHANGE",
@@ -6072,6 +6097,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "9733963d54685bf6f160bc85138c451911726379",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/push_gate_path_scope_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9774640444beb8ce3e763984fd598e3d8a975804",
    "criteria_version": "2026-10-06.1"
   },
   {
