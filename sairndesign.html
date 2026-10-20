@@ -2181,7 +2181,7 @@ function specCertJoinHint(){
   var cur=sdnReadCertForm();
   if(!src||!SDN_CERT_PRODUCT_FIELDS.some(function(f){return src.cert[f]&&src.cert[f]!==cur[f];})){el.innerHTML='';return;}
   el.innerHTML='Same vendor + SKU on &ldquo;'+H(src.item)+'&rdquo; ('+H(projectLabel(src.project_id))+') has product facts recorded. '+
-    '<button type="button" class="btn bo bs" onclick="specCertUseProduct(\''+src.id+'\')">Use them</button> '+
+    '<button type="button" class="btn bo bs" onclick="specCertUseProduct('+H(JSON.stringify(String(src.id)))+')">Use them</button> '+
     '<span style="color:var(--muted)">Label sightings, dates and evidence belong to the unit in hand and are not copied.</span>';
 }
 function specCertUseProduct(id){

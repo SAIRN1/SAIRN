@@ -3278,12 +3278,12 @@ var dntCredPending=0;
 async function refreshCredentialBoard(paintPending){
   var built=cdEnrollmentLines();
   dntCredPending++;
-  if(paintPending)rCredentials(null);
   var res=null;
   // sdnEvaluateCredentials() catches its own failures; the catch here is so a
-  // throw can never leave the panel saying "checking" forever. It renders as
-  // could-not-run with the reason unrecorded, which is then true.
-  try{res=await sdnEvaluateCredentials(null,built.lines);}
+  // throw -- from it OR from the pending paint -- can never leave the counter
+  // up and the panel saying "checking" forever. It renders as could-not-run
+  // with the reason unrecorded, which is then true.
+  try{if(paintPending)rCredentials(null);res=await sdnEvaluateCredentials(null,built.lines);}
   catch(e){res=null;}
   finally{dntCredPending--;}
   if(!res){rCredentials(null);rCredRules(null);rEnrollmentRisk(null,0);return;}
