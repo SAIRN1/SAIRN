@@ -31,7 +31,20 @@
 -- aggregate, "what has each location learned over time" is inherently a
 -- list, not a single mergeable blob.
 
-create table if not exists sairnscape_org_intel (
+-- ── b29 (2026-10-20), BEFORE THIS FILE HAS EVER BEEN RUN ─────────────────────
+-- "Unauthenticated by design" above is about the APP. It was never meant to
+-- extend to the DATABASE, and as first written it did: no RLS, no revoke, so
+-- the table would have been created holding whatever the project's default ACL
+-- gives anon and authenticated -- readable and writable straight through
+-- PostgREST with the public anon key, around api/org-intel.js entirely. RLS is
+-- now on with no policy (service_role bypasses RLS, so the endpoint is
+-- unaffected), anon/authenticated lose every privilege, and service_role is
+-- reset to exactly the two verbs the endpoint calls (insert at org-intel.js:94,
+-- select at :124 and :131). The table name is schema-qualified so the CREATE
+-- and the GRANT cannot land in different schemas on an unusual search_path.
+-- Safe to re-run: every statement is idempotent.
+
+create table if not exists public.sairnscape_org_intel (
   id uuid primary key default gen_random_uuid(),
   org_id text not null,
   app_id text not null default 'sairnscape',
@@ -41,5 +54,22 @@ create table if not exists sairnscape_org_intel (
   category text default 'general',
   created_at timestamptz not null default now()
 );
-create index if not exists idx_org_intel_org_app on sairnscape_org_intel (org_id, app_id, created_at desc);
+create index if not exists idx_org_intel_org_app on public.sairnscape_org_intel (org_id, app_id, created_at desc);
+
+alter table public.sairnscape_org_intel enable row level security;
+revoke all on public.sairnscape_org_intel from anon, authenticated;
+revoke all on public.sairnscape_org_intel from service_role;
 grant select, insert on public.sairnscape_org_intel to service_role;
+
+-- ── VERIFY (read-only) ─────────────────────────────────────────────────────
+-- Expect exactly three rows: rls_enabled = true, then service_role INSERT and
+-- service_role SELECT. Any anon or authenticated row, or rls_enabled = false,
+-- is a failed run, not a pass.
+select 'rls_enabled' as what, relrowsecurity::text as value
+  from pg_class where oid = 'public.sairnscape_org_intel'::regclass
+union all
+select grantee || ' ' || privilege_type, 'granted'
+  from information_schema.role_table_grants
+ where table_schema = 'public' and table_name = 'sairnscape_org_intel'
+   and grantee in ('anon', 'authenticated', 'service_role')
+ order by 1;

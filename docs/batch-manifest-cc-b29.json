@@ -1,0 +1,44 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "cc",
+  "batch": "b29",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "Exact complete list of never-created tables live api/ queries, as apply-ready sql/ files, not run",
+      "status": "done",
+      "evidence": "sql/b29_never_run_tables_verify.sql (37 tables, 28 files); docs/2026-10-20-cc-b29-notes.md section 1"
+    },
+    {
+      "id": 2,
+      "title": "Root-cause why production has not visibly broken for ten weeks",
+      "status": "done",
+      "evidence": "docs/2026-10-20-cc-b29-notes.md section 2; python tools/schema_provisioning_check.py --app sairndental --schema sql/sairndental_gfe_schema.sql --key DNT-PINNACLE-2026 --auth dnt-auth"
+    },
+    {
+      "id": 3,
+      "title": "Batch manifest: produce it or retire the requirement",
+      "status": "done",
+      "evidence": "docs/batch-manifest-cc-b29.json; python tools/batch_manifest.py --check"
+    },
+    {
+      "id": 4,
+      "title": "Tier A dnt_gfe + dnt_credentials, starting lateBy===0",
+      "status": "done",
+      "evidence": "docs/tier-a-reviews.json record fourth 2026-10-20T06:38:48Z; docs/2026-10-20-cc-b29-notes.md section 3 and Appendix A"
+    },
+    {
+      "id": 5,
+      "title": "One-line concept stated before each schema file",
+      "status": "done",
+      "evidence": "docs/2026-10-20-cc-b29-notes.md section 4"
+    },
+    {
+      "id": 6,
+      "title": "Push, no force, confirm it landed",
+      "status": "open",
+      "evidence": ""
+    }
+  ]
+}

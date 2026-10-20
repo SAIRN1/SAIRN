@@ -89,6 +89,16 @@ alter table public.rf_supplier_documents enable row level security;
 
 -- SELECT and INSERT only. No UPDATE: a receipt edited after the fact is worth
 -- nothing in a billing dispute. No DELETE: it is evidence.
+--
+-- REVOKE FIRST (b29, 2026-10-20, before this file has ever been run). A bare
+-- GRANT is additive: it cannot take away anything the project's default ACL
+-- handed service_role at CREATE time, so as first written the file could not
+-- make its own verify below come true -- "Expect exactly: INSERT, SELECT" was
+-- a hope, not a consequence. anon and authenticated lose everything for the
+-- same reason; RLS with no policy already denies them rows, and the revoke
+-- takes away the table-level privilege as well.
+revoke all on public.rf_supplier_documents from anon, authenticated;
+revoke all on public.rf_supplier_documents from service_role;
 grant select, insert on public.rf_supplier_documents to service_role;
 
 -- ── VERIFY ──────────────────────────────────────────────────────────────────
