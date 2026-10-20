@@ -840,6 +840,21 @@
         "SAIRN-handoff-H2-b74.md",
         "SAIRN-report-H2-b74.txt"
       ]
+    },
+    {
+      "id": "hover2-1792479686",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "b75 hover2-only: cross-vendor sampled review of every diff tier1+2; planted-bug recall test with Wilson intervals and a frozen hashed seed list; prompt-injection red-team of my own reviewer and the Groq call; deterministic static analysis as input with fail-closed on timeout/partial; one outcome=0 calibration resolution. FILES: SAIRN-handoff-H2-b75.md SAIRN-report-H2-b75.txt SAIRN-digest-H2-b75.txt tools-hover2/ NOT-tools-shared-REPORT-ONLY NOT-dot-claude-REPORT-ONLY NOT-api-NOT-html-NOT-sql NOT-H1-skill-dir",
+      "claimed_at": "2026-10-20T07:01:26Z",
+      "claimed_at_epoch": 1792479686.3271725,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-H2-b75.txt",
+        "SAIRN-handoff-H2-b75.md",
+        "SAIRN-report-H2-b75.txt"
+      ]
     }
   ],
   "refusals": [
