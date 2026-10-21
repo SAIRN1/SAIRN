@@ -83,8 +83,10 @@ main{flex:1;overflow-y:auto;padding:24px;}
 .kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--sh);}
 .klbl{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
 .kval{font-size:24px;font-weight:800;color:var(--pd);margin:4px 0;}
-.kt{font-size:11px;color:var(--ok);}
-.kt.d{color:var(--danger);}
+/* b51 a11y: the KPI captions are 11px text, so they need 4.5:1. --ok (#22C55E, 2.3:1 on white) and
+   --danger (#EF4444, 3.8:1) are kept for icons and badges; the caption text uses the 700 shades. */
+.kt{font-size:11px;color:#15803D;}
+.kt.d{color:#B91C1C;}
 /* CARDS */
 .card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh);margin-bottom:16px;}
 .ch{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
@@ -121,7 +123,7 @@ label.chk input{width:auto;}
 .air{display:flex;gap:8px;}
 .air input{flex:1;}
 .qts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
-.qt{background:var(--pt);border:1px solid var(--pb);color:var(--pd);border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;}
+.qt{font:inherit;font-size:12px;background:var(--pt);border:1px solid var(--pb);color:var(--pd);border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;}
 .qt:hover{background:var(--p);color:#fff;}
 /* TOAST */
 #toast{position:fixed;bottom:24px;right:24px;background:#0F172A;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:99999;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;max-width:320px;}
@@ -309,7 +311,7 @@ label.chk input{width:auto;}
   <div class="wrap">
     <aside id="aside" aria-label="Main navigation">
       <div class="ss">Overview</div>
-      <button class="sb on" id="sb-dashboard" onclick="nav('dashboard')"><span class="sico">&#128202;</span>Dashboard</button>
+      <button class="sb on" id="sb-dashboard" aria-current="page" onclick="nav('dashboard')"><span class="sico">&#128202;</span>Dashboard</button>
       <button class="sb" id="sb-ai" onclick="nav('ai')"><span class="sico">&#129302;</span>AI Assistant</button>
       <div class="ss">Cases</div>
       <button class="sb" id="sb-cases" onclick="nav('cases')"><span class="sico">&#128203;</span>Case Management</button>
@@ -371,10 +373,10 @@ label.chk input{width:auto;}
   <div class="pa"><button class="btn bo bs" onclick="clrAI()">Clear</button></div></div>
   <div class="card"><div class="cb">
     <div class="qts">
-      <span class="qt" onclick="askAI('Draft a compassionate first-call intake script for the phone')">First-Call Script</span>
-      <span class="qt" onclick="askAI('What information does a General Price List (GPL) legally need to disclose under the FTC Funeral Rule?')">GPL Requirements</span>
-      <span class="qt" onclick="askAI('Draft a gentle follow-up message to a family about outstanding paperwork')">Family Follow-up</span>
-      <span class="qt" onclick="askAI('What is a typical chain-of-custody handoff checklist for a removal?')">Custody Checklist</span>
+      <button type="button" class="qt" onclick="askAI('Draft a compassionate first-call intake script for the phone')">First-Call Script</button>
+      <button type="button" class="qt" onclick="askAI('What information does a General Price List (GPL) legally need to disclose under the FTC Funeral Rule?')">GPL Requirements</button>
+      <button type="button" class="qt" onclick="askAI('Draft a gentle follow-up message to a family about outstanding paperwork')">Family Follow-up</button>
+      <button type="button" class="qt" onclick="askAI('What is a typical chain-of-custody handoff checklist for a removal?')">Custody Checklist</button>
     </div>
     <div class="achat" id="achat"><div style="color:var(--muted);text-align:center;padding:40px 0;">Ask anything about cases, documents, merchandise, or operations.</div></div>
     <div class="air"><input id="ainp" placeholder="Ask about cases, documents, merchandise, permits..." onkeydown="if(event.key==='Enter')sendAI()"><button class="btn bp" onclick="sendAI()">Send</button></div>
@@ -428,7 +430,7 @@ label.chk input{width:auto;}
   </div></div>
   <div class="card"><div class="ch"><span class="ct">Chain of Custody Log</span></div><div class="cb">
     <div style="color:var(--muted);font-size:12px;margin-bottom:10px">Entries are append-only &mdash; a chain-of-custody record is not edited or removed once logged, only added to.</div>
-    <div class="fg"><label>Case</label><select id="cclogcase" onchange="rCustodyLog()"></select></div>
+    <div class="fg"><label for="cclogcase">Case</label><select id="cclogcase" onchange="rCustodyLog()"></select></div>
     <div class="fr"><div class="fg"><label>From</label><input id="ccfrom" placeholder="e.g. Family residence"></div><div class="fg"><label>To</label><input id="ccto" placeholder="e.g. Pinnacle Family Funeral Home"></div></div>
     <div class="fr"><div class="fg"><label>Location</label><input id="cclocation" placeholder="Address or facility"></div><div class="fg"><label>Notes</label><input id="ccnotes" placeholder="Optional"></div></div>
     <button class="btn bo bs" onclick="addCustodyEntry()">+ Log Handoff</button>
@@ -858,7 +860,7 @@ label.chk input{width:auto;}
     <div class="kpi"><div class="klbl">Published</div><div class="kval" id="ob-published">0</div><div class="kt">Final</div></div>
   </div>
   <div class="card"><div class="cb">
-    <div class="fg"><label>Case</label><select id="obcase" onchange="rObituaryCaseChange()"></select></div>
+    <div class="fg"><label for="obcase">Case</label><select id="obcase" onchange="rObituaryCaseChange()"></select></div>
     <div class="card" id="ob-vitals" style="margin-bottom:14px"></div>
     <button class="btn bo bs" onclick="generateObituary()">Generate Draft with AI</button>
     <div class="fg" style="margin-top:14px"><label>Obituary Text</label><textarea id="obtext" rows="10" placeholder="Generated or hand-written obituary text..."></textarea></div>
@@ -886,7 +888,7 @@ label.chk input{width:auto;}
     <div class="kpi"><div class="klbl">Guestbook Entries</div><div class="kval" id="mm-guestbook">0</div><div class="kt">Across all pages</div></div>
   </div>
   <div class="card"><div class="cb">
-    <div class="fg"><label>Case</label><select id="mmcase" onchange="rMemorialCaseChange()"></select></div>
+    <div class="fg"><label for="mmcase">Case</label><select id="mmcase" onchange="rMemorialCaseChange()"></select></div>
     <div id="mm-editor"></div>
   </div></div>
 </div>
@@ -900,7 +902,7 @@ label.chk input{width:auto;}
     <div class="kpi"><div class="klbl">Completed</div><div class="kval" id="ac-completed">0</div><div class="kt">All time</div></div>
   </div>
   <div class="card"><div class="cb">
-    <div class="fg"><label>Case</label><select id="accase"></select></div>
+    <div class="fg"><label for="accase">Case</label><select id="accase"></select></div>
     <button class="btn bo bs" onclick="generateAftercareSchedule()">Generate Standard Schedule (1wk / 1mo / 1yr)</button>
   </div></div>
   <div class="card"><div class="ch"><span class="ct">Check-ins</span></div><div class="cb">
@@ -932,7 +934,7 @@ label.chk input{width:auto;}
     <div class="kpi"><div class="klbl">Active Processions</div><div class="kval" id="pr-active">0</div><div class="kt">In progress</div></div>
   </div>
   <div class="card"><div class="cb">
-    <div class="fg"><label>Case</label><select id="prcase"></select></div>
+    <div class="fg"><label for="prcase">Case</label><select id="prcase"></select></div>
     <div class="fg"><label>Lead Vehicle</label><input id="prvehicle" placeholder="Hearse 1"></div>
     <button class="btn bp bs" onclick="startProcession()">Start Procession</button>
   </div></div>
@@ -1324,10 +1326,10 @@ label.chk input{width:auto;}
   <div class="card" id="sec-admin-card" style="display:none"><div class="cb">
     <div style="font-weight:700;margin-bottom:4px">Employee Accounts</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Owner only. Creates or updates one person's own credentials &mdash; there are no shared role PINs.</div>
-    <div class="fg"><label>Employee ID or email</label><input id="sec-new-eid"></div>
-    <div class="fg"><label>Display name</label><input id="sec-new-name"></div>
-    <div class="fg"><label>Role</label><select id="sec-new-role"><option value="director">Director</option><option value="arranger">Arranger</option><option value="prep">Preparation</option><option value="office">Office</option><option value="apprentice">Apprentice</option><option value="livery">Livery</option><option value="owner">Owner</option></select></div>
-    <div class="fg"><label>PIN (6-8 digits)</label><input id="sec-new-pin" type="password" inputmode="numeric"></div>
+    <div class="fg"><label for="sec-new-eid">Employee ID or email</label><input id="sec-new-eid"></div>
+    <div class="fg"><label for="sec-new-name">Display name</label><input id="sec-new-name"></div>
+    <div class="fg"><label for="sec-new-role">Role</label><select id="sec-new-role"><option value="director">Director</option><option value="arranger">Arranger</option><option value="prep">Preparation</option><option value="office">Office</option><option value="apprentice">Apprentice</option><option value="livery">Livery</option><option value="owner">Owner</option></select></div>
+    <div class="fg"><label for="sec-new-pin">PIN (6-8 digits)</label><input id="sec-new-pin" type="password" inputmode="numeric"></div>
     <button class="btn bp" onclick="secProvision()">Save Employee</button>
     <div id="sec-admin-msg" style="font-size:12px;margin-top:10px"></div>
   </div></div>
@@ -1350,7 +1352,7 @@ label.chk input{width:auto;}
       general (non-case-specific) AI Assistant questions contribute to and read the funeral home's shared
       trending-topics context &mdash; checked server-side on every request, not a client-side toggle.
     </div>
-    <div class="fg"><label>Staff employee ID or email</label><input id="sec-share-eid"></div>
+    <div class="fg"><label for="sec-share-eid">Staff employee ID or email</label><input id="sec-share-eid"></div>
     <div style="display:flex;gap:10px;margin-bottom:8px">
       <button class="btn bp bs" onclick="secGrantSharedKnowledge(true)">Grant Access</button>
       <button class="btn bo bs" onclick="secGrantSharedKnowledge(false)">Revoke Access</button>
@@ -1997,13 +1999,25 @@ function closeNav(){
   var t=$('navtog');if(t)t.setAttribute('aria-expanded','false');
 }
 
+// b51 a11y -- CONCEPT: each panel's visible .ptitle IS its heading, so it is
+// exposed as one (level 2), once, over the real titles -- a screen reader's
+// heading navigation previously found none in any of the 27 panels.
+document.querySelectorAll('.panel .ptitle').forEach(function(t){t.setAttribute('role','heading');t.setAttribute('aria-level','2');});
 function nav(id){
   closeNav();
   document.querySelectorAll('.modal.on').forEach(function(m){m.classList.remove('on');});
   document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('on');});
-  document.querySelectorAll('.sb').forEach(function(b){b.classList.remove('on');});
+  // b51 a11y -- CONCEPT: the current sidebar item carries aria-current="page";
+  // the `on` class alone is visual.
+  document.querySelectorAll('.sb').forEach(function(b){b.classList.remove('on');b.removeAttribute('aria-current');});
   var p=$('panel-'+id),b=$('sb-'+id);
-  if(p)p.classList.add('on');if(b)b.classList.add('on');
+  if(p)p.classList.add('on');if(b){b.classList.add('on');b.setAttribute('aria-current','page');}
+  // b51 a11y -- CONCEPT (J1, Michael's decision for sairndental, applied here
+  // too): nav() moves focus to the new panel's heading. A panel change was
+  // otherwise SILENT to a screen reader -- an `on` class swap with no page
+  // load and no focus move -- and the next Tab walked the rest of the sidebar.
+  var pt=p&&p.querySelector('.ptitle');
+  if(pt){pt.setAttribute('tabindex','-1');try{pt.focus();}catch(e){}}
   // Re-run voice-input attachment on every nav (same fix SAIRNbiz needed live,
   // 2026-08-18, and applied proactively on SAIRNdesign, 2026-08-19 -- a
   // one-shot DOMContentLoaded install can silently miss targets inside
@@ -4032,7 +4046,7 @@ function rInvoicing(){
   }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No invoices yet</td></tr>';
   var gtb=$('gpltbody');
   gtb.innerHTML=gplServices().map(function(s){
-    return '<tr><td>'+H(s.category)+'</td><td><input id="gplprice-'+s.id+'" type="number" value="'+s.price+'" style="width:110px" onchange="saveGplServicePrice(\''+s.id+'\')"></td>'+
+    return '<tr><td>'+H(s.category)+'</td><td><input id="gplprice-'+s.id+'" aria-label="Price for '+H(s.category)+'" type="number" value="'+s.price+'" style="width:110px" onchange="saveGplServicePrice(\''+s.id+'\')"></td>'+
       '<td><label class="chk" style="padding:0"><input type="checkbox" id="gplnd-'+s.id+'"'+(s.non_declinable===true?' checked':'')+
       ' onchange="saveGplNonDeclinable(\''+s.id+'\')"> <span style="font-size:12px;color:var(--muted)">cannot be declined</span></label></td></tr>';
   }).join('');
