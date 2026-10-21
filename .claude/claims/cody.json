@@ -4342,8 +4342,8 @@
       "task": "b46 CHECK 5e reads the pushed tip and names unguarded probes; the one-line cody override in the path manifest waits for fourth b52 to release that file  FILES: tools/sairn_push_gate_hook.py tools/mutation_anchor_check.py",
       "claimed_at": "2026-10-21T19:40:17Z",
       "claimed_at_epoch": 1792611617.446341,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T20:17:42Z",
       "files": [
         "tools/mutation_anchor_check.py",
         "tools/sairn_push_gate_hook.py"
