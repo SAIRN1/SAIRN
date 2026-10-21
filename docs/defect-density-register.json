@@ -37200,7 +37200,7 @@
       "recurrence_open": "Any posture-disclosure suite goes red silently on a deliberate scope change; nothing ties a SD_SESSION_GATED edit to its disclosure suites."
     },
     {
-      "commit": "fd4823b68197",
+      "commit": "f9b3a67a9500",
       "date": "2026-10-21",
       "subject": "fix(sairnlegacy b51): accessibility pass -- KPI caption contrast, labels tied to controls, named GPL prices, keyboard AI chips, panel headings, aria-current, focus to heading on nav",
       "files": [
