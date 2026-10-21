@@ -1,0 +1,20 @@
+SAIRN DIGEST -- fourth b51 -- 2026-10-21
+CONTEXT 58.1% of 1,000,000 -- 580,846 tokens, measured.
+STATUS: J1 + SAIRNlegacy a11y landed and live (0b6ddaaa9, dada3f33a), no force, no skip. Real NVDA run NOT RUN.
+DECISION-NEEDED: (1) one click to run NVDA (handoff has the command); (2) confirm J1 should also apply to SAIRNlegacy (applied, flagged).
+READ: SAIRN-handoff-fourth-b51.md (whole state). Detail: SAIRN-report-fourth-b51.txt.
+SQL: none this batch.
+INCIDENT: NVDA attempt 1 used OS keystrokes that reached Michael's other windows (Start, Wi-Fi, Claude app Send button);
+  effect unknown, reported in-session. Attempt 2 sends no OS input and refused when nobody clicked.
+CHANGED:
+  0b6ddaaa9 sairndental J1: focus to the panel heading on nav; 23/23; first Tab enters the panel; 14 arms, 4 mutants
+  dada3f33a sairnlegacy: axe 88 -> 0 (contrast x70, label x12, select-name x6); headings 0 -> 27/27;
+            aria-current; focus-to-heading 27/27; AI chips are buttons; 19 arms, 7/7 mutants
+  8a07b196b register record, override (fourth holds 17), regenerated docs
+EVIDENCE-path: tests/sairnlegacy_a11y_pass.js, tests/sairndental_a11y_pass.js; scratchpad nvda_dental.py, a11y_*.json (paths in handoff).
+NEXT, in order:
+  a Michael: click once for the NVDA run (~4 min hands-off)
+  b same pass over the next launch-wave app
+  c not mine: tests/sairnlegacy_reservation_lock.js red at HEAD too
+UNVERIFIED: NVDA speech itself; modals; other apps.
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\fd66c7b5-98f7-4e46-ac2a-b0383cde9210.jsonl

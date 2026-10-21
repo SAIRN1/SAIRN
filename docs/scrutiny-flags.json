@@ -595,6 +595,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairndental_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0b6ddaaa9db5bd9fd667972cf2cc94feafb3bbad",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/app_session_isolation_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -11550,6 +11558,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "da16a9b849173d6f8e6d6b76189adf6c54570bbc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlegacy_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "dada3f33a880f1c1c6695532c44bd9add1db9fe0",
    "criteria_version": "2026-10-06.1"
   },
   {
