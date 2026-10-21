@@ -1,0 +1,14 @@
+HANK b38 DIGEST -- 2026-10-21 -- Bash deny for the hover clones (H); G closed; C held
+CONTEXT 10.8% of 1,000,000 -- 107,752 tokens, measured.
+STATUS: docs only, NOT FORCED. No code change. This clone's settings.local.json: 13 deny / 1213 allow.
+1. G closed: build-agent writes into either hover clone must be REFUSED. No repo test said otherwise.
+2. H done here: Bash(*SAIRN-hover*) + Bash(*sairn-hover*). Deny rule, not a hook (hooks disarmed).
+   Probe: 4 read-only ls naming hover paths REFUSED; SAIRN-cody control ran.
+   Michael ran the writes -- the classifier refused mine as self-modification.
+3. Defects: \* in a rule is a literal star; ~/fix-deny.ps1 dedups case-insensitively.
+4. C held: Maps Static API needs Michael's Cloud Console. A dropped per dispatch.
+DECISION-NEEDED (Michael): Bash deny on cc, cody, fourth (NOT H1/hover clones); fix-deny -cnotcontains.
+NEXT: handoff sec.4 -- H2, H3, C, B, D.
+CHANGED: these three docs only.
+EVIDENCE-path: SAIRN-handoff-hank-b38.md, SAIRN-report-hank-b38.txt
+UNVERIFIED: other casings/globs/variables; the PowerShell tool.

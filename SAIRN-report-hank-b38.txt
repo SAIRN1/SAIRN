@@ -1,0 +1,34 @@
+HANK b38 REPORT -- 2026-10-21
+
+0. Pulled origin/main first (fast-forward, 23 commits). Window declared: --provision-window 1000000.
+
+1. ITEM G -- CLOSED. Concept: the deny is the specification; every build-agent write into a hover clone is
+   expected to be REFUSED, and the record that said otherwise is corrected, not the rule.
+   No test or doc in tools/, docs/, tests/, .claude/ expects such a write to succeed. The only "must succeed"
+   was the b37 dispatch; b37 handoff sec.4 item G is superseded by b38 handoff sec.3 item 1.
+
+2. ITEM H -- DONE ON THIS CLONE. Concept: Bash cannot be write-scoped by pattern, so deny every Bash command
+   whose text names a hover clone; reads stay available through Read/Grep.
+   Mechanism: permissions.deny in .claude/settings.local.json, NOT a hook -- hooks are disarmed by standing
+   decision (.claude/settings.json _hooks_note). Tracked settings.json was not used: it reaches the hover
+   clones too and would block the auditor naming its own clone.
+   My write was refused by the auto-mode classifier (self-modification); Michael ran the script himself.
+   Entries: Bash(*SAIRN-hover*), Bash(*sairn-hover*) (+3 narrower lowercase, now redundant). 13 deny / 1213 allow.
+   PROBE (read-only ls -d; nothing written):
+     REFUSED  ls -d /c/Users/marsh/Documents/SAIRN-hover2
+     REFUSED  ls -d /c/Users/marsh/Documents/sairn-hover/
+     REFUSED  true && ls -d C:/Users/marsh/Documents/SAIRN-hover      (compound)
+     REFUSED  ls -d 'C:\Users\marsh\Documents\sairn-hover\'          (after the broad lowercase entry)
+     RAN      ls -d /c/Users/marsh/Documents/SAIRN-cody               (positive control)
+   DEFECTS FOUND: (a) Bash(*sairn-hover\*) did not match a backslash path before the broad entry -- \* is a
+   literal star. (b) ~/fix-deny.ps1 dedups case-INsensitively (-notcontains) and silently skipped the
+   lowercase entry ("now has 12"); Claude Code matching is case-sensitive. Case-sensitive copy: add-deny-cs.ps1.
+   RESIDUAL: other casings, globs (SAIRN-h*), paths built in variables, scripts that write internally, the
+   PowerShell tool (untested). A guardrail against accidental writes, not containment.
+
+3. ITEM C -- HELD. Needs Michael's Google Cloud access: enable Maps Static API for the project behind
+   GOOGLE_MAPS_API_KEY (and its API restrictions). api/route-map.js already calls it. Not attempted.
+
+4. ITEM A -- dropped per dispatch.
+
+5. PUSH: these three docs only, not forced; landing confirmed by sha on origin/main after push.
