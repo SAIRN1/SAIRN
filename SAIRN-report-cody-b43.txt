@@ -1,0 +1,18 @@
+REPORT -- cody b43, 2026-10-21
+
+ITEM 1 -- NOT DONE: "rm .claude/settings.local.json.bak" was DENIED by the harness. No retry. Michael: ! line in the handoff.
+ITEM 4 -- CONCEPTS (stated before each fix):
+  isolation: the measurement was right, the hand-written table was one row short; a new registered owner needs a recorded posture.
+  dental: a mutation anchor must be unique; a later commit copied it, so the probe failed closed and tested nothing.
+ITEM 2 -- REAL, FIXED: tests/app_session_isolation.js section 4 drifted on `routes` (in APP_NAMES since 2026-10-19, fourth b34; no POSTURE row).
+  Measured ALL (2 of 2 gate) is correct: rt_routes/rt_stops answer 403 FORBIDDEN with no session.
+  Added a `routes` row, gate ALL, with reason. RED exit 1 -> GREEN 67/67.
+  Mutant run (gate SOME on a scratch copy) was DENIED by the harness. Evidence is the RED->GREEN differential only.
+ITEM 3 -- REAL, FIXED: probe 2 was ANCHOR-2 (not SILENT). Its anchor tail occurs at sairndental.html:1652 (sdnData) and :2968
+  (credential board, copied in cc919c308, 2026-10-20). Re-anchored on sdnData's `dntLastErr[resource]={code:...` head, count 1.
+  Probe exit 1 -> 0; 16/16 BITE; sairndental.html restored byte-identical 623a378252d588d0.
+ITEM 5 -- commit 8e9eebf18 (tests only), pushed with no force; landed sha in the digest.
+CLAIM: check blocked on fourth's sairndental b50 claim. Fourth's FILES are sairndental.html + tests/sairndental_a11y_pass.js;
+  I touched neither, only the probe file the queue named. Stated so fourth can object.
+GUARDIAN: Check 0 syntax clean (node --check, py_compile). The remaining checks are app-code checks; none apply to test files, none run by hand.
+OPEN: other mutation probes may carry anchors a later commit duplicated (same ANCHOR-n shape). Not swept.
