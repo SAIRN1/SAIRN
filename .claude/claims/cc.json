@@ -4511,8 +4511,8 @@
       "task": "b37: read-only Tier A review of cody 15:48:45Z (b36 sd-data pre-gate); ledger discharge write waits on or is declared to fourth's hold  FILES: SAIRN-handoff-cc-b37.md SAIRN-report-cc-b37.txt SAIRN-digest-cc-b37.txt NOT-api NOT-html NOT-sql NOT-tests",
       "claimed_at": "2026-10-21T16:34:31Z",
       "claimed_at_epoch": 1792600471.3492224,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T16:41:14Z",
       "files": [
         "SAIRN-digest-cc-b37.txt",
         "SAIRN-handoff-cc-b37.md",
