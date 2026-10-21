@@ -8189,6 +8189,28 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-10-21T15:37:25Z",
+      "opened_at_sha": "170d75f8e73929b99913b93bcc6313419b886215",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 0,
+      "resources": [
+        "employees"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "sairnbiz.html"
+      ],
+      "what": "fourth b47: sairnbiz Z8 display -- run table shows stored lines + pay date, payroll CSV gains sbPayLine columns, employee gains device-only sex (516.2(a)(4)), runs stamp workweek_start from sbWeekStart (a)(5)",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-21T15:37:25Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
