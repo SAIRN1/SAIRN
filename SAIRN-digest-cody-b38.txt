@@ -1,0 +1,12 @@
+DIGEST -- cody b38, 2026-10-21. One item: done. PUSHED, no --force, no skip.
+STATUS: origin/main 35813e6eaba8a35b98a9cfd0f6b0d37f6dabd4d5 (work commit, by git ls-remote); the probe matches by sha256 and exits 0 after the push. NO LIVE WRITES. NO SQL.
+CHANGED: tests/sairnfreedom_auth_review_probe.js (+57/-8), SAIRN-handoff-cody-b38.md.
+ITEM 1 -- CONCEPT: an anchor is re-pointed only after the property it stood for is shown to still hold. The guard had MOVED into the shared soleRoleDemotionRefusal() (af85acafb), not disappeared. Now checked structurally and DRIVEN (only governor 409; promote allowed with no read; second governor allowed).
+ALSO FIXED: the guard count saw only the literal LAST_ADMIN and printed a FALSE "hole open in 5 apps" finding. Now 7 guarded, 0 exposed.
+ABLATION: sf-auth's call removed -> COULD NOT DRIVE, exit 1; grd-auth's call removed -> the finding returns (report-only, exit 0, by design).
+DECISION-NEEDED: none new. Carried: cc Tier A b31-b37; fourth defects 7/8; hank 5/6.
+LIMIT: a probe finding stays report-only (exit 0); only a could-not-drive fails the run. Unchanged, by the probe's design.
+UNVERIFIED: nothing new this batch.
+NEXT: carried items only.
+EVIDENCE-path: SAIRN-handoff-cody-b38.md, SAIRN-report-cody-b38.txt, tests/sairnfreedom_auth_review_probe.js
+CONTEXT 39.3% of 1,000,000 -- 393,237 tokens, measured.

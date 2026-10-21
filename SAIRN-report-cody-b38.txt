@@ -1,0 +1,17 @@
+REPORT -- cody b38, 2026-10-21
+
+ITEM: tests/sairnfreedom_auth_review_probe.js was red at HEAD and is now green. PUSHED, no --force, no skip.
+origin/main = 35813e6eaba8a35b98a9cfd0f6b0d37f6dabd4d5 (the work commit, per git ls-remote). The file matches by sha256, and the post-push run exits 0.
+
+CONCEPT: an anchor is re-pointed only after the property it stood for is shown to still hold.
+CAUSE: af85acafb (2026-09-22) folded sf-auth's inline demotion guard onto lifecycle.soleRoleDemotionRefusal(). The anchor was the deleted inline `if`.
+ALSO STALE: the guard count recognised only the literal LAST_ADMIN. It counted 6 shared-guard callers as unguarded and printed a FALSE "hole open in 5 apps" finding.
+FIX:
+  (1) A structural check of the call site: called before the upsert, keyed on SOLE_ROLE and the new role, and its refusal is returned.
+  (2) The guard is driven with sf-auth's real roles: demoting the only governor gives 409, promoting to governor is allowed with no read, and a second governor is allowed.
+  (3) The count now recognises the shared guard: 7 guarded, 0 exposed.
+ABLATION (worktree):
+  - sf-auth's call removed -> COULD NOT DRIVE, exit 1.
+  - grd-auth's call removed -> the finding returns. Exit 0, because findings are report-only by the probe's design.
+OPEN: carried only (cc Tier A b31-b37; fourth defects 7 and 8; hank defects 5 and 6).
+CLAIM: platform, released after the deliverables commit.
