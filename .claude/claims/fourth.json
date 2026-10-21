@@ -4684,8 +4684,8 @@
       "task": "b53: StoneDesk a11y pass + fixes; NVDA script summary bug.  FILES: stonedesk.html tests/stonedesk_a11y_pass.js docs/sairn-path-manifest.json SAIRN-handoff-fourth-b53.md SAIRN-report-fourth-b53.txt SAIRN-digest-fourth-b53.txt NOT-api",
       "claimed_at": "2026-10-21T20:36:16Z",
       "claimed_at_epoch": 1792614976.0030508,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T20:53:34Z",
       "files": [
         "SAIRN-digest-fourth-b53.txt",
         "SAIRN-handoff-fourth-b53.md",
