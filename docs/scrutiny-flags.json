@@ -1418,6 +1418,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/_lib/routes.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "1b8ac96fac7b6c9ac2647fa65f9647d471dca59e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b38-deleted-row-platform.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "1b8ac96fac7b6c9ac2647fa65f9647d471dca59e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_b13_b14_ablation_record.py",
    "class": "test file",
    "level": "CHANGE",
