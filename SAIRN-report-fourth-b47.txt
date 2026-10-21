@@ -1,0 +1,43 @@
+SAIRN REPORT -- fourth b47 -- 2026-10-21
+
+RESULT: all items landed, no force, no gate skip. The geocode is live and
+correct, but Google refuses the Maps key (REQUEST_DENIED; Static Maps 403
+on the same key), so no real coordinate has been returned. That is a
+console fix for Michael. Handoff: SAIRN-handoff-fourth-b47.md.
+
+1 GEOCODE LANDING + LIVE CHECK               769590aca, Tier A e7c9ba9e1
+  Tier A obligation recorded and pushed; cc discharged it SOUND (56418eb62).
+  Live, real login (SD-AUDIT-2026 / sairn-demo-owner) against real Google:
+  page carries the client, session issued, endpoint 200, one result per
+  address in order -- PASS. Every address UPSTREAM_STATUS REQUEST_DENIED,
+  located 0, nothing cached -- the honest-failure path held. Static Maps on
+  the same key: 502 UPSTREAM (Google 403). Needs: billing, Geocoding +
+  Static APIs enabled, key restrictions allowing Vercel server calls.
+  Vercel deployed out of order: e7c9ba9e1 live at 15:14Z, then the older
+  7a549be28 replaced it; production lacked the geocode until a later push.
+
+2 Z8 DISPLAY + 516.2(a)(4)/(a)(5)               170d75f8e, Tier A dbac30771
+  CONCEPT: the table and the CSV show what sbPayLine() records -- the table
+  reads the run's stored lines, never a re-pricing; the CSV builds its line
+  columns with sbPayLine() itself; workweek start is READ from sbWeekStart(),
+  the boundary the OT maths uses; sex is stored as entered, device-only.
+  RED 5/30 -> GREEN 37/37 local AND live. Mutants: sync leaks sex,
+  workweek typed, table re-prices, CSV withholding 0 -- all killed (the
+  re-price mutant survived first; arm added). 18/18 sairnbiz suites; b46
+  Z8/Z9 58/58. Held ~20 min for cc's claim on tier-a-reviews.json, as told.
+
+3 SCRUTINY ROWS: b2539f7f7 (the two from 37b5dc630), 9bcba36d3 (later rows).
+4 .bak: my rm was denied by the permission layer; Michael removed it.
+5 CONCEPT line stated before code; in the commit and as code comments.
+6 PUSH: landed and confirmed on origin/main; Z8 confirmed live (37/37).
+
++ GEOCODE ARMS IN REPO (cc b34 gap)               c04a3baaa, 9bcba36d3
+  api/b46-route-geocode.test.js: 18 b46 arms + S19 foreign-licence session;
+  cc's four mutants in-file (0,0 -> S9, partial_match -> S10, cap 26 -> S12,
+  branch above session -> S16/S19), anchor count != 1 -> exit 2. 19/19, 4/4
+  killed, exit 0; b33 route-map 17/17. Path gate: declared in fourth's
+  assigned_overrides (hank owns api/). Generated docs regenerated.
+
+ROUTED: Michael -- Google key. cc -- Tier A review of Z8 display.
+UNPROVEN: a real Google fix; key quota; Z8 on a real tenant (driven on
+local state on the live page); Chromium only.
