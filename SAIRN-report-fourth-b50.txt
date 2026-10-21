@@ -1,0 +1,42 @@
+SAIRN REPORT -- fourth b50 -- 2026-10-21
+
+RESULT: landed and live (01aaa9988), no force, no gate skip. NOT AN NVDA
+PASS: NVDA is not installed here (nor any driver); installing it needs an
+elevated prompt and Michael's yes. What ran: Chromium's accessibility tree
+(what NVDA reads) + axe-core 4.10.2 (WCAG 2.0/2.1/2.2 A+AA) + real keyboard
+events, keyboard sign-in on DNT-PINNACLE-2026, every write blocked (0).
+Handoff: SAIRN-handoff-fourth-b50.md.
+
+1 THE PASS, all 23 panels (before = live, after = live again post-deploy)
+  axe violations: 21 nodes -> 0 (label x20 Vendor Catalog, image-alt x1
+  Complaints). Headings: 0/23 -> 23/23. Current page: unmarked -> aria-
+  current. Insurance Capture card photo: unreachable by keyboard -> Tab
+  reaches it, Enter opens the file chooser. Every panel announces on nav
+  (b37), before and after. Sign-in screens labelled; no contrast findings.
+
+2/3 FIXES (concept stated before each):
+  - each panel's visible title IS its heading: role=heading aria-level=2,
+    set once at load over the real titles;
+  - the current sidebar item carries aria-current=page (nav() moves it);
+  - each vendor quantity box is named 'Quantity of <product>';
+  - the QR image says what it encodes; the library's twin canvas hidden;
+  - the card-photo drop zone is a real keyboard button (tabindex 0,
+    Enter/Space) -- the only way to its display:none file input.
+  tests/sairndental_a11y_pass.js: 10 arms, 8/8 mutants killed; all
+  tests/sairndental*.js exit 0. Register: static-checker record.
+
+  PRODUCT JUDGMENT, filed not guessed:
+  J1 no skip link and focus stays on the sidebar after nav -- a keyboard
+     user tabs through up to 21 sidebar items to reach content (b37 chose
+     announce-not-move); options: skip link, or focus the panel heading.
+  J2 generic row buttons ('Compare', 'Add', 'Remove') -- read with row
+     context, axe silent; per-row names are a style call.
+  J3 real NVDA run -- needs install (elevated) + a driver.
+
+4 PUSH: landed after six rebase/retry rounds (remote moving, two ref-lock
+  races); register re-seated to 01aaa9988; live bytes = origin at 18:37Z;
+  live after-pass clean.
+
+NOT COVERED: modals not opened; other apps not passed.
+NOTED, NOT MINE: register validator flags ce15ddaa6a3c (cody b27 record,
+commit not in repo).

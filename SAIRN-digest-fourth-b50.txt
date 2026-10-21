@@ -1,0 +1,20 @@
+SAIRN DIGEST -- fourth b50 -- 2026-10-21
+CONTEXT 50.6% of 1,000,000 -- 505,812 tokens, measured.
+STATUS: landed and live (01aaa9988), no force, no skip; live bytes = origin 18:37Z; live after-pass clean.
+DECISION-NEEDED: (1) install NVDA (elevated) for a REAL NVDA run -- this pass was a11y-tree + axe + keyboard, not NVDA; (2) J1 skip link vs focus-to-heading on nav.
+READ: SAIRN-handoff-fourth-b50.md (whole state). Detail: SAIRN-report-fourth-b50.txt.
+SQL: none this batch.
+CHANGED:
+  01aaa9988 sairndental: panel headings 0/23 -> 23/23; aria-current on the sidebar; 20 vendor quantity
+            boxes named; QR alt + canvas hidden; card-photo drop zone a keyboard button
+  tests/sairndental_a11y_pass.js -- 10 arms, 8/8 mutants; override added (fourth holds 16)
+1 axe (WCAG A/AA, 23 panels, live): 21 nodes -> 0. Every panel announces on nav before and after.
+2 keyboard: Insurance Capture card photo was unreachable -> Tab reaches it, Enter opens the chooser.
+3 judgment, filed: J1 no skip link / focus stays on sidebar; J2 generic row buttons; J3 NVDA install.
+EVIDENCE-path: tests/sairndental_a11y_pass.js; scratchpad a11y_dental.py + a11y_before/after/live_after.json (paths in handoff).
+NEXT, in order:
+  a Michael: NVDA install yes/no; J1 decision
+  b same pass over the other apps (not started)
+  c cody: register record ce15ddaa6a3c (commit not in repo) -- flagged by the validator
+UNVERIFIED: NVDA itself; modals; other apps.
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\fd66c7b5-98f7-4e46-ac2a-b0383cde9210.jsonl
