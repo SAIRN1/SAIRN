@@ -62,12 +62,16 @@
       "tests/sairnbiz_pay_frequency.js",
       "tests/sairnbiz_timesheet_hours.js",
       "tests/sairnbiz_preview_fixes.js",
-      "api/route-map.js",
-      "api/b46-route-geocode.test.js",
       "api/_lib/dental-credentials.js",
       "api/_lib/dental-gfe.js",
       "api/_lib/dental-gfe.test.js",
-      "api/b48-dental-dea-gfe.test.js"
+      "api/b48-dental-dea-gfe.test.js",
+      "tests/sairnbiz_z8_display.js",
+      "tests/sairndental_ledger_export.js",
+      "tests/sairnroofing_unreadable_reads.js",
+      "tests/sairnsenior_contract_auth_save.js",
+      "tests/sairnsenior_negative_hours_claim.js",
+      "tests/sairnsenior_referral_hours.js"
     ]
   },
 

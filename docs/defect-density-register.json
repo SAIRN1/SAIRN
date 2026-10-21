@@ -36544,6 +36544,196 @@
       "recurrence_open": "RESOURCE NAMES ARE STILL READ AS TEXT: resource_names() parses the `resources: [...]` array from the source, so a registry whose resources are built in a shape that parser does not know is a SHAPE_ERROR (loud), not a node read. Converting that half was out of this change's scope."
     },
     {
+      "commit": "0bbbb9f8da42",
+      "date": "2026-10-21",
+      "subject": "fix(sairnsenior b49): a refused contract or authorisation is withdrawn and named; no answer and an unprovisioned table stay on the device and say which; a claim's message survives a failed save (cody b35/b36 defect 8)",
+      "files": [
+        "sairnsenior.html",
+        "tests/sairnsenior_contract_auth_save.js"
+      ],
+      "lines_added": 196,
+      "lines_removed": 4,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "cody b35/b36 routed defect 8. savePayerContract and saveAuthorization stored locally first and on ANY failure said \"server sync failed, try again with a connection\" while the local row kept pricing (payerContracts) and authorising (azResolve) claims. generateClaim said nothing about authorisation with no contract in force, and a failed write replaced the whole message. FIXED: senWriteFail() classifies no-answer / unprovisioned / refusal; refusals withdraw the row; claim failures prefix. tests/sairnsenior_contract_auth_save.js RED 5/15 -> GREEN 15/15, 6 mutants killed.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "3157ac9ea648",
+        "date": "2026-08-20",
+        "subject": "feat: sairnsenior.html + api/sen-auth.js -- SAIRNsenior Phase 1, ground-up (real auth + HIPAA client-privacy gate from day one)",
+        "lag_days": 62
+      },
+      "citation_note": "No coding rule covers this class: an optimistic local write that is not rolled back when the server refuses it. Proposed: a local-first save names the failure class and withdraws on refusal.",
+      "contributing_factors": [
+        {
+          "factor": "Local-first saves had one failure message for every failure class and no rollback.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "senWriteFail + withdrawal on refusal, previous version restored on an edit."
+        },
+        {
+          "factor": "senLastErr kept a stale refusal across saves, so classification needed a clear before each write.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Each save deletes senLastErr[resource] first; arm C7."
+        },
+        {
+          "factor": "No arm drove a refused write; every save test assumed success.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "vm suite drives refusal, unprovisioned, no-answer and stale-error cases."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. Other sairnsenior saves keep the old one-line failure message; a claim whose write is refused still stays on the device."
+    },
+    {
+      "commit": "15ccb52183e2",
+      "date": "2026-10-21",
+      "subject": "fix(sairnroofing b49): a failed or unprovisioned JHA / job-warranty read is said on screen, never rendered as 'none' (cody b35 defect 7)",
+      "files": [
+        "sairnroofing.html",
+        "tests/sairnroofing_unreadable_reads.js"
+      ],
+      "lines_added": 126,
+      "lines_removed": 2,
+      "app": "sairnroofing",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "cody b35 routed defect 7. rfLoadSafety: (j.ok&&j.data)||{} turned a refused/failed crew_check into \"No hazard assessments recorded.\" rfLoadWarranties: the rf_job_warranties read ignored ok and provisioned, so an absent table printed \"No roofs registered yet.\" Both now name the failure and say it is not the same as none. tests/sairnroofing_unreadable_reads.js RED 3/10 -> GREEN 10/10, 3 mutants killed. Warranty-read injection: f337a2a88.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "b56b6fb6800a",
+        "date": "2026-09-02",
+        "subject": "feat(sairnroofing): [B4] fall-protection equipment and hazard assessments -- a clock and a cross-check, not another incident log",
+        "lag_days": 49
+      },
+      "citation_note": "No coding rule covers this class: (x.ok&&x.data)||{} collapses a failed read into an empty one. Proposed: a read result is rendered only after ok AND provisioned are each checked.",
+      "contributing_factors": [
+        {
+          "factor": "A safe-default idiom (x.ok&&x.data)||{} silently mapped every failure to an empty dataset.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "!ok and provisioned:false are each rendered as what they are."
+        },
+        {
+          "factor": "On a safety and a warranty panel an empty list is read as a negative finding, so the silent default inverted the meaning.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Messages say explicitly that this is not the same as none."
+        },
+        {
+          "factor": "No arm drove these loaders with a failed or unprovisioned answer.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "vm suite with rfDataRaw stubbed per resource, including real-empty controls."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. The same (x.ok&&x.data)||{} idiom may exist on other rfDataRaw reads in sairnroofing.html and was not swept."
+    },
+    {
+      "commit": "1b8ac96fac7b",
+      "date": "2026-10-21",
+      "subject": "fix(cc b38): a deleted employee row is refused on every registered resource, not only sd_customers",
+      "files": [
+        "api/_lib/routes.test.js",
+        "api/b38-deleted-row-platform.test.js",
+        "api/sd-data.js",
+        "docs/sairn-path-manifest.json"
+      ],
+      "lines_added": 170,
+      "lines_removed": 13,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "api/sd-data.js admitted a DELETED employee's still-valid session token on 323 registered resources across 14 apps (200 and a data read), while active:false was refused. The pre-gate counted a missing row as a deactivation only where the resource's app was known (SD_SESSION_GATED, memory, and b36's sd_customers). Fixed by taking the expected app from OWNER_BY_RESOURCE for every registered resource; shared/routes follow the caller's app_id. Measured: old code 330 of 1184 arms red, new 1184/1184.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the pre-gate's app-scoping predates the registry's OWNER_BY_RESOURCE; no single injecting commit was identified"
+      },
+      "citation_note": "1.11 is cited because a missing employee row was folded into 'unknown, let it through' on every resource whose app the pre-gate did not look up, although the registry knew it.",
+      "phase_note": "the scoping rule was designed around SD_SESSION_GATED only",
+      "contributing_factors": [
+        {
+          "factor": "The pre-gate only treated a missing row as a deactivation where the resource's app was known, and the only places that answered it were SD_SESSION_GATED, memory and (b36) sd_customers -- while the registry that already maps every resource to its app was never consulted.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "preExpectedApp is OWNER_BY_RESOURCE[resource] for every registered resource; shared/routes follow the caller's app_id like memory."
+        },
+        {
+          "factor": "The b36 fix was scoped to the one resource the finding named, so the decision's 'no exception' was not tested anywhere else; cc b37's driven sample and its heuristic count (~70) still undercounted the real 323.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/b38-deleted-row-platform.test.js derives its population from the registry (392 resources, 16 apps), so a resource added tomorrow is driven tomorrow."
+        }
+      ],
+      "recurrence_open": "An UNREGISTERED resource is still unknown to the pre-gate and a deleted row there is logged, not refused; nothing yet asserts that every resource sd-data.js serves is in the registry."
+    },
+    {
+      "commit": "9f6e4ca22888",
+      "date": "2026-10-21",
+      "subject": "fix(sairndental b49): the two pre-existing reds -- the ledger-export suite extracts dntChargeCode(), and the screen-reader announcer leaves the panel- namespace",
+      "files": [
+        "sairndental.html",
+        "tests/sairndental_ledger_export.js"
+      ],
+      "lines_added": 7,
+      "lines_removed": 2,
+      "app": "sairndental",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "Reported pre-existing in fourth b48, fixed b49. (1) tests/sairndental_ledger_export.js extracted the export but not dntChargeCode(), which the charges export calls since 9a0903e69; the Procedure cell threw in the vm and the arm read 'not resolved' -- the shipped export was correct. Its mutation control was red only because the base suite was. (2) tests/sairndental_rollup_panel.js census counts id=panel-* as panels; the screen-reader announcer added in a52311fa0 was id=panel-live. Renamed nav-announce; behaviour unchanged. 8/8, mc 3/3, 18/18.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "9a0903e690f5",
+        "date": "2026-10-16",
+        "subject": "fix(sairndental): the charge's CDT stamp was written and never read, and the versioning had no way in",
+        "lag_days": 5
+      },
+      "citation_note": "No coding rule covers this class: a vm suite's extraction list that does not follow the functions the extracted code calls, and an id namespace shared by two kinds of element. Proposed: an extraction harness fails closed when an extracted function calls an unextracted one.",
+      "contributing_factors": [
+        {
+          "factor": "The vm extraction list is hand-maintained and did not follow a new callee of the extracted export.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "dntChargeCode added to the grab list."
+        },
+        {
+          "factor": "The panel- id prefix was used both as the panel namespace and for a non-panel element.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Announcer renamed nav-announce."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. Other vm suites with hand-maintained extraction lists can drift the same way (sairnsenior negative_hours/referral_hours were the same class, fixed in 918bfa713)."
+    },
+    {
       "commit": "9f9cf9235792",
       "date": "2026-10-21",
       "subject": "fix(stonedesk): request_photos gets its client caller; style profile reads the envelope (cody b35 defects 5, 6)",
@@ -36906,52 +37096,6 @@
         }
       ],
       "recurrence_open": "UNOWNED STILL MEANS ALLOWED: a path no population claims is permitted and reported. Case folding closes the spelling route into a claimed area; it does not make an unclaimed area refuse."
-    },
-    {
-      "commit": "1b8ac96fac7b",
-      "date": "2026-10-21",
-      "subject": "fix(cc b38): a deleted employee row is refused on every registered resource, not only sd_customers",
-      "files": [
-        "api/_lib/routes.test.js",
-        "api/b38-deleted-row-platform.test.js",
-        "api/sd-data.js",
-        "docs/sairn-path-manifest.json"
-      ],
-      "lines_added": 170,
-      "lines_removed": 13,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "summary": "api/sd-data.js admitted a DELETED employee's still-valid session token on 323 registered resources across 14 apps (200 and a data read), while active:false was refused. The pre-gate counted a missing row as a deactivation only where the resource's app was known (SD_SESSION_GATED, memory, and b36's sd_customers). Fixed by taking the expected app from OWNER_BY_RESOURCE for every registered resource; shared/routes follow the caller's app_id. Measured: old code 330 of 1184 arms red, new 1184/1184.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "the pre-gate's app-scoping predates the registry's OWNER_BY_RESOURCE; no single injecting commit was identified"
-      },
-      "citation_note": "1.11 is cited because a missing employee row was folded into 'unknown, let it through' on every resource whose app the pre-gate did not look up, although the registry knew it.",
-      "phase_note": "the scoping rule was designed around SD_SESSION_GATED only",
-      "contributing_factors": [
-        {
-          "factor": "The pre-gate only treated a missing row as a deactivation where the resource's app was known, and the only places that answered it were SD_SESSION_GATED, memory and (b36) sd_customers -- while the registry that already maps every resource to its app was never consulted.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "preExpectedApp is OWNER_BY_RESOURCE[resource] for every registered resource; shared/routes follow the caller's app_id like memory."
-        },
-        {
-          "factor": "The b36 fix was scoped to the one resource the finding named, so the decision's 'no exception' was not tested anywhere else; cc b37's driven sample and its heuristic count (~70) still undercounted the real 323.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "api/b38-deleted-row-platform.test.js derives its population from the registry (392 resources, 16 apps), so a resource added tomorrow is driven tomorrow."
-        }
-      ],
-      "recurrence_open": "An UNREGISTERED resource is still unknown to the pre-gate and a deleted row there is logged, not refused; nothing yet asserts that every resource sd-data.js serves is in the registry."
     }
   ],
   "started": "2026-09-09",

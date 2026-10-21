@@ -8351,6 +8351,41 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-10-21T17:47:06Z",
+      "opened_at_sha": "3a53919b95af5698f5dadcfc3ee9982201d44014",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 0,
+      "resources": [
+        "employees",
+        "rf_job_hazard_assessments",
+        "rf_job_warranties",
+        "rf_safety_equipment",
+        "rf_warranty_tiers",
+        "sb_payruns",
+        "sen_authorizations",
+        "sen_claims",
+        "sen_clients",
+        "sen_payer_contracts",
+        "sen_visits"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "sairnsenior.html",
+        "tests/sairnbiz_z8_display.js",
+        "tests/sairnroofing_unreadable_reads.js",
+        "tests/sairnsenior_contract_auth_save.js"
+      ],
+      "what": "fourth b49: sairnsenior refused contract/authorisation withdrawn + named, claim message kept on failed write (sen_payer_contracts, sen_authorizations); sairnroofing JHA/warranty unreadable reads said not 'none' (rf_*); new vm suites over employees (Z8 display) and the roofing/senior loaders",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-21T17:47:06Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
