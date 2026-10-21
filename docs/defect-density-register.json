@@ -36456,51 +36456,6 @@
       "recurrence_open": "The detection factor is NOT closed: no selftest arm yet asserts the post-drill answer, so a regression would again be found only by a human checking after a drill rather than by the suite."
     },
     {
-      "commit": "a87a4beb755f",
-      "date": "2026-10-21",
-      "subject": "fix(cc b33): the status line goes red at the 85% wrap-up rule, not 15 points early",
-      "files": [
-        "tools/sairn_status_line.py"
-      ],
-      "lines_added": 70,
-      "lines_removed": 40,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "hover-audit",
-      "summary": "tools/sairn_status_line.py PAINTED THE CONTEXT LINE RED 5 POINTS EARLY FOR BUILDERS AND 15 FOR THE AUDITORS. RED_AT_BUILD = 80 and hover/hover2 fell to RED_AT_DEFAULT = 70, while every identified agent runs on an 85% REAL-context wrap-up (Michael's standing rule from cc b29; the auditors run the same 85). hover2 seq 1095 drove the real file: hover2 red at 70% of a 967K window, 145,050 tokens before its rule. Fixed: RED_AT_BUILD 85, new AUDITOR_AGENTS / RED_AT_AUDITOR 85, unidentified clone keeps 70; fixtures lock RED_AT_BUILD to tools/builder_context_watch.py THRESHOLD and drive the 84/85 boundary through render() for a builder and an auditor. 42/42; pre-b33 values fail 9.",
-      "rules": [
-        "1.10"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover2",
-      "injection": {
-        "commit": "38bbd45518f1",
-        "date": "2026-10-19",
-        "subject": "feat(scope): a name list becomes a property, a threshold becomes a population, and a push learns its own scope",
-        "lag_days": 2
-      },
-      "citation_note": "1.10 is cited because the line reported a verdict (red, wrap up) against a rule that had moved: the 85% decision landed in b29 and the display kept the b24 number, with nothing tying the two together.",
-      "contributing_factors": [
-        {
-          "factor": "The threshold was stated in two places -- tools/builder_context_watch.py THRESHOLD (85) and this file's RED_AT_BUILD (80) -- and nothing compared them. b29 verified the watcher and never this file.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "A fixture asserts RED_AT_BUILD == builder_context_watch.THRESHOLD; either moving alone turns the criteria lock red."
-        },
-        {
-          "factor": "The b24 change deliberately kept the auditors at 70 with a fixture locking it ('hover and hover2 UNCHANGED at 70'), so when the auditors' own policy became 85 the lock defended the stale value.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "The auditor population has its own constant and its own 84/85 boundary arm driven through render()."
-        }
-      ],
-      "recurrence_open": "THE AUDITORS' 85 IS NOT LOCKED TO A SOURCE: tools-hover2/context_red_flag.py is the auditors' own trigger, in their scope, and this file must not read it. If the auditors move their rule again, this file will not know. Stated rather than reached across."
-    },
-    {
       "commit": "03f50bd4cc8b",
       "date": "2026-10-21",
       "subject": "fix(cc b33): the tier checker reads a registry's app through node, not a regex",
@@ -36544,6 +36499,140 @@
         }
       ],
       "recurrence_open": "RESOURCE NAMES ARE STILL READ AS TEXT: resource_names() parses the `resources: [...]` array from the source, so a registry whose resources are built in a shape that parser does not know is a SHAPE_ERROR (loud), not a node read. Converting that half was out of this change's scope."
+    },
+    {
+      "commit": "9f9cf9235792",
+      "date": "2026-10-21",
+      "subject": "fix(stonedesk): request_photos gets its client caller; style profile reads the envelope (cody b35 defects 5, 6)",
+      "files": [
+        "api/b40-stonedesk-style-profile-request-photos.test.js",
+        "stonedesk.html"
+      ],
+      "lines_added": 204,
+      "lines_removed": 2,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "StoneDesk's style profile never loaded: sdLoadStyleProfile and sdObserveStyle called sdData(), which returns j.data, then read d.provisioned, d.data and d.ok -- envelope keys that are never on the inner object. A stored profile always loaded as null and a successful write never updated it. Both now call sdDataEnvelope(); driven verbatim by api/b40-stonedesk-style-profile-request-photos.test.js (11/0 on the fix, 1/10 on the pre-fix file).",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "e634c8d01c0f",
+        "date": "2026-09-02",
+        "subject": "feat(nexus): a real per-user style profile -- observed, persisted, and applied to the prompt",
+        "lag_days": 49
+      },
+      "citation_note": "No standing rule names a caller reading envelope keys through a transport that unwraps to j.data; the nearest precedent is the write_batch carve-out note inside sdData() itself.",
+      "contributing_factors": [
+        {
+          "factor": "sdData() returns j.data, and the style-profile caller was written against the server response shape (provisioned, data, ok at top level) rather than against what the transport hands back.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Both calls use sdDataEnvelope(), the named whole-envelope transport."
+        },
+        {
+          "factor": "Nothing drove the client functions against a stored profile; the parity suite compares analyse() client vs server and never touches the load path.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/b40-stonedesk-style-profile-request-photos.test.js arms A1-A5, with a pre-fix control."
+        }
+      ],
+      "recurrence_open": "Any other sdData() caller that reads .ok/.provisioned on the result has the same shape; tests/stonedesk_bare_envelope_actions.js guards only five named data-less actions, not envelope-key reads."
+    },
+    {
+      "commit": "9f9cf9235792",
+      "date": "2026-10-21",
+      "subject": "fix(stonedesk): request_photos gets its client caller; style profile reads the envelope (cody b35 defects 5, 6)",
+      "files": [
+        "api/b40-stonedesk-style-profile-request-photos.test.js",
+        "stonedesk.html"
+      ],
+      "lines_added": 204,
+      "lines_removed": 2,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "StoneDesk quote-request intake photos were stored and never shown: api/stonedesk-public.js has written sd_quote_request_photos since 2026-09-04 and b34 added the request_photos reader, but stonedesk.html had no caller, so staff saw photo_count and never the photos. A row with photo_count > 0 now offers Photos (N); pcShowRequestPhotos() fetches on click through sdDataEnvelope, renders only data:image/(jpeg|png|webp), and says a failed read or unprovisioned table as that. Arms B1-B6 of api/b40-stonedesk-style-profile-request-photos.test.js.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "95bf15199b87",
+        "date": "2026-09-04",
+        "subject": "feat(stonedesk): the intake form exists -- built on the public surface that already did",
+        "lag_days": 47
+      },
+      "citation_note": "No standing rule requires a stored value to have a reader; api/sd-data.js states the concept (a stored value is only useful if some authorised path returns it) inline at request_photos, not as a numbered rule.",
+      "contributing_factors": [
+        {
+          "factor": "The photo write and the request list were built without a photo reader on either side; photo_count was displayed as a number with nothing behind it.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Server reader (b34, cody) plus this client caller."
+        },
+        {
+          "factor": "No check pairs a written table with a read path, so a write-only store passes every suite.",
+          "kind": "detection",
+          "action_status": "declined",
+          "action": "No detector built.",
+          "note": "Out of the dispatched scope (two named defects). Recorded so the detection gap is visible rather than implied closed."
+        }
+      ],
+      "recurrence_open": "Write-only stores are not detected platform-wide; this closes one instance, not the shape."
+    },
+    {
+      "commit": "a87a4beb755f",
+      "date": "2026-10-21",
+      "subject": "fix(cc b33): the status line goes red at the 85% wrap-up rule, not 15 points early",
+      "files": [
+        "tools/sairn_status_line.py"
+      ],
+      "lines_added": 70,
+      "lines_removed": 40,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "tools/sairn_status_line.py PAINTED THE CONTEXT LINE RED 5 POINTS EARLY FOR BUILDERS AND 15 FOR THE AUDITORS. RED_AT_BUILD = 80 and hover/hover2 fell to RED_AT_DEFAULT = 70, while every identified agent runs on an 85% REAL-context wrap-up (Michael's standing rule from cc b29; the auditors run the same 85). hover2 seq 1095 drove the real file: hover2 red at 70% of a 967K window, 145,050 tokens before its rule. Fixed: RED_AT_BUILD 85, new AUDITOR_AGENTS / RED_AT_AUDITOR 85, unidentified clone keeps 70; fixtures lock RED_AT_BUILD to tools/builder_context_watch.py THRESHOLD and drive the 84/85 boundary through render() for a builder and an auditor. 42/42; pre-b33 values fail 9.",
+      "rules": [
+        "1.10"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "commit": "38bbd45518f1",
+        "date": "2026-10-19",
+        "subject": "feat(scope): a name list becomes a property, a threshold becomes a population, and a push learns its own scope",
+        "lag_days": 2
+      },
+      "citation_note": "1.10 is cited because the line reported a verdict (red, wrap up) against a rule that had moved: the 85% decision landed in b29 and the display kept the b24 number, with nothing tying the two together.",
+      "contributing_factors": [
+        {
+          "factor": "The threshold was stated in two places -- tools/builder_context_watch.py THRESHOLD (85) and this file's RED_AT_BUILD (80) -- and nothing compared them. b29 verified the watcher and never this file.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "A fixture asserts RED_AT_BUILD == builder_context_watch.THRESHOLD; either moving alone turns the criteria lock red."
+        },
+        {
+          "factor": "The b24 change deliberately kept the auditors at 70 with a fixture locking it ('hover and hover2 UNCHANGED at 70'), so when the auditors' own policy became 85 the lock defended the stale value.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The auditor population has its own constant and its own 84/85 boundary arm driven through render()."
+        }
+      ],
+      "recurrence_open": "THE AUDITORS' 85 IS NOT LOCKED TO A SOURCE: tools-hover2/context_red_flag.py is the auditors' own trigger, in their scope, and this file must not read it. If the auditors move their rule again, this file will not know. Stated rather than reached across."
     },
     {
       "commit": "d94a2e3d1bf3",

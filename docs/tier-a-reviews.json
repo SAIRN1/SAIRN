@@ -8253,6 +8253,29 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-21T16:17:56Z",
+      "opened_at_sha": "9f9cf923579299d4ffb0bbc26eddf6d871262229",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 0,
+      "resources": [
+        "sd_quote_requests"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/b40-stonedesk-style-profile-request-photos.test.js",
+        "stonedesk.html"
+      ],
+      "what": "hank b40, stonedesk.html (sd_quote_requests): new client caller pcShowRequestPhotos() for the b34 request_photos reader -- a request row with photo_count>0 shows Photos (N), fetched on click via sdDataEnvelope, rendering only data:image/(jpeg|png|webp) values via pcHtml-escaped src. Same owner/admin server gate as the requests; no server, gating or storage change. Also sdLoadStyleProfile/sdObserveStyle moved from sdData to sdDataEnvelope. REVIEWER: attack (1) the image-prefix filter as the only barrier on src, (2) whether a data: URL in an img src can carry anything but an image, (3) the overlay having no keyboard close. Test: api/b40-stonedesk-style-profile-request-photos.test.js 11/0, pre-fix control 1/10.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-21T16:17:56Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
