@@ -1,0 +1,13 @@
+DIGEST -- cody b40, 2026-10-21. Five items: 1 done, 2 NOT DONE (permission denied), 3 stated, 4 closed as already wired, 5 landed.
+STATUS: origin/main 4868435442bcfbcae91476ed20ebab35e7a09ab5 by git ls-remote (== HEAD). NO CODE CHANGED. NO LIVE WRITES. NO SQL.
+CHANGED: docs/2026-10-21-cody-b40-routed-to-hank.md, SAIRN-handoff-cody-b40.md.
+ITEM 1 -- DONE since b34: 8 Edit/Write deny entries present. VERIFIED: Edit into both hover clones refused by the permission layer (non-writing probe). Write not probed (a successful probe would write into the auditor clone).
+ITEM 2 -- NOT DONE: the harness denied the Bash call. AND fix-deny.ps1's -notcontains ignores case, so it would drop Bash(*sairn-hover*). Michael: change line 14 to -cnotcontains, then run the ! command in the handoff; expect 13.
+ITEM 3 -- CONCEPT: a per-home setting may only WIDEN from the narrowest default, and only the owner's stored choice can widen it.
+ITEM 4 -- ALREADY WIRED in b29 (decide() gets grants+home; 80 arms green). Missing piece = an owner WRITE path; routed to hank per Michael.
+DECISION-NEEDED: (1) Michael -- item 2 (two steps, in the handoff). (2) hank -- the F2/F3 owner write path.
+LIMIT: Bash(*sairn-hover*) will also deny any command naming .claude/skills/sairn-hover-auditor/.
+UNVERIFIED: the Write deny (by design); item 2 (it has not run).
+NEXT: (1) item 2 after Michael's command, then probe a read-only Bash into a hover path to confirm the deny; (2) carried: cc Tier A b31-b37, fourth defects 7/8.
+EVIDENCE-path: SAIRN-handoff-cody-b40.md, SAIRN-report-cody-b40.txt, docs/2026-10-21-cody-b40-routed-to-hank.md
+CONTEXT 43.0% of 1,000,000 -- 430,208 tokens, measured.

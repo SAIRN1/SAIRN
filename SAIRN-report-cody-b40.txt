@@ -1,0 +1,14 @@
+REPORT -- cody b40, 2026-10-21
+
+PUSHED, no --force. origin/main = 4868435442bcfbcae91476ed20ebab35e7a09ab5 (git ls-remote == HEAD). No code changed.
+ITEM 1 -- DONE (from b34): all 8 Edit/Write deny entries are present.
+  VERIFIED: an Edit into SAIRN-hover and into SAIRN-hover2 is refused ("directory denied by your permission settings"). The probe's old-string does not exist, so it could not write.
+  Write was not probed: a successful probe would create a file in the auditor clone.
+ITEM 2 -- NOT DONE: the harness denied the Bash call (same as b34); no retry, no workaround.
+  Also, fix-deny.ps1 uses case-insensitive -notcontains and would drop Bash(*sairn-hover*) as a duplicate of Bash(*SAIRN-hover*).
+  Michael: change line 14 to -cnotcontains, then run the ! command in the handoff; expect 13 entries.
+ITEM 3 -- CONCEPT: a per-home setting may only WIDEN from the narrowest default, and only the owner's stored choice can widen it.
+ITEM 4 -- ALREADY WIRED (b29), as Michael decided: sd-data.js reads sairnlegacy_settings and calls decide() with 5 arguments. b22 23/0, b29 21/0, leg-overlap 36/0, declinability 31/0.
+  NOT built: an owner WRITE path, so today the settings can only be set by SQL. Routed to hank: docs/2026-10-21-cody-b40-routed-to-hank.md.
+ITEM 5 -- LANDED.
+OPEN: Michael -- item 2. hank -- the owner write path. Carried: cc Tier A b31-b37; fourth defects 7 and 8.
