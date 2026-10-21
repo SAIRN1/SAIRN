@@ -9095,6 +9095,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/_lib/dental-gfe.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "b14228a4563fc6800b633d4e613be25417bb996e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b48-dental-dea-gfe.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "b14228a4563fc6800b633d4e613be25417bb996e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/app_session_isolation_probe.py",
    "class": "test file",
    "level": "CHANGE",
