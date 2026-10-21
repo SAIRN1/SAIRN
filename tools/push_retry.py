@@ -757,6 +757,25 @@ def selftest():
     arm('gate text WINS over the generic git line every gate refusal ends with',
         classify_refusal(tier_a + '\n' + race) == 'gate',
         classify_refusal(tier_a + '\n' + race))
+    # cody b47: a PASSING gate's notice names the gate file on a push that
+    # edits it. Lines copied from the hook's real stderr on 8aee7e758.
+    passing = ('    EXTRA SCRUTINY -- this push changes things that CHECK the work '
+               '(criteria 2026-10-06.1)\n'
+               '  [WEAKENING] tools/sairn_push_gate_hook.py                       '
+               '       push-gate logic\n'
+               'Gate-freshness (check 10) NOTICE: the push gate that just ran is NOT '
+               'the one on origin/main. It is 1 commit(s) behind on '
+               'tools/sairn_push_gate_hook.py.')
+    arm('a PASSING gate notice that names the gate file, then a lock race, is '
+        '"transient" -- the b46 stop',
+        classify_refusal(passing + '\n' + lock) == 'transient',
+        classify_refusal(passing + '\n' + lock))
+    arm('...and with a fetch-first race too',
+        classify_refusal(passing + '\n' + race) == 'transient',
+        classify_refusal(passing + '\n' + race))
+    arm('...but the same notice beside a real deny is still "gate"',
+        classify_refusal(passing + '\n' + cnr) == 'gate',
+        classify_refusal(passing + '\n' + cnr))
 
     # ── AND THE LOOP OBEYS IT: cmd_loop driven with git stubbed, counting
     # pushes. FAILING-FIRST: the pre-b32 loop pushed 4 times on the Tier A text.
@@ -899,8 +918,16 @@ def _regenerate_and_fold():
 #                  escalation and stopping costs a re-run, unknown goes to stop.
 # Gate text is checked BEFORE transient text, because a gate refusal also ends
 # in git's generic "failed to push some refs".
-_GATE_MARKERS = ('Blocked:', 'blocked by .githooks/pre-push',
-                 'sairn_push_gate_hook.py', 'ESCALATING:')
+#
+# ONLY TEXT THE GATE PRINTS WHEN IT DENIES (cody b47). The bare file name
+# `sairn_push_gate_hook.py` was a marker too, and a PASSING gate prints it:
+# its EXTRA SCRUTINY notice lists `[WEAKENING] tools/sairn_push_gate_hook.py`
+# on any push that edits the gate. cody b46 pushed a gate edit twice, the gate
+# passed both times (no deny record for either tip in push-retries/), the
+# remote moved during the ~85s hook run, and git's race rejection was read as
+# "gate" -- STOP, where a fetch-rebase-retry was the remedy. A deny always
+# carries `Blocked:` or the `(blocked by .githooks/pre-push ...)` trailer.
+_GATE_MARKERS = ('Blocked:', 'blocked by .githooks/pre-push', 'ESCALATING:')
 _TRANSIENT_MARKERS = ('(fetch first)', '(non-fast-forward)', 'cannot lock ref',
                       'Could not resolve host', 'Connection timed out',
                       'Connection reset', 'RPC failed', 'early EOF',
@@ -1046,6 +1073,16 @@ def cmd_loop(attempts):
         blob = (perr or '') + ('\n' + pout if pout else '')
         lines = [l for l in blob.split('\n') if l.strip()]
         print('  push refused:')
+        # THE WHOLE TEXT IS KEPT (cody b47). The excerpt below is 14 lines plus
+        # 8 remedy lines, and b46's two stops lost the one line that said what
+        # happened. Overwritten per attempt; best-effort, never fatal.
+        try:
+            _lp = os.path.join(git_dir() or os.path.join(REPO, '.git'),
+                               'push_retry_last_refusal.txt')
+            io.open(_lp, 'w', encoding='utf-8', newline='\n').write(blob + '\n')
+            print('    full text (%d lines): %s' % (len(lines), _lp))
+        except Exception:                                       # noqa: BLE001
+            pass
         if not lines:
             print('    (git said nothing on either stream -- that is itself '
                   'the finding; a refusal with no text is not diagnosable)')
