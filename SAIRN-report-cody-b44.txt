@@ -1,0 +1,14 @@
+REPORT -- cody b44, 2026-10-21
+
+LANDED: 6506b6875 (register re-seat), 0db6373d6 (two probe anchors), on origin/main. No force. push_retry.py --loop, attempt 1.
+ITEM 1 -- RESOLVED. Concept: the record cited my b27 commit's PRE-REBASE sha, and the subject was reworded when it landed.
+  ce15ddaa6a3c resolved only in this clone, through the reflog. Landed commit 864e6b764: same 2 files, same numstat (+239, +48).
+  Record commit and subject corrected (2 lines). defect_register.py --check: exit 1 platform-wide -> exit 0 (708 records).
+ITEM 2 -- ALREADY BUILT; my procedure was the gap. tools/push_retry.py --loop runs fold_scrutiny() before each rebase:
+  one bookkeeping commit that later rounds amend. My b43 hand loop made 5 scrutiny commits. This batch used the tool. Memory saved.
+ITEM 3 -- SWEPT with tools/mutation_anchor_check.py (532 anchors) + tools/probe_anchor_freshness.py (645). Both found the same 2:
+  law phase2 sabotage arm 4 (copied by bd836b641 into lawCountersign); registry claim sabotage arm 4 (copied by 331cebe3c).
+  Each widened to a line only its own site has. HEAD versions: exit 1, only that arm failed. Now: exit 0, 9/9 and 13/13.
+  Both tools: exit 1 -> exit 0. They are report-only in report_only_checks.py, which is why the duplicates persisted.
+GUARDIAN: Check 0 clean (py_compile, register --check). No app code changed.
+OPEN: making the two anchor tools blocking is Michael's call. Uniqueness cannot see a unique anchor on the wrong code (PR 1.3).

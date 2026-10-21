@@ -1,0 +1,16 @@
+DIGEST -- cody b44, 2026-10-21. Four items, all DONE.
+STATUS: NO APP CODE. NO LIVE WRITES. NO SQL. Register record + two test probes only. Nothing deployed.
+CHANGED: docs/defect-density-register.json (2 lines), tests/run_law_phase2_session_sabotage_probe.py, tests/claims/run_registry_claim_sabotage_probe.py.
+LANDED: 6506b6875 (register), 0db6373d6 (probes) on origin/main, no force, push_retry.py --loop attempt 1.
+ITEM 1 -- ce15ddaa6a3c was my b27 commit's PRE-REBASE sha (reflog-only, this clone). Landed as 864e6b764 with a reworded subject,
+  so --reseat could not match it. Commit + subject corrected. defect_register --check: exit 1 platform-wide -> exit 0.
+ITEM 2 -- already built: tools/push_retry.py --loop folds scrutiny rows into one bookkeeping commit before each rebase.
+  My b43 hand loop was the gap (5 commits). Used the tool this batch. Cody memory saved.
+ITEM 3 -- swept with mutation_anchor_check.py + probe_anchor_freshness.py (both exist, both report-only). Same 2 found:
+  law phase2 arm 4 (dup by bd836b641), registry-claim arm 4 (dup by 331cebe3c). Widened. Old: exit 1 on that arm; new: 9/9, 13/13.
+  Both tools now exit 0: 0 ambiguous, 0 vanished.
+DECISION-NEEDED: Michael -- make the two anchor tools BLOCKING (about 1s)? Report-only let all three duplicates persist.
+UNVERIFIED: an anchor that is unique but on the wrong code is invisible to both tools (PR 1.3).
+NEXT: the next push_retry --loop folds the final push's scrutiny rows. Carried: hank F2/F3; cc Tier A b31-b37; fourth 7/8.
+EVIDENCE-path: SAIRN-handoff-cody-b44.md, SAIRN-report-cody-b44.txt
+CONTEXT 19.3% of 1,000,000 -- 193,414 tokens, measured.
