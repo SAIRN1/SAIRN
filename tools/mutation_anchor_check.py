@@ -580,7 +580,10 @@ def _main(argv):
         by_probe.setdefault(r['probe'], []).append(r)
 
     if '--json' in argv:
-        print(json.dumps({'arms': rows, 'unreadable': unreadable}, indent=1))
+        # `unguarded` added 2026-10-21 (cody b46): it was half of exit 1 and
+        # absent from --json, so the push gate's CHECK 5e could not name it.
+        print(json.dumps({'arms': rows, 'unreadable': unreadable,
+                          'unguarded': unguarded}, indent=1))
     else:
         print('MUTATION ANCHOR CHECK -- report only, nothing was run and nothing written')
         print('  probes with a MUTATIONS list : %d' % len(by_probe))

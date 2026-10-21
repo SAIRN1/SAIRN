@@ -718,6 +718,11 @@ def main(argv):
                           'unreadable': unreadable, 'ok': len(ok),
                           'counted_form': len(counted),
                           'skipped': res['skipped'],
+                          # Every subject read, not only the failing ones
+                          # (cody b46): the push gate's CHECK 5e needs it to
+                          # tell whether a dirty file could change a count.
+                          'subjects': sorted({r['subject'] for r in res['rows']
+                                              if r.get('subject') not in (None, '-')}),
                           'blind_spots': BLIND_SPOTS}, indent=1))
         return 1 if (vanished or ambiguous or miscounted or unreadable) else 0
 

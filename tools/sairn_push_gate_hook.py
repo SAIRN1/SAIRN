@@ -143,6 +143,7 @@ import io
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -2771,31 +2772,98 @@ def main():
     # the branch: it is printed, not denied, so one session's debt never
     # blocks every other session's push. A tool that is missing, crashes, or
     # answers with nothing parseable is COULD NOT RUN and DENIES (PR 1.11).
+    #
+    # IT JUDGES THE PUSHED TIP, NOT THE WORKING TREE (cody b46). Both tools
+    # read files from disk, so they run in place first. If any path that
+    # differs from `tip` -- an uncommitted edit, an untracked file -- is one
+    # those counts READ (a probe under tests/, one of the two tools, or a
+    # subject either tool names), the in-place answer may not be the tip's:
+    # the tip is checked out into a throwaway worktree, the TIP's own tools
+    # re-run there, and that answer is the one judged. The worktree costs
+    # ~13s, measured, so it is taken only when the difference can matter --
+    # the gate's own docs/scrutiny-flags.json write-back dirties the tree on
+    # EVERY push before this check runs, and paying 13s for it overran
+    # push_retry's 120s push timeout on the first try. A worktree that cannot
+    # be made, or a git that cannot list the difference, is COULD NOT RUN.
     if changed:
         _pa_changed = {q.replace('\\', '/') for q in changed}
         _pa_mine, _pa_old = [], []
-        for _pa_tool in ('mutation_anchor_check.py', 'probe_anchor_freshness.py'):
-            _pa_path = os.path.join(repo, 'tools', _pa_tool)
-            if not os.path.isfile(_pa_path):
+        _pa_tools = ('mutation_anchor_check.py', 'probe_anchor_freshness.py')
+
+        def _pa_run(root):
+            """[(tool, CompletedProcess|None, parsed json|None, error text)]"""
+            got = []
+            for t in _pa_tools:
+                path = os.path.join(root, 'tools', t)
+                if not os.path.isfile(path):
+                    got.append((t, None, None, 'MISSING'))
+                    continue
+                try:
+                    r = subprocess.run(
+                        [sys.executable, path, '--json'],
+                        capture_output=True, text=True, encoding='utf-8',
+                        errors='replace', timeout=300, cwd=root,
+                        env=dict(os.environ, PYTHONIOENCODING='utf-8', PYTHONUTF8='1'))
+                    o = r.stdout or ''
+                    j = json.loads(o[o.index('{'):]) if '{' in o else None
+                    got.append((t, r, j, ((r.stdout or '') + (r.stderr or '')).strip()[-1500:]))
+                except Exception as e:
+                    got.append((t, None, None, '%s: %s' % (type(e).__name__, e)))
+            return got
+
+        _pa_results = _pa_run(repo)
+        _dn = subprocess.run(['git', 'diff', '--name-only', tip], cwd=repo,
+                             capture_output=True, text=True, encoding='utf-8',
+                             errors='replace')
+        _un = subprocess.run(['git', 'ls-files', '--others', '--exclude-standard'],
+                             cwd=repo, capture_output=True, text=True,
+                             encoding='utf-8', errors='replace')
+        _pa_read = {'tools/' + t for t in _pa_tools}
+        for _t, _r, _j, _e in _pa_results:
+            if _j:
+                _pa_read |= {a.get('target') for a in _j.get('arms', [])}
+                _pa_read |= set(_j.get('subjects', []))
+        if _dn.returncode != 0 or _un.returncode != 0:
+            _pa_why = 'git could not list how the working tree differs from %s' % tip
+        else:
+            _pa_diff = {q.strip().replace('\\', '/')
+                        for q in (_dn.stdout + '\n' + _un.stdout).splitlines() if q.strip()}
+            _pa_hit = sorted(q for q in _pa_diff
+                             if q in _pa_read or (q.startswith('tests/') and q.endswith('.py')))
+            _pa_why = ('the working tree differs from %s in %s, which the anchor counts read'
+                       % (tip, ', '.join(_pa_hit[:5])) if _pa_hit else None)
+        if _pa_why:
+            _pa_wt = tempfile.mkdtemp(prefix='sairn-5e-tip-')
+            try:
+                _wa = subprocess.run(['git', 'worktree', 'add', '--detach', '--force',
+                                      _pa_wt, tip], cwd=repo, capture_output=True,
+                                     text=True, encoding='utf-8', errors='replace')
+                if _wa.returncode != 0:
+                    _pa_results = []
+                    deny(chr(10).join([
+                        "Blocked: the probe-anchor check COULD NOT RUN. It had to judge the",
+                        "pushed tip rather than this clone's files, because %s," % _pa_why,
+                        "and a worktree at the tip could not be made.",
+                        "",
+                        ((_wa.stderr or '') + (_wa.stdout or '')).strip()[-800:],
+                        "",
+                        "Commit or stash the working-tree change and push again.",
+                        OVERRIDE_HINT,
+                    ]), gate='probe-anchors')
+                else:
+                    _pa_results = _pa_run(_pa_wt)
+            finally:
+                subprocess.run(['git', 'worktree', 'remove', '--force', _pa_wt],
+                               cwd=repo, capture_output=True)
+                shutil.rmtree(_pa_wt, ignore_errors=True)
+        for _pa_tool, _pr, _pj, _pa_err in _pa_results:
+            if _pa_err == 'MISSING':
                 deny(chr(10).join([
-                    "Blocked: tools/%s is not in this clone, so no probe anchor" % _pa_tool,
-                    "was counted. A missing checker is not a clean result.",
+                    "Blocked: tools/%s is not in the tree being judged, so no probe" % _pa_tool,
+                    "anchor was counted. A missing checker is not a clean result.",
                     OVERRIDE_HINT,
                 ]), gate='probe-anchors')
                 continue
-            try:
-                _pr = subprocess.run(
-                    [sys.executable, _pa_path, '--json'],
-                    capture_output=True, text=True, encoding='utf-8',
-                    errors='replace', timeout=300, cwd=repo,
-                    env=dict(os.environ, PYTHONIOENCODING='utf-8', PYTHONUTF8='1'))
-                _out = _pr.stdout or ''
-                _pj = json.loads(_out[_out.index('{'):]) if '{' in _out else None
-            except Exception as e:
-                _pr, _pj = None, None
-                _pa_err = '%s: %s' % (type(e).__name__, e)
-            else:
-                _pa_err = ((_pr.stdout or '') + (_pr.stderr or '')).strip()[-1500:]
             if _pr is None or _pj is None or _pr.returncode not in (0, 1, 2):
                 deny(chr(10).join([
                     "Blocked: tools/%s COULD NOT RUN (exit %s), which is a third state"
@@ -2809,10 +2877,17 @@ def main():
                 continue
             _found = []
             if _pa_tool == 'mutation_anchor_check.py':
-                _found += [(a['probe'], a['target'], 'ANCHOR-%d  %s' % (a['matches'], a['arm']))
+                _found += [(a['probe'], a['target'],
+                            'ANCHOR-%d  %s' % (a['matches'], a['arm']))
                            for a in _pj.get('arms', []) if a.get('matches') != 1]
                 _found += [(u[0], None, 'COULD NOT READ  ' + str(u[1])[:120])
                            for u in _pj.get('unreadable', [])]
+                # Named on its own row whatever else is found (cody b46). It
+                # used to be exit 1 with no --json entry, so beside a named
+                # anchor it vanished.
+                _found += [(u, None, 'UNGUARDED  mutates a tracked file in place and '
+                            'does not refuse an import -- an import RUNS it')
+                           for u in _pj.get('unguarded', [])]
             else:
                 for _k in ('vanished', 'ambiguous', 'miscounted', 'unreadable'):
                     _found += [(r.get('probe'), r.get('subject'),
@@ -2820,11 +2895,10 @@ def main():
                                                        str(r.get('anchor'))[:100]))
                                for r in _pj.get(_k, [])]
             if _pr.returncode != 0 and not _found:
-                # mutation_anchor_check also exits 1 on an in-place probe with
-                # no __main__ guard, which its --json does not list. Unnamed is
-                # not attributable, and unattributable is not a pass.
+                # A tip whose tool predates a --json field. Unnamed is not
+                # attributable, and unattributable is not a pass.
                 deny(chr(10).join([
-                    "Blocked: tools/%s exited %d and its --json names no anchor, so"
+                    "Blocked: tools/%s exited %d and its --json names nothing, so"
                     % (_pa_tool, _pr.returncode),
                     "the finding cannot be attributed. Run it without --json to read it.",
                     OVERRIDE_HINT,
