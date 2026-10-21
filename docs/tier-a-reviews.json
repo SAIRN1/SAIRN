@@ -8107,6 +8107,38 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-21T12:21:14Z",
+      "opened_at_sha": "133977ab88d8b880b3615396fadb30d5abbe78ec",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 6,
+      "resources": [
+        "dnt_gfe",
+        "dnt_patients",
+        "dnt_recall_outreach",
+        "dnt_txplans",
+        "dnt_vendor_orders",
+        "rf_bonding",
+        "rf_prequal_documents",
+        "sd_quote_requests"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/_resources/stonedesk.js",
+        "api/b34-routed-defects.test.js",
+        "api/sd-data-quote-request-soft-delete.test.js",
+        "api/sd-data.js"
+      ],
+      "what": "b34 cody: api/sd-data.js (a) dental generic write 503 now names the schema file per resource via DNT_SCHEMA_FILE (message only), (b) rf_prequal_documents + rf_bonding write on a missing table classified 503 NOT_PROVISIONED instead of 502, (c) NEW read verb sd_quote_requests/request_photos returning a request's stored intake photos behind the existing owner/admin guard. Please try to break: (1) request_photos is a NEW READ of customer photos - confirm the guard really precedes it, that payload.id cannot be used across tenants (license_hash filter is in the query), and that no role other than owner/admin reaches it; (2) the guard string order was changed so a pinned regexp still matches; (3) the dnt_vendor_orders/dnt_supplies mapping to sairndental_vendor_schema.sql. Tests: api/b34-routed-defects.test.js 12 arms, 10 red on the old files.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-21T12:21:14Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
