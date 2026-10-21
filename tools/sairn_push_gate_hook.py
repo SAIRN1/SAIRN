@@ -2932,6 +2932,69 @@ def main():
                 OVERRIDE_HINT,
             ]), gate='probe-anchors')
 
+    # ── CHECK 5f: WHAT IS INSTALLED IS WHAT IS DECLARED, AND IS WHAT LOADS (2026-10-21, cc b46)
+    # CONCEPT: a dependency installed is not verified until its resolution is
+    # checked against the lock, every single time. On 2026-10-21 a stale
+    # C:\Users\marsh\node_modules (firebase-admin 12.7.0, stripe) answered
+    # every clone's SDK-dependent api tests while the lock said 13.10.0 --
+    # green on the wrong code, and nothing said so.
+    #
+    # SCOPED, NOT A CLIFF: tools/dependency_integrity_check.py --paths checks
+    # only the manifests this push depends on -- a manifest it changes, a .js
+    # file that requires a package.json dependency, a .py file importing a
+    # package its directory's requirements.txt declares. A push touching none
+    # of those checks nothing and is not slowed.
+    # FAIL CLOSED: a finding (DRIFT / MISSING / SHADOW / LOADS / DECLARED)
+    # denies, and so does a missing tool, a crash, an unparseable answer or
+    # its own exit 2 (PR 1.11).
+    if changed:
+        _di_path = os.path.join(repo, 'tools', 'dependency_integrity_check.py')
+        if not os.path.isfile(_di_path):
+            deny(chr(10).join([
+                "Blocked: tools/dependency_integrity_check.py is not in this clone, so no",
+                "installed dependency was checked against its lock. A missing checker is",
+                "not a clean result.",
+                OVERRIDE_HINT,
+            ]), gate='dependency-integrity')
+        else:
+            _di_err, _dj, _dr = '', None, None
+            try:
+                _dr = subprocess.run(
+                    [sys.executable, _di_path, '--json', '--paths'] + sorted(changed),
+                    capture_output=True, text=True, encoding='utf-8',
+                    errors='replace', timeout=300, cwd=repo,
+                    env=dict(os.environ, PYTHONIOENCODING='utf-8', PYTHONUTF8='1'))
+                _do = _dr.stdout or ''
+                _dj = json.loads(_do[_do.index('{'):]) if '{' in _do else None
+            except Exception as e:                               # noqa: BLE001
+                _di_err = '%s: %s' % (type(e).__name__, e)
+            if _dr is None or _dj is None or _dr.returncode not in (0, 1) or _dj.get('exit') != _dr.returncode:
+                deny(chr(10).join([
+                    "Blocked: tools/dependency_integrity_check.py COULD NOT RUN (exit %s), which"
+                    % getattr(_dr, 'returncode', 'none'),
+                    "is a third state and not a pass.",
+                    "",
+                    (_di_err or ((getattr(_dr, 'stdout', '') or '') + (getattr(_dr, 'stderr', '') or '')).strip()[-1500:]
+                     or '\n'.join((_dj or {}).get('could_not_run', []))),
+                    "",
+                    OVERRIDE_HINT,
+                ]), gate='dependency-integrity')
+            elif _dj.get('findings'):
+                deny(chr(10).join([
+                    "Blocked: this push depends on a manifest whose INSTALLED dependencies do",
+                    "not match what is declared (scope: %s)." % ', '.join(_dj.get('scope') or []),
+                    "",
+                    chr(10).join('  %-8s %s -- %s' % (f['kind'], f['what'], f['detail'])
+                                 for f in _dj['findings'])[:3000],
+                    "",
+                    "A test run on this install proves nothing about the locked code. For npm,",
+                    "in the clone: npm ci --ignore-scripts --no-audit --no-fund. For a SHADOW,",
+                    "remove the node_modules ABOVE the clone. For pip: python -m pip install",
+                    "-r <dir>/requirements.txt. Then run",
+                    "  python tools/dependency_integrity_check.py",
+                    OVERRIDE_HINT,
+                ]), gate='dependency-integrity')
+
     # ── CHECK 5d: PATH SCOPE -- THE OWNER SPLIT (2026-10-19, cc b24 item 5) ─
     # MICHAEL'S INSTRUCTION: a push touching a path outside the pushing
     # population's scope, or touching any auditor-tooling path, is rejected

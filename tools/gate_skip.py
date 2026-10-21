@@ -128,6 +128,8 @@ GATES = {
                   'paths, and out of the auditor\'s',
     'probe-anchors': "a mutation probe this push touches, or whose subject it "
                      'touches, must still match its anchor exactly once',
+    'dependency-integrity': 'the installed dependencies a push depends on must '
+                            'match their lock/floor and be what loads',
 }
 
 UNSKIPPABLE = {

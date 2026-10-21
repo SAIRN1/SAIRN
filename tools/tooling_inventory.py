@@ -123,6 +123,19 @@ PURPOSES = {
         'a pass. It CANNOT prove Google acknowledged the bytes -- the mount is '
         'a sync directory -- and prints the board\'s Drive file id so a chat '
         'turn can close that through the API instead.'),
+    'dependency_integrity_check.py': ('CHECKER',
+        'an INSTALLED dependency that is not the one the manifests declare, or '
+        'is not the one that loads: a locked npm package missing or at a '
+        'different version than package-lock.json (exact), package.json out of '
+        'sync with the lock root, a node_modules ABOVE the clone that Node '
+        'would walk to (the 2026-10-21 home-directory firebase-admin 12.7.0 '
+        'that three clones tested against), a direct dependency resolving '
+        'outside <clone>/node_modules, and for tools/ tests/ docs/ '
+        'requirements.txt a package missing, below its >= floor, off an == pin, '
+        'duplicated on sys.path, or imported from a different distribution. '
+        '--paths scopes it to the manifests a push depends on; it is push-gate '
+        'CHECK 5f (gate dependency-integrity) and fails CLOSED -- exit 2 COULD '
+        'NOT RUN is never a pass.'),
     'digest_lint.py': ('CHECKER',
         'a batch digest that is over 30 LINES or missing one of its six '
         'schema fields -- STATUS, DECISION-NEEDED, CHANGED, EVIDENCE-path, '
