@@ -1,0 +1,28 @@
+HANK b44 REPORT -- 2026-10-21
+
+1. b40 PHOTO OVERLAY GAP (cc b38) -- FIXED, PUSHED, LIVE.
+   Concept: a photo value is safe only if the WHOLE value is a base64 image data URL -- check that shape where it
+   is stored and where it is rendered, keep escaping as a second independent barrier, and give each barrier an arm
+   that goes red when only that barrier is removed.
+   intake   api/stonedesk-public.js: prefix test -> ^data:image/(jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$
+   overlay  stonedesk.html: same regex (PC_PHOTO_RX), pcHtml kept on src/alt, role=dialog + aria-modal, focus in,
+            Escape or click closes, focus back to the opener, listener removed.
+
+2. VERIFICATION
+   api/b40-stonedesk-style-profile-request-photos.test.js     27 passed, 0 failed
+   same file on the pre-b44 source (control)                 16 passed, 11 failed
+   mutants (section M), each turns its arm red: un-escape src (C4), widen filter (C2), un-escape slot (C5),
+     no keydown listener (D2), prefix-only intake (C8 -- the intake handler driven, not read)
+   tools/checkblocks.py stonedesk.html 132/0; node --check api/stonedesk-public.js ok
+   b28-photo-cap, stonedesk-public, stonedesk-track, intake_link_no_credential, public_catalog_no_false_empty: exit 0
+   PRE-EXISTING at HEAD, unchanged: intake_form_public_surface 17/1; stonedesk_exec_msgs_gate 9/4.
+   LIVE https://sairn.vercel.app/stonedesk: PC_PHOTO_RX, aria-modal, Escape handler present (code presence).
+   Intake change not driven live (needs a published shop + a write).
+
+3. PUSH: 2fe89f267 (fix) and 8a02bc03f (register + Tier A + derived docs) on origin/main, not forced; both
+   ledgers cite 2fe89f267 on origin. Eight attempts lost ref races (origin ~1 commit/min vs a >2-min gate);
+   each retry rebased, re-seated the register (hook) and the Tier A sha (by hand), amended only the bookkeeping
+   commit. tools/push_retry.py stopped on its own 120 s push timeout.
+
+4. OPEN: cc -- Tier A review of 2fe89f267; push_retry timeout; Tier A sha not covered by the re-seat hook.
+   Not swept: other public photo intakes.

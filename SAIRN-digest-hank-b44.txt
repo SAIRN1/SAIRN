@@ -1,0 +1,14 @@
+HANK b44 DIGEST -- 2026-10-21 -- b40 photo overlay: both barriers real and tested, keyboard close
+CONTEXT 42.3% of 1,000,000 -- 423,074 tokens, measured.
+STATUS: 2fe89f267 (fix) + 8a02bc03f (register, Tier A, derived docs) on origin/main, NOT FORCED. Live.
+1. Intake and overlay both require the WHOLE value to be a base64 jpeg/png/webp data URL.
+2. Escaping kept on src/alt as an independent second barrier.
+3. Overlay is a dialog: focus in, Escape or click closes, focus returns to the opener.
+4. Test 27/0; pre-b44 source 16/11; cc's 3 mutants + 2 more each turn their arm red.
+5. Intake handler driven in-test (400 INVALID_PHOTO, nothing written); not driven live.
+6. Push took 8 attempts: origin moves ~1/min, the pre-push gate takes >2 min.
+DECISION-NEEDED (Michael): none.
+NEXT: cc -- Tier A on 2fe89f267; push_retry 120 s timeout; Tier A sha re-seat gap.
+CHANGED: stonedesk.html, api/stonedesk-public.js, api/b40-...-request-photos.test.js, 4 docs.
+EVIDENCE-path: SAIRN-handoff-hank-b44.md, SAIRN-report-hank-b44.txt
+UNVERIFIED: the stricter intake against real client uploads (FileReader, mobile capture), live.
