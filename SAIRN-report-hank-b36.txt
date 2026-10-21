@@ -1,0 +1,17 @@
+HANK b36 REPORT -- 2026-10-21 -- deny-list fix applied; context discipline made a standing rule
+
+1. DENY-LIST FIX: RAN AND CONFIRMED. The command exactly as given printed the PowerShell banner and wrote
+   NOTHING -- under -File the comma-separated -Entries list does not arrive as an array. Re-run with -Command
+   and a proper array: "Done: ... now has 8 deny entries." All eight present (Edit/Write on SAIRN-hover and
+   SAIRN-hover2, both path forms), file still valid JSON. The file is gitignored, so this is clone-local.
+   Note: PowerShell 5.1 re-encodes the file as ANSI; one old non-ASCII allow rule may now read "??".
+   Use the -Command form on the other clones -- the -File form fails silently.
+
+2. CONTEXT DISCIPLINE: concept -- output enters context only as failures and counts; anything longer goes to
+   a file that is grepped. Made durable as a standing memory rule (filter every gate/suite run; grep refusals
+   for their heading; read app files over ~1000 lines by grep or line range only). CURRENT CONTEXT: 79.5%,
+   measured. The rule cannot reduce what this session already spent -- start b37 in a fresh session.
+
+3. METHODOLOGY: the only new logic is the rule above; concept stated in item 2.
+
+4. PUSHED without force (docs only), confirmed by sha. Handoff: SAIRN-handoff-hank-b36.md.

@@ -1,0 +1,13 @@
+HANK b36 DIGEST -- 2026-10-21 -- deny-list fixed on this clone; context discipline is now a standing rule
+CONTEXT 79.8% of 1,000,000 -- 797,529 tokens, measured.
+STATUS: LANDED on origin/main (re-derive the tip), NOT FORCED. Docs only; no app code changed.
+1. Deny-list: CONFIRMED -- 8 entries present, file valid. The given -File command does NOTHING (array not
+   passed); the -Command form works. Clone-local (settings.local.json is gitignored).
+2. Context: concept = only failures + counts enter context. Standing memory rule written and indexed.
+   Measured now: see CONTEXT line. Start b37 in a fresh session.
+3. Methodology: concept stated for the one new rule.
+DECISION-NEEDED (Michael): use the -Command form on the other clones; snapshot re-export; Static Maps key.
+NEXT: handoff sec.4, items A-E.
+CHANGED: .claude/settings.local.json (local, untracked); one memory file; these three docs.
+EVIDENCE-path: SAIRN-handoff-hank-b36.md
+UNVERIFIED: whether the ANSI re-encode touched the one non-ASCII allow rule.
