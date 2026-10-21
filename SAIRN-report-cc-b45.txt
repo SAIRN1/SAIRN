@@ -1,0 +1,52 @@
+REPORT cc b45
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-21
+RANGE     the b45 deliverables only; no repo file changed. No --force, NO OVERRIDE, no BYPASS-LOG row.
+
+== 1. HOME node_modules REMOVED -- confirmed ==
+C:\Users\marsh\node_modules does not exist. Documents\, C:\Users\ and C:\ have none either.
+Immediately after the removal, before any clone install, a require.resolve of firebase-admin from api/_lib gave MODULE_NOT_FOUND.
+  api/_lib/firebase-mint.test.js        exit 1  THREW -- Cannot find module 'firebase-admin'
+  api/sairncash/verify.test.js          exit 1  Cannot find module 'stripe'
+  api/sairncash/stripe-webhook.test.js  exit 1  Cannot find module 'stripe'
+So stripe, not only firebase-admin, had been served from the home directory. The failure is loud and closed, which is correct.
+
+== 2. CLONE-LOCAL INSTALL (Michael: npm ci --ignore-scripts --no-audit --no-fund, 203 packages) ==
+Resolution from api/_lib, compared with package-lock.json:
+  firebase-admin          13.10.0 @ <clone>\node_modules   (lock 13.10.0)
+  stripe                  17.7.0  @ <clone>\node_modules   (lock 17.7.0)
+  @simplewebauthn/server  13.3.2  @ <clone>\node_modules   (lock 13.3.2)
+  node-forge              absent
+git status clean: node_modules is gitignored (.gitignore:5).
+
+== 3. DRIVEN, with in-process proof ==
+A node -r preload records, per SDK, the file actually loaded and its package.json version:
+  firebase-mint.test.js            exit 0  16/16 (real signed token)    SDK_PROOF firebase-admin=13.10.0 @ <clone>
+  sairncash/verify.test.js         exit 0  22/22                        SDK_PROOF stripe=17.7.0 @ <clone>
+  sairncash/stripe-webhook.test.js exit 0  all assertions passed        SDK_PROOF stripe=17.7.0 @ <clone>
+  sairncash/portal.test.js         exit 0  19/19                        SDK_PROOF stripe=17.7.0 @ <clone>
+  _lib/stripe-api-version, sairncash trial-start 10/10, trial-renew 4/4, trial-renew-idempotency 11/11,
+  b18-passkey-profile-e2e 37/37, preauth-envelope-ordering 59/59 -- exit 0; no SDK loaded in-process (they stub).
+
+== 4. FULL api/ SUITE ==
+333 suites, each exit code recorded. Non-zero: 4, all long-standing (red since before b38):
+  _lib/law-trust-reconcile-endpoint, _resources/app-boundary, sd-data-family-contacts, sd-data-law-trusttx-clearance.
+Against the b38 rebased run: NO exit code changed. One new suite (api/b45-leg-settings-owner-write.test.js, not cc's) is green.
+
+== IMPLICATION FOR OTHER CLONES ==
+hank, cody and fourth have no node_modules, so their SDK-dependent api tests now exit 1 with "Cannot find module" until each runs
+npm ci --ignore-scripts --no-audit --no-fund once. That is correct fail-closed behaviour: they previously passed by silently loading 12.7.0 from the home directory.
+
+== 5. PUSH ==
+Nothing in the repo changed; only the three deliverables were pushed.
+
+== OPEN ==
+Other clones: npm ci once each. Carried from b44: rtdbUpdate/rtdbGet not driven against a real RTDB;
+the pre-existing SAIRNcash stripe-webhook config 500; fourth to paste the triage addendum.
+
+== CHANGED ==
+SAIRN-handoff-cc-b45.md; this report; the digest. Local only: <clone>\node_modules (gitignored).
+
+SHA256 10dd6e5c988fd52cbfabe60914ca3f4bb498e3db6b9155c9d3ea159ab74559f3
+END-OF-REPORT

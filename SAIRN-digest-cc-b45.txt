@@ -1,0 +1,22 @@
+DIGEST cc b45
+STATUS: 2 of 2 closed; no repo change (node_modules is gitignored); deliverables pushed; no --force, NO OVERRIDE.
+ITEM 1: the home node_modules is GONE (no node_modules above the clone at all).
+  Before the clone install, the SDK tests failed loudly: firebase-mint (no firebase-admin), verify and stripe-webhook (no stripe), all exit 1.
+  So stripe, not only firebase-admin, had been coming from the home directory.
+  After Michael's npm ci in this clone: firebase-admin 13.10.0, stripe 17.7.0, @simplewebauthn/server 13.3.2 resolve from <clone>\node_modules,
+  exactly matching the lock; node-forge is absent.
+  In-process proof (node -r preload): mint 16/16 on firebase-admin=13.10.0 @ <clone>; verify, stripe-webhook and portal on stripe=17.7.0 @ <clone>.
+  Full api/ suite: 333 suites, the same 4 long-standing reds, no exit code changed vs b38; one new suite (not mine) is green.
+ITEM 2: nothing changed in the repo; deliverables only.
+IMPLICATION: hank/cody/fourth have no node_modules, so their SDK-dependent api tests will exit 1 until each runs npm ci once.
+  That is correct fail-closed behaviour; before, they passed on the home copy of 12.7.0.
+DECISION-NEEDED: none (other clones: npm ci --ignore-scripts --no-audit --no-fund once each).
+CHANGED: the three deliverables only.
+SQL: none.
+EVIDENCE-path: SAIRN-report-cc-b45.txt, SAIRN-handoff-cc-b45.md
+UNVERIFIED: rtdbUpdate/rtdbGet against a real Realtime Database (carried from b44).
+ROUTED: hank/cody/fourth -- npm ci once. fourth -- triage-doc addendum. SAIRNcash owner -- webhook config 500 (pre-existing).
+NEXT: nothing owed by cc on the Tier A ledger.
+CONTEXT 68.1% of 1,000,000 -- 680,725 tokens, measured.
+SHA256 27d23dee22f527a41b49121e27c91186cb3a39bbc8c6757cadc09b4630c5d98f
+END-OF-REPORT
