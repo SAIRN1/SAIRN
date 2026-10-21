@@ -4458,8 +4458,8 @@
       "task": "b40: request_photos client caller (cody b35 defect 5) + style-profile sdData unwrap (defect 6). FILES: stonedesk.html api/ tests SAIRN-handoff-hank-b40.md SAIRN-report-hank-b40.txt SAIRN-digest-hank-b40.txt",
       "claimed_at": "2026-10-21T15:48:17Z",
       "claimed_at_epoch": 1792597697.157342,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T16:24:02Z",
       "files": [
         "SAIRN-digest-hank-b40.txt",
         "SAIRN-handoff-hank-b40.md",
