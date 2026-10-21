@@ -1533,6 +1533,19 @@ function senFetchTimeoutSignal(){
 var senLastErr={};
 function senLastErrText(resource){return senLastErr[resource]?senLastErr[resource].message:'';}
 function senLastErrCode(resource){return senLastErr[resource]?senLastErr[resource].code:'';}
+// b49 -- CONCEPT: a failed write says WHICH failure it was. The caller clears
+// senLastErr[resource] before writing, so an empty code here means the server
+// never answered. No answer, an unprovisioned table, a missing licence or a 5xx
+// keep the device copy (kept:true); any other answer is the server REFUSING the
+// row, and the caller withdraws it (kept:false) so a rejected contract or
+// authorisation never prices or authorises a claim (cody b35/b36 defect 8).
+function senWriteFail(resource){
+  var code=senLastErrCode(resource),msg=senLastErrText(resource);
+  if(!code)return {kept:true,text:'Saved on this device only -- the server could not be reached. Try again with a connection.'};
+  if(code==='NOT_PROVISIONED'||code==='NO_LICENSE'||/^HTTP_5/.test(code)||code==='UPSTREAM')
+    return {kept:true,text:'Saved on this device only -- '+(msg||('the server could not store it ('+code+').'))+' Other devices will not see it.'};
+  return {kept:false,text:'Not saved -- the server refused it: '+(msg||code)};
+}
 function senData(action,resource,payload,withSession){
   var lic=senLicenseKey();
   if(!lic){senLastErr[resource]={code:'NO_LICENSE',message:'This device has no licence key entered, so nothing can reach the server. Enter it in Settings.'};return Promise.resolve(null);}
@@ -4360,6 +4373,7 @@ async function generateClaim(visitId){
     status:'draft'};
   var list=claims();list.push(rec);st('sen_claims',list);
   renderReadyToBill();renderClaimsTable();blRenderKpis();
+  delete senLastErr.sen_claims;
   var saved=await senData('write','sen_claims',rec,true);
   var priced=rate.status==='applied'
     ? 'Claim created at '+fmt(rate.rate_per_hour)+'/hr -- '+rate.reason
@@ -4376,6 +4390,11 @@ async function generateClaim(visitId){
         (rate.auth_note?' The contract says: '+rate.auth_note:'');
   }else if(auth.status==='applied'){
     authMsg=' '+auth.reason;
+  }else if(rate.status!=='applied'){
+    // b49: with no contract in force nothing says whether authorisation is
+    // required, so the message says THAT, and that none applies, rather than
+    // saying nothing about authorisation at all.
+    authMsg=' No contract applies, so whether prior authorisation is required is unknown -- and none applies: '+auth.reason;
   }
   // Remaining is as of NOW, not as of the service date, and the wording says
   // so. Recomputing what was left on a past day would mean replaying every
@@ -4387,8 +4406,10 @@ async function generateClaim(visitId){
     if(left!==null&&left<0)authMsg+=' That authorisation is OVER by '+Math.abs(left)+' unit(s) as of today.';
     else if(left!==null&&left===0)authMsg+=' That authorisation has no units left as of today.';
   }
-  toast(saved?priced+authMsg:'Saved on this device only -- server sync failed, try again with a connection',
-    rate.status==='applied'&&!authMsg?4000:9000);
+  // b49: a failed write PREFIXES the failure; it no longer replaces the pricing
+  // and authorisation lines the biller needs either way.
+  toast(saved?priced+authMsg:senWriteFail('sen_claims').text+' -- '+priced+authMsg,
+    saved&&rate.status==='applied'&&!authMsg?4000:9000);
 }
 function renderClaimsTable(){
   var cl=claims().slice().sort(function(a,b){return (b.service_date||'').localeCompare(a.service_date||'');});
@@ -4734,14 +4755,25 @@ async function savePayerContract(){
     created_at:(pcEditId&&(payerContracts().find(function(x){return x.id===pcEditId;})||{}).created_at)||senLocalToday()};
   var list=payerContracts();
   var i=list.findIndex(function(x){return x.id===rec.id;});
+  var prev=i>=0?list[i]:null;
   if(i>=0)list[i]=rec;else list.push(rec);
   st('sen_payer_contracts',list);
   // pcPaint, NOT pcRender: pcRender hydrates, and a hydrate fired the instant
   // before the write lands would read the row back as the server still has it
   // and silently undo the edit that was just made on screen.
   closePcModal();pcPaint();
+  delete senLastErr.sen_payer_contracts;
   var saved=await senData('write','sen_payer_contracts',rec,true);
-  toast(saved?'Contract saved':'Saved on this device only -- server sync failed, try again with a connection');
+  if(saved){toast('Contract saved');return;}
+  var f=senWriteFail('sen_payer_contracts');
+  if(!f.kept){
+    // REFUSED: put the device back as it was -- the previous version of an
+    // edited contract, or no row at all for a new one.
+    var back=payerContracts(),j=back.findIndex(function(x){return x.id===rec.id;});
+    if(j>=0){if(prev)back[j]=prev;else back.splice(j,1);}
+    st('sen_payer_contracts',back);pcPaint();
+  }
+  toast(f.text,7000);
 }
 
 function pcRender(){
@@ -5460,6 +5492,7 @@ async function saveAuthorization(){
     created_at:(azEditId&&(authorizations().find(function(x){return x.id===azEditId;})||{}).created_at)||senLocalToday()};
   var list=authorizations();
   var i=list.findIndex(function(x){return x.id===rec.id;});
+  var prev=i>=0?list[i]:null;
   if(i>=0)list[i]=rec;else list.push(rec);
   st('sen_authorizations',list);
   // azPaint, not azRender: azRender hydrates, and a hydrate firing the instant
@@ -5467,8 +5500,18 @@ async function saveAuthorization(){
   // and silently undo the edit just made -- the same race the Contracts panel
   // hit.
   closeAzModal();azPaint();
+  delete senLastErr.sen_authorizations;
   var saved=await senData('write','sen_authorizations',rec,true);
-  toast(saved?'Authorisation saved':'Saved on this device only -- server sync failed, try again with a connection');
+  if(saved){toast('Authorisation saved');return;}
+  var f=senWriteFail('sen_authorizations');
+  if(!f.kept){
+    // REFUSED: withdrawn, so azResolve() cannot cite an authorisation the
+    // server rejected on a claim.
+    var back=authorizations(),j=back.findIndex(function(x){return x.id===rec.id;});
+    if(j>=0){if(prev)back[j]=prev;else back.splice(j,1);}
+    st('sen_authorizations',back);azPaint();
+  }
+  toast(f.text,7000);
 }
 
 function azRender(){
