@@ -36731,6 +36731,93 @@
       "recurrence_open": "NOT CLOSED. A DEA row with no number still keys as one per provider; a corrected (re-typed) number leaves the old row live; the server does not compare the printed copy to the live record for equality. Injection for (2) is a8f74bc83."
     },
     {
+      "commit": "b27df033cc90",
+      "date": "2026-10-21",
+      "subject": "fix(test): scp-licence-only B arms assert the shipped session gate; A3 reads the SD_SESSION_GATED table (cc b35)",
+      "files": [
+        "api/sd-data-scp-licence-only.test.js"
+      ],
+      "lines_added": 85,
+      "lines_removed": 42,
+      "app": "sairnscape",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "api/sd-data-scp-licence-only.test.js arm A3 could never fire: it regex-searched 9,000 characters after the FIRST 'SD_SESSION_GATED' in api/sd-data.js, which is a comment at line 99, while the table entries sit ~1,800 lines later -- so it reported 'none of the nine is gated' while all nine were. It now parses the declared const SD_SESSION_GATED table, with controls on both sides (invoices present, sd_customers absent). Mutation control: scp_jobs removed from the table turns A3 red.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "c512d8f932bd",
+        "date": "2026-09-29",
+        "subject": "test(scp): the nine licence-key-alone SAIRNscape resources nobody drove -- posture and boundary, both directions",
+        "lag_days": 22
+      },
+      "citation_note": "Closest standing idea is the cross-domain discipline that nothing announces when a check stops testing, but that is a convention in docs/2026-09-13-cross-domain-disciplines.md, not a numbered PR rule; recorded not-citable rather than mis-cited.",
+      "contributing_factors": [
+        {
+          "factor": "The window was anchored on the first textual occurrence of the table name, not on its declaration, so a comment that mentions the name moved the window off the table.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Anchor on const SD_SESSION_GATED = { ... } and assert a known-gated and a known-ungated control."
+        },
+        {
+          "factor": "The arm had no control proving the window contained the table, so a vacuous pass was indistinguishable from a real one.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "invoices-present and sd_customers-absent controls inside A3, plus a mutation run."
+        }
+      ],
+      "recurrence_open": "Other suites that slice SD_DATA by a fixed character window from indexOf(name) have the same shape; not swept this batch."
+    },
+    {
+      "commit": "b27df033cc90",
+      "date": "2026-10-21",
+      "subject": "fix(test): scp-licence-only B arms assert the shipped session gate; A3 reads the SD_SESSION_GATED table (cc b35)",
+      "files": [
+        "api/sd-data-scp-licence-only.test.js"
+      ],
+      "lines_added": 85,
+      "lines_removed": 42,
+      "app": "sairnscape",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "independent-review",
+      "summary": "api/sd-data-scp-licence-only.test.js B arms asserted the retired licence-key-alone posture for nine SAIRNscape resources after they were deliberately session-gated (5e33157e, 0442646c, d99b47f9, 5776ef19), so the suite was 9 red for a correct reason and stopped being a usable regression signal. Inverted: B1 no session -> 403 FORBIDDEN, B2 a signed-in sairnscape owner is not refused. Mutation control: a gate that refuses every session turns all nine B2 arms red.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "0442646cb781",
+        "date": "2026-10-12",
+        "subject": "fix(scp): three of SAIRNscape's eight ungated resources gated -- and the repro that found them scored one of its own targets FIXED when it was not",
+        "lag_days": 9
+      },
+      "citation_note": "No standing rule requires a scope change to update the suites that disclose the old scope in the same commit; the test's own header asked for exactly that, by hand.",
+      "contributing_factors": [
+        {
+          "factor": "The gating commits changed the posture a disclosure suite asserted and did not update that suite, so it went red and stayed red.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "B arms inverted to the shipped posture with a positive-session arm."
+        },
+        {
+          "factor": "A red suite that is red for a correct reason looks the same as a regression, so nobody acted on it for days.",
+          "kind": "detection",
+          "action_status": "declined",
+          "action": "No detector built.",
+          "note": "Out of the dispatched scope; the bisect by cc b35 is what surfaced it."
+        }
+      ],
+      "recurrence_open": "Any posture-disclosure suite goes red silently on a deliberate scope change; nothing ties a SD_SESSION_GATED edit to its disclosure suites."
+    },
+    {
       "commit": "d94a2e3d1bf3",
       "date": "2026-10-21",
       "subject": "fix(cc b33): the path manifest folds case, so one capital letter cannot cross a boundary",
