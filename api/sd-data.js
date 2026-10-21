@@ -5078,11 +5078,33 @@ module.exports = async (req, res) => {
     // decisions for all three verbs, and a second copy of them beside this one
     // is a copy that can drift -- which is how dnt_supplies ended up with a
     // separate branch carrying its own `dntGate`. One gate, three actions.
-    if (resource === 'sd_quote_requests' && (action === 'read' || action === 'write' || action === 'soft_delete' || action === 'tombstones')) {
+    if (resource === 'sd_quote_requests' && (action === 'read' || action === 'write' || action === 'soft_delete' || action === 'request_photos' || action === 'tombstones')) {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       if (!CRM_MANAGEMENT_ROLES[session.role]) {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only an owner or admin can work the incoming quote requests' } });
+        return;
+      }
+      // ── request_photos (b34): THE READER sd_quote_request_photos NEVER HAD ──
+      // CONCEPT: a stored value is only useful if some authorised path returns
+      // it. api/stonedesk-public.js has written the customer's intake photos
+      // since 2026-09-03 and nothing in api/ ever read them (cc's b29 notes,
+      // defect 5), so staff could see `photo_count: 2` and never the photos.
+      // Behind the SAME owner/admin gate as the requests themselves: the photos
+      // are no wider an audience than the request they belong to. A read, so it
+      // is outside the payload cap and needs no new database privilege (the
+      // table already grants select). Returns the slots in order; the client
+      // wiring (stonedesk.html) is hank's and is routed, not done here.
+      if (action === 'request_photos') {
+        const rqId = payload && payload.id != null ? String(payload.id) : '';
+        if (!rqId) { res.status(400).json({ error: { code: 'ID_REQUIRED', message: 'request_photos requires payload.id (the request id)' } }); return; }
+        const pr = await fetch(rest('sd_quote_request_photos?license_hash=eq.' + enc(licHash) +
+          '&request_id=eq.' + enc(rqId) + '&select=data&order=created_at.asc'), { headers });
+        if (pr.status === 404 || pr.status === 400) { if (await unreadableNotEmpty(res, pr, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const prRows = await pr.json();
+        if (!pr.ok) return upstream(res, prRows);
+        res.status(200).json({ ok: true, provisioned: true,
+          data: (prRows || []).map((x) => ({ slot: (x.data || {}).slot || null, photo_base64: (x.data || {}).photo_base64 || '' })) });
         return;
       }
       // TOMBSTONES -- see the block on sd_customers above for why an absence
@@ -10590,6 +10612,8 @@ module.exports = async (req, res) => {
           })
         });
         const saved = await w.json();
+        // A missing table is NOT a retryable upstream error (b34): classify the body first.
+        if (w.status === 404 || w.status === 400) return notProvisioned(res, w, 'Prequalification documents are not set up yet — run sql/sairnroofing_prequal_schema.sql in Supabase first.', saved);
         if (!w.ok) return upstream(res, saved);
         res.status(200).json({ ok: true, data: Array.isArray(saved) ? saved[0] : saved });
         return;
@@ -10692,6 +10716,8 @@ module.exports = async (req, res) => {
           })
         });
         const saved = await w.json();
+        // A missing table is NOT a retryable upstream error (b34): classify the body first.
+        if (w.status === 404 || w.status === 400) return notProvisioned(res, w, 'Bonding records are not set up yet — run sql/sairnroofing_prequal_schema.sql in Supabase first.', saved);
         if (!w.ok) return upstream(res, saved);
         res.status(200).json({ ok: true, data: Array.isArray(saved) ? saved[0] : saved });
         return;
@@ -17551,6 +17577,19 @@ module.exports = async (req, res) => {
       // whoever orders the gloves. Neither names a patient.
       dnt_supplies: 'supply_id', dnt_vendor_orders: 'vendor_order_id'
     };
+    // ── A "NOT SET UP" MESSAGE NAMES THE FILE THAT CREATES THIS TABLE (b34) ───
+    // CONCEPT: the file to run is a fact about the TABLE, not about the family
+    // of tables, so it is looked up per resource. The generic write branch told
+    // every dental resource to run sairndental_data_schema.sql, which does not
+    // create these five -- cc's b29 notes, defect 1. Default stays the data
+    // schema, which creates the other eleven.
+    const DNT_SCHEMA_FILE = {
+      dnt_gfe: 'sql/sairndental_gfe_schema.sql',
+      dnt_recall_outreach: 'sql/sairndental_recall_schema.sql',
+      dnt_txplans: 'sql/sairndental_treatment_plans_schema.sql',
+      dnt_supplies: 'sql/sairndental_vendor_schema.sql',
+      dnt_vendor_orders: 'sql/sairndental_vendor_schema.sql'
+    };
     // Resources whose read hides soft-deleted rows. dnt_supplies is the only
     // one of the four with a delete path (removeSupply()), and without this
     // filter the hydrate would merge a removed supply straight back in by id --
@@ -18172,7 +18211,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairndental', [idCol]: String(payload.id), data: locStamped, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNdental data tables are not set up yet — run sql/sairndental_data_schema.sql in Supabase first.'); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNdental data tables are not set up yet — run ' + (DNT_SCHEMA_FILE[resource] || 'sql/sairndental_data_schema.sql') + ' in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });

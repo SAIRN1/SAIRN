@@ -232,6 +232,7 @@ const ACTION_CLASS = Object.freeze(Object.assign(Object.create(null), {
   portfolio: 'compute-only',
   readiness: 'compute-only',
   reconcile: 'compute-only',
+  request_photos: 'compute-only',
   reconcile_claim: 'compute-only',
   route: 'compute-only',
   therapy_accumulator: 'compute-only',

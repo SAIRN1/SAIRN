@@ -63,6 +63,27 @@ function todayFrom(payload) {
 // The provider credentials, reported never returned. `configured` is the only
 // thing that leaves this function -- an endpoint that echoed which secret was
 // missing would be telling an unauthenticated caller about the environment.
+// ── WHAT A FAILED DATA-STORE CALL MEANS (b34) ───────────────────────────
+// CONCEPT: "the table is not there" is one failure among several that PostgREST
+// reports as 400/404, so a status code alone cannot be mapped to NOT_PROVISIONED
+// -- the body names the class. Mirrors notProvisionedDecide() in api/sd-data.js
+// (same four answers, same order) rather than inventing a second taxonomy; this
+// endpoint cannot import it because sd-data.js exports only its handler.
+//   ROW_REFUSED      a 23xxx constraint violation: the table EXISTS
+//   SCHEMA_OUTDATED  a 42703 undefined column: the table EXISTS and is stale
+//   MISSING          404, PGRST205, or "relation ... does not exist"
+//   OTHER            anything else -- reported as the upstream error it is
+function classifyUpstream(status, text) {
+  const raw = typeof text === 'string' ? text : '';
+  let body = null;
+  try { body = JSON.parse(raw); } catch (e) { body = null; }
+  const pg = (body && body.code) ? String(body.code) : '';
+  if (status === 400 && pg.slice(0, 2) === '23') return 'ROW_REFUSED';
+  if (status === 400 && (pg === '42703' || /undefined_column/i.test(raw))) return 'SCHEMA_OUTDATED';
+  if (status === 404 || /relation .* does not exist|PGRST205|does not exist/i.test(raw)) return 'MISSING';
+  return 'OTHER';
+}
+
 function providerConfigured() {
   return !!(process.env.QB_CLIENT_ID && process.env.QB_CLIENT_SECRET && process.env.QB_REDIRECT_URI);
 }
@@ -139,7 +160,13 @@ module.exports = async (req, res) => {
     const cr = await fetch(rest('accounting_consents?license_hash=eq.' + enc(licHash) +
       '&provider=eq.' + enc(provider) +
       '&select=consent_id,provider,granted_by,granted_on,scopes,revoked_on,revoked_by&order=granted_on.desc'), { headers });
-    if (cr.status === 404 || cr.status === 400) return { provisioned: false };
+    if (cr.status === 404 || cr.status === 400) {
+      // Only a MISSING table is "not provisioned". Any other 400 (a column the
+      // schema lacks, a constraint) means the table is there and the read failed.
+      const crText = await cr.text().catch(() => '');
+      if (classifyUpstream(cr.status, crText) === 'MISSING') return { provisioned: false };
+      return { unreadable: true, detail: 'accounting_consents HTTP ' + cr.status + ' ' + classifyUpstream(cr.status, crText) };
+    }
     // AN UNREADABLE CONSENT TABLE IS NOT AN ABSENT CONSENT (2026-09-04).
     // These fell back to [], so `live` became null and `status` reported the
     // customer as NOT CONSENTED and NOT CONNECTED -- a statement about a legal
@@ -257,7 +284,10 @@ module.exports = async (req, res) => {
       });
       const saved = await w.json();
       if (!w.ok) {
-        if (w.status === 404 || w.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The accounting connector tables are not set up — run sql/accounting_connector_schema.sql in Supabase first.' } }); return; }
+        const wKind = classifyUpstream(w.status, JSON.stringify(saved));
+        if (wKind === 'MISSING') { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The accounting connector tables are not set up — run sql/accounting_connector_schema.sql in Supabase first.' } }); return; }
+        if (wKind === 'SCHEMA_OUTDATED') { res.status(503).json({ error: { code: 'SCHEMA_OUTDATED', message: 'The accounting connector tables exist but are out of date — re-run sql/accounting_connector_schema.sql. The consent was NOT recorded.' } }); return; }
+        if (wKind === 'ROW_REFUSED') { res.status(400).json({ error: { code: 'ROW_REFUSED', message: 'The database refused this consent record. Nothing was saved; re-running the migration will not help.' } }); return; }
         res.status(502).json({ error: { message: 'Data store rejected the consent' } });
         return;
       }
@@ -289,11 +319,36 @@ module.exports = async (req, res) => {
       // consent is gone must not sit in a row still saying 'connected' --
       // the engine would refuse to use it, but the row would read as fine to
       // anybody looking at the table.
-      await fetch(rest('accounting_connections?license_hash=eq.' + enc(licHash) + '&provider=eq.' + enc(provider)), {
-        method: 'PATCH', headers: headers,
+      // ── A DISCARD IS REPORTED ONLY AFTER IT IS CONFIRMED (b34) ─────────────
+      // CONCEPT: a response may claim a side effect only after the write that
+      // performs it came back ok AND matched a row; this PATCH's result was
+      // never read, so `tokens_discarded: true` was sent whether or not the
+      // credentials were cleared -- a false success on a credential discard.
+      // The consent above IS revoked at this point and the engine refuses a
+      // revoked consent's tokens, so a failure here is reported as exactly that
+      // and never as success.
+      const dw = await fetch(rest('accounting_connections?license_hash=eq.' + enc(licHash) + '&provider=eq.' + enc(provider)), {
+        method: 'PATCH', headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
         body: JSON.stringify({ status: 'revoked', access_token_enc: null, refresh_token_enc: null, updated_at: new Date().toISOString() })
       });
-      res.status(200).json({ ok: true, data: saved[0], tokens_discarded: true });
+      const dText = await dw.text().catch(() => '');
+      let dRows = null;
+      try { dRows = JSON.parse(dText); } catch (e) { dRows = null; }
+      if (dw.ok && Array.isArray(dRows)) {
+        // ok + zero rows = there was no connection row, so no stored credentials
+        // to discard: true, and different from "discarded".
+        res.status(200).json({ ok: true, data: saved[0], tokens_discarded: dRows.length > 0, connection_found: dRows.length > 0 });
+        return;
+      }
+      if (!dw.ok && classifyUpstream(dw.status, dText) === 'MISSING') {
+        res.status(200).json({ ok: true, data: saved[0], tokens_discarded: false, connection_found: false });
+        return;
+      }
+      console.error('accounting: consent revoked but connection discard UNCONFIRMED, HTTP', dw.status);
+      res.status(502).json({ error: {
+        code: 'TOKEN_DISCARD_UNCONFIRMED',
+        message: 'The consent is revoked, and the connector will not use its stored credentials, but clearing those credentials could not be confirmed. They may still be stored. Do not treat this as disconnected.' },
+        consent_revoked: true, tokens_discarded: false, data: saved[0] });
       return;
     }
 

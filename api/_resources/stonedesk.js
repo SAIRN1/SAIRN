@@ -289,7 +289,11 @@ module.exports = {
   // that stays true. THE SUBMITTED TEXT IS STILL NOT EDITABLE: soft delete
   // adds `_deleted_at` and changes nothing else, so what the customer wrote
   // survives a deletion exactly as written.
-    'sd_quote_requests': ['soft_delete', 'tombstones'],
+    // 'request_photos' (b34) is a READ: it returns the intake photos a customer attached
+    // to ONE request (payload.id), from sd_quote_request_photos, which api/ had written
+    // since 2026-09-03 and never read. It persists nothing and is refused to anyone who
+    // cannot already work the requests (owner/admin), the same gate as 'tombstones'.
+    'sd_quote_requests': ['soft_delete', 'tombstones', 'request_photos'],
   // SOFT DELETE ON sd_customers (2026-09-12), and unlike the twenty-two above
   // this one closes a defect that was VISIBLE TO THE USER AND UNDID ITSELF.
   //
