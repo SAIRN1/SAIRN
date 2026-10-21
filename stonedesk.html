@@ -30804,7 +30804,10 @@ window.SAIRNStyle = (function () {
 // renders nothing -- the same as having no evidence, which is the honest state.
 window.sdLoadStyleProfile = async function () {
   try {
-    var d = await sdData('read', 'style_profile', {});
+    // THE ENVELOPE, NOT sdData() (cody b35, defect 6): `provisioned` sits beside
+    // `data`, and sdData() returns j.data alone -- so this read keys that were
+    // never there and a stored profile always loaded as null.
+    var d = await sdDataEnvelope('read', 'style_profile', {});
     if (!d) { _sdStyleProvisioned = null; return null; }
     _sdStyleProvisioned = d.provisioned === true;
     _sdStyleProfile = d.data || null;
@@ -30818,7 +30821,8 @@ window.sdObserveStyle = function (text) {
   try {
     if (!text || !String(text).trim()) return;
     var obs = window.SAIRNStyle.analyse(text);
-    sdData('write', 'style_profile', { observation: obs }).then(function (d) {
+    // Envelope for the same reason as the load above: `d.ok` is an envelope key.
+    sdDataEnvelope('write', 'style_profile', { observation: obs }).then(function (d) {
       if (d && d.ok) { _sdStyleProfile = d.data || _sdStyleProfile; _sdStyleProvisioned = true; }
     }).catch(function () {});
   } catch (e) {}
@@ -44300,10 +44304,45 @@ sdSyncColorInputs('sd-brand-secondary', 'sd-brand-secondary-hex');
             ? '<button class="q-btn" style="padding:5px 9px;font-size:11px" onclick="pcSetRequest(\''+escAttrJs(String(q.id))+'\',\'promoted\')">Promote</button> '+
               '<button class="q-btn" style="padding:5px 9px;font-size:11px" onclick="pcSetRequest(\''+escAttrJs(String(q.id))+'\',\'declined\')">Decline</button> '
             : '')+
+          (Number(q.photo_count)>0
+            ? '<button class="q-btn" style="padding:5px 9px;font-size:11px" onclick="pcShowRequestPhotos(\''+escAttrJs(String(q.id))+'\')">Photos ('+pcHtml(String(Number(q.photo_count)))+')</button> '
+            : '')+
           '<button class="q-btn" style="padding:5px 9px;font-size:11px" onclick="pcDeleteRequest(\''+escAttrJs(String(q.id))+'\')">Delete</button>'+
         '</td></tr>';
     }).join('');
   }
+
+  // ── REQUEST PHOTOS (b40): THE CALLER request_photos NEVER HAD ─────────────
+  // cody b35 defect 5: api/sd-data.js gained the reader in b34 and nothing here
+  // asked it, so staff saw a photo count and never the photos. Fetched on
+  // click, not with the list -- each photo can be ~1.5MB of base64. Through the
+  // ENVELOPE so "table not set up" is not said as "no photos", and a failed
+  // read is said as a failure. Only the three image types the intake accepts
+  // are rendered (api/stonedesk-public.js validates the same prefix).
+  window.pcShowRequestPhotos=async function(id){
+    var r;
+    try{ r=await sdDataEnvelope('request_photos','sd_quote_requests',{id:id}); }catch(e){ r=null; }
+    if(!r){
+      if(typeof notify==='function') notify('Could not load the photos for that request -- try again','err');
+      return;
+    }
+    var imgs=(Array.isArray(r.data)?r.data:[]).filter(function(p){
+      return p && /^data:image\/(jpeg|png|webp);base64,/.test(p.photo_base64||'');
+    });
+    var ov=document.createElement('div');
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:center;padding:24px;overflow:auto;cursor:zoom-out';
+    ov.onclick=function(){ ov.remove(); };
+    ov.innerHTML=imgs.length
+      ? imgs.map(function(p){
+          return '<img alt="Customer photo'+(p.slot?' '+pcHtml(String(p.slot)):'')+'" src="'+pcHtml(p.photo_base64)+'" style="max-width:min(90vw,640px);max-height:80vh;border-radius:8px">';
+        }).join('')
+      : '<div style="color:#fff;font-size:14px;max-width:420px;text-align:center">'+
+          (r.provisioned===false
+            ? 'Photo storage is not set up on the server, so these photos cannot be shown.'
+            : 'This request says it has photos, but none are stored for it.')+
+        '</div>';
+    document.body.appendChild(ov);
+  };
 
   window.pcToggleHandled=function(){
     var box=pcEl('pc-show-handled');
