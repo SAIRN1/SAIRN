@@ -33,12 +33,24 @@ stryker.js that writes a canned report. What is NOT verified: compatibility with
 the real binary's CLI and report. The first real run is the verification, and
 until then every result carries `UNVERIFIED-AGAINST-REAL-STRYKER`.
 
+UPDATE b79: the first real run happened in b78 (fourth's b46 geocode commit,
+real binary, report parsed). The tag is therefore DERIVED, not hard-coded: a
+report whose `framework` block names StrykerJS is tagged `STRYKER-<version>`; a
+report with no such block (the fake in the selftest, anything unrecognised)
+keeps `UNVERIFIED-AGAINST-REAL-STRYKER`. Second b79 change: a commit whose own
+tests carry in-file mutation arms (anchor strings in the source's TEXT) used to
+abort Stryker's dry run, because Stryker instruments a copy of the file and
+every anchor then matches 0 times (exit 2 COULD NOT RUN, which would also
+shadow a real arm failure). The test command now loads hover_stryker_preload.js,
+which returns the pristine text for the test's own reads of the mutated file and
+leaves `require` instrumented.
+
 EXIT CODES: 0 CLEAN, 1 FINDINGS (survivors on added lines), 2 INCONCLUSIVE or
 COULD NOT RUN.
 
 Run:
   python hover_stryker_signal.py --availability
-  python hover_stryker_signal.py --run --sha <sha> [--files api/a.js,api/b.js]
+  python hover_stryker_signal.py --run --sha <sha> [--files api/a.js,api/b.js] [--added-from <sha>]
   python hover_stryker_signal.py --selftest
 """
 import json
@@ -58,6 +70,7 @@ ERROR_RATIO_LIMIT = 0.25
 TOOL_ROOT = os.path.join(os.path.expanduser('~'), '.claude', 'projects',
                          'C--Users-marsh-Documents-SAIRN-hover', 'hover-audit-log', 'ext')
 UNVERIFIED = 'UNVERIFIED-AGAINST-REAL-STRYKER'
+PRELOAD = os.path.join(HERE, 'hover_stryker_preload.js')
 INSTALL_STEPS = (
     'Run these yourself (the permission rules deny them to this session; prefix '
     'each with ! in the prompt):',
@@ -119,6 +132,35 @@ def build_config(mutate, test_cmd, report_path):
         'cleanTempDir': True,
         'ignorePatterns': ['.git', 'node_modules', 'docs', 'sql', '*.html', 'SAIRN-*'],
     }
+
+
+def report_tag(report):
+    """DERIVED from the report itself: only a report that names StrykerJS counts
+    as having come from the real binary."""
+    fw = (report or {}).get('framework') or {}
+    if str(fw.get('name', '')).lower() == 'strykerjs' and fw.get('version'):
+        return 'STRYKER-%s' % fw['version']
+    return UNVERIFIED
+
+
+def installed_tag(loc):
+    """Tag for the --availability line: the installed package's own version, or
+    UNVERIFIED when it cannot be read (never an assumed one)."""
+    try:
+        pj = os.path.join(os.path.dirname(os.path.dirname(loc['stryker_js'])), 'package.json')
+        with open(pj, encoding='utf-8') as f:
+            d = json.load(f)
+        if d.get('name') == '@stryker-mutator/core' and d.get('version'):
+            return 'STRYKER-%s installed' % d['version']
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
+    return UNVERIFIED
+
+
+def build_test_command(node, tests, preload=PRELOAD):
+    """The command Stryker runs per mutant. Each test runs under the preload so
+    its own reads of the mutated source's text see the pristine file."""
+    return ' && '.join('"%s" -r "%s" %s' % (node, preload, t) for t in tests)
 
 
 def build_argv(node, stryker_js, config_path):
@@ -197,7 +239,7 @@ def discover_tests(root, source_rel):
     return sorted(found)
 
 
-def execute(loc, workdir, mutate, test_cmd, timeout=1800):
+def execute(loc, workdir, mutate, test_cmd, timeout=1800, env=None):
     """Run Stryker in `workdir` (a throwaway checkout). Returns (ran, report|None, note)."""
     rep = os.path.join(workdir, 'reports', 'mutation', 'mutation.json')
     cfg = os.path.join(workdir, 'stryker.hover.conf.json')
@@ -206,7 +248,7 @@ def execute(loc, workdir, mutate, test_cmd, timeout=1800):
     argv = build_argv(loc['node'], loc['stryker_js'], cfg)
     try:
         r = subprocess.run(argv, cwd=workdir, capture_output=True, text=True,
-                           encoding='utf-8', errors='replace', timeout=timeout)
+                           encoding='utf-8', errors='replace', timeout=timeout, env=env)
     except subprocess.TimeoutExpired:
         return True, None, 'stryker TIMED OUT after %ds' % timeout
     note = 'stryker exit %s' % r.returncode
@@ -219,15 +261,18 @@ def execute(loc, workdir, mutate, test_cmd, timeout=1800):
         return True, None, note + '; report was not valid JSON'
 
 
-def run_commit(sha, files, repo, loc=None):
-    """The on-demand signal for one commit. {'status','reasons','per_file','note','tag'}."""
+def run_commit(sha, files, repo, loc=None, added_from=None):
+    """The on-demand signal for one commit. {'status','reasons','per_file','note','tag'}.
+    `added_from`: judge the lines ANOTHER commit added under THIS commit's tests (the
+    code commit and its tests often land apart; the file must be unchanged between
+    the two or the line numbers do not line up, which the caller has to check)."""
     loc = loc or locate()
     if loc['problems'] and (not loc['node'] or not loc['stryker_js']):
         return {'status': 'COULD_NOT_RUN', 'reasons': loc['problems'] + list(INSTALL_STEPS),
                 'per_file': {}, 'note': '', 'tag': UNVERIFIED}
     sys.path.insert(0, HERE)
     import hover_cross_vendor_check as X
-    diff = X.get_diff('%s~1..%s' % (sha, sha), repo)
+    diff = X.get_diff('%s~1..%s' % (added_from or sha, added_from or sha), repo)
     added = X.added_lines_with_numbers(diff)
     targets = [f for f in (files or sorted(added)) if f.endswith('.js') and '.test.' not in f]
     if not targets:
@@ -242,12 +287,16 @@ def run_commit(sha, files, repo, loc=None):
             return {'status': 'COULD_NOT_RUN', 'reasons': ['git worktree add failed: ' + r.stderr[:200]],
                     'per_file': {}, 'note': '', 'tag': UNVERIFIED}
         tests = sorted({t for f in targets for t in discover_tests(wt_repo, f)})
-        cmd = ' && '.join('node %s' % t for t in tests) if tests else 'node -e "process.exit(1)"'
-        ran, report, note = execute(loc, wt_repo, targets, cmd)
+        cmd = build_test_command(loc['node'], tests) if tests else '"%s" -e "process.exit(1)"' % loc['node']
+        env = dict(os.environ, HOVER_STRYKER_PRISTINE=wt_repo,
+                   HOVER_STRYKER_TARGETS='|'.join(t.replace(chr(92), '/') for t in targets))
+        ran, report, note = execute(loc, wt_repo, targets, cmd, env=env)
         parsed = parse_report(report or {}, added)
         st, reasons = classify(parsed, True, bool(tests))
+        if report is None:
+            reasons.append('stryker gave no report: ' + note)
         return {'status': st, 'reasons': reasons, 'per_file': parsed, 'note': note,
-                'tests': tests, 'tag': UNVERIFIED}
+                'tests': tests, 'tag': report_tag(report)}
     finally:
         subprocess.run(['git', 'worktree', 'remove', '--force', wt_repo], cwd=repo, capture_output=True)
         shutil.rmtree(wt, ignore_errors=True)
@@ -267,7 +316,7 @@ def main(argv):
     if '--availability' in argv:
         loc = locate()
         if loc['node'] and loc['stryker_js']:
-            print('AVAILABLE: node %s, stryker %s  [%s]' % (loc['node'], loc['stryker_js'], UNVERIFIED))
+            print('AVAILABLE: node %s, stryker %s  [%s]' % (loc['node'], loc['stryker_js'], installed_tag(loc)))
             return EXIT_CLEAN
         print('COULD NOT RUN:')
         for p in loc['problems']:
@@ -284,7 +333,7 @@ def main(argv):
             return EXIT_INCONCLUSIVE
         files = [f for f in (opt('--files') or '').split(',') if f]
         repo = opt('--cwd', os.path.join(os.path.expanduser('~'), 'Documents', 'SAIRN-hover'))
-        res = run_commit(sha, files, repo)
+        res = run_commit(sha, files, repo, added_from=opt('--added-from'))
         print('STRYKER SIGNAL: %s  [%s]' % (res['status'], res['tag']))
         for r in res['reasons']:
             print('  REASON: ' + r)
@@ -294,7 +343,7 @@ def main(argv):
                 print('      SURVIVED line %s  %s -> %s  (%s)' % (s['line'], s['mutator'], s['replacement'], s['status']))
         print('INCONCLUSIVE IS NOT CLEAN. A survivor is a place the tests would not notice; it is a prompt to look.')
         return {'CLEAN': EXIT_CLEAN, 'FINDINGS': EXIT_FINDINGS}.get(res['status'], EXIT_INCONCLUSIVE)
-    print('usage: --availability | --run --sha SHA [--files a,b] | --selftest')
+    print('usage: --availability | --run --sha SHA [--files a,b] [--added-from SHA] | --selftest')
     return EXIT_INCONCLUSIVE
 
 
@@ -333,7 +382,7 @@ def selftest():
            loc22['node'] == fake_node and loc22['stryker_js'] == fake_js
            and loc24['node'] is None
            and any('major 24, not 22' in p for p in loc24['problems']))
-        miss = locate({}, major_fn=lambda n: None)
+        miss = locate({'HOVER_STRYKER_JS': os.path.join(tmp, 'absent-stryker.js')}, major_fn=lambda n: None)
         ck('Y4 nothing found -> no node, no stryker, and the problems NAME what is missing',
            miss['stryker_js'] is None and any('NO STRYKER' in p for p in miss['problems'])
            and any('NO NODE 22' in p for p in miss['problems']))
@@ -424,9 +473,60 @@ def selftest():
                and results['empty']['status'] == 'INCONCLUSIVE' and results['crash']['status'] == 'INCONCLUSIVE'
                and results['survivor']['tests'] == ['api/a.test.js']
                and all(r['tag'] == UNVERIFIED for r in results.values()))
+            open(os.path.join(repo, 'api', 'b.test.js'), 'w', newline='').write("process.exit(0);" + chr(10))
+            git('add', '-A'); git('commit', '-q', '-m', 'tests only')
+            sha_t = git('rev-parse', 'HEAD').stdout.strip()
+            os.environ['FAKE_MODE'] = 'survivor'
+            r_own = run_commit(sha_t, ['api/a.js'], repo, loc=loc)
+            r_from = run_commit(sha_t, ['api/a.js'], repo, loc=loc, added_from=sha)
+            os.environ.pop('FAKE_MODE', None)
+            ck('Y16 --added-from: a tests-only commit has no added line in the source (INCONCLUSIVE, '
+               'named), but judged against the code commit that added the lines it is FINDINGS',
+               r_own['status'] == 'INCONCLUSIVE' and r_from['status'] == 'FINDINGS')
             ck('Y11 the throwaway worktree was removed afterwards (only the main checkout '
                'is still registered in the repo)',
                len([l for l in git('worktree', 'list').stdout.splitlines() if l.strip()]) == 1)
+        ck('Y13 the tag is DERIVED from the report: a StrykerJS framework block -> STRYKER-<version>; '
+           'no block (the fake) or a different framework -> UNVERIFIED',
+           report_tag({'framework': {'name': 'StrykerJS', 'version': '9.1.1'}}) == 'STRYKER-9.1.1'
+           and report_tag({'schemaVersion': '1', 'files': {}}) == UNVERIFIED
+           and report_tag({'framework': {'name': 'Other', 'version': '1'}}) == UNVERIFIED
+           and report_tag(None) == UNVERIFIED)
+        tc = build_test_command('/n/node', ['api/a.test.js', 'api/b.test.js'], preload='/p/pre.js')
+        ck('Y14 every test in the command runs under the preload, chained with &&',
+           tc == '"/n/node" -r "/p/pre.js" api/a.test.js && "/n/node" -r "/p/pre.js" api/b.test.js')
+        if node:
+            # THE b79 CLASS, driven: a test that builds its own mutants by string anchor in the
+            # source TEXT. Stryker's sandbox holds an instrumented copy (anchor matches 0 times),
+            # the pristine file holds it once. The test exits 2 COULD NOT RUN on the instrumented
+            # text, and 0 with the preload; a real arm failure must still exit 1, not be shadowed.
+            sb = os.path.join(tmp, 'sb')
+            pr = os.path.join(tmp, 'pr')
+            for d in (sb, pr):
+                os.makedirs(os.path.join(d, 'api'))
+            open(os.path.join(pr, 'api', 'a.js'), 'w', newline='').write('module.exports = () => 1; // ANCHOR\n')
+            open(os.path.join(sb, 'api', 'a.js'), 'w', newline='').write('module.exports = () => stryMutAct(1); // ANCHOR-INSTRUMENTED\n')
+            open(os.path.join(sb, 'api', 'a.test.js'), 'w', newline='').write(
+                "const fs=require('fs'),path=require('path');\n"
+                "const SRC=fs.readFileSync(path.join(__dirname,'a.js'),'utf8');\n"
+                "const n=SRC.split('// ANCHOR' + String.fromCharCode(10)).length-1;\n"
+                "if(n!==1){console.log('COULD NOT RUN anchor found '+n);process.exit(2);}\n"
+                "const v=require('./a.js');\n"
+                "process.exit(process.env.FAIL_ARM==='1'?1:0);\n")
+            def run_t(use_preload, fail_arm=False):
+                env = dict(os.environ, HOVER_STRYKER_PRISTINE=pr, HOVER_STRYKER_TARGETS='api/a.js')
+                env.pop('FAIL_ARM', None)
+                if fail_arm:
+                    env['FAIL_ARM'] = '1'
+                cmd = [node] + (['-r', PRELOAD] if use_preload else []) + ['api/a.test.js']
+                return subprocess.run(cmd, cwd=sb, env=env, capture_output=True, text=True).returncode
+            no_pre, with_pre, with_pre_fail = run_t(False), run_t(True), run_t(True, True)
+            ck('Y15 WITHOUT the preload the instrumented text breaks the anchors of a test that builds its own '
+               'mutants (exit 2); WITH it the test passes (exit 0) and a real arm failure still exits 1, '
+               'not shadowed by 2',
+               (no_pre, with_pre, with_pre_fail) == (2, 0, 1))
+        else:
+            ck('Y15 the preload class needs node on PATH', False)
         al = availability_line()
         loc_real = locate()
         ck('Y12 availability_line names the absence in the review input when the tools are '
