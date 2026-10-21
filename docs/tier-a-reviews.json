@@ -8432,6 +8432,30 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-21T20:07:08Z",
+      "opened_at_sha": "040ac5a954905d46aaf36d3c7e7a7a538c29d039",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 0,
+      "resources": [
+        "sen_pay_rates",
+        "sen_settings",
+        "sen_visits"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/b48-sen-straight-time-floor-coverage.test.js"
+      ],
+      "what": "hank b48 (040ac5a95): TEST-ONLY -- api/b48-sen-straight-time-floor-coverage.test.js drives the SAIRNsenior straight-time floor on overtime/multi-rate weeks, multiple closed periods, two agencies and a reopened period, with five mutants. No product code changed. REVIEWER: attack (1) whether O1's 'adjust at the visit's own rate, flag premium' is the right floor for a 42h multi-rate week, (2) whether the G arms' fetch mock (serves only licence-scoped reads) proves scoping or just assumes it, (3) the fixtures' week boundaries.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-21T20:07:08Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
