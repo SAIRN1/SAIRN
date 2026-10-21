@@ -8009,6 +8009,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b37-accounting-revoke-scope.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a0cb367afbdc2b9bd1f93ff7a950c0500b58172b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b37-routed-arms.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a0cb367afbdc2b9bd1f93ff7a950c0500b58172b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sd_data_write_attribution_three_apps.js",
    "class": "test file",
    "level": "CHANGE",
