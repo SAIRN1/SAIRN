@@ -9468,6 +9468,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/requirements.txt",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "b738520760f84692012f5b81307753148648f311",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_save_reviews_retry_probe.py",
    "class": "test file",
    "level": "WEAKENING",
