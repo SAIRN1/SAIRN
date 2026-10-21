@@ -2123,6 +2123,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairnbiz_z8_display.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "2de9fac4d3348ac51d3d85df9ff97b386a0fbcac",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_save_reviews_retry_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -3482,6 +3490,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairnroofing_unreadable_reads.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "479672a0a4d55589ec6d8a088f5b99e4b1591725",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_self_exclusion_guard_sabotage_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -4202,6 +4218,14 @@
     }
    ],
    "sha": "5776ef1962382d3facba73db990e10df55d5364e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnsenior_contract_auth_save.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "57b73400bd6b1b0563c7fb2608dce3471b88602b",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -7851,6 +7875,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "9d9d0e53bb688555c4cc71d63808202e62f130cd",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairndental_ledger_export.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9df438fef1a7238c75c04d397c9f642cb69b1652",
    "criteria_version": "2026-10-06.1"
   },
   {
