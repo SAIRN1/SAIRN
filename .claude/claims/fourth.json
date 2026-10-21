@@ -4585,8 +4585,8 @@
       "task": "b50: sairndental screen-reader / keyboard accessibility pass and fixes.  FILES: sairndental.html tests/sairndental_a11y_pass.js SAIRN-handoff-fourth-b50.md SAIRN-report-fourth-b50.txt SAIRN-digest-fourth-b50.txt NOT-api NOT-docs-sairn-path-manifest-json",
       "claimed_at": "2026-10-21T18:08:54Z",
       "claimed_at_epoch": 1792606134.875247,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T18:39:42Z",
       "files": [
         "SAIRN-digest-fourth-b50.txt",
         "SAIRN-handoff-fourth-b50.md",
