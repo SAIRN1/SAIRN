@@ -1611,6 +1611,30 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b34-accounting-revoke.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "2136a555a09871396847f1c9283f25a5b1be12e3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b34-routed-defects.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "2136a555a09871396847f1c9283f25a5b1be12e3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-quote-request-soft-delete.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "2136a555a09871396847f1c9283f25a5b1be12e3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_scope_gate_unfetched_base_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -3397,6 +3421,30 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b34-accounting-revoke.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "4a6ac958f5fc7048dbe71a463bcac19c6fe23ec8",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b34-routed-defects.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "4a6ac958f5fc7048dbe71a463bcac19c6fe23ec8",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-quote-request-soft-delete.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "4a6ac958f5fc7048dbe71a463bcac19c6fe23ec8",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/b16-evv-pay-agreement.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -3717,6 +3765,30 @@
     }
    ],
    "sha": "5080cf60737544eb5f95cff4aa390a50ef9673e4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b34-accounting-revoke.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "515b53ec5e32060d5051151722f48941f9fdade0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b34-routed-defects.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "515b53ec5e32060d5051151722f48941f9fdade0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-quote-request-soft-delete.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "515b53ec5e32060d5051151722f48941f9fdade0",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -6004,6 +6076,30 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "8627f4e4c7963aff930be5d59dcb822501444dfc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b34-accounting-revoke.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "863dc566f1c2778231cb24ab73e7aee1652e939a",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b34-routed-defects.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "863dc566f1c2778231cb24ab73e7aee1652e939a",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-quote-request-soft-delete.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "863dc566f1c2778231cb24ab73e7aee1652e939a",
    "criteria_version": "2026-10-06.1"
   },
   {
