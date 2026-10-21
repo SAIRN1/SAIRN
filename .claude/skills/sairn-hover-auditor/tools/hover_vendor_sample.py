@@ -76,6 +76,16 @@ b74 ADDS TWO THINGS TO THE PRODUCTION PATH (cmd_sample) AND ONE NEW MODE.
      (no such file, oversized, dropped by the call cap) named in the coverage
      table rather than left as an absence.
 
+b77 FIXES #1658, a defect in the landed b72-b74 code found in b76. Every
+production path asked the RateGate before a vendor call and none wrote a
+completed call back into it (RateGate.record_call), so the trailing-minute
+window read empty for ever and the per-minute gate was inert; two real HTTP
+429s on tokens per minute were the symptom. The three places that call the
+vendor (review_chunk, cmd_injection_vendor, cmd_injection_defense) now record
+each completed call. Concept: the production path must write what the gate
+reads. Fixtures V38-V44 record what each path wrote, drive the REAL RateGate
+through two consecutive calls, and carry two sabotage controls.
+
 Run:
   python hover_vendor_sample.py --sample --range A..B [--rate 0.25] [--max-calls N]
   python hover_vendor_sample.py --sample-batch --range A..B [--per-commit 1] [--max-calls N] [--commits sha8,sha8]
@@ -356,6 +366,10 @@ def review_chunk(X, gate, api_key, path, chunk, ask=None):
     except Exception as e:
         return {'status': 'could-not-tell', 'why': str(e), 'strip': dec,
                 'sent_body': body}
+    # b77, #1658: WRITE THE CALL BACK. wait_or_refuse above only READS the
+    # trailing-minute window; until this line nothing on this path ever wrote
+    # it, so the window read empty for ever.
+    gate.record_call(used or 0)
     added = X.added_lines_with_numbers(chunk)
     valid, dropped_n, drop_why = X.validate_findings(findings or [], added)
     return {'status': 'ok', 'valid': valid, 'dropped_n': dropped_n,
@@ -724,6 +738,7 @@ def cmd_injection_vendor(argv, opt):
             print('  COULD-NOT-TELL %s/%s -- %s' % (cls, tid, e))
             results.append((cls, tid, desc, None, 'could-not-tell'))
             continue
+        gate.record_call(used or 0)       # b77, #1658: write the call back
         n = len(findings or [])
         if tid == 'BASELINE':
             base[cls] = n
@@ -871,6 +886,7 @@ def cmd_injection_defense(argv, opt):
             counts.setdefault(cid, []).append(('could-not-tell', 0, 0))
             print('  COULD-NOT-TELL %s -- %s' % (cid, e))
             continue
+        gate.record_call(used or 0)       # b77, #1658: write the call back
         n = len(findings or [])
         counts.setdefault(cid, []).append(('ok', n, used or 0))
         print('  %-20s n=%s tokens=%s' % (cid, n, used))
@@ -1142,9 +1158,14 @@ def selftest():
        'NOT labelled strip=ON (found by the first live run, where it was), the '
        'same vocabulary in a .js file IS, and the exclusion names its reason',
        d_sql[0] is False and 'not-javascript' in d_sql[2] and d_js[0] is True)
+    rec = []
+
     class _Gate:
         def wait_or_refuse(self, _est):
             return True, None
+
+        def record_call(self, tokens):
+            rec.append(tokens)
 
     sent = []
 
@@ -1234,6 +1255,7 @@ def selftest():
             bodies.append(body)
             return [], 11
         real_ask, real_gate = X.ask_groq, X.RateGate
+        rec[:] = []
         X.ask_groq, X.RateGate = _ask, (lambda: _Gate())
         buf = io.StringIO()
         argv = ['--sample-batch', '--range', base + '..HEAD', '--cwd', tmp,
@@ -1244,6 +1266,7 @@ def selftest():
         finally:
             X.ask_groq, X.RateGate = real_ask, real_gate
         txt = buf.getvalue()
+        batch_rec = list(rec)
         ck('V34 --sample-batch over a REAL 3-commit git history: the '
            'revocation commit and the hook commit are both reviewed, the '
            'docs-only commit is NAMED as not reviewed (rc=%s)' % rc,
@@ -1283,6 +1306,7 @@ def selftest():
         bodies[:] = []
         argv2 = ['--sample', '--range', base + '..HEAD', '--cwd', tmp,
                  '--key-path', keyfile, '--rate', '1.0', '--max-calls', '6']
+        rec[:] = []
         X.ask_groq, X.RateGate = _ask, (lambda: _Gate())
         buf2 = io.StringIO()
         try:
@@ -1291,6 +1315,7 @@ def selftest():
         finally:
             X.ask_groq, X.RateGate = real_ask, real_gate
         t2 = buf2.getvalue()
+        sample_rec = list(rec)
         ck('V37 the ORIGINAL cmd_sample path, refactored onto review_chunk, '
            'still reports cost, yield and the defence count, sends both Tier '
            '1+2 files, and strips only the revocation one (rc=%s)' % rc2,
@@ -1298,6 +1323,84 @@ def selftest():
            and 'DEFENCE APPLIED: comment-strip on 1 of 2 chunk(s) sent' in t2
            and 'COST, MEASURED, NOT ESTIMATED' in t2 and 'YIELD:' in t2
            and sum(1 for b in bodies if 'APPROVED' in b) == 1)
+
+        # ── b77, #1658: THE GATE'S WRITER. Through b76 every production path
+        # asked RateGate.wait_or_refuse before a vendor call and NEVER wrote a
+        # completed call back, so the trailing-minute window read empty for
+        # ever and the per-minute gate could not fire. Every fixture above
+        # drove those paths with a stub gate that had no writer either -- the
+        # stub and the code shared one picture of the gate, which is how the
+        # defect survived five batches. These arms record what each path
+        # wrote into the gate, and drive the REAL RateGate (temporary state
+        # file, injected clock and sleeper) through TWO consecutive calls.
+        ck('V38 the BATCH path WROTE every completed vendor call into the gate, '
+           'one record per call with the tokens the vendor reported (#1658)',
+           batch_rec == [11, 11])
+        ck('V39 ...and so did the ORIGINAL cmd_sample path', sample_rec == [11, 11])
+        rec[:] = []
+        argv_v = ['--injection-vendor', '--max-calls', '2', '--key-path', keyfile]
+        argv_d = ['--injection-defense', '--repeats', '1', '--max-calls', '2',
+                  '--key-path', keyfile]
+        X.ask_groq, X.RateGate = _ask, (lambda: _Gate())
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                cmd_injection_vendor(argv_v, lambda n, d=None: (argv_v[argv_v.index(n) + 1] if n in argv_v else d))
+            vendor_rec = list(rec)
+            rec[:] = []
+            with contextlib.redirect_stdout(io.StringIO()):
+                cmd_injection_defense(argv_d, lambda n, d=None: (argv_d[argv_d.index(n) + 1] if n in argv_d else d))
+            defense_rec = list(rec)
+        finally:
+            X.ask_groq, X.RateGate = real_ask, real_gate
+        ck('V40 cmd_injection_vendor, which calls the vendor DIRECTLY and not '
+           'through review_chunk, WRITES each completed call into the gate',
+           vendor_rec == [11, 11])
+        ck('V41 cmd_injection_defense, the other direct caller, does too',
+           defense_rec == [11, 11])
+
+        def _two_calls():
+            clk = [1000.0]
+            slept = []
+
+            def _sleep(s):
+                slept.append(s)
+                clk[0] += s
+            gate = X.RateGate(state_path=os.path.join(tempfile.mkdtemp(dir=tmp), 'rate.json'),
+                              clock=lambda: clk[0], sleeper=_sleep)
+            small = ('diff --git a/sql/p.sql b/sql/p.sql\n--- a/sql/p.sql\n'
+                     '+++ b/sql/p.sql\n@@ -0,0 +1,1 @@\n+select 1;\n')
+            big = ('diff --git a/sql/p.sql b/sql/p.sql\n--- a/sql/p.sql\n'
+                   '+++ b/sql/p.sql\n@@ -0,0 +1,150 @@\n'
+                   + ''.join('+select %d as padding_column_%d from some_table;\n' % (i, i)
+                             for i in range(150)))
+            r1 = review_chunk(X, gate, 'k', 'sql/p.sql', small, ask=lambda b, k: ([], 6000))
+            recorded = gate._load()
+            clk[0] += 5.0
+            r2 = review_chunk(X, gate, 'k', 'sql/p.sql', big, ask=lambda b, k: ([], 7))
+            return r1, recorded, slept, r2
+        r1, recorded, slept, r2 = _two_calls()
+        ck('V42 TWO CONSECUTIVE review_chunk CALLS THROUGH THE REAL RateGate: '
+           'the first call is WRITTEN into the gate with its real 6,000 tokens, '
+           'so the second -- whose request would push the trailing minute past '
+           'the ceiling -- WAITS instead of going straight to the vendor',
+           r1['status'] == 'ok' and [c.get('tok') for c in recorded] == [6000]
+           and len(slept) == 1 and 50.0 < slept[0] <= 60.0 and r2['status'] == 'ok')
+        real_rc = X.RateGate.record_call
+        try:
+            X.RateGate.record_call = lambda self, tokens: None
+            _a, rec_noop, slept_noop, _b = _two_calls()
+            X.RateGate.record_call = lambda self, tokens: real_rc(self, 0)
+            _c, rec_zero, slept_zero, _d = _two_calls()
+        finally:
+            X.RateGate.record_call = real_rc
+        ck('V43 SABOTAGE CONTROL: with the gate\'s writer made a no-op -- the '
+           'b72-b76 state -- the identical two calls do NOT wait and nothing is '
+           'recorded, so V42 can fail and is not true of any input',
+           rec_noop == [] and slept_noop == [])
+        ck('V44 SABOTAGE CONTROL: a writer that records 0 tokens instead of the '
+           'real ones also fails to make the second call wait -- V42 asserts '
+           'the AMOUNT, not only that something was written',
+           [c.get('tok') for c in rec_zero] == [0] and slept_zero == [])
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
