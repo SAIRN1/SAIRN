@@ -4290,6 +4290,17 @@
       "status": "released",
       "released_at": "2026-10-21T15:19:02Z",
       "files": null
+    },
+    {
+      "id": "cody-1792597222",
+      "session": "cody",
+      "subject": "platform",
+      "task": "b36 sd_customers deleted-employee gate, defect 8 reverify, projection runtime differential",
+      "claimed_at": "2026-10-21T15:40:22Z",
+      "claimed_at_epoch": 1792597222.8354092,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
