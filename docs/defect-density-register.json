@@ -36908,7 +36908,7 @@
       "recurrence_open": "UNOWNED STILL MEANS ALLOWED: a path no population claims is permitted and reported. Case folding closes the spelling route into a claimed area; it does not make an unclaimed area refuse."
     },
     {
-      "commit": "c9e88ae3758e",
+      "commit": "671fcbffd556",
       "date": "2026-10-21",
       "subject": "fix(cc b38): a deleted employee row is refused on every registered resource, not only sd_customers",
       "files": [
