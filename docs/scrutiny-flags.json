@@ -11901,6 +11901,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b36-projection-runtime-differential.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "'F4. a key missing from the read -> fails B, not skipped');"
+    }
+   ],
+   "sha": "ed9a169471d96e2c0c59b9ce8d2adc3b6bdf6205",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b36-sd-customers-deleted-row.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ed9a169471d96e2c0c59b9ce8d2adc3b6bdf6205",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/sd-data-scp-session-gate.test.js",
    "class": "test file",
    "level": "CHANGE",
