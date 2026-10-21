@@ -4258,6 +4258,27 @@
       "status": "released",
       "released_at": "2026-10-20T14:20:04Z",
       "files": null
+    },
+    {
+      "id": "cody-1792585300",
+      "session": "cody",
+      "subject": "cody",
+      "task": "b34 accounting revoke + routed defects + per-resource proof FILES: api/accounting.js api/sd-data.js api/_resources/stonedesk.js api/_resources/index.js api/b34-accounting-revoke.test.js api/b34-routed-defects.test.js docs/b33-sweep/pair_by_resource.py docs/2026-10-21-cody-b34-notes.md SAIRN-handoff-cody-b34.md",
+      "claimed_at": "2026-10-21T12:21:40Z",
+      "claimed_at_epoch": 1792585300.1980672,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-handoff-cody-b34.md",
+        "api/_resources/index.js",
+        "api/_resources/stonedesk.js",
+        "api/accounting.js",
+        "api/b34-accounting-revoke.test.js",
+        "api/b34-routed-defects.test.js",
+        "api/sd-data.js",
+        "docs/2026-10-21-cody-b34-notes.md",
+        "docs/b33-sweep/pair_by_resource.py"
+      ]
     }
   ],
   "refusals": [
