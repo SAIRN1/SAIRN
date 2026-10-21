@@ -37141,6 +37141,56 @@
         }
       ],
       "recurrence_open": "UNOWNED STILL MEANS ALLOWED: a path no population claims is permitted and reported. Case folding closes the spelling route into a claimed area; it does not make an unclaimed area refuse."
+    },
+    {
+      "commit": "e569ca3876b6",
+      "date": "2026-10-21",
+      "subject": "fix(sairndental b50): screen-reader / keyboard pass -- panel headings, current-page marking, named vendor quantities, QR alt text, keyboard card-photo button",
+      "files": [
+        "sairndental.html",
+        "tests/sairndental_a11y_pass.js"
+      ],
+      "lines_added": 130,
+      "lines_removed": 5,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "fourth b50 accessibility pass (a11y tree + axe-core + real keyboard on the live demo login; NVDA not installed). Before: 21 axe nodes, 0/23 panel headings, no aria-current, mouse-only drop zone. After: 0 axe nodes, 23/23 headings, aria-current, drop zone Tab-reachable and Enter opens the chooser. Suite 10 arms, 8 mutants killed.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "axe-core 4.10.2 + Playwright keyboard walk, driven by scratchpad b50 a11y_dental.py (not in repo)",
+      "found_by_session": null,
+      "injection": {
+        "commit": "a52311fa0196",
+        "date": "2026-10-19",
+        "subject": "feat(a11y): sairndental's focus trap, the panel-change announcement, and the last 3 labels",
+        "lag_days": 2
+      },
+      "citation_note": "No coding rule covers this class: meaning conveyed only visually. Proposed: every panel title, current-nav state and click target carries its role in the accessibility tree, checked by an axe + keyboard pass per app.",
+      "contributing_factors": [
+        {
+          "factor": "Titles, current state and the drop zone conveyed meaning only visually.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "heading role at load, aria-current in nav(), keyboard button."
+        },
+        {
+          "factor": "Generated inputs and library output had no accessible name.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "aria-label per product; QR alt, canvas hidden."
+        },
+        {
+          "factor": "No axe or keyboard walk had been run over every panel.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Scripted live pass plus repo suite."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. Not verified with NVDA itself. Modals not opened. No skip link and focus stays on the sidebar after nav (product decision, filed). Other apps not passed."
     }
   ],
   "started": "2026-09-09",

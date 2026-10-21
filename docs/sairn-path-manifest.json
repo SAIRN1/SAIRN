@@ -71,7 +71,8 @@
       "tests/sairnroofing_unreadable_reads.js",
       "tests/sairnsenior_contract_auth_save.js",
       "tests/sairnsenior_negative_hours_claim.js",
-      "tests/sairnsenior_referral_hours.js"
+      "tests/sairnsenior_referral_hours.js",
+      "tests/sairndental_a11y_pass.js"
     ]
   },
 
