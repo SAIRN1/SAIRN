@@ -67,6 +67,9 @@ function grab(sig, terminator) {
 // The two functions under test, plus the helper the fix now shares.
 function ctxFor(visitRows) {
   const src = [
+    // b49: visitHours() reads the clock through senEffClock() since 49f6a7528;
+    // never extracted here, so every arm died on "senEffClock is not defined".
+    grab('function senEffClock(v,field){', '\n}'),
     grab('function visitHours(v){', '\n}'),
     grab('function rfDeliveredHoursFor(clientId){', '\n}')
   ].join('\n\n');

@@ -102,6 +102,10 @@ function build(visitRows) {
   const toasts = [];
   const created = [];
   const src = [
+    // b49: visitHours() reads the clock through senEffClock() since 49f6a7528
+    // (approved clock corrections). It was never extracted here, so every arm
+    // died on "senEffClock is not defined" before testing anything.
+    grab('function senEffClock(v,field){', '\n}'),
     grab('function visitHours(v){', '\n}'),
     grab('function visitClockReversed(v){', '\n}'),
     grab('async function generateClaim(visitId){', '\n}')
@@ -133,6 +137,10 @@ function build(visitRows) {
     fmt: (n) => '$' + Number(n || 0).toFixed(2),
     st: () => {},
     senData: async () => ({ ok: true }),
+    // b49: generateClaim clears senLastErr.sen_claims before its write (so a
+    // stale refusal cannot reclassify a later failure). The write here always
+    // succeeds, so senWriteFail() is never reached and is not extracted.
+    senLastErr: {},
     renderClaimsTable: () => {},
     renderReadyToBill: () => {},
     blRenderKpis: () => {},
