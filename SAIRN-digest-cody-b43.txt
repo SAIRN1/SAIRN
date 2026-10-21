@@ -1,0 +1,17 @@
+DIGEST -- cody b43, 2026-10-21. Five items: 2, 3, 4, 5 DONE; 1 NOT DONE (harness denied the delete).
+STATUS: TESTS ONLY. NO APP CODE. NO LIVE WRITES. NO SQL. Nothing deployed, so no live-verify.
+CHANGED: tests/app_session_isolation.js, tests/sairndental_write_failure_probe.py, docs/scrutiny-flags.json (gate rows), b43 deliverables.
+LANDED: fix 29133c11b, handoff+report 78a364f03, on origin/main. No force. Four rejected races with cc/fourth first, then landed.
+ITEM 1 -- rm .claude/settings.local.json.bak DENIED by the harness. No retry. Still untracked.
+ITEM 4 -- CONCEPTS: isolation = the measurement was right, the table was one row short.
+  dental = a mutation anchor must be unique; a later commit copied it, so the probe failed closed and tested nothing.
+ITEM 2 -- app_session_isolation: `routes` in APP_NAMES since 2026-10-19 (fourth b34) with no POSTURE row. Added a row, gate ALL with reason.
+  RED exit 1 -> GREEN 67/67, again after rebasing onto fourth b50. Mutant run DENIED by the harness: evidence is RED->GREEN only.
+ITEM 3 -- dental probe 2 was ANCHOR-2, not SILENT. cc919c308 (credential board) copied its anchor tail. Re-anchored on sdnData's head, count 1.
+  Exit 1 -> 0, 16/16 BITE, sairndental.html restored byte-identical. Re-run after fourth b50 landed: same result.
+DECISION-NEEDED: Michael -- ! rm C:/Users/marsh/Documents/SAIRN-cody/.claude/settings.local.json.bak
+  Fourth: I edited the dental probe while your b50 claim covered sairndental. Not your FILES. Object if needed.
+UNVERIFIED: other mutation probes may read ANCHOR-n from a later duplicated anchor. Not swept.
+NEXT: commit the scrutiny-flags.json rows each push writes before pulling. Carried: hank F2/F3; cc Tier A b31-b37; fourth 7/8.
+EVIDENCE-path: SAIRN-handoff-cody-b43.md, SAIRN-report-cody-b43.txt
+CONTEXT 13.8% of 1,000,000 -- 138,255 tokens, measured.
