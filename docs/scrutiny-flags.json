@@ -9387,6 +9387,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairndental_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "aed82209c52d472ace4c99f87f2aebaf0caf9285",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlegacy_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "aed82209c52d472ace4c99f87f2aebaf0caf9285",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/report_only_checks.py",
    "class": "push-gate logic",
    "level": "WEAKENING",
@@ -9662,6 +9678,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "b5bcfce46c897c6450e1cf7fc149b7c901dd6db4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnfreedom_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "b5d467f7cc46a4798a42c8cab07306d6ffd8fbdb",
    "criteria_version": "2026-10-06.1"
   },
   {
