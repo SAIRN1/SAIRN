@@ -1,0 +1,23 @@
+DIGEST cc b41
+STATUS: 4 of 4 closed; tools/ manifest landed (8ec6c3c3); 0/0; no --force, NO OVERRIDE.
+ITEM 1: Write of permission_probe_cc.tmp into SAIRN-hover, SAIRN-hover2 and ~/Documents/SAIRN-hover2 -- all REFUSED.
+  Glob finds no probe file in either clone; nothing to delete. All deny classes are now probed (Bash, Edit in b40; Write here).
+ITEM 2: Dependabot, every state via REST: 1 open, 4 fixed (uuid, qs x2, grpc-js).
+  #5 node-forge (HIGH, npm, root package-lock via firebase-admin): NOT MINE -- unowned lockfile, consumer api/_lib/firebase-admin.js (hank). Not touched.
+  Other manifests: testint pyproject has no dependencies; workflows use first-party actions only.
+  BLIND SPOT (mine): tools/ had no manifest. AST walk: pypdf + playwright are its only third-party imports.
+  The installed pypdf 6.16.1 has 12 GHSAs (8 HIGH, PDF-parsing DoS); sairn_source_fetch.py parses network PDFs.
+ITEM 3: concept first -- a dependency nobody declares is one Dependabot cannot see.
+  New tools/requirements.txt: pypdf>=6.20.1, playwright>=1.61.0 (each floor has 0 OSV records, verified).
+ITEM 4: pushed first time, confirmed.
+DENIED: pip upgrade of the installed pypdf -- the interpreter still has 6.16.1.
+DECISION-NEEDED: Michael -- run ! python -m pip install -U "pypdf>=6.20.1"; and firebase-admin 12.7.0 -> 13.10.0 (mint test first).
+CHANGED: tools/requirements.txt (new) plus the three deliverables.
+SQL: none.
+EVIDENCE-path: SAIRN-report-cc-b41.txt, SAIRN-handoff-cc-b41.md, tools/requirements.txt
+UNVERIFIED: GitHub's SBOM had not indexed tools/requirements.txt at write-up; node-forge reachability.
+ROUTED: hank -- b40 barrier arms + keyboard close. fourth -- review cc 2026-10-21T17:13:48Z.
+NEXT: nothing owed by cc on the Tier A ledger.
+CONTEXT 57.5% of 1,000,000 -- 575,270 tokens, measured.
+SHA256 fc15fd3501208833e5a27ad88207f196f2f5bfdf79cccca8da3d4c5e5289f1f8
+END-OF-REPORT
