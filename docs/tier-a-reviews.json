@@ -8077,12 +8077,12 @@
         "db/schema_snapshot.json"
       ],
       "what": "db/schema_snapshot.json update — 2026-10-21 capture, needs review by another session",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cc",
       "owner_assigned_at": "2026-10-21T11:01:51Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cc",
+      "reviewed_at": "2026-10-21T15:25:02Z",
+      "verdict": "CRITERIA: the snapshot must equal the live database it claims to capture, proved against the DATABASE by a structurally different method (an independent fingerprint query, not re-running the capture), and every consumer must read the new encoding. SOUND -- it is a faithful capture, and it is the more readable one. Reviewed by cc (b34) at origin/main.\n\nLIVE MATCH, BYTE FOR BYTE. Read-only SELECT on Supabase project sairn-platform (ejrlrrkvhtllxbbypdjb), run 2026-10-21 by cc: 500 public BASE TABLEs and 561 public CHECK constraints. md5 over table:columns in ordinal order = 4cd114a894a5eaba0824c5ff51cc6bbf; md5 over table.constraint=pg_get_constraintdef = ab2ab4a98fbbfe5f3910638081a2287f. The same two digests computed from db/schema_snapshot.json at HEAD: IDENTICAL, 500 tables and 561 constraints. So no table, column, column order or constraint definition in the file differs from the live database as of this review. (The other project, SAIRN ohzqfwndmuowbswpbxxp, timed out and is not the one the snapshot describes.)\n\nWHAT ACTUALLY CHANGED vs Michael's 2026-10-20 13:13Z capture (b2b02bbd): table and column lists IDENTICAL for all 500. Of 561 constraints, 560 are identical once the old file's base64 is decoded. ONE real change: sairnsenior_audit_log_event_type_check gained pay_period_closed and pay_period_reopened -- exactly the 7 values of sql/sairnsenior_audit_log_event_types_widen_2026-10-20.sql, so the snapshot records that migration as applied, and the live query confirms it is.\n\nPROVENANCE: every object in the file is in jsonb key order (length, then bytes) -- 0 exceptions -- with jsonb_pretty's 4-space indent. That is the output shape of sql/schema_snapshot_query.sql run in Postgres; a hand-edited or Python-rewritten file would not keep that order. The +6632/-503 line diff is format (pretty-printed, plain text), not content.\n\nENCODING FLIP, base64 -> plain text: checked every reader. tools/audit_event_type_check.py reads both (its :312 branch); exit 0. tools/sairn_sql_preflight.py load_live_constraints compares definitions as PLAIN text and does not decode -- driving constraint_findings over the declared sql/ constraints: old base64 snapshot 0 findings / 505 UNCHECKED, this snapshot 0 findings / 98 unchecked. So this capture lets preflight check 3 compare about 400 constraints that the base64 capture left unchecked, and still finds nothing wrong. tools/schema_snapshot_freshness.py: 0 tables absent that api/ queries; exit 1 only for the 6 never-run tables already known (biometric_*, sairn_circuit_breaker, three grant baselines).\nNOTE for whoever captures next: keep using the plain jsonb_pretty query. The base64 variant silently leaves the preflight's constraint check unable to compare."
     },
     {
       "author_session": "cody",
