@@ -4623,8 +4623,8 @@
       "task": "b44: Dependabot #5 -- firebase-admin 12.7.0 -> 13.10.0 (drops node-forge), lockfile, mint test; triage addendum goes in the cc report because fourth holds the path manifest  FILES: package.json package-lock.json docs/tier-a-reviews.json SAIRN-handoff-cc-b44.md SAIRN-report-cc-b44.txt SAIRN-digest-cc-b44.txt NOT-html NOT-sql",
       "claimed_at": "2026-10-21T18:56:03Z",
       "claimed_at_epoch": 1792608963.599763,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T19:16:35Z",
       "files": [
         "SAIRN-digest-cc-b44.txt",
         "SAIRN-handoff-cc-b44.md",
