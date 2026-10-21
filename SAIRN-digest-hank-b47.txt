@@ -1,0 +1,12 @@
+HANK b47 DIGEST -- 2026-10-21 -- leg_settings audited:true verified live
+CONTEXT 54.6% of 1,000,000 -- 546,450 tokens, measured.
+STATUS: docs only, NOT FORCED. No code change.
+1. LEG-PINNACLE-2026 owner write -> 200, audited:true; restore -> 200, audited:true.
+2. Read-back matched the write; after restore the original values are back.
+3. Audit rows not read back (no API read path); audited:true = insert answered 2xx.
+4. audit_event_type_check still flags settings_changed: its snapshot predates the SQL.
+DECISION-NEEDED (Michael): none (snapshot re-export clears item 4 when it happens).
+NEXT: cc Tier A on 38b2b5069; fourth owner UI.
+CHANGED: these three docs only.
+EVIDENCE-path: SAIRN-handoff-hank-b47.md, SAIRN-report-hank-b47.txt
+UNVERIFIED: the audit rows' contents in the database.

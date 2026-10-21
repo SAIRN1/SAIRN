@@ -1,0 +1,14 @@
+HANK b47 REPORT -- 2026-10-21
+
+1. audited:true LIVE -- VERIFIED on demo licence LEG-PINNACLE-2026 (published demo owner; PIN never printed).
+     login 200 owner | read 200 saved true, through_the_home, grants_supported true
+     write direct_to_family + one grant -> 200 ok, audited TRUE
+     read back -> direct_to_family, the grant, updated_by sairn-demo-owner
+     restore -> 200 ok, audited TRUE; read -> through_the_home, {} -- matches the original
+   audited:true = the audit insert answered 2xx. The rows were not read back (no API read path; no DB query).
+
+2. STALE SIGNAL: tools/audit_event_type_check.py still reports settings_changed rejected by the "live" CHECK.
+   It reads db/schema_snapshot.json, captured 2026-10-21 06:58, before the SQL ran. Clears at the next snapshot
+   export (carried item B). Not a code defect; nothing changed.
+
+3. PUSH: these three docs only, not forced; landing confirmed against origin/main after fetch.
