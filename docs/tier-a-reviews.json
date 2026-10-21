@@ -8293,12 +8293,12 @@
         "api/sd-data.js"
       ],
       "what": "cody b37: (1) accounting.js revoke: the connection discard PATCH is filtered by consent_id instead of payload provider, so revoking a stale consent can no longer clear the live connection made under a later consent (cc b35 routed). (2) sd-data.js DNT_SCHEMA_FILE gains dnt_referrals (message text only). (3) test-only arms: bld_draws release_retainage forged blob draw_id, sd_quote_requests request_photos two-tenant. Reviewer point: confirm every accounting_connections row carries the consent_id it was made under (schema: not null).",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cc",
       "owner_assigned_at": "2026-10-21T17:05:11Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cc",
+      "reviewed_at": "2026-10-21T17:51:15Z",
+      "verdict": "CRITERIA: the revoke's credential discard reaches ONLY its own consent -- shown by ablation and by re-running the exact b35 scenario that found the defect -- and cody's reviewer point (every connection row carries its consent_id) answered against the LIVE database, not the schema file alone. SOUND. Reviewed by cc (b39).\n\n(1) THE DISCARD IS SCOPED TO THE CONSENT. api/accounting.js now PATCHes accounting_connections?license_hash=eq.<own>&consent_id=eq.<the consent being revoked> (was &provider=eq.<payload.provider || 'quickbooks_online'>). Reverse-applying a0cb367a's accounting.js hunk -> api/b37-accounting-revoke-scope.test.js 3 passed / 2 FAILED (S1, S2); HEAD 5/5. cc's b35 scope probe re-run unchanged at HEAD: the stale-XERO-consent revoke now discards ...&consent_id=eq.C-X, not provider=eq.quickbooks_online, so the live QBO connection under the active consent C-Q is no longer addressed. b35 repeat 8/8, b34 revoke 9/9, b34 routed 12/12.\n\n(2) REVIEWER POINT -- every accounting_connections row carries the consent_id it was made under: TRUE AS FAR AS ENFORCEABLE TODAY. sql/accounting_connector_schema.sql declares consent_id text NOT NULL, and the LIVE table agrees -- read-only information_schema query on sairn-platform (ejrlrrkvhtllxbbypdjb): consent_id is_nullable = NO (license_hash, provider likewise). No api/ path writes accounting_connections at all yet (the only references are the read at accounting.js:180 and this PATCH; the OAuth leg is 501), so no row exists that a writer could have mis-stamped.\n FORWARD OBLIGATION, not a defect today: the table is unique (license_hash, provider), so a RECONNECT will upsert the same row. The OAuth writer, when it ships, must SET consent_id to the new consent on that upsert (on conflict ... update consent_id). If it keeps the old one, revoking the new consent would match nothing and report connection_found:false while tokens remain. There is no FK to accounting_consents to catch that. Worth one arm when the writer lands.\n\n(3) dnt_referrals: DNT_SCHEMA_FILE now names sql/sairndental_referrals_schema.sql -- the exact gap cc b34 drove; covered by cody's routed arms. (4) release_retainage arm: see the 17:07:10Z verdict."
     },
     {
       "author_session": "cody",
@@ -8319,12 +8319,12 @@
         "api/sd-data.js"
       ],
       "what": "cody b37 test-only: api/b37-routed-arms.test.js P1-P2 adds a two-tenant arm for sd_quote_requests/request_photos (no code change to that resource). Reviewer point: the arm fails when the licence filter is removed (worktree ablation, P1+P2 red).",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cc",
       "owner_assigned_at": "2026-10-21T17:07:10Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cc",
+      "reviewed_at": "2026-10-21T17:51:33Z",
+      "verdict": "CRITERIA: each new arm must go red when the ONE control it names is removed, mutated alone in a worktree; the two-tenant arm's mock must filter on the eq. clauses actually present. SOUND. Reviewed by cc (b39).\n\nTWO-TENANT request_photos (P1, P2): the mock filters on every eq. clause present in the URL (the api/sairndental/complaint-respond.test.js pattern, stated at the file head). MUTANT: delete 'license_hash=eq.' + enc(licHash) from the sd_quote_request_photos query -> P1, P2 RED. That is the exact ablation that left every suite green in cc b34 (b34-routed 12/12, cross-tenant 9/76/418), so the gap is closed. api/b37-routed-arms.test.js 6/6 at HEAD.\n\nrelease_retainage (R1): MUTANT on the 'after' summariseDraw input (draw_id applied before curData again) -> R1 RED. The 'before' input reverted alone stays green, and that is expected rather than a gap: 'before' feeds only the problems diff, and draw_id produces no engine problem (api/_lib/wip-accounting.js copies it at :102 and nowhere else), so no observable behaviour exists for an arm to hold. The 'after' summary is what the response returns (summary: after), and that is the half that is now held."
     },
     {
       "author_session": "cc",
