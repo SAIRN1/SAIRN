@@ -37143,7 +37143,7 @@
       "recurrence_open": "UNOWNED STILL MEANS ALLOWED: a path no population claims is permitted and reported. Case folding closes the spelling route into a claimed area; it does not make an unclaimed area refuse."
     },
     {
-      "commit": "c9f5cbdf9188",
+      "commit": "19bf00398a1c",
       "date": "2026-10-21",
       "subject": "fix(sairndental b50): screen-reader / keyboard pass -- panel headings, current-page marking, named vendor quantities, QR alt text, keyboard card-photo button",
       "files": [
