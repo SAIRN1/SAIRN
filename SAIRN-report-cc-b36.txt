@@ -1,0 +1,59 @@
+REPORT cc b36
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-21
+RANGE     from fb469fdf (tier-a(cc b36): discharge fourth 2026-10-21T15:37:25Z ...) to origin/main.
+          Claim 876083b4. No --force, NO OVERRIDE, no BYPASS-LOG row.
+
+== CLAIM ==
+sairn_claim BLOCKED on hover2 b80, on the shared phrase 'status-line'.
+hover2's own task string says "status-line file untouched", so I judged the block LEXICAL.
+I wrote the claim directly per PR 4.3 with that reason in it. The task text was not reworded.
+
+== 1. fourth 2026-10-21T15:37:25Z -- b47 sairnbiz Z8 display -- SOUND ==
+CRITERIA: every new innerHTML value escaped even when the run row is SYNCED; nothing new leaves the device;
+the table shows what was recorded. Checked by cc's OWN vm probe over functions extracted from sairnbiz.html.
+sb_payruns is in SB_SYNCED (:6027), so the new columns are an injection surface.
+Probe, 7/7:
+  hostile line fields and workweek_start are escaped (H / m2); a hostile pay_date goes through fdate;
+  a pre-b46 run says "not recorded"; sbWorkweekStart names sbWeekStart's real weekday;
+  syncEmps carries no sex / addr / dob, and sbPayLine carries none either.
+Mutants, 4/4 killed: un-escape name; un-escape workweek_start; add sex to syncEmps; shift the weekday table.
+All 20 tests/sairnbiz*.js exit 0.
+GAP, routed to fourth: the b47 arms are not in the repo.
+Pre-existing note: r.employees is unescaped (a count, but it arrives through sync).
+
+== 2. STATUS LINE ==
+CONCEPT: a threshold is only right if the line each REAL session renders is right.
+FINDING STATE: hover2 seq 1095 (2026-10-20T16:45Z, file at 8baa0819) measured hover/hover2 red at 70%.
+  That was fixed in cc b33, a87a4beb (RED_AT_AUDITOR = 85, AUDITOR_AGENTS).
+  The defect is already in the register under a87a4beb (hover-audit).
+DRIVEN TODAY: the real script, with the cwd at each real clone and a Sonnet 967K window:
+  SAIRN-hover2, -hover, -cc and -hank are all plain at 70% and 84% and RED at 85%.
+  Every clone's marker reads its own name.
+THE GAP: the fixtures drive a tmp clone, so a drifted real marker falls to RED_AT_DEFAULT (70) with nothing to say so.
+  That is seq 1095's mechanism: identity, not arithmetic.
+NEW: --live-clones. It finds SAIRN-* clones ON DISK (not from the tuples under test), reads each marker,
+  and renders at 84% / 85% on both the 967K and 1M windows.
+  Exits: 0 clean, 1 a wrong line, 2 COULD NOT RUN (a clone absent, or reading another identity) -- never 0.
+  Real run: exit 0, six clones, each "red at 85".
+LOCK: 4 new fixture arms on a tmp root of six git-initialised marked clones:
+  correct -> 0; marker drifted to 'H2' -> 2; RED_AT_AUDITOR = 70 -> 1; restored -> 0. Fixtures 46/46; CRITERIA_VERSION 2026-10-21.2.
+MUTANTS (each alone, worktree copy): RED_AT_AUDITOR = 70; the auditor branch removed from red_at(); hover2 dropped from AUDITOR_AGENTS.
+  Fixtures 39/46, 39/46, 42/46; --live-clones exit 1 on all three.
+  The third one was exit 2 on the first version, because that version iterated the tuples it tests.
+  It now finds clones on disk, and that is why it is exit 1.
+DESIGN KEPT: an UNIDENTIFIED folder (Documents\SAIRN, a worktree, home) still goes red at 70 -- b33's warn-earlier default.
+  A one-constant change if Michael wants 85 there too.
+PUSH: the register-feed gate refused the first push (a fix( commit with no record). I answered with a no-defect-record sentence pointing at a87a4beb.
+
+== OPEN ==
+NEW Tier A owed by cc, not in this dispatch: cody 2026-10-21T15:48:45Z (b36 sd-data pre-gate on a missing stonedesk table).
+Routed and still open: hank -- scp-licence-only B arms + A3; cody -- revoke discard by consent_id + the b34 three; fourth -- the b47 arms.
+
+== CHANGED ==
+docs/tier-a-reviews.json (1 discharge); tools/sairn_status_line.py (+--live-clones, +4 fixture arms);
+SAIRN-handoff-cc-b36.md; this report; the digest. api/, tests/, sql/, html untouched.
+
+SHA256 680a807f6dd61ef981dffd3bdd488b90ad8c20073ec1b1609569147ee1ad268a
+END-OF-REPORT

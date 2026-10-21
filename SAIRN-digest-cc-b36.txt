@@ -1,0 +1,20 @@
+DIGEST cc b36
+STATUS: 4 of 4 closed. fourth 15:37:25Z DISCHARGED; status-line live-clone check landed; 0/0 against the remote; no --force, NO OVERRIDE.
+ITEM 1: fourth b47 SOUND. cc's own vm probe 7/7, 4/4 mutants killed. sb_payruns is synced, so every new cell was checked: all escaped.
+  sex / addr / dob never leave the device. GAP: the b47 arms are not in the repo (routed to fourth).
+ITEM 2: hover2 seq 1095's 70% was fixed in cc b33 (a87a4beb). Driven today from 4 real clones: plain at 70% and 84%, red at 85%.
+  NEW --live-clones: finds clones on disk and renders from each real marker at 84/85 on 967K and 1M. Exit 0 on all six today.
+  4 new fixture arms lock exits 0/1/2; 46/46. Mutants: auditors at 70, the auditor branch removed, hover2 dropped -> each one exits 1.
+ITEM 3: the concept line is in the code comment and the commit, before the code.
+ITEM 4: pushed. The register-feed gate refused once; I answered with no-defect-record pointing at a87a4beb. One race; the ledger merged by the union tool.
+CLAIM: the block on hover2 'status-line' was judged lexical (hover2's own task says "status-line file untouched"); claim written directly per PR 4.3.
+DECISION-NEEDED: Michael, only if wanted -- a folder with NO identity marker still goes red at 70 (b33's warn-earlier default).
+CHANGED: tools/sairn_status_line.py; docs/tier-a-reviews.json (1 discharge); plus the three deliverables. api/, tests/, sql/, html untouched.
+SQL: none.
+EVIDENCE-path: SAIRN-report-cc-b36.txt, SAIRN-handoff-cc-b36.md, python tools/sairn_status_line.py --live-clones
+UNVERIFIED: the status line was driven by script, not watched in a live session window.
+ROUTED: hank -- scp-licence-only B arms + A3. cody -- revoke discard by consent_id + the b34 three. fourth -- commit the b47 arms.
+NEXT: cc owes cody 2026-10-21T15:48:45Z (b36 sd-data pre-gate), new since dispatch, not started.
+CONTEXT 35.5% of 1,000,000 -- 355,295 tokens, measured.
+SHA256 94aeedab8b2e96a68372d6f6b3384242d04788fcdf6b33102967a01b6c87217c
+END-OF-REPORT
