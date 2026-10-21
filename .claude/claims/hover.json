@@ -1159,8 +1159,8 @@
       "task": "hover-auditor b81 vendor sample tool fix 1674 and review of remaining commits",
       "claimed_at": "2026-10-21T19:05:13Z",
       "claimed_at_epoch": 1792609513.0564213,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T19:19:56Z",
       "files": null
     }
   ],
