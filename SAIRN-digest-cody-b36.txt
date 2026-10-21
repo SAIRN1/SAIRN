@@ -1,0 +1,15 @@
+DIGEST -- cody b36, 2026-10-21. Five items: all five done. PUSHED, no --force, no skip.
+STATUS: origin/main eb23fd3ff0d8e287e166036ae01c8f8cba63c858 by git ls-remote (== HEAD; the four b36 files match by sha256). NO LIVE WRITES.
+DEPLOY SHA: 792654a38 = 792654a388d6..., b35's WORK commit, an ANCESTOR of 3ed60b07 (merge-base true), so prod carries b35 code. 7719da747 (deliverables only) sits ON TOP of 3ed60b07. Full shas from now on.
+CHANGED: api/sd-data.js (+11/-1), api/b36-sd-customers-deleted-row.test.js, api/b36-projection-runtime-differential.test.js, sql/b36-legacy-blob-projection-keys.sql, docs/sairn-path-manifest.json, docs/tier-a-reviews.json, docs/MASTER-PLAN.md, docs/traceability-matrix.md, SAIRN-handoff-cody-b36.md.
+ITEM 1 -- CONCEPT: a missing employee row is a deactivation once the resource's app is known. The pre-gate now knows sd_customers is stonedesk: a DELETED row is refused CREDENTIAL_INACTIVE on all 5 verbs (before: read 200, write 200). 9/0; 5 red on the old file. Cross-app and failed-lookup paths unchanged.
+ITEM 2 -- defect 8 STILL OPEN, both halves: a not-provisioned contract/authorisation save blames the connection and stays local, pricing claims (sairnsenior.html :4744, :5471); prior-auth is silent with no contract (:4372). fourth's file, routed.
+ITEM 3 -- CONCEPT: a projection key is safe only if EXECUTED to be so. Runtime differential over 22 paired resources: no key reaches the blob, reads/writes take keys from columns. 71/0; criteria locked on fixtures; worktree ablation -> exactly A8 red.
+MEASURED: 21 of 22 reads still let a LEGACY blob override the column (assigned_employee_id x5, alf_ resident/type/time keys). Today's writes cannot make such a row; old rows might.
+DECISION-NEEDED: (1) Michael -- run the SQL below, one statement at a time; non-zero = flip that read. (2) cc -- Tier A b31-b36. (3) fourth -- defects 7, 8. (4) hank -- 5, 6, scp-licence-only.
+SQL: sql/b36-legacy-blob-projection-keys.sql
+LIMIT: the store mock emulates the alf_mar RPC and created_at defaults; legacy exposure is a mock measurement, not live data.
+UNVERIFIED: whether any live row carries a legacy key; deploy of eb23fd3ff (not checked by me).
+NEXT: (1) the SQL counts; (2) cc b35 (c) routed to cody: scope the revoke discard by consent_id + a two-consent arm; (3) the b34 arms (release_retainage, two-tenant request_photos, dnt_referrals).
+EVIDENCE-path: SAIRN-handoff-cody-b36.md, SAIRN-report-cody-b36.txt, api/b36-sd-customers-deleted-row.test.js, api/b36-projection-runtime-differential.test.js
+CONTEXT 31.5% of 1,000,000 -- 315,195 tokens, measured.

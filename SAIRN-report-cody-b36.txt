@@ -1,0 +1,37 @@
+REPORT -- cody b36, 2026-10-21
+
+ITEMS: 5 of 5 done. Defect 8 re-verified and STILL OPEN (fourth's file, routed).
+
+DEPLOY SHA, answered from git: 792654a38 = 792654a388d6e0796e438ea749144e81c0d0d749, b35's WORK commit. It is an ANCESTOR of hank's 3ed60b07 (git merge-base --is-ancestor: true), so production at 3ed60b07 carries b35's code. 7719da747 (b35 handoff/report/digest, no code) sits ON TOP of 3ed60b07 (7719da747 -> 1cdbec766 -> 3ed60b07). b35 named a work tip and a deliverables tip without saying which was which; this report names full shas.
+
+PUSHED, no --force, no skip. origin/main = eb23fd3ff0d8e287e166036ae01c8f8cba63c858 (git ls-remote == HEAD). The four b36 files match origin by sha256.
+Commits: ed9a16947 work · a3650f24b derived docs regenerated · push-gate scrutiny bookkeeping.
+Gate: stale derived docs (regenerated); a generated-doc rebase conflict with fourth (regenerated from the merged tree, not side-picked); four ref-lock races (rebased and retried).
+
+ITEM 1 -- CONCEPT: a missing employee row counts as a deactivation once the resource's app is known.
+  api/sd-data.js pre-gate: PRE_DECLARED_APP = { sd_customers: 'stonedesk' } (hasOwnProperty lookup), so a DELETED sd_employee_auth row takes the existing CREDENTIAL_INACTIVE refusal, the same path as active:false.
+  Before: a deleted owner read customers (200) and wrote them (200).
+  Owners are safe: sd-auth setup inserts the owner row before minting the token.
+  api/b36-sd-customers-deleted-row.test.js 9/0; D1-D5 red on the old file. X1 (a cross-app token is still answered by the branch gate) and T1 (a failed lookup is still not a deactivation) unchanged.
+
+ITEM 2 -- defect 8, STILL OPEN, both halves (sairnsenior.html, fourth):
+  (a) savePayerContract (:4719) stores locally first (:4738). On a 503 NOT_PROVISIONED the toast blames the connection (:4744), and the local contract keeps pricing claims through payerContracts() (:4562). saveAuthorization does the same (:5471), and its local row feeds azResolve (:5339).
+  (b) the prior-auth message exists only when a contract applies (:4372), so with no contract nothing is said about authorisation. On a failed claim write the whole toast is replaced by the device-only line (:4390).
+
+ITEM 3 -- CONCEPT: a projection key is safe only if it is EXECUTED to be so.
+  api/b36-projection-runtime-differential.test.js drives the 22 PAIRED resources through a store mock: A no planted key reaches the stored blob; W and B the write and read responses take each key from a column.
+  Criteria locked first on fixtures F1-F5, in both directions; "could not run" fails. 71/0.
+  ABLATION in a separate worktree (sen_branches strip removed): exactly A8 red.
+  MEASURED, not asserted: 21 of 22 reads are still Object.assign(columns, data), so a LEGACY blob carrying a key overrides the column (all but alf_incidents). Beyond id that covers assigned_employee_id on 5 resources, plus resident_id / entry_type / signal_type / service_month / staff_id / record_type / created_at / decided_by / recorded_by / recorded_at on the alf_ tables.
+  sql/b36-legacy-blob-projection-keys.sql is read-only: 21 SELECTs, expect 0 each. Whether any live row is exposed is a data question.
+
+VERIFICATION: 35+ suites EXIT=0, listed in SAIRN-handoff-cody-b36.md s6; the b36 suites were re-run after the final rebase.
+
+OPEN / ROUTED:
+  Michael -- run sql/b36-legacy-blob-projection-keys.sql; a non-zero count names a read to flip.
+  cc -- Tier A reviews b31-b36.
+  fourth -- defects 7 and 8.
+  hank -- defects 5 and 6, and the scp-licence-only B arms.
+  Routed to cody by cc b35, NOT in this dispatch, not done: scope the revoke discard by consent_id (a stale Xero consent's repeat revoke cleared an active QuickBooks connection; latent because OAuth returns 501), a two-consent arm, the release_retainage arm, the two-tenant request_photos arm, and the dnt_referrals map entry.
+
+CLAIM: platform, released after the deliverables commit.
