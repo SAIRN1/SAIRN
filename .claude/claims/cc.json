@@ -4577,8 +4577,8 @@
       "task": "b41: Write-deny probe into both hover clones; platform-wide Dependabot sweep (fix only tools/)  FILES: SAIRN-handoff-cc-b41.md SAIRN-report-cc-b41.txt SAIRN-digest-cc-b41.txt NOT-api NOT-html NOT-sql",
       "claimed_at": "2026-10-21T18:21:45Z",
       "claimed_at_epoch": 1792606905.4715364,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T18:28:03Z",
       "files": [
         "SAIRN-digest-cc-b41.txt",
         "SAIRN-handoff-cc-b41.md",
