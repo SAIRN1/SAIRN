@@ -1,0 +1,29 @@
+HANK b45 REPORT -- 2026-10-21
+
+1. leg_settings (SAIRNlegacy owner F2/F3 write path, cody b40 routing) -- BUILT, PUSHED, LIVE.
+   Concept: a home's F2/F3 settings are set by its OWNER alone, and only as the values decide()'s own normalisers
+   would produce; anything a normaliser would silently narrow at read time is REFUSED at write time, so what the
+   owner saved is exactly what decide() enforces.
+   - own branch in api/sd-data.js (table sairnlegacy_settings), registered in api/_resources/sairnlegacy.js;
+     NOT in LEG_RESOURCES / LEG_ROLE_MATRIX (role-matrix A2 invariant)
+   - owner only; billing enum; apprentice lists real, non-overlapping, countersign only where required;
+     livery_grants per employee, liveryGrantable() under the merged billing, value true; partial writes merge;
+     missing grants column -> 503 for a grants write, F2/F3 still saved otherwise; updated_by = owner session id
+
+2. VERIFICATION
+   api/b45-leg-settings-owner-write.test.js       25/0 (incl. decide() enforces what was saved; 2 mutants red)
+   api/b22-funeral-f1-f2-f3-wiring.test.js        23/0 (D2 tripwire re-aimed as it instructed)
+   api/b29 21/0; sd-data-leg-overlap 36/0; sd-data-leg-role-matrix 37/0
+   tests/sairnlegacy_reservation_lock.js          count arm fixed (36 data + leg_settings); 35/36 no-id arm
+                                                  is identical at HEAD -- pre-existing, not mine
+   LIVE: leg_settings read, LEG-PINNACLE-2026, no session -> 401 NO_SESSION; unregistered leg_ name -> 400.
+
+3. firebase-admin 12.7.0 -> 13.10.0 -- HELD: cc's active b44 claim is exactly this upgrade + mint test, and
+   npm install is denied in this clone (b39). Nothing written, to avoid duplicating cc.
+
+4. PUSH: 38b2b5069 (feature) + f03aeb65d (Tier A + derived docs) on origin/main, first attempt, not forced.
+   Tier A obligation cites 38b2b5069, assigned to cc. Path manifest: tests/sairnlegacy_reservation_lock.js
+   declared under hank's overrides.
+
+5. OPEN: audit-log write per settings change; livery_grants SQL unrun (Michael); owner UI (fourth);
+   live owner drive; cc Tier A review; firebase (cc).

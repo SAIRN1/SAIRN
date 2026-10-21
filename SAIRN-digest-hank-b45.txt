@@ -1,0 +1,15 @@
+HANK b45 DIGEST -- 2026-10-21 -- SAIRNlegacy leg_settings owner write path live; firebase held
+CONTEXT 49.8% of 1,000,000 -- 498,235 tokens, measured.
+STATUS: 38b2b5069 (feature) + f03aeb65d (Tier A, derived docs) on origin/main, NOT FORCED. Live.
+1. leg_settings: owner-only read/write of sairnlegacy_settings, its own branch in api/sd-data.js.
+2. Values refused, not narrowed, unless exactly what decide()'s normalisers keep.
+3. livery_grants checked per employee against liveryGrantable() under the merged billing.
+4. Test 25/0, incl. decide() enforcing what was saved; 2 mutants turn red.
+5. b22 D2 tripwire re-aimed; reservation_lock count scoped (its 35/36 arm is pre-existing).
+6. Live: leg_settings without a session -> 401 NO_SESSION (branch reached).
+7. Firebase-admin upgrade HELD: cc's b44 claim covers it; npm install is denied here.
+DECISION-NEEDED (Michael): run sql/sairnlegacy_settings_livery_grants.sql (grants writes 503 until then).
+NEXT: cc Tier A on 38b2b5069; fourth owner UI; audit-log write (hank if dispatched).
+CHANGED: api/sd-data.js, api/_resources/sairnlegacy.js, 2 api tests, 1 tests/ file, 4 docs.
+EVIDENCE-path: SAIRN-handoff-hank-b45.md, SAIRN-report-hank-b45.txt
+UNVERIFIED: owner read/write live under a real SAIRNlegacy owner session.
