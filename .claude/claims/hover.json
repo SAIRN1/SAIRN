@@ -1140,6 +1140,17 @@
       "status": "released",
       "released_at": "2026-10-21T18:17:00Z",
       "files": null
+    },
+    {
+      "id": "hover-1792607245",
+      "session": "hover",
+      "subject": "hover",
+      "task": "hover-auditor b80 cross-vendor groq sample review and 1613 1614 relay",
+      "claimed_at": "2026-10-21T18:27:25Z",
+      "claimed_at_epoch": 1792607245.283427,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
