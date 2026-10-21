@@ -1,0 +1,12 @@
+HANK b43 DIGEST -- 2026-10-21 -- test quote request soft-deleted; permanent cleanup is a SQL file for Michael
+CONTEXT 35.0% of 1,000,000 -- 350,205 tokens, measured.
+STATUS: sql file + docs only, NOT FORCED. No application code change.
+1. QR-1792602627030-534 soft-deleted via the app: gone from the inbox, in tombstones.
+2. Its photo row and the unpublished test shop row are still stored (soft delete keeps them).
+3. Permanent removal: sql/sd_audit_b42_test_request_cleanup.sql, scoped, with before/after counts.
+4. Carried H2/H3/C/B are Michael's; D is not mine. Nothing actionable here.
+DECISION-NEEDED (Michael): run the cleanup SQL and send back the AFTER counts (expect 0/0/0).
+NEXT: handoff sec.4 -- X1 (Michael), S1 (hank if dispatched), T1 (cc).
+CHANGED: sql/sd_audit_b42_test_request_cleanup.sql, these three docs.
+EVIDENCE-path: SAIRN-handoff-hank-b43.md, SAIRN-report-hank-b43.txt
+UNVERIFIED: permanent removal (not run; Michael's step).

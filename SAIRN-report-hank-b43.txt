@@ -1,0 +1,16 @@
+HANK b43 REPORT -- 2026-10-21
+
+1. TEST QUOTE REQUEST QR-1792602627030-534 (SD-AUDIT-2026) -- SOFT-DELETED; PERMANENT REMOVAL HANDED TO MICHAEL.
+   Concept: remove it through the app's own path, which is a reversible soft delete; permanently erasing the row
+   and its photo is an irreversible data delete, so it goes to Michael as a reviewed SQL file.
+     soft_delete                    200 ok
+     inbox read after               200, 0 rows, no longer listed
+     tombstones                     lists it
+     request_photos                 still 1 (soft delete does not touch sd_quote_request_photos)
+   sql/sd_audit_b42_test_request_cleanup.sql: deletes photo row, request row, unpublished test shop row; each
+   scoped to sha256('SD-AUDIT-2026') AND the exact test id; BEFORE counts (1/1/1) and AFTER counts (0/0/0).
+
+2. CARRIED ITEMS (b38 sec.4): H2, H3, C, B are Michael's (other clones' local settings, a file in his home
+   dir, Cloud Console, the snapshot re-export); D is not mine. None actionable from this clone.
+
+3. PUSH: the sql file and these three docs, not forced; landing confirmed against origin/main after fetch.
