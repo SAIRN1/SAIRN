@@ -450,6 +450,9 @@ textarea{resize:vertical;min-height:80px;}
          map, and the StoneDesk read of that resource strips only hourly_rate,
          so adding these there would hand home addresses to every manager. -->
     <div class="fr"><div class="fg"><label>Home Address (incl. ZIP)</label><input id="eaddr" placeholder="12 Elm St, Akron OH 44301"></div><div class="fg"><label>Date of Birth (optional)</label><input id="edob" type="date"><div style="font-size:11px;color:var(--muted,#666);">Required on the payroll record only if under 19.</div></div></div>
+    <!-- b47 Z8 -- CONCEPT: 29 CFR 516.2(a)(4) sex, stored as entered; blank is
+         "not recorded", never a default. Device-only, like address and DOB. -->
+    <div class="fr"><div class="fg"><label>Sex (payroll record)</label><select id="esex"><option value="">Not recorded</option><option>Female</option><option>Male</option><option>X</option></select></div><div class="fg"><label></label><div style="font-size:11px;color:var(--muted,#666);padding-top:8px;">Required on the federal payroll record (29 CFR 516.2(a)(4)). Kept on this device; not synced.</div></div></div>
     <div class="fr"><div class="fg"><label>Status</label><select id="estatus"><option>Active</option><option>On Leave</option><option>Terminated</option></select></div><div class="fg"><label>Emergency Contact</label><input id="eec" placeholder="Jane Smith (440) 555-0101"></div></div>
     <div class="fg"><label>Notes</label><textarea id="enotes" rows="2" placeholder="Certifications, skills..."></textarea></div>
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
@@ -696,7 +699,7 @@ textarea{resize:vertical;min-height:80px;}
   </div></div>
   <div class="card"><div class="ch"><span class="ct">Payroll Run History</span></div><div class="cb">
     <div style="font-size:12px;color:var(--muted,#666);margin-bottom:10px;">Each row records that a payroll calculation was performed on that date, with the figures it produced. <strong>No payment is sent from this app</strong> &mdash; process the run through your bank or payroll provider.</div>
-    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Run Date</th><th>Employees</th><th>Gross</th><th>Employer FICA</th><th>Benefits</th><th>Total</th><th>What this is</th></tr></thead>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Run Date</th><th>Pay Date</th><th>Employees</th><th>Gross</th><th>Employer FICA</th><th>Benefits</th><th>Total</th><th>What this is</th><th>Per-employee lines</th></tr></thead>
     <tbody id="prtbody"></tbody></table></div>
   </div></div>
 </div>
@@ -2437,7 +2440,7 @@ function filterEmps(){
   var q=($('esrch').value||'').toLowerCase(),dept=$('edept').value;
   rEmpTbl(ld('sb_emps',[]).filter(function(e){return(!q||(e.fn+' '+e.ln+' '+e.role+' '+e.dept).toLowerCase().includes(q))&&(!dept||e.dept===dept);}));
 }
-function openEmpModal(){eid=null;['efn','eln','erole','ehr','estart','ephone','eemail','eec','enotes','eaddr','edob'].forEach(function(f){var el=$(f);if(el)el.value='';});var ef=$('efreq');if(ef)ef.value=SB_PAY_FREQ_DEFAULT;$('empmodal').classList.add('on');}
+function openEmpModal(){eid=null;['efn','eln','erole','ehr','estart','ephone','eemail','eec','enotes','eaddr','edob','esex'].forEach(function(f){var el=$(f);if(el)el.value='';});var ef=$('efreq');if(ef)ef.value=SB_PAY_FREQ_DEFAULT;$('empmodal').classList.add('on');}
 function closeEmpModal(){$('empmodal').classList.remove('on');}
 function editEmp(id){
   var e=ld('sb_emps',[]).find(function(x){return x.id===id;});if(!e)return;eid=id;
@@ -2450,6 +2453,7 @@ function editEmp(id){
   $('ephone').value=e.phone||'';$('eemail').value=e.email||'';$('estatus').value=e.status||'Active';
   $('eec').value=e.ec||'';$('enotes').value=e.notes||'';
   var ea=$('eaddr');if(ea)ea.value=e.addr||'';var ed=$('edob');if(ed)ed.value=e.dob||'';
+  var es=$('esex');if(es)es.value=e.sex||'';
   $('empmodal').classList.add('on');
 }
 // ── SEQUENTIAL, UNIQUE IDS (b42) ───────────────────────────────────────────
@@ -2517,6 +2521,7 @@ function saveEmp(){
   // stays blank (unknown), never a made-up date. A future DOB is refused.
   r.addr=(($('eaddr')||{}).value||'').trim();r.dob=(($('edob')||{}).value)||'';
   if(r.dob&&r.dob>sbLocalToday()){toast('Date of birth is in the future');return;}
+  r.sex=(($('esex')||{}).value)||'';
   // b46 Z9 -- CONCEPT: a rate change is APPENDED, not overwritten, so a past
   // workweek is still priced at the rate in force then (29 CFR 516.2(a)(6)).
   // The first change seeds the prior rate with effective_from null, meaning
@@ -3321,6 +3326,14 @@ function sbWeekStart(d){
   x.setDate(x.getDate()-back);
   return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');
 }
+// b47 Z8 -- CONCEPT: the workweek start 29 CFR 516.2(a)(5) asks for is READ
+// from sbWeekStart(), the boundary the timesheet and overtime maths actually
+// use, rather than typed in -- so the record cannot name a day the maths did
+// not use. The week starts at local midnight (new Date(y,m,d)).
+function sbWorkweekStart(){
+  var p=sbWeekStart(new Date()).split('-');
+  return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date(+p[0],+p[1]-1,+p[2]).getDay()]+' 00:00, local time, all employees';
+}
 var sbTsWeek=sbWeekStart(new Date());
 function tsShiftWeek(n){
   var p=sbTsWeek.split('-');
@@ -3994,6 +4007,7 @@ function runPayroll() {
     pay_date:payDate,
     pay_date_source:payDateSource,
     period_rule:SB_PAY_PERIOD_RULE,
+    workweek_start:sbWorkweekStart(),
     lines:lines,
     employees:t.employees,
     gross:t.gross,
@@ -4041,11 +4055,19 @@ function rPayRuns(){
   if(!el) return;
   var runs=ld('sb_payruns',[]);
   if(!runs.length){
-    el.innerHTML='<tr><td colspan="7" style="text-align:center;padding:18px;color:var(--muted,#666)">No payroll runs recorded yet. Running payroll records the calculation here.</td></tr>';
+    el.innerHTML='<tr><td colspan="9" style="text-align:center;padding:18px;color:var(--muted,#666)">No payroll runs recorded yet. Running payroll records the calculation here.</td></tr>';
     return;
   }
+  // b47 Z8 -- CONCEPT: the table shows the lines the run RECORDED, never a
+  // re-pricing from today's roster. A run from before b46 has no lines or pay
+  // date, and says so rather than showing blanks.
+  var m2=function(n){return typeof n==='number'?'$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):H(String(n==null?'':n));};
   el.innerHTML=runs.map(function(r){
-    return'<tr><td><strong>'+fdate(r.run_on)+'</strong></td><td style="text-align:center;">'+r.employees+'</td><td>'+fmt(r.gross)+'</td><td>'+fmt(r.taxes_fica)+'</td><td>'+fmt(r.benefits)+'</td><td><strong>'+fmt(r.total)+'</strong></td><td><span class="badge bx">Calculation only</span></td></tr>';
+    var pd=r.pay_date?fdate(r.pay_date)+(r.pay_date_source&&r.pay_date_source!=='entered'?'<div style="font-size:11px;color:var(--muted,#666)">run date (none entered)</div>':''):'<span style="color:var(--muted,#666)">not recorded</span>';
+    var ln=Array.isArray(r.lines)?'<details class="sb-prlines"><summary>'+r.lines.length+' line'+(r.lines.length===1?'':'s')+'</summary><table style="font-size:12px;margin-top:6px;"><thead><tr><th>Employee</th><th>Period</th><th>Regular h</th><th>OT h</th><th>Rate</th><th>Straight-time</th><th>OT premium</th><th>Gross</th><th>Withholding</th><th>Net pay</th></tr></thead><tbody>'+
+      r.lines.map(function(l){return'<tr><td>'+H(l.name||'')+'</td><td>'+H(l.period_start||'')+' &ndash; '+H(l.period_end||'')+'</td><td>'+H(String(l.regular_hours))+'</td><td>'+H(String(l.ot_hours))+'</td><td>'+m2(l.rate)+'</td><td>'+m2(l.straight_time_earnings)+'</td><td>'+m2(l.ot_premium)+'</td><td>'+m2(l.gross)+'</td><td>'+m2(l.withholding)+'</td><td>'+m2(l.net_pay)+'</td></tr>';}).join('')+
+      '</tbody></table>'+(r.workweek_start?'<div style="font-size:11px;color:var(--muted,#666)">Workweek starts '+H(r.workweek_start)+'</div>':'')+'</details>':'<span style="color:var(--muted,#666)">not recorded (run before per-employee lines)</span>';
+    return'<tr><td><strong>'+fdate(r.run_on)+'</strong></td><td>'+pd+'</td><td style="text-align:center;">'+r.employees+'</td><td>'+fmt(r.gross)+'</td><td>'+fmt(r.taxes_fica)+'</td><td>'+fmt(r.benefits)+'</td><td><strong>'+fmt(r.total)+'</strong></td><td><span class="badge bx">Calculation only</span></td><td>'+ln+'</td></tr>';
   }).join('');
 }
 
@@ -5396,7 +5418,10 @@ function csv(type){
   // are separate columns so the exported figure can be reconciled rather than
   // taken on trust.
   else if(type==='budget'){rows=[['Category','Budget','Opening Baseline','Recorded Since','Actual','Remaining','% Used']];sbBudgetActuals().rows.forEach(function(b){rows.push([b.cat,b.annual,b.baseline,b.recorded,b.actual,b.annual-b.actual,b.annual?Math.round(b.actual/b.annual*100)+'%':'0%']);});}
-  else if(type==='payroll'){rows=[['Employee','Role','Type','Pay Frequency','Frequency Source','Rate','Hours/Period','Gross/Period','Annualised Gross','Benefits/Period','Benefits Source']];ld('sb_emps',[]).filter(function(e){return e.status==='Active';}).forEach(function(e){rows.push([e.fn+' '+e.ln,e.role,e.type,sbPayFreq(e),sbPayFreqIsDefault(e)?'assumed (default)':'recorded',e.rate,sbHoursPerPeriod(e),sbGrossPerPeriod(e).toFixed(2),sbAnnualGross(e).toFixed(2),sbBenefitPerPeriod(e).toFixed(2),sbBenefitIsAssumed(e)?'assumed $520/mo':'recorded']);});}
+  // b47 Z8 -- CONCEPT: the line columns come from sbPayLine(), the function a
+  // run records with, for today's run date and the pay date in the run box --
+  // so the export and a run made now cannot disagree.
+  else if(type==='payroll'){var csvOn=sbLocalToday(),csvPd=(($('prpaydate')||{}).value)||'',csvWw=sbWorkweekStart();rows=[['Employee','Role','Type','Pay Frequency','Frequency Source','Rate','Hours/Period','Gross/Period','Annualised Gross','Benefits/Period','Benefits Source','Period Start','Period End','Pay Date','Pay Date Source','Regular Hours','OT Hours','Straight-time Earnings','OT Premium','Withholding','Net Pay','Workweek Start']];ld('sb_emps',[]).filter(function(e){return e.status==='Active';}).forEach(function(e){var l=sbPayLine(e,csvOn,csvPd||csvOn);rows.push([e.fn+' '+e.ln,e.role,e.type,sbPayFreq(e),sbPayFreqIsDefault(e)?'assumed (default)':'recorded',e.rate,sbHoursPerPeriod(e),sbGrossPerPeriod(e).toFixed(2),sbAnnualGross(e).toFixed(2),sbBenefitPerPeriod(e).toFixed(2),sbBenefitIsAssumed(e)?'assumed $520/mo':'recorded',l.period_start,l.period_end,l.pay_date,csvPd?'entered':'defaulted to today (none entered)',l.regular_hours,l.ot_hours,l.straight_time_earnings.toFixed(2),l.ot_premium.toFixed(2),l.withholding,l.net_pay,csvWw]);});}
   // ── EXPORTS ADDED 2026-09-02, AND THE FALLBACK NOW REFUSES ──────────────
   // Found by a live click-through on SB-TEST-2026: of FIFTEEN "Export CSV"
   // buttons, TEN fell through to the stub below and downloaded a file
