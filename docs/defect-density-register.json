@@ -36818,6 +36818,51 @@
       "recurrence_open": "Any posture-disclosure suite goes red silently on a deliberate scope change; nothing ties a SD_SESSION_GATED edit to its disclosure suites."
     },
     {
+      "commit": "c0187ce13a43",
+      "date": "2026-10-21",
+      "subject": "fix(hover b77): hover_vendor_sample records every completed vendor call into its RateGate (#1658)",
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools/hover_vendor_sample.py"
+      ],
+      "lines_added": 103,
+      "lines_removed": 0,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": "hover_vendor_sample.py never wrote a completed vendor call into its RateGate: RateGate.record_call had no caller anywhere in the file, so the trailing-minute window the gate reads was always empty and the per-minute gate (call spacing and token window) could not fire on review_chunk, cmd_injection_vendor or cmd_injection_defense. Effect in b76: two real Groq HTTP 429s on tokens per minute got through, recorded COULD-NOT-TELL and never folded into clean (loud, not silent). Found by hover in b76 while diagnosing those refusals (self-log #1658); fixed in b77 by one record_call on each vendor-calling path, with fixtures V38-V44 shown failing on the unfixed code first (41 ok, 6 failed) and passing after (47 ok, 0 failed).",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "0ce39476607f",
+        "date": "2026-10-20",
+        "subject": "feat(hover b72): the cross-vendor reviewer can be silenced by a comment in the code it reviews",
+        "lag_days": 1
+      },
+      "citation_note": "An arguable fit, stated as one: the gate reads an empty window as 'no usage' and answers with permission, the shape of PR 1.11's could-not-run folded into passed; but the missing input here is a state file the tool itself never writes, not another tool that is absent.",
+      "contributing_factors": [
+        {
+          "factor": "The suite drove every production path with a stub gate that had no writer either, so the stub and the code shared one picture of the gate and nothing in the suite could see a missing record_call.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Fixtures V38-V44 in the fix commit record what each path wrote into the gate, drive the real RateGate through two consecutive calls with a temporary state file and an injected clock, and carry two sabotage controls; the stub gate gained a recording method."
+        },
+        {
+          "factor": "The gate is open-loop: it meters its own estimate of the provider's per-minute limit and never reads the provider's reported remaining capacity, so a gate that records nothing cannot be told from a gate that works by any record the tool keeps.",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "Not acted on in b77: reading the provider's rate-limit headers on every call is a design change nobody has approved, and the b77 dispatch approved only the writer fix. Named in recurrence_open."
+        }
+      ],
+      "recurrence_open": "The gate still estimates the provider's limit instead of reading it, and nothing enumerates the vendor-calling paths: a path added later that calls the vendor without a writer is caught only if someone adds it to these fixtures. Same family as #1647 (no visibility of the daily budget) at the per-minute scale."
+    },
+    {
       "commit": "d94a2e3d1bf3",
       "date": "2026-10-21",
       "subject": "fix(cc b33): the path manifest folds case, so one capital letter cannot cross a boundary",
