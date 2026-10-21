@@ -225,8 +225,27 @@ def cells(line):
     return out[1:-1] if len(out) >= 2 else []
 
 
-DECLARED_APP = re.compile(r'^\s*app\s*:\s*[\'"]([A-Za-z0-9_-]+)[\'"]',
-                          re.MULTILINE)
+class RegistryLoadError(Exception):
+    """Node could not load a resource module, or could not be run at all."""
+
+
+# ── THE READER IS NODE, NOT A REGEX (cc b33, hover2 seq 1067) ───────────────
+# `^\s*app\s*:\s*['"]...['"]` read the declaration as TEXT, and six ordinary
+# spellings of the same declaration were invisible to it while Node loaded
+# them as registries: a one-line object, a double- or single-quoted key, a
+# template-literal value, the shorthand `{ app, ... }`, and
+# `module.exports.app = ...`. A registry in any of those shapes was skipped
+# and every resource on it vanished from the completeness arm -- the fail-OPEN
+# direction. The answer travels with the file; now the READER does too: the
+# module is required by the same runtime the platform runs, and its exported
+# `app` is read off the object. A module Node cannot load raises, and the
+# caller turns that into a loud SHAPE_ERROR rather than a skip.
+_NODE_READ = (
+    "const p=process.argv[1];"
+    "try{const m=require(p);const a=m&&m.app;"
+    "process.stdout.write(JSON.stringify({ok:true,app:(typeof a==='string')?a:null}));}"
+    "catch(e){process.stdout.write(JSON.stringify({ok:false,"
+    "err:String((e&&e.message)||e).slice(0,200)}));}")
 
 
 def declared_app(path):
@@ -261,12 +280,23 @@ def declared_app(path):
     an explicit flag for -- and the arm named `A MERGER THAT DECLARED app:`
     in the fixtures below says what would happen so it is not a surprise.
     """
+    import json as _json
+    import subprocess as _sp
     try:
-        src = io.open(path, encoding='utf-8').read()
+        r = _sp.run(['node', '-e', _NODE_READ, os.path.abspath(path)],
+                    capture_output=True, text=True, encoding='utf-8',
+                    errors='replace', timeout=60)
+    except Exception as e:                                       # noqa: BLE001
+        raise RegistryLoadError('node could not be run (%s: %s)'
+                                % (type(e).__name__, e))
+    try:
+        d = _json.loads(r.stdout or '')
     except Exception:                                            # noqa: BLE001
-        return None
-    m = DECLARED_APP.search(src)
-    return m.group(1) if m else None
+        raise RegistryLoadError('node gave no readable answer (exit %s): %s'
+                                % (r.returncode, (r.stderr or '')[:160]))
+    if not d.get('ok'):
+        raise RegistryLoadError('node could not load it: %s' % d.get('err'))
+    return d.get('app')
 
 
 def apps_with_registries():
@@ -280,7 +310,13 @@ def apps_with_registries():
         # ── NOT A NAME LIST. See declared_app(). ────────────────────────────
         # A file that declares no `app:` is not a registry and is skipped
         # because IT says so, not because this line knows its name.
-        decl = declared_app(os.path.join(RESOURCES, f))
+        try:
+            decl = declared_app(os.path.join(RESOURCES, f))
+        except RegistryLoadError as e:
+            out[app] = SHAPE_ERROR(
+                'could not be read as a module, so whether it is a registry is '
+                'UNKNOWN -- not skipped: %s' % e)
+            continue
         if decl is None:
             continue
         if decl != app:
@@ -798,8 +834,23 @@ def registry_property_arms():
 
     REGISTRY = ("module.exports = {\n  app: 'shared',\n"
                 "  resources: [\n    'employees',\n  ],\n};\n")
-    MERGER = ("const all = [\n  require('./shared'),\n"
-              "  require('./stonedesk'),\n];\nmodule.exports = merge(all);\n")
+    # RUNNABLE, because the reader is now Node: the merger requires a real
+    # sibling that is written beside it.
+    MERGER = ("const all = [\n  require('./dep.js'),\n];\n"
+              "module.exports = { parts: all };\n")
+    DEP = "module.exports = { resources: ['x'] };\n"
+
+    def write_with_dep(name, src):
+        p = write(name, src)
+        io.open(os.path.join(os.path.dirname(p), 'dep.js'), 'w',
+                encoding='utf-8', newline='\n').write(DEP)
+        return p
+
+    def read(p):
+        try:
+            return declared_app(p)
+        except RegistryLoadError as e:
+            return 'LOAD-ERROR: %s' % e
 
     cases = [
         # THE ARM: a registry declares itself and is scanned.
@@ -812,38 +863,52 @@ def registry_property_arms():
          'a module that declares NO app: is not a registry. This is the '
          'control: without it the arm above would pass on a checker that '
          'scanned everything'),
-        # ...AND THE SAME CONTENT UNDER A DIFFERENT NAME GETS THE SAME ANSWER,
-        # which is what makes this a property rather than a name list.
         ('merger_renamed.js', MERGER, None,
          'THE ABLATION OF THE NAME: the merger renamed is still skipped. The '
          'old `app in (\'index\', \'shared\')` tuple would have SCANNED this '
-         'file and skipped a real registry called shared.js -- the arm fails '
-         'on the pre-b24 expression and passes on this one'),
+         'file and skipped a real registry called shared.js'),
         ('shared_renamed.js', REGISTRY, 'shared',
          '...and a registry renamed is still scanned, and still reports the '
          'app it DECLARES rather than the name of the file it sits in'),
+        # hover2 seq 1067: six shapes Node loads as a registry and the pre-b33
+        # regex could not see. FAILING-FIRST: every one read None before.
+        ('b.js', "module.exports = { app: 'probe', resources: ['r'] };\n",
+         'probe', 'B: a ONE-LINE object -- the ^\\s*app anchor never fired'),
+        ('c.js', 'module.exports = {\n  "app": \'probe\',\n  resources: [\'r\'],\n};\n',
+         'probe', 'C: a DOUBLE-quoted key'),
+        ('d.js', "module.exports = {\n  'app': 'probe',\n  resources: ['r'],\n};\n",
+         'probe', 'D: a SINGLE-quoted key'),
+        ('e.js', "module.exports = {\n  app: `probe`,\n  resources: ['r'],\n};\n",
+         'probe', 'E: a TEMPLATE-literal value'),
+        ('f.js', "const app = 'probe';\nmodule.exports = { app, resources: ['r'] };\n",
+         'probe', 'F: the SHORTHAND property'),
+        ('g.js', "module.exports.app = 'probe';\nmodule.exports.resources = ['r'];\n",
+         'probe', 'G: the ASSIGNMENT form'),
     ]
     for name, src, want, why in cases:
-        got = declared_app(write(name, src))
+        got = read(write_with_dep(name, src))
         if got != want:
             bad.append('EXPECTED %r, got %r -- %s' % (want, got, why))
 
-    # A MERGER THAT DID DECLARE app: WOULD BE SCANNED, and that is stated as
-    # an arm rather than left to be discovered. No such file exists today
-    # (measured over all 20 in api/_resources/ on 2026-10-19); the day one
-    # does, an explicit opt-out flag is the fix and this arm is where to add
-    # it.
-    got = declared_app(write('odd.js', "module.exports = {\n  app: 'odd',\n"
-                                       "};\n" + MERGER))
+    # A MERGER THAT DID DECLARE app: WOULD BE SCANNED -- stated, not discovered.
+    got = read(write_with_dep('odd.js', "module.exports = { app: 'odd', "
+                                        "parts: [require('./dep.js')] };\n"))
     if got != 'odd':
         bad.append('EXPECTED %r, got %r -- a merger that DECLARED app: would '
                    'be treated as a registry. Documented limit, asserted so '
                    'it cannot be a surprise.' % ('odd', got))
 
+    # A MODULE NODE CANNOT LOAD IS NOT A SKIP: declared_app RAISES, and
+    # apps_with_registries() turns that into a SHAPE_ERROR (loud).
+    got = read(write('broken.js', "module.exports = { app: 'x', \n"))
+    if not str(got).startswith('LOAD-ERROR'):
+        bad.append('a module Node cannot load must RAISE, not read as None -- '
+                   'got %r. None would skip it, the fail-open direction' % got)
+
     # AND THE DISAGREEMENT PATH: declared name vs filename is reported, never
     # resolved by preference.
     p = write('stonedesk.js', REGISTRY)           # declares 'shared'
-    if declared_app(p) == 'stonedesk':
+    if read(p) == 'stonedesk':
         bad.append('a file whose declared app disagrees with its filename '
                    'must NOT read as agreeing -- that is how a resource gets '
                    'filed under an app that does not own it')
@@ -855,7 +920,7 @@ def registry_property_arms():
 # that literal say "6/6" while ELEVEN checks ran, which is a count that does
 # not move when the thing it counts does -- the defect class this repo keeps
 # paying for one level up from wherever it appears.
-REGISTRY_PROPERTY_ARMS = 6
+REGISTRY_PROPERTY_ARMS = 13
 
 
 def run_fixtures():
