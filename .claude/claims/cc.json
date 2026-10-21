@@ -4545,8 +4545,8 @@
       "task": "b39: Tier A reviews cody 2026-10-21T17:05:11Z (b37 revoke discard by consent) and cody 2026-10-21T17:07:10Z (b37 two-tenant arm)  FILES: docs/tier-a-reviews.json SAIRN-handoff-cc-b39.md SAIRN-report-cc-b39.txt SAIRN-digest-cc-b39.txt NOT-api NOT-html NOT-sql NOT-tests",
       "claimed_at": "2026-10-21T17:48:21Z",
       "claimed_at_epoch": 1792604901.6470673,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T17:58:41Z",
       "files": [
         "SAIRN-digest-cc-b39.txt",
         "SAIRN-handoff-cc-b39.md",
