@@ -4298,8 +4298,8 @@
       "task": "b36 sd_customers deleted-employee gate, defect 8 reverify, projection runtime differential",
       "claimed_at": "2026-10-21T15:40:22Z",
       "claimed_at_epoch": 1792597222.8354092,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T16:02:58Z",
       "files": null
     }
   ],
