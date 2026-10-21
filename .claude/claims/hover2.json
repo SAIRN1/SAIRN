@@ -963,8 +963,8 @@
       "task": "b84 stryker_feed statusReason denominator CLI PL-2 shadowing side-channels envelope third cold read",
       "claimed_at": "2026-10-21T19:51:42Z",
       "claimed_at_epoch": 1792612302.5516627,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T21:21:57Z",
       "files": null
     }
   ],
