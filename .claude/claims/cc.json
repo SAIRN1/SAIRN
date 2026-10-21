@@ -4553,6 +4553,22 @@
         "SAIRN-report-cc-b39.txt",
         "docs/tier-a-reviews.json"
       ]
+    },
+    {
+      "id": "cc-1792605900",
+      "session": "cc",
+      "subject": "cc",
+      "task": "b40: own settings.local.json hover deny entries (Edit/Write + Bash); Dependabot alert 5 triage; rt_stops b28 SQL status; SEN-AUDIT-2026 KNOWN_AUDIT_KEYS line in CLAUDE.md  FILES: CLAUDE.md SAIRN-handoff-cc-b40.md SAIRN-report-cc-b40.txt SAIRN-digest-cc-b40.txt NOT-api NOT-html NOT-sql",
+      "claimed_at": "2026-10-21T18:05:00Z",
+      "claimed_at_epoch": 1792605900.9098914,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "CLAUDE.md",
+        "SAIRN-digest-cc-b40.txt",
+        "SAIRN-handoff-cc-b40.md",
+        "SAIRN-report-cc-b40.txt"
+      ]
     }
   ],
   "refusals": [
