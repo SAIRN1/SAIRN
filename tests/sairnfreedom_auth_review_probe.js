@@ -193,9 +193,16 @@ this app, and that is reported rather than swept". Counted:
       seg = seg.indexOf("action === 'roster'") !== -1
         ? seg.slice(0, seg.indexOf("action === 'roster'")) : seg.slice(0, 9000);
       const sole = /SOLE_ROLE\s*=\s*'([^']+)'/.exec(src);
+      // A guard is either the inline LAST_ADMIN refusal this probe was written
+      // against, or the SHARED one it was folded into on 2026-09-22 (af85acafb)
+      // -- called BEFORE the upsert. Counting only the literal reported six
+      // guarded apps as unguarded and raised a false "hole is open" finding (b38).
+      const callAt = seg.indexOf('lifecycle.soleRoleDemotionRefusal(');
+      const upAt = seg.indexOf('on_conflict=license_hash,employee_id');
       rows.push({
         f, sole: sole ? sole[1] : null,
-        guarded: seg.indexOf('LAST_ADMIN') !== -1,
+        guarded: seg.indexOf('LAST_ADMIN') !== -1
+          || (callAt !== -1 && (upAt === -1 || callAt < upAt)),
         upserts: seg.indexOf('on_conflict=license_hash,employee_id') !== -1,
         writesRole: /body: JSON\.stringify\(\{[\s\S]{0,400}\brole\b/.test(seg)
       });
@@ -226,15 +233,57 @@ this app, and that is reported rather than swept". Counted:
       }
       // The anchor discipline: the guard is asserted PRESENT in sf-auth rather
       // than assumed from the commit message.
+      //
+      // RE-ANCHORED b38 (cody). The old anchor was the INLINE guard's `if`, which
+      // af85acafb (2026-09-22) folded onto lifecycle.soleRoleDemotionRefusal().
+      // CONCEPT: an anchor is re-pointed only after the property it stood for is
+      // shown to still hold -- so the call site is asserted STRUCTURALLY (inside
+      // setup, keyed on SOLE_ROLE and the new role, before the upsert, its
+      // refusal returned) and the shared guard is then DRIVEN, not trusted.
       const sf = fs.readFileSync(path.join(ROOT, 'api/sf-auth.js'), 'utf8');
-      const anchor = "if (SF_ROLES.indexOf(role) !== -1 && role !== SOLE_ROLE) {";
-      if (sf.indexOf(anchor) === -1) {
-        cannot('15:11 (2)', 'the sf-auth setup guard anchor has moved -- this arm '
-          + 'is not reporting agreement it did not check');
+      const sfSeg = sf.split("action === 'setup'")[1] || '';
+      const sfCall = sfSeg.indexOf('lifecycle.soleRoleDemotionRefusal({');
+      const sfUp = sfSeg.indexOf('on_conflict=license_hash,employee_id');
+      const sfArgs = sfCall === -1 ? '' : sfSeg.slice(sfCall, sfSeg.indexOf('});', sfCall));
+      const wired = sfCall !== -1 && sfUp !== -1 && sfCall < sfUp
+        && /soleRole:\s*SOLE_ROLE/.test(sfArgs) && /newRole:\s*role\b/.test(sfArgs)
+        && sfSeg.slice(sfCall, sfUp).indexOf('if (demote) {') !== -1;
+      if (!wired) {
+        cannot('15:11 (2)', 'sf-auth setup no longer calls soleRoleDemotionRefusal '
+          + '(SOLE_ROLE, new role) before its upsert -- this arm is not reporting '
+          + 'agreement it did not check');
       } else {
-        console.log('\n  ok    the sf-auth setup guard is present, and it is keyed on the NEW');
-        console.log('        role not being SOLE_ROLE -- promoting TO governor cannot reduce');
-        console.log('        the count, so guarding only the demotion direction is right.');
+        const SF = require(path.join(ROOT, 'api/sf-auth.js'));
+        const drive = async (roster, newRole) => {
+          const reads = [];
+          const saved = global.fetch;
+          global.fetch = async (url) => { reads.push(String(url)); return { ok: true, status: 200, json: async () => roster }; };
+          try {
+            return { out: await LC.soleRoleDemotionRefusal({
+              provisioningRoles: SF.PROVISIONING_ROLES, soleRole: SF.SOLE_ROLE, newRole: newRole,
+              employee_id: 'GOV', licHash: 'HASH1', table: 'sf_employee_auth',
+              rest: (q) => 'https://fake.invalid/' + q, headers: {}, soleMessage: 'only governor' }), reads };
+          } finally { global.fetch = saved; }
+        };
+        const onlyGov = [{ employee_id: 'GOV', role: SF.SOLE_ROLE, active: true },
+                         { employee_id: 'DEPUTY', role: 'post.govern.deputy', active: true }];
+        const twoGov = onlyGov.concat([{ employee_id: 'GOV2', role: SF.SOLE_ROLE, active: true }]);
+        const d1 = await drive(onlyGov, 'post.govern.deputy');
+        const d2 = await drive(onlyGov, SF.SOLE_ROLE);
+        const d3 = await drive(twoGov, 'post.govern.deputy');
+        if (!(d1.out && d1.out.status === 409 && d1.out.body.error.code === 'LAST_ADMIN')) {
+          finding('sf-auth setup calls the shared guard, but demoting the ONLY active governor '
+            + 'is not refused: ' + JSON.stringify(d1.out));
+        } else if (d2.out !== null || d2.reads.length !== 0 || d3.out !== null) {
+          finding('the shared demotion guard refuses where it must not: promote-to-governor '
+            + JSON.stringify(d2.out) + ' (' + d2.reads.length + ' reads), second governor present '
+            + JSON.stringify(d3.out));
+        } else {
+          console.log('\n  ok    the sf-auth setup guard is present -- now via the shared');
+          console.log('        soleRoleDemotionRefusal(), called before the upsert -- and DRIVEN:');
+          console.log('        demoting the only governor -> 409 LAST_ADMIN; promoting TO governor');
+          console.log('        -> allowed with no roster read; a second governor -> allowed.');
+        }
       }
     }
   }
