@@ -933,6 +933,17 @@
       "status": "released",
       "released_at": "2026-10-21T16:35:53Z",
       "files": null
+    },
+    {
+      "id": "hover2-1792602116",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "b82: PL-2 public-key seal for the sealed score detail (my own tools); Stryker first target rf_jobs projection ordering (cody b32) mutated on a scratch copy; platform read-only",
+      "claimed_at": "2026-10-21T17:01:56Z",
+      "claimed_at_epoch": 1792602116.8407974,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
