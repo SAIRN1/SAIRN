@@ -83,6 +83,10 @@ function harness() {
     grab('function dntYesNo(v){', '\n'),
     grab('var DNT_CRED_COMMON={', '\n'),
     grab('function dntCredDetails(rec){', '\n}'),
+    // b49: the charges export reads the CDT stamp through dntChargeCode() since
+    // 9a0903e69. It was never added here, so the Procedure cell threw inside the
+    // export and came out blank -- the arm then read that as 'not resolved'.
+    grab('function dntChargeCode(c){', '\n}'),
     grab('var DNT_EXPORTS={', '\n};'),
     grab('function exportDataset(key){', '\n}')
   ].join('\n\n');

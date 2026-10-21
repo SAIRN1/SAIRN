@@ -240,7 +240,8 @@ label.chk input{width:auto;}
 <!-- PANEL-CHANGE ANNOUNCEMENT TARGET (2026-10-19, fourth b37 -- WCAG 4.1.3).
      Outside #app on purpose: #app has `on` toggled on sign-in/sign-out and a
      live region inside a subtree that gets hidden stops announcing. -->
-<div id="panel-live" class="sronly" role="status" aria-live="polite"></div>
+<!-- b49: not "panel-*" -- that prefix is the panel namespace the nav census counts; this is the announcer. -->
+<div id="nav-announce" class="sronly" role="status" aria-live="polite"></div>
 
 <div id="gate">
   <div class="gbox">
@@ -2024,7 +2025,7 @@ function nav(id){
   // are added or renamed -- all 23 panels carry one.
   // Cleared first: assigning the SAME textContent is not a mutation, and a
   // re-nav to the panel already shown would otherwise announce nothing.
-  var live=$('panel-live'),pt=p&&p.querySelector('.ptitle');
+  var live=$('nav-announce'),pt=p&&p.querySelector('.ptitle');
   if(live){live.textContent='';if(pt)live.textContent=pt.textContent+' panel';}
   if(id==='dashboard')rDash();
   if(id==='patients')rPatients();
