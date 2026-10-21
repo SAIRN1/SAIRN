@@ -1,0 +1,52 @@
+REPORT cc b42
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-21
+RANGE     from the b42 deps commit (landed at c7afaffb) to origin/main. No --force, NO OVERRIDE, no BYPASS-LOG row.
+
+== 1. CONCEPT ==
+A dependency nobody declares is one Dependabot cannot see (the tools/requirements.txt logic, b41).
+
+== 2. THE WALK, every tracked file outside tools/ ==
+PYTHON: 668 files, 0 unparseable. Flagged: top-level Import/ImportFrom (level 0) whose root is not in sys.stdlib_module_names and not a module or directory in this repo.
+  Second pass: a third-party import could be hidden by a same-named local file in an unrelated directory -- none found.
+  tests/   yaml (PyYAML)        tests/run_cron_liveness_probe.py:190 (inside the probe)
+  docs/    yaml (PyYAML)        docs/skill-backups/skill-creator/scripts/quick_validate.py:9
+           markdown_it          docs/2026-10-19-cc-b18-github-render-confirmation.py:78 (lazy)
+  .claude/skills/sairn-hover-auditor/  anthropic (hover_second_opinion.py, hover_trusted_debate.py),
+           rfc3161ng (hover_timestamp.py, tools-hover2/hover2_timestamp.py) -- AUDITOR SCOPE: reported, NOT touched.
+  packages/testint: stdlib only, consistent with dependencies = [].
+JAVASCRIPT: 840 files. require()/import/import() bare specifiers, excluding builtins, compared with package.json
+  (@simplewebauthn/server, firebase-admin, stripe -- all three used, all declared).
+  Undeclared: @supabase/supabase-js (15 files) and @anthropic-ai/sdk (5) -- every use is under archive/branch-lucid-ptolemy-b73vu0/.
+    That is outside the root api/, so not a Vercel function, and dead.
+  api/sd-agent.js:11 names @anthropic-ai/sdk in a comment only. No JS manifest added.
+FLOORS (lowest version with zero OSV records, probed per version):
+  PyYAML: 5.3.1 -> 2, 5.4 -> 0. markdown-it-py: 2.1.0 -> 4, 2.2.0 -> 0.
+  Installed: PyYAML 6.0.3 OSV 0; markdown-it-py 4.2.0 OSV 0; anthropic 1.8.0 OSV 0; rfc3161ng 2.1.3 OSV 0.
+NEW FILES: tests/requirements.txt (PyYAML>=5.4); docs/requirements.txt (PyYAML>=5.4, markdown-it-py>=2.2.0).
+  Each states how it was derived and names its consumers.
+OWNERSHIP: tests/ is cody's and docs/ is fourth's. Both files are declared in docs/sairn-path-manifest.json assigned_overrides (cc), single files.
+  No existing file in either directory was edited. The path-manifest check says OWNED for both.
+
+== 3. pypdf IN THE RUNNING INTERPRETER ==
+C:\Python314\python.exe -> pypdf 6.21.2, from C:\Users\marsh\AppData\Roaming\Python\Python314\site-packages. It is the only pypdf distribution present.
+  6.16.1 is gone. OSV at 6.21.2: 0, so the 12 advisories from b41 are cleared.
+Note: python -I skips user site-packages, so pypdf is then absent and a tool run with -I reports COULD NOT RUN rather than using an old copy.
+
+== 4. PUSH ==
+c7afaffb landed first time; 0/0 after fetch.
+GitHub SBOM after the push: 204 packages, now including pypdf and playwright (b41's tools/requirements.txt indexed).
+  The b42 files are not yet indexed. Open Dependabot alerts: still exactly #5 (node-forge, root package-lock, not cc's).
+
+== OPEN ==
+hover auditor: declare anthropic and rfc3161ng in its own scope if it wants Dependabot coverage.
+Michael: alert #5 -- firebase-admin 12.7.0 -> 13.10.0, mint test first.
+Routed: hank (b40 barrier arms, keyboard close); fourth (review cc 2026-10-21T17:13:48Z).
+
+== CHANGED ==
+tests/requirements.txt (new); docs/requirements.txt (new); docs/sairn-path-manifest.json (2 override entries + note);
+docs/scrutiny-flags.json (gate rows); SAIRN-handoff-cc-b42.md; this report; the digest.
+
+SHA256 8c61e3da609a899afc096807674e9d7f1afa3ef2e3913cfd059e8ef7dd6465a4
+END-OF-REPORT

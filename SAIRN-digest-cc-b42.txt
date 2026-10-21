@@ -1,0 +1,22 @@
+DIGEST cc b42
+STATUS: 4 of 4 closed; manifests landed (c7afaffb); 0/0; no --force, NO OVERRIDE.
+ITEM 1: concept -- a dependency nobody declares is one Dependabot cannot see.
+ITEM 2: AST walk of everything outside tools/. Python: 668 files, 0 unparseable, no import hidden by a same-named local file.
+  tests/: PyYAML -> new tests/requirements.txt (PyYAML>=5.4).
+  docs/: PyYAML + markdown-it-py -> new docs/requirements.txt (PyYAML>=5.4, markdown-it-py>=2.2.0).
+  Hover auditor scope: anthropic, rfc3161ng -- reported, NOT touched (both OSV 0).
+  JavaScript: 840 files; undeclared imports appear ONLY in archive/ (dead, not a deployed function). No JS manifest needed.
+  Floors are the lowest OSV-clean versions, probed per version (PyYAML 5.3.1 has 2, 5.4 has 0; markdown-it-py 2.1.0 has 4, 2.2.0 has 0).
+  tests/ (cody) and docs/ (fourth): new files only, declared as path-manifest overrides; nothing existing edited.
+ITEM 3: pypdf 6.21.2 in C:\Python314 (user site), the only copy; OSV 0. The 12 b41 advisories are cleared.
+ITEM 4: pushed first time. The SBOM now lists pypdf and playwright; the b42 files are not yet indexed. Open alerts: still only #5.
+DECISION-NEEDED: Michael -- alert #5, firebase-admin 12.7.0 -> 13.10.0 (mint test first).
+CHANGED: tests/requirements.txt, docs/requirements.txt (new); docs/sairn-path-manifest.json; the three deliverables.
+SQL: none.
+EVIDENCE-path: SAIRN-report-cc-b42.txt, SAIRN-handoff-cc-b42.md
+UNVERIFIED: GitHub had not yet indexed the two b42 manifests at write-up.
+ROUTED: hover -- declare anthropic/rfc3161ng in its own scope. hank -- b40 barrier arms. fourth -- review cc 2026-10-21T17:13:48Z.
+NEXT: nothing owed by cc on the Tier A ledger.
+CONTEXT 60.1% of 1,000,000 -- 600,669 tokens, measured.
+SHA256 9ba01f42112fbade72fe8309037c8050c0d2b96ab2e9ffa9783b195c6e9974fd
+END-OF-REPORT
