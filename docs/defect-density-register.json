@@ -34272,6 +34272,59 @@
       "recurrence_open": "NOTHING SWEEPS FOR OTHER FIXED-SIZE WINDOWS. This repair fixed one arm; docs/b26-logs/sweep_bleed_measure.py measures a DIFFERENT defect class and would not have found this one. A fixed-character-window slice over app source is its own class and is unmeasured across the 619 test files."
     },
     {
+      "commit": "864e6b764909",
+      "date": "2026-10-19",
+      "subject": "b27(cody): rt_routes made reachable, three routed role changes, and three routings that were incomplete",
+      "files": [
+        "api/_lib/routes.test.js",
+        "api/_resources/index.js"
+      ],
+      "lines_added": 287,
+      "lines_removed": 0,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "probe-control",
+      "summary": "api/_resources/routes.js registers rt_routes and rt_stops under the PSEUDO-APP `routes`, and isVisibleTo() in api/_resources/index.js had exactly TWO routes to visibility -- be in the `shared` registry, or be owned by the caller's own app. No licence is ever issued for `routes`, so BOTH NAMES WERE INVISIBLE TO EVERY REAL LICENCE and checkEnvelope() answered 400 FOREIGN_RESOURCE before the handler branch ran. MEASURED: isVisibleTo('rt_routes','stonedesk') === false, and the same for sairngrounds and sairnmechanical -- the wired consumers. THE SHAPE IS WHY THIS IS SEVERITY HIGH: the handler branch, the registry entry and the extraActions declaration were ALL CORRECT and the feature was DEAD, in a FOURTH place the routing document that specified the branch did not know about. b27 landed that branch exactly as routed -- asserted byte-identical to the document's own fenced block -- and the endpoint still answered 400 for every consumer. Nothing in the paste could have told anybody, and no test of api/_lib/routes.js could either: that module had 56 green arms and was correct. THE RESOURCE WAS DELIBERATELY NOT PUT IN shared.js AND THAT GOOD REASON CREATED THIS GAP: apps_with_registries() in tools/criticality_tier_check.py skips 'index' and 'shared' BY NAME, so anything declared there is invisible to the arm that refuses a registered resource with no criticality row -- and both of these are Tier A on confidentiality. Registering them as their own module kept them CHECKABLE and left them UNREACHABLE. FIXED by a third route to visibility: a registry module may declare `visibleToAllApps: true` and isVisibleTo() honours it. Opt-in, per module, and proved not to widen anything else by arm D4, which asserts CROSS_APP_NAMES is exactly the two names and that law_matters and alf_clients stay invisible to a stonedesk licence. FOUND BY DRIVING THE REAL DISPATCHER rather than the module. api/_lib/routes.test.js section 10 adds six arms (D0 a comment-stripped precondition, D1 reaches the branch, D2 the branch's own 403 rather than the allowlist 400, D2b a dispatcher-health control on a shared resource, D3 declared-vs-undeclared verb in both directions, D4 the boundary is not opened) plus D5, an ablation removing the flag in a copy of api/ that requires D1 to go RED with the exact 400 the feature had while D2b stays GREEN. D5's CONTROL WAS WRONG ON ITS FIRST SPELLING AND THE RUN CAUGHT IT: it required D2 to stay green, and D2 goes red too, because the visibility gate runs BEFORE the branch -- so with the flag gone every rt_routes arm fails together, which is precisely what \"the feature was dead\" means. A control has to sit outside the blast radius. Full account: docs/2026-10-19-cody-b27-routing-roles-and-tails.md section 1.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": "api/_lib/routes.test.js",
+      "found_by_session": null,
+      "injection": {
+        "commit": "f4208738e2f5",
+        "date": "2026-10-19",
+        "subject": "feat(routing): phase 1 -- the shared primitive, two consumers, and the one branch that is blocked",
+        "lag_days": 0
+      },
+      "phase_note": "the pseudo-app registry was a deliberate design choice made for a good reason (checkability by the tier arm), and the visibility layer had no mechanism for a module that is not an app. The choice and the gap arrived in the same commit.",
+      "contributing_factors": [
+        {
+          "factor": "isVisibleTo() in api/_resources/index.js had exactly TWO routes to visibility -- be in the `shared` registry, or be owned by the caller's own app -- and api/_resources/routes.js registers rt_routes and rt_stops under the PSEUDO-APP `routes`, which no licence is ever issued for. Measured: isVisibleTo('rt_routes','stonedesk') === false, and the same for sairngrounds and sairnmechanical. checkEnvelope() therefore answered 400 FOREIGN_RESOURCE before the handler branch ran, for every wired consumer.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "a THIRD route to visibility: a registry module may declare `visibleToAllApps: true` and isVisibleTo() honours it. Opt-in and per module, so a module without the flag behaves exactly as before -- proved by arm D4, which asserts CROSS_APP_NAMES is exactly the two names and that law_matters and alf_clients remain invisible to a stonedesk licence."
+        },
+        {
+          "factor": "THE RESOURCE WAS DELIBERATELY NOT PUT IN shared.js, FOR A GOOD REASON THAT CREATED THIS ONE. api/_resources/routes.js's own header records it: apps_with_registries() in tools/criticality_tier_check.py skips 'index' and 'shared' BY NAME, so all seven of shared.js's resources have no row in docs/CRITICALITY-TIERS.md and the completeness arm reports no finding about it. rt_routes and rt_stops are Tier A on confidentiality, so they were registered as their own module to stay CHECKABLE -- and the visibility layer had no mechanism for a module that is not an app.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "the flag closes the gap without moving the names, so the tier arm still sees them. The shared.js blind spot itself is NOT closed here and is recorded as open in docs/2026-10-19-cody-b27-routing-roles-and-tails.md."
+        },
+        {
+          "factor": "NOTHING DROVE THE DISPATCHER. api/_lib/routes.test.js had 56 arms against the module and the module was correct; the four gates a browser passes through -- envelope allowlist, app visibility, extraActions verb gate, handler branch -- had no arm at all. The routing document that specified the branch knew about three of the four, so reading it could not have found this either.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "section 10 of api/_lib/routes.test.js: six arms driving the real exported handler (D0 precondition on comment-stripped source, D1 reaches the branch, D2 the branch's own 403 rather than the allowlist 400, D2b a dispatcher-health control on a shared resource, D3 declared-vs-undeclared verb in both directions, D4 the boundary is not opened) plus D5, an ablation that removes the flag in a copy of api/ and requires D1 to go RED with the exact 400 the feature had while D2b stays green."
+        }
+      ],
+      "recurrence_open": "THE OTHER DIRECTION OF THE SAME GAP IS STILL OPEN: all seven resources registered in api/_resources/shared.js have NO row in docs/CRITICALITY-TIERS.md, because apps_with_registries() in tools/criticality_tier_check.py skips 'index' and 'shared' BY NAME. That is tools/ and is cc's. Also open: no live endpoint check exists for rt_routes, so the branch is landed, reachable in the dispatcher, and UNPROVEN against a real Supabase.",
+      "citation_reseated_2026_10_20": "THE CITED COMMIT WAS SQUASHED AWAY AND --reseat COULD NOT HELP. b27 was squashed onto origin/main to excise three bookkeeping commits that carried CONFLICT MARKERS in this very file, so the fix commit 8cd4dd52e145 ceased to exist AND its subject no longer matches any commit -- which is exactly what --check refused on: \"a dangling object kept alive by a local reflog is not a citation: in every other clone this record names nothing.\" Re-pointed by hand at the squash commit, through the register's OWN load()/save() so the serialiser cannot reformat 661 records, with the changed-line set asserted. The DEFECT and its evidence are unchanged; only the citation moved."
+    },
+    {
       "commit": "9a7f73dab468",
       "date": "2026-10-19",
       "subject": "fix(hover): citation_class_check's sentence splitter is abbreviation-safe now, h1 b55",
@@ -34674,59 +34727,6 @@
         }
       ],
       "recurrence_open": "E3b MEASURED THE typeof GUARD ALONE AND IT CHANGES NOTHING -- the per-step try covers it, so the guard is defence in depth and NOT the load-bearing layer. Recorded because an arm claiming otherwise would have been a green claim about a layer doing no work. And the pattern is unswept: other handlers in this file call unguarded globals after a confirmed success and nothing counts them."
-    },
-    {
-      "commit": "864e6b764909",
-      "date": "2026-10-19",
-      "subject": "b27(cody): rt_routes made reachable, three routed role changes, and three routings that were incomplete",
-      "files": [
-        "api/_lib/routes.test.js",
-        "api/_resources/index.js"
-      ],
-      "lines_added": 287,
-      "lines_removed": 0,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "probe-control",
-      "summary": "api/_resources/routes.js registers rt_routes and rt_stops under the PSEUDO-APP `routes`, and isVisibleTo() in api/_resources/index.js had exactly TWO routes to visibility -- be in the `shared` registry, or be owned by the caller's own app. No licence is ever issued for `routes`, so BOTH NAMES WERE INVISIBLE TO EVERY REAL LICENCE and checkEnvelope() answered 400 FOREIGN_RESOURCE before the handler branch ran. MEASURED: isVisibleTo('rt_routes','stonedesk') === false, and the same for sairngrounds and sairnmechanical -- the wired consumers. THE SHAPE IS WHY THIS IS SEVERITY HIGH: the handler branch, the registry entry and the extraActions declaration were ALL CORRECT and the feature was DEAD, in a FOURTH place the routing document that specified the branch did not know about. b27 landed that branch exactly as routed -- asserted byte-identical to the document's own fenced block -- and the endpoint still answered 400 for every consumer. Nothing in the paste could have told anybody, and no test of api/_lib/routes.js could either: that module had 56 green arms and was correct. THE RESOURCE WAS DELIBERATELY NOT PUT IN shared.js AND THAT GOOD REASON CREATED THIS GAP: apps_with_registries() in tools/criticality_tier_check.py skips 'index' and 'shared' BY NAME, so anything declared there is invisible to the arm that refuses a registered resource with no criticality row -- and both of these are Tier A on confidentiality. Registering them as their own module kept them CHECKABLE and left them UNREACHABLE. FIXED by a third route to visibility: a registry module may declare `visibleToAllApps: true` and isVisibleTo() honours it. Opt-in, per module, and proved not to widen anything else by arm D4, which asserts CROSS_APP_NAMES is exactly the two names and that law_matters and alf_clients stay invisible to a stonedesk licence. FOUND BY DRIVING THE REAL DISPATCHER rather than the module. api/_lib/routes.test.js section 10 adds six arms (D0 a comment-stripped precondition, D1 reaches the branch, D2 the branch's own 403 rather than the allowlist 400, D2b a dispatcher-health control on a shared resource, D3 declared-vs-undeclared verb in both directions, D4 the boundary is not opened) plus D5, an ablation removing the flag in a copy of api/ that requires D1 to go RED with the exact 400 the feature had while D2b stays GREEN. D5's CONTROL WAS WRONG ON ITS FIRST SPELLING AND THE RUN CAUGHT IT: it required D2 to stay green, and D2 goes red too, because the visibility gate runs BEFORE the branch -- so with the flag gone every rt_routes arm fails together, which is precisely what \"the feature was dead\" means. A control has to sit outside the blast radius. Full account: docs/2026-10-19-cody-b27-routing-roles-and-tails.md section 1.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": "api/_lib/routes.test.js",
-      "found_by_session": null,
-      "injection": {
-        "commit": "f4208738e2f5",
-        "date": "2026-10-19",
-        "subject": "feat(routing): phase 1 -- the shared primitive, two consumers, and the one branch that is blocked",
-        "lag_days": 0
-      },
-      "phase_note": "the pseudo-app registry was a deliberate design choice made for a good reason (checkability by the tier arm), and the visibility layer had no mechanism for a module that is not an app. The choice and the gap arrived in the same commit.",
-      "contributing_factors": [
-        {
-          "factor": "isVisibleTo() in api/_resources/index.js had exactly TWO routes to visibility -- be in the `shared` registry, or be owned by the caller's own app -- and api/_resources/routes.js registers rt_routes and rt_stops under the PSEUDO-APP `routes`, which no licence is ever issued for. Measured: isVisibleTo('rt_routes','stonedesk') === false, and the same for sairngrounds and sairnmechanical. checkEnvelope() therefore answered 400 FOREIGN_RESOURCE before the handler branch ran, for every wired consumer.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "a THIRD route to visibility: a registry module may declare `visibleToAllApps: true` and isVisibleTo() honours it. Opt-in and per module, so a module without the flag behaves exactly as before -- proved by arm D4, which asserts CROSS_APP_NAMES is exactly the two names and that law_matters and alf_clients remain invisible to a stonedesk licence."
-        },
-        {
-          "factor": "THE RESOURCE WAS DELIBERATELY NOT PUT IN shared.js, FOR A GOOD REASON THAT CREATED THIS ONE. api/_resources/routes.js's own header records it: apps_with_registries() in tools/criticality_tier_check.py skips 'index' and 'shared' BY NAME, so all seven of shared.js's resources have no row in docs/CRITICALITY-TIERS.md and the completeness arm reports no finding about it. rt_routes and rt_stops are Tier A on confidentiality, so they were registered as their own module to stay CHECKABLE -- and the visibility layer had no mechanism for a module that is not an app.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "the flag closes the gap without moving the names, so the tier arm still sees them. The shared.js blind spot itself is NOT closed here and is recorded as open in docs/2026-10-19-cody-b27-routing-roles-and-tails.md."
-        },
-        {
-          "factor": "NOTHING DROVE THE DISPATCHER. api/_lib/routes.test.js had 56 arms against the module and the module was correct; the four gates a browser passes through -- envelope allowlist, app visibility, extraActions verb gate, handler branch -- had no arm at all. The routing document that specified the branch knew about three of the four, so reading it could not have found this either.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "section 10 of api/_lib/routes.test.js: six arms driving the real exported handler (D0 precondition on comment-stripped source, D1 reaches the branch, D2 the branch's own 403 rather than the allowlist 400, D2b a dispatcher-health control on a shared resource, D3 declared-vs-undeclared verb in both directions, D4 the boundary is not opened) plus D5, an ablation that removes the flag in a copy of api/ and requires D1 to go RED with the exact 400 the feature had while D2b stays green."
-        }
-      ],
-      "recurrence_open": "THE OTHER DIRECTION OF THE SAME GAP IS STILL OPEN: all seven resources registered in api/_resources/shared.js have NO row in docs/CRITICALITY-TIERS.md, because apps_with_registries() in tools/criticality_tier_check.py skips 'index' and 'shared' BY NAME. That is tools/ and is cc's. Also open: no live endpoint check exists for rt_routes, so the branch is landed, reachable in the dispatcher, and UNPROVEN against a real Supabase.",
-      "citation_reseated_2026_10_20": "THE CITED COMMIT WAS SQUASHED AWAY AND --reseat COULD NOT HELP. b27 was squashed onto origin/main to excise three bookkeeping commits that carried CONFLICT MARKERS in this very file, so the fix commit 8cd4dd52e145 ceased to exist AND its subject no longer matches any commit -- which is exactly what --check refused on: \"a dangling object kept alive by a local reflog is not a citation: in every other clone this record names nothing.\" Re-pointed by hand at the squash commit, through the register's OWN load()/save() so the serialiser cannot reformat 661 records, with the changed-line set asserted. The DEFECT and its evidence are unchanged; only the citation moved."
     },
     {
       "commit": "d9bbf9d472cb",
@@ -36499,6 +36499,56 @@
       "recurrence_open": "NOT CLOSED. A lock carried to a new day keeps the stop at its old index in the new route, which may not be what the dispatcher meant; stale ids for deleted stops stay in old records."
     },
     {
+      "commit": "01aaa99886e7",
+      "date": "2026-10-21",
+      "subject": "fix(sairndental b50): screen-reader / keyboard pass -- panel headings, current-page marking, named vendor quantities, QR alt text, keyboard card-photo button",
+      "files": [
+        "sairndental.html",
+        "tests/sairndental_a11y_pass.js"
+      ],
+      "lines_added": 130,
+      "lines_removed": 5,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "fourth b50 accessibility pass (a11y tree + axe-core + real keyboard on the live demo login; NVDA not installed). Before: 21 axe nodes, 0/23 panel headings, no aria-current, mouse-only drop zone. After: 0 axe nodes, 23/23 headings, aria-current, drop zone Tab-reachable and Enter opens the chooser. Suite 10 arms, 8 mutants killed.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "axe-core 4.10.2 + Playwright keyboard walk, driven by scratchpad b50 a11y_dental.py (not in repo)",
+      "found_by_session": null,
+      "injection": {
+        "commit": "a52311fa0196",
+        "date": "2026-10-19",
+        "subject": "feat(a11y): sairndental's focus trap, the panel-change announcement, and the last 3 labels",
+        "lag_days": 2
+      },
+      "citation_note": "No coding rule covers this class: meaning conveyed only visually. Proposed: every panel title, current-nav state and click target carries its role in the accessibility tree, checked by an axe + keyboard pass per app.",
+      "contributing_factors": [
+        {
+          "factor": "Titles, current state and the drop zone conveyed meaning only visually.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "heading role at load, aria-current in nav(), keyboard button."
+        },
+        {
+          "factor": "Generated inputs and library output had no accessible name.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "aria-label per product; QR alt, canvas hidden."
+        },
+        {
+          "factor": "No axe or keyboard walk had been run over every panel.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Scripted live pass plus repo suite."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. Not verified with NVDA itself. Modals not opened. No skip link and focus stays on the sidebar after nav (product decision, filed). Other apps not passed."
+    },
+    {
       "commit": "02cec2f84efb",
       "date": "2026-10-21",
       "subject": "fix(sairnsenior b49): a refused contract or authorisation is withdrawn and named; no answer and an unprovisioned table stay on the device and say which; a claim's message survives a failed save (cody b35/b36 defect 8)",
@@ -36683,6 +36733,57 @@
         }
       ],
       "recurrence_open": "An UNREGISTERED resource is still unknown to the pre-gate and a deleted row there is logged, not refused; nothing yet asserts that every resource sd-data.js serves is in the registry."
+    },
+    {
+      "commit": "2fe89f267317",
+      "date": "2026-10-21",
+      "subject": "fix(stonedesk): request-photo barriers checked end to end, keyboard close, and arms that kill cc's b38 mutants",
+      "files": [
+        "api/b40-stonedesk-style-profile-request-photos.test.js",
+        "api/stonedesk-public.js",
+        "stonedesk.html"
+      ],
+      "lines_added": 213,
+      "lines_removed": 9,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "StoneDesk quote-request photos had ONE effective barrier, not two: api/stonedesk-public.js checked only the data-URL prefix, so 'data:image/png;base64,AAAA\" onerror=...' could be stored and the staff overlay's pcHtml escaping was all that stopped it; the b40 suite held neither barrier (cc b38: three mutants survived 11/11) and the overlay had no keyboard close. The intake and the overlay now require the whole value to be a base64 jpeg/png/webp data URL, escaping is kept, the overlay is a focusable dialog closed by Escape, and api/b40-stonedesk-style-profile-request-photos.test.js drives each barrier with the other removed plus five mutants (27/0; 16/11 on the pre-b44 source).",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "95bf15199b87",
+        "date": "2026-09-04",
+        "subject": "feat(stonedesk): the intake form exists -- built on the public surface that already did",
+        "lag_days": 47
+      },
+      "citation_note": "No numbered rule requires a stored value to be validated by its full shape rather than a prefix; the defence-in-depth intent was stated in the b40 comment, not in a standing rule.",
+      "contributing_factors": [
+        {
+          "factor": "The intake validated the prefix of a data URL, not its whole value, so markup could follow a valid prefix and be stored.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Whole-value regex at intake and at render (PC_PHOTO_RX)."
+        },
+        {
+          "factor": "The b40 hostile sample (javascript:) failed both barriers at once, so no arm could tell which barrier held; three mutants survived.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Arms drive each barrier with the other removed; section M applies the mutants and requires red."
+        },
+        {
+          "factor": "The overlay was built as a click-only layer with no dialog semantics or keyboard path.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "role=dialog, aria-modal, focus in, Escape/click close, focus returned to the opener."
+        }
+      ],
+      "recurrence_open": "Other photo-bearing public intakes (e.g. SAIRNdental public-book) may also check only a prefix; not swept this batch."
     },
     {
       "commit": "5e38373c6579",
@@ -36913,6 +37014,52 @@
       "recurrence_open": "THE AUDITORS' 85 IS NOT LOCKED TO A SOURCE: tools-hover2/context_red_flag.py is the auditors' own trigger, in their scope, and this file must not read it. If the auditors move their rule again, this file will not know. Stated rather than reached across."
     },
     {
+      "commit": "aaff57278bca",
+      "date": "2026-10-21",
+      "subject": "fix(hover vendor tooling, #1674): the gate waits until the window admits the call, and a console encoding error no longer eats a paid-for finding",
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools/hover_cross_vendor_check.py",
+        ".claude/skills/sairn-hover-auditor/tools/hover_vendor_sample.py"
+      ],
+      "lines_added": 125,
+      "lines_removed": 12,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": "hover_cross_vendor_check.py RateGate.wait_or_refuse waited once for the oldest call in the trailing 60 s window to age out and refused (\"still blocked after waiting\") if the window still did not admit the call; with several calls in the window that is not enough, and a sleep that woke slightly early left the oldest call 59.99 s old, so a 12-call sampled vendor review lost 6 calls to my own per-minute gate (hover b80 run 1, a 6,083-token chunk had filled the window; logged #1674). Separately, hover_vendor_sample.py --sample-batch died with UnicodeEncodeError when stdout was a pipe on a cp1252 console and a vendor finding contained a character cp1252 cannot encode, after the call was paid for, losing the finding (b80, 43c32bf6). Fixed: wait_or_refuse re-checks after each wait (total cap 130 s, step cap 65 s, an empty-window misfit refused at once); main() in both tools sets stdout and stderr to backslashreplace. Fixtures W1 to W4 and V45 were shown failing on the old code and pass now; selftests 88/0 and 48/0.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "ad2210d58efa",
+        "date": "2026-10-19",
+        "subject": "feat(hover): cross-vendor Groq second-opinion checker + hash-only public transparency log, h1 b67",
+        "lag_days": 2
+      },
+      "citation_note": "1.11 is cited for the cost of the second defect, not for a fail-open: a result that could not be printed was dropped silently from the run rather than reported, so a paid-for finding became \"no finding\". Neither defect admitted a wrong verdict; both lost a verdict or a call.",
+      "contributing_factors": [
+        {
+          "factor": "The gate's wait was one step computed from the oldest call only, with no re-check loop, and its fixtures covered a single call in the window.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "wait_or_refuse loops with a total cap; fixtures W1 to W4 cover two-call windows, an early sleeper and an empty-window misfit."
+        },
+        {
+          "factor": "The tool's only output path was print to the console code page, and no fixture piped a non-cp1252 character through the real batch path.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "V45 runs the real --sample-batch in a child with stdout piped and a stubbed vendor finding containing a right arrow."
+        }
+      ],
+      "recurrence_open": "THE GATE STILL ONLY KNOWS THIS PROCESS'S VIEW OF THE ORGANISATION POOL: it meters the per-minute limits from its own persisted calls and never reads the daily cap (#1647), and H2's calls draw from the same pool without appearing in this window. Other print paths in other hover tools were not audited for the same encoding failure; only the two mains were changed."
+    },
+    {
       "commit": "b14228a4563f",
       "date": "2026-10-21",
       "subject": "fix(sairndental b48): DEA rows keyed per registration number; the server's GFE check reads the copy an Issued estimate prints; the GFE export's name/DOB read gfeSnapshot()",
@@ -37098,57 +37245,6 @@
       "recurrence_open": "The gate still estimates the provider's limit instead of reading it, and nothing enumerates the vendor-calling paths: a path added later that calls the vendor without a writer is caught only if someone adds it to these fixtures. Same family as #1647 (no visibility of the daily budget) at the per-minute scale."
     },
     {
-      "commit": "2fe89f267317",
-      "date": "2026-10-21",
-      "subject": "fix(stonedesk): request-photo barriers checked end to end, keyboard close, and arms that kill cc's b38 mutants",
-      "files": [
-        "api/b40-stonedesk-style-profile-request-photos.test.js",
-        "api/stonedesk-public.js",
-        "stonedesk.html"
-      ],
-      "lines_added": 213,
-      "lines_removed": 9,
-      "app": "stonedesk",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "independent-review",
-      "summary": "StoneDesk quote-request photos had ONE effective barrier, not two: api/stonedesk-public.js checked only the data-URL prefix, so 'data:image/png;base64,AAAA\" onerror=...' could be stored and the staff overlay's pcHtml escaping was all that stopped it; the b40 suite held neither barrier (cc b38: three mutants survived 11/11) and the overlay had no keyboard close. The intake and the overlay now require the whole value to be a base64 jpeg/png/webp data URL, escaping is kept, the overlay is a focusable dialog closed by Escape, and api/b40-stonedesk-style-profile-request-photos.test.js drives each barrier with the other removed plus five mutants (27/0; 16/11 on the pre-b44 source).",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "95bf15199b87",
-        "date": "2026-09-04",
-        "subject": "feat(stonedesk): the intake form exists -- built on the public surface that already did",
-        "lag_days": 47
-      },
-      "citation_note": "No numbered rule requires a stored value to be validated by its full shape rather than a prefix; the defence-in-depth intent was stated in the b40 comment, not in a standing rule.",
-      "contributing_factors": [
-        {
-          "factor": "The intake validated the prefix of a data URL, not its whole value, so markup could follow a valid prefix and be stored.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Whole-value regex at intake and at render (PC_PHOTO_RX)."
-        },
-        {
-          "factor": "The b40 hostile sample (javascript:) failed both barriers at once, so no arm could tell which barrier held; three mutants survived.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Arms drive each barrier with the other removed; section M applies the mutants and requires red."
-        },
-        {
-          "factor": "The overlay was built as a click-only layer with no dialog semantics or keyboard path.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "role=dialog, aria-modal, focus in, Escape/click close, focus returned to the opener."
-        }
-      ],
-      "recurrence_open": "Other photo-bearing public intakes (e.g. SAIRNdental public-book) may also check only a prefix; not swept this batch."
-    },
-    {
       "commit": "d94a2e3d1bf3",
       "date": "2026-10-21",
       "subject": "fix(cc b33): the path manifest folds case, so one capital letter cannot cross a boundary",
@@ -37192,56 +37288,6 @@
         }
       ],
       "recurrence_open": "UNOWNED STILL MEANS ALLOWED: a path no population claims is permitted and reported. Case folding closes the spelling route into a claimed area; it does not make an unclaimed area refuse."
-    },
-    {
-      "commit": "01aaa99886e7",
-      "date": "2026-10-21",
-      "subject": "fix(sairndental b50): screen-reader / keyboard pass -- panel headings, current-page marking, named vendor quantities, QR alt text, keyboard card-photo button",
-      "files": [
-        "sairndental.html",
-        "tests/sairndental_a11y_pass.js"
-      ],
-      "lines_added": 130,
-      "lines_removed": 5,
-      "app": "sairndental",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "static-checker",
-      "summary": "fourth b50 accessibility pass (a11y tree + axe-core + real keyboard on the live demo login; NVDA not installed). Before: 21 axe nodes, 0/23 panel headings, no aria-current, mouse-only drop zone. After: 0 axe nodes, 23/23 headings, aria-current, drop zone Tab-reachable and Enter opens the chooser. Suite 10 arms, 8 mutants killed.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": "axe-core 4.10.2 + Playwright keyboard walk, driven by scratchpad b50 a11y_dental.py (not in repo)",
-      "found_by_session": null,
-      "injection": {
-        "commit": "a52311fa0196",
-        "date": "2026-10-19",
-        "subject": "feat(a11y): sairndental's focus trap, the panel-change announcement, and the last 3 labels",
-        "lag_days": 2
-      },
-      "citation_note": "No coding rule covers this class: meaning conveyed only visually. Proposed: every panel title, current-nav state and click target carries its role in the accessibility tree, checked by an axe + keyboard pass per app.",
-      "contributing_factors": [
-        {
-          "factor": "Titles, current state and the drop zone conveyed meaning only visually.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "heading role at load, aria-current in nav(), keyboard button."
-        },
-        {
-          "factor": "Generated inputs and library output had no accessible name.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "aria-label per product; QR alt, canvas hidden."
-        },
-        {
-          "factor": "No axe or keyboard walk had been run over every panel.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Scripted live pass plus repo suite."
-        }
-      ],
-      "recurrence_open": "NOT CLOSED. Not verified with NVDA itself. Modals not opened. No skip link and focus stays on the sidebar after nav (product decision, filed). Other apps not passed."
     }
   ],
   "started": "2026-09-09",
