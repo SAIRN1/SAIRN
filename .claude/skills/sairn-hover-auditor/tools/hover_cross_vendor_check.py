@@ -385,18 +385,32 @@ class RateGate:
                    max(0.0, 60.0 - (now - oldest))
         return True, None, 0.0
 
-    def wait_or_refuse(self, estimated_tokens, max_wait=65.0):
-        ok, reason, wait = self.check(estimated_tokens)
-        if ok:
-            return True, None
-        if wait > max_wait:
-            return False, (reason + (' (wait would exceed %ds cap -- refusing '
-                                      'rather than hanging)' % int(max_wait)))
-        self.sleeper(wait)
-        ok2, reason2, _ = self.check(estimated_tokens)
-        if not ok2:
-            return False, reason2 + ' (still blocked after waiting)'
-        return True, None
+    def wait_or_refuse(self, estimated_tokens, max_wait=65.0, max_total_wait=130.0):
+        """Wait until the trailing-60s window really admits the call, re-checking
+        after EACH wait (b81, #1674). It used to wait once, for the oldest call
+        to age out, and refuse if the window still did not admit: with several
+        calls in the window that is not enough, and a sleep that woke a hair
+        early left the oldest call 59.99 s old, so b80 run 1 lost 6 of 12 calls
+        to its own gate. A single step longer than max_wait, a total wait over
+        max_total_wait, or a request that cannot fit even an EMPTY window is
+        still refused (the last at once, never slept on)."""
+        waited = 0.0
+        while True:
+            ok, reason, wait = self.check(estimated_tokens)
+            if ok:
+                return True, None
+            if wait > max_wait:
+                return False, (reason + (' (wait would exceed %ds cap -- refusing '
+                                          'rather than hanging)' % int(max_wait)))
+            now = self.clock()
+            if not [c for c in self._load() if now - c.get('t', 0) < 60.0]:
+                return False, (reason + ' (does not fit an empty window either -- '
+                                         'refusing, not waiting)')
+            if waited + wait > max_total_wait:
+                return False, reason + ' (still blocked after waiting %ds)' % int(waited)
+            step = wait + 0.25
+            self.sleeper(step)
+            waited += step
 
     def record_call(self, real_total_tokens):
         calls = self._load()
@@ -1450,6 +1464,41 @@ def run_fixtures():
        ok4 is True)
     shutil.rmtree(tmp, ignore_errors=True)
 
+    # b81, #1674: wait_or_refuse used to wait ONCE (for the OLDEST call to age
+    # out) and refuse if the window still did not admit the call. Two real
+    # shapes broke that, both shown failing on the old code before the fix:
+    # several calls in the window (one wait is not enough), and a sleep that
+    # wakes a hair early so the oldest call is still 59.99 s old at the
+    # re-check. b80 run 1 lost 6 of 12 vendor calls to the second shape.
+    def gate_with(calls, now, early=1.0):
+        d = tempfile.mkdtemp(prefix='hover_gate_wait_fx_')
+        sp = os.path.join(d, 'rate-state.json')
+        with open(sp, 'w', encoding='utf-8') as f:
+            json.dump(calls, f)
+        clock = FakeClock(now)
+        slept = []
+        g = RateGate(state_path=sp, clock=clock,
+                     sleeper=lambda s: (slept.append(s), clock.advance(s * early)))
+        return g, slept, d
+    g1, sl1, d1 = gate_with([{'t': 0.0, 'tok': 3000}, {'t': 20.0, 'tok': 3000}, {'t': 40.0, 'tok': 1500}], 45.0)
+    ok_w1, why_w1 = g1.wait_or_refuse(5000)
+    ck('RateGate.wait_or_refuse W1: a window that needs TWO oldest calls to age out admits the call after waiting '
+       'for both, not refused after the first wait', ok_w1 is True and len(sl1) >= 2)
+    g2, sl2, d2 = gate_with([{'t': 0.0, 'tok': 1245}, {'t': 8.0, 'tok': 6083}], 9.0, early=0.999)
+    ok_w2, why_w2 = g2.wait_or_refuse(238)
+    ck('RateGate.wait_or_refuse W2: a sleep that wakes slightly early does not leave the oldest call 59.9 s old '
+       'and the call refused (the b80 run 1 shape)', ok_w2 is True)
+    g3, sl3, d3 = gate_with([], 100.0)
+    ok_w3, why_w3 = g3.wait_or_refuse(7500)
+    ck('RateGate.wait_or_refuse W3 CONTROL: a request that cannot fit even an EMPTY window is refused at once, '
+       'never slept on', ok_w3 is False and sl3 == [] and 'TPM gate' in (why_w3 or ''))
+    g4, sl4, d4 = gate_with([{'t': 99.0, 'tok': 7900}], 100.0)
+    ok_w4, why_w4 = g4.wait_or_refuse(500)
+    ck('RateGate.wait_or_refuse W4: after the window clears the call is admitted with the wait inside the 65 s cap '
+       '(no regression to refuse-instead-of-wait)', ok_w4 is True and 0 < sum(sl4) <= 65.0 + 1.0)
+    for dd in (d1, d2, d3, d4):
+        shutil.rmtree(dd, ignore_errors=True)
+
     def fake_http_post_clean(url, headers, body):
         req = json.loads(body.decode('utf-8'))
         ck('ask_groq sends diff-only content, never a full-file read',
@@ -2067,6 +2116,14 @@ def run_fixtures():
 
 
 def main(argv):
+    # b81, #1674: a console code page that cannot encode a character in a vendor
+    # finding must not kill the run AFTER the call was paid for (b80, 43c32bf6:
+    # the finding was lost). backslashreplace keeps the character recoverable.
+    for _st in (sys.stdout, sys.stderr):
+        try:
+            _st.reconfigure(errors='backslashreplace')
+        except (AttributeError, ValueError):
+            pass
     _force_utf8_stdout()
     if '--selftest' in argv:
         return 0 if run_fixtures() else 1

@@ -1404,11 +1404,67 @@ def selftest():
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
+    # b81, #1674 (B): the REAL --sample-batch path in a child process with stdout
+    # PIPED (this console's default code page is cp1252) and a stubbed vendor
+    # that returns a finding whose text contains a right arrow, which cp1252
+    # cannot encode. On the pre-fix tool the child died with UnicodeEncodeError
+    # AFTER the call was paid for and the finding was lost (b80, 43c32bf6).
+    enc_tmp = tempfile.mkdtemp(prefix='h1-vs-enc-')
+    try:
+        repo = os.path.join(enc_tmp, 'repo')
+        os.makedirs(os.path.join(repo, 'api'))
+
+        def g(*a):
+            return subprocess.run(['git', '-c', 'commit.gpgsign=false', '-c', 'user.email=t@t.invalid',
+                                   '-c', 'user.name=t'] + list(a), cwd=repo, capture_output=True, text=True)
+        g('init', '-q')
+        with open(os.path.join(repo, 'api', 'x.js'), 'w', newline='') as f:
+            f.write('module.exports = 1;' + chr(10))
+        g('add', '-A')
+        g('commit', '-q', '-m', 'base')
+        with open(os.path.join(repo, 'api', 'x.js'), 'w', newline='') as f:
+            f.write('module.exports = 2;' + chr(10))
+        g('add', '-A')
+        g('commit', '-q', '-m', 'change')
+        keyfile = os.path.join(enc_tmp, 'k.key')
+        with open(keyfile, 'w') as f:
+            f.write('fake-key')
+        child = os.path.join(enc_tmp, 'child.py')
+        with open(child, 'w', newline='', encoding='utf-8') as f:
+            f.write(chr(10).join([
+                'import os, sys',
+                'sys.path.insert(0, %r)' % HERE,
+                'import hover_vendor_sample as V',
+                'import hover_cross_vendor_check as X',
+                'RG = X.RateGate',
+                'X.RateGate = lambda: RG(state_path=%r)' % os.path.join(enc_tmp, 'rs.json'),
+                'X.ask_groq = lambda body, key: ([{"file": "api/x.js", "line": 1, "trigger": "a \u2192 b", '
+                '"description": "arrow \u2192 in the finding"}], 100)',
+                'sys.exit(V.main(["--sample-batch", "--range", "HEAD~1..HEAD", "--cwd", %r, "--key-path", %r, '
+                '"--max-calls", "1"]))' % (repo, keyfile), ''])) 
+        env = {k: v for k, v in os.environ.items() if k != 'PYTHONIOENCODING'}
+        r = subprocess.run([sys.executable, child], capture_output=True, env=env)
+        out = r.stdout.decode('utf-8', errors='replace')
+        err = r.stderr.decode('utf-8', errors='replace')
+        ck('V45 a finding with a character the console code page cannot encode is PRINTED, not lost to an '
+           'encoding crash after the vendor call was paid for (real --sample-batch path, stdout piped)',
+           'UnicodeEncodeError' not in err and 'in the finding' in out and 'COST, MEASURED' in out)
+    finally:
+        shutil.rmtree(enc_tmp, ignore_errors=True)
+
     print('%d ok, %d failed' % (ok[0], bad[0]))
     return EXIT_OK if not bad[0] else EXIT_LOOK
 
 
 def main(argv):
+    # b81, #1674: a console code page that cannot encode a character in a vendor
+    # finding must not kill the run AFTER the call was paid for (b80, 43c32bf6:
+    # the finding was lost). backslashreplace keeps the character recoverable.
+    for _st in (sys.stdout, sys.stderr):
+        try:
+            _st.reconfigure(errors='backslashreplace')
+        except (AttributeError, ValueError):
+            pass
     def opt(name, default=None):
         if name in argv:
             i = argv.index(name)
