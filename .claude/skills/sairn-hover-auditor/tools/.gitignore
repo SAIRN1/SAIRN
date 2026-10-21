@@ -3,3 +3,5 @@ __pycache__/
 .mirror-token
 .mirror-askpass.py
 .mirror-askpass.bat
+# b77 (#1658): the fixed RateGate writer creates this runtime file in the tools dir
+hover-groq-rate-state.json
