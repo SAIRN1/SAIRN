@@ -8339,6 +8339,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairndental_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a2db1b7db2b90c02fffe1f07b3c615cc8defd998",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/push_gate/refspec_and_override_probe.py",
    "class": "test file",
    "level": "WEAKENING",
