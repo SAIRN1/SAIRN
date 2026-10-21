@@ -4185,7 +4185,15 @@ function rfLoadSafety(){
       var jp={today:rfLocalToday()};
       var v=rfJhaValidFor();if(v!==undefined)jp.valid_for_days=v;
       return rfDataRaw('crew_check','rf_job_hazard_assessments',jp).then(function(j){
-        var jd=(j.ok&&j.data)||{};
+        // b49 -- CONCEPT: a read that could not answer is SAID, never rendered
+        // as an empty list. `(j.ok&&j.data)||{}` turned a refused or failed
+        // crew_check into "No hazard assessments recorded." (cody b35 defect 7).
+        if(!j.ok){
+          rfJhas=[];
+          $('safety-jha').innerHTML='<div class="empty">'+rfEsc(j.msg||'Could not load hazard assessments.')+' <strong>This is not the same as having no hazard assessments.</strong></div>';
+          return;
+        }
+        var jd=j.data||{};
         // SAME CLASS AS THE BONDING CALL ABOVE, AND ON A SAFETY RECORD.
         // An absent rf_job_hazard_assessments table answers 200 with
         // provisioned:false, so rfJhas came back empty and rfRenderJhas printed
@@ -4843,7 +4851,22 @@ function rfLoadWarranties(){
     rfWarrTierEval=d.availability||null;
     rfRenderWarrTiers(d);
     return rfDataRaw('read','rf_job_warranties',p).then(function(a){
-      var ad=(a.ok&&a.data)||{};
+      // b49 -- CONCEPT: as the tier read above -- a failed read and an absent
+      // table are each said, never rendered as "No roofs registered yet."
+      // (cody b35 defect 7: this read ignored both ok and provisioned).
+      if(!a.ok){
+        rfWarranties=[];
+        $('warr-list').innerHTML='<div class="empty">'+(a.code==='FORBIDDEN'
+          ? 'Your role cannot see job warranties.'
+          : rfEsc(a.msg||'Could not load job warranties.')+' <strong>This is not the same as having none registered.</strong>')+'</div>';
+        return;
+      }
+      var ad=a.data||{};
+      if(ad.provisioned===false){
+        rfWarranties=[];
+        $('warr-list').innerHTML='<div class="empty">Not set up yet &mdash; run sql/sairnroofing_warranties_schema.sql, then refresh. <strong>This is not the same as having no roofs registered.</strong></div>';
+        return;
+      }
       rfWarranties=ad.data||[];
       rfRenderWarranties();
     });
