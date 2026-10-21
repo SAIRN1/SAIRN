@@ -4559,8 +4559,8 @@
       "task": "b48: straight-time floor coverage -- overtime/multi-rate weeks, multiple agencies, multiple closed periods (tests). FILES: api/b48-sen-straight-time-floor-coverage.test.js SAIRN-handoff-hank-b48.md SAIRN-report-hank-b48.txt SAIRN-digest-hank-b48.txt NOT-html",
       "claimed_at": "2026-10-21T19:52:33Z",
       "claimed_at_epoch": 1792612353.7572806,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T20:12:27Z",
       "files": [
         "SAIRN-digest-hank-b48.txt",
         "SAIRN-handoff-hank-b48.md",
