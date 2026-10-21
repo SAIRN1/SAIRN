@@ -4506,8 +4506,8 @@
       "task": "b47: sairnbiz Z8 display (run lines, pay date, CSV, 516.2(a)(4)/(a)(5)) Tier A row; push; deliverables.  FILES: sairnbiz.html docs/tier-a-reviews.json SAIRN-handoff-fourth-b47.md SAIRN-report-fourth-b47.txt SAIRN-digest-fourth-b47.txt NOT-stonedesk-html NOT-api NOT-tools NOT-tests",
       "claimed_at": "2026-10-21T15:37:37Z",
       "claimed_at_epoch": 1792597057.1938565,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T15:44:26Z",
       "files": [
         "SAIRN-digest-fourth-b47.txt",
         "SAIRN-handoff-fourth-b47.md",
