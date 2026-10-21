@@ -2923,6 +2923,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairndental_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "3cfa12496f4b22ee5c4d86190e307a7d238e3682",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_b12_routed_findings_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -13242,6 +13250,14 @@
     }
    ],
    "sha": "f95695ce79b04164be724cf79826f9b0c0b686aa",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlegacy_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f9b3a67a9500c43cadfb3d2a1bfdb61b9432a4e5",
    "criteria_version": "2026-10-06.1"
   },
   {
