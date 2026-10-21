@@ -6731,6 +6731,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b36-projection-runtime-differential.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "'F4. a key missing from the read -> fails B, not skipped');"
+    }
+   ],
+   "sha": "92651e28257e701588f5a06638ebe3967b79a79f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b36-sd-customers-deleted-row.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "92651e28257e701588f5a06638ebe3967b79a79f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/greeting.test.js",
    "class": "test file",
    "level": "CHANGE",
