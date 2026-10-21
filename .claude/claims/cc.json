@@ -4487,6 +4487,21 @@
         "SAIRN-handoff-cc-b35.md",
         "SAIRN-report-cc-b35.txt"
       ]
+    },
+    {
+      "id": "cc-1792598142",
+      "session": "cc",
+      "subject": "cc",
+      "task": "b36: Tier A review fourth 2026-10-21T15:37:25Z b47 Z8 display; status-line threshold fix + regression fixture  FILES: tools/sairn_status_line.py SAIRN-handoff-cc-b36.md SAIRN-report-cc-b36.txt SAIRN-digest-cc-b36.txt NOT-api NOT-html NOT-sql -- direct write per PR 4.3: check BLOCKED on hover2 b80 (shared phrase 'status-line'; hover2's own task says 'status-line file untouched'), judged lexical, task not reworded",
+      "claimed_at": "2026-10-21T15:55:42Z",
+      "claimed_at_epoch": 1792598142.9180217,
+      "status": "active",
+      "files": [
+        "SAIRN-digest-cc-b36.txt",
+        "SAIRN-handoff-cc-b36.md",
+        "SAIRN-report-cc-b36.txt",
+        "tools/sairn_status_line.py"
+      ]
     }
   ],
   "refusals": [
@@ -4803,6 +4818,19 @@
       ],
       "source": "status-registry",
       "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-21T15:54:59Z",
+      "my_subject": "cc",
+      "my_task": "b36: Tier A review fourth 2026-10-21T15:37:25Z b47 Z8 display; status-line threshold fix + regression fixture  FILES: tools/sairn_status_line.py SAIRN-handoff-cc-b36.md SAIRN-report-cc-b36.txt SAIRN-digest-cc-b36.txt NOT-api NOT-html NOT-sql",
+      "other_session": "hover2",
+      "other_subject": "hover2",
+      "other_task": "hover2 b80, audit role, writes only to its own hover-audit-log and tools-hover2: refresh the Drive chain mirror, fix cross_vendor_sampled_review plan fits_one_day, make the tool index walk tools-hover2, punch list PL-1 to PL-3, Stryker install into tools-hover2/stryker_env, read H1's answer to seq1104, push and confirm it landed; no vendor coverage pass, status-line file untouched",
+      "other_claimed_at": "2026-10-21T15:07:12Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: status-line",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
