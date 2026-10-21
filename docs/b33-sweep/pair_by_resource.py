@@ -109,7 +109,7 @@ for mt in re.finditer(r'Object\.assign\s*\(', m):
     raw_n = 0
     for bs, be, bnames in blocks:
         if set(bnames) & set(names):
-            raw_n += len(re.findall(r"data:\s*(payload(?!\.[a-z_]+\s*[|&?])|payload\.data|body|aiScan\.redactAiFields\(\s*[\w']+\s*,\s*payload)", m[bs:be]))
+            raw_n += len(re.findall(r"data:\s*(payload\b(?!\.[a-z_]+\s*[|&?])|payload\.data\b|body\b|aiScan\.redactAiFields\(\s*[\w']+\s*,\s*payload\b)", m[bs:be]))
     if n == 0:
         verdict = 'NO-STRIP'
     else:
