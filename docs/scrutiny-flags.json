@@ -6244,6 +6244,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairndental_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "7ec4a8ede35ca034466ab62e7baeca7dcee35f91",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/push_gate_path_scope_sabotage_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -10817,6 +10825,14 @@
     }
    ],
    "sha": "cd65d82d66b32d8cd5b923ace8dc31b8d35b13c2",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlegacy_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "cd8254c9135e22945c55eed089db003dd28ba95d",
    "criteria_version": "2026-10-06.1"
   },
   {
