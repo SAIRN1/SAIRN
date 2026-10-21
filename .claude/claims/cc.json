@@ -4435,6 +4435,27 @@
         "docs/tier-a-reviews.json",
         "tools/push_retry.py"
       ]
+    },
+    {
+      "id": "cc-1792585097",
+      "session": "cc",
+      "subject": "cc",
+      "task": "b33: status-line red threshold 85 (bugfix, drift-locked to the wrap-up watcher); path-manifest case folding; tier-checker registry read by node not regex (hover2 seq1067); Tier A cody 05:51:44Z + 14:09:30Z; pay-period reopen check; push. Register records for these fixes will be APPENDED to docs/defect-density-register.json (fourth holds it; union-by-identity merge policy) and declared to fourth.  FILES: tools/sairn_status_line.py tools/sairn_path_manifest.py tools/criticality_tier_check.py docs/tier-a-reviews.json docs/2026-10-21-cc-b33-notes.md docs/batch-manifest-cc-b33.json SAIRN-handoff-cc-b33.md SAIRN-report-cc-b33.txt SAIRN-digest-cc-b33.txt NOT-api NOT-html NOT-tests NOT-sql",
+      "claimed_at": "2026-10-21T12:18:17Z",
+      "claimed_at_epoch": 1792585097.3994155,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-cc-b33.txt",
+        "SAIRN-handoff-cc-b33.md",
+        "SAIRN-report-cc-b33.txt",
+        "docs/2026-10-21-cc-b33-notes.md",
+        "docs/batch-manifest-cc-b33.json",
+        "docs/tier-a-reviews.json",
+        "tools/criticality_tier_check.py",
+        "tools/sairn_path_manifest.py",
+        "tools/sairn_status_line.py"
+      ]
     }
   ],
   "refusals": [
@@ -4703,6 +4724,21 @@
       "other_claimed_at": "2026-10-20T06:25:48Z",
       "shared_files": [
         "docs/tier-a-reviews.json"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-21T12:17:53Z",
+      "my_subject": "cc",
+      "my_task": "b33: status-line red threshold 85 (bugfix, drift-locked to the wrap-up watcher); path-manifest case folding; tier-checker registry read by node not regex (hover2 seq1067); Tier A cody 05:51:44Z + 14:09:30Z; pay-period reopen check; push.  FILES: tools/sairn_status_line.py tools/sairn_path_manifest.py tools/criticality_tier_check.py docs/tier-a-reviews.json docs/defect-density-register.json docs/2026-10-21-cc-b33-notes.md docs/batch-manifest-cc-b33.json SAIRN-handoff-cc-b33.md SAIRN-report-cc-b33.txt SAIRN-digest-cc-b33.txt NOT-api NOT-html NOT-tests NOT-sql",
+      "other_session": "fourth",
+      "other_subject": "fourth",
+      "other_task": "b46: Field Map geocoding via Google Geocoding API on the existing Maps key; sairnbiz Z8/Z9 pay lines, pay date/period, address/DOB/rate history; push. FILES: api/route-map.js api/route-geocode.js stonedesk.html sairnbiz.html docs/defect-density-register.json docs/sairn-path-manifest.json docs/batch-manifest-fourth-b46.json SAIRN-handoff-fourth-b46.md SAIRN-report-fourth-b46.txt SAIRN-digest-fourth-b46.txt NOT-api-sd-data-js NOT-tests NOT-tools NOT-CLAUDE-md NOT-dot-claude-skills NOT-docs-tier-a-reviews-json",
+      "other_claimed_at": "2026-10-21T12:07:26Z",
+      "shared_files": [
+        "docs/defect-density-register.json"
       ],
       "source": "status-registry",
       "why": "same declared FILES",
