@@ -55,7 +55,8 @@
       "tests/sairnbiz_pay_frequency.js",
       "tests/sairnbiz_timesheet_hours.js",
       "tests/sairnbiz_preview_fixes.js",
-      "api/route-map.js"
+      "api/route-map.js",
+      "api/b46-route-geocode.test.js"
     ]
   },
 
