@@ -1,0 +1,11 @@
+HANK b41 DIGEST -- 2026-10-21 -- live drive of request_photos under a real session: partial
+CONTEXT 25.1% of 1,000,000 -- 251,072 tokens, measured.
+STATUS: docs only, NOT FORCED. No code change.
+1. SD-AUDIT-2026 audit-owner login 200 (owner). request_photos with session 200 ok/provisioned.
+2. Without a session: 401 NO_SESSION. Reader shape matches what the client expects.
+3. Audit licence has 0 quote requests -> no photo row to click. Real-photo render UNVERIFIED.
+DECISION-NEEDED (Michael): authorise one test quote request with a photo on SD-AUDIT-2026, or skip.
+NEXT: handoff sec.4 -- L1 (Michael), T1 (cc), R1 (cody), carried H2/H3/C/B/D.
+CHANGED: these three docs only.
+EVIDENCE-path: SAIRN-handoff-hank-b41.md, SAIRN-report-hank-b41.txt
+UNVERIFIED: Photos (N) rendering real photos in a signed-in browser.

@@ -1,0 +1,20 @@
+HANK b41 REPORT -- 2026-10-21
+
+1. LIVE DRIVE OF request_photos UNDER A REAL SESSION -- PARTIAL.
+   Concept: drive the real server half with a real session, read-only (login, read, request_photos), and
+   report any step that cannot run as UNVERIFIED, never as passed.
+   Credential: documented test licence SD-AUDIT-2026, audit-owner (sql/stonedesk_audit_license_credential_reset.sql).
+   Target: https://sairn.vercel.app via tools/sairn_http.py. Token and photo bytes never printed.
+     login                                  200  role owner, token issued
+     read sd_quote_requests                 200  ok true, provisioned true, 0 rows
+     request_photos (with session)          200  ok true, provisioned true, data []
+     request_photos (no session)            401  NO_SESSION
+   VERIFIED: the deployed reader answers a real owner session with the envelope the client expects and refuses
+   without one; that shape renders "none are stored" in the shipped client (test arm B6).
+   UNVERIFIED: Photos (N) rendering real photos -- the audit licence has ZERO quote requests, so no row with
+   photo_count > 0 exists. Creating one is a live write (public quote request + photo); not authorised, not done.
+   Side effect: the successful login reset the audit owner's failed_attempts/locked_until (api/sd-auth.js:274).
+
+2. TIER A on sd_quote_requests: routed to cc, noted only.
+
+3. PUSH: these three docs only, not forced; landing confirmed against origin/main after fetch.
