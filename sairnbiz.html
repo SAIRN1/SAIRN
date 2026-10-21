@@ -443,6 +443,13 @@ textarea{resize:vertical;min-height:80px;}
     <div class="fr"><div class="fg"><label>Pay Frequency</label><select id="efreq"><option>Weekly</option><option>Biweekly</option><option>Semi-monthly</option><option>Monthly</option></select></div><div class="fg"><label></label><div style="font-size:11px;color:var(--muted,#666);padding-top:8px;">Sets hours per pay period and prorates the monthly benefit cost. It never changes annual pay.</div></div></div>
     <div class="fr"><div class="fg"><label>Start Date</label><input id="estart" type="date"></div><div class="fg"><label>Phone</label><input id="ephone" placeholder="(440) 555-0100"></div></div>
     <div class="fg"><label>Email</label><input id="eemail" type="email" placeholder="john@pinnaclesd.com"></div>
+    <!-- b46 Z9 -- CONCEPT: the two identity facts 29 CFR 516.2(a)(2) and (a)(3)
+         require on a payroll record: home address with ZIP, and date of birth
+         (required only if under 19, so it is optional and the table flags
+         "under 19"). Kept on this device only: syncEmps() sends a fixed field
+         map, and the StoneDesk read of that resource strips only hourly_rate,
+         so adding these there would hand home addresses to every manager. -->
+    <div class="fr"><div class="fg"><label>Home Address (incl. ZIP)</label><input id="eaddr" placeholder="12 Elm St, Akron OH 44301"></div><div class="fg"><label>Date of Birth (optional)</label><input id="edob" type="date"><div style="font-size:11px;color:var(--muted,#666);">Required on the payroll record only if under 19.</div></div></div>
     <div class="fr"><div class="fg"><label>Status</label><select id="estatus"><option>Active</option><option>On Leave</option><option>Terminated</option></select></div><div class="fg"><label>Emergency Contact</label><input id="eec" placeholder="Jane Smith (440) 555-0101"></div></div>
     <div class="fg"><label>Notes</label><textarea id="enotes" rows="2" placeholder="Certifications, skills..."></textarea></div>
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
@@ -669,7 +676,7 @@ textarea{resize:vertical;min-height:80px;}
 <!-- PAYROLL -->
 <div class="panel" id="panel-payroll">
   <div class="ph"><div><div class="ptitle">Payroll</div><div class="psub">Current pay period &middot; Bi-weekly</div></div>
-  <div class="pa"><button class="btn bo bs" onclick="csv('payroll')">Export CSV</button><button class="btn bp bs" onclick="runPayroll()">Run Payroll</button></div></div>
+  <div class="pa"><label style="font-size:12px;color:var(--muted,#666);display:flex;align-items:center;gap:6px;">Pay date <input id="prpaydate" type="date" title="Date of payment recorded on the run (29 CFR 516.2(a)(12)). Blank = the run date."></label><span style="font-size:11px;color:var(--muted,#666);">blank = run date</span><button class="btn bo bs" onclick="csv('payroll')">Export CSV</button><button class="btn bp bs" onclick="runPayroll()">Run Payroll</button></div></div>
   <div id="payroll-anomaly-banner"></div>
   <div class="krow">
     <div class="kpi"><div class="klbl">Gross Payroll</div><div class="kval" id="py-gross">$0</div><div class="kt">This period</div></div>
@@ -2424,13 +2431,13 @@ function rEmpTbl(emps){
   // The frequency column reads "default" for anyone with none recorded --
   // the point of making this a real field is that the assumption stops being
   // invisible. Every existing roster lands there until someone sets it.
-  tb.innerHTML=emps.map(function(e){var sc=e.status==='Active'?'bg':e.status==='On Leave'?'bw':'br';var fl=H(sbPayFreq(e))+(sbPayFreqIsDefault(e)?'<div style="font-size:11px;color:var(--muted)">default</div>':'');return'<tr><td><strong>'+H(e.fn+' '+e.ln)+'</strong><div style="font-size:11px;color:var(--muted)">'+H(e.id||'')+'</div></td><td>'+H(e.role||'')+'</td><td>'+H(e.dept||'')+'</td><td>'+H(e.type||'')+'</td><td>'+fl+'</td><td><strong>$'+Number(e.rate||0).toFixed(2)+'</strong></td><td>'+fdate(e.start)+'</td><td><span class="badge '+sc+'">'+H(e.status||'')+'</span></td><td><button class="btn bo bs" onclick="editEmp(\''+H(e.id||'')+'\')">Edit</button></td></tr>';}).join('');
+  tb.innerHTML=emps.map(function(e){var sc=e.status==='Active'?'bg':e.status==='On Leave'?'bw':'br';var fl=H(sbPayFreq(e))+(sbPayFreqIsDefault(e)?'<div style="font-size:11px;color:var(--muted)">default</div>':'');var u19=sbUnder19(e.dob)?' <span class="badge bw">under 19</span>':'';return'<tr><td><strong>'+H(e.fn+' '+e.ln)+'</strong>'+u19+'<div style="font-size:11px;color:var(--muted)">'+H(e.id||'')+'</div></td><td>'+H(e.role||'')+'</td><td>'+H(e.dept||'')+'</td><td>'+H(e.type||'')+'</td><td>'+fl+'</td><td><strong>$'+Number(e.rate||0).toFixed(2)+'</strong></td><td>'+fdate(e.start)+'</td><td><span class="badge '+sc+'">'+H(e.status||'')+'</span></td><td><button class="btn bo bs" onclick="editEmp(\''+H(e.id||'')+'\')">Edit</button></td></tr>';}).join('');
 }
 function filterEmps(){
   var q=($('esrch').value||'').toLowerCase(),dept=$('edept').value;
   rEmpTbl(ld('sb_emps',[]).filter(function(e){return(!q||(e.fn+' '+e.ln+' '+e.role+' '+e.dept).toLowerCase().includes(q))&&(!dept||e.dept===dept);}));
 }
-function openEmpModal(){eid=null;['efn','eln','erole','ehr','estart','ephone','eemail','eec','enotes'].forEach(function(f){var el=$(f);if(el)el.value='';});var ef=$('efreq');if(ef)ef.value=SB_PAY_FREQ_DEFAULT;$('empmodal').classList.add('on');}
+function openEmpModal(){eid=null;['efn','eln','erole','ehr','estart','ephone','eemail','eec','enotes','eaddr','edob'].forEach(function(f){var el=$(f);if(el)el.value='';});var ef=$('efreq');if(ef)ef.value=SB_PAY_FREQ_DEFAULT;$('empmodal').classList.add('on');}
 function closeEmpModal(){$('empmodal').classList.remove('on');}
 function editEmp(id){
   var e=ld('sb_emps',[]).find(function(x){return x.id===id;});if(!e)return;eid=id;
@@ -2441,7 +2448,9 @@ function editEmp(id){
   // string, which would otherwise display blank and then be saved back blank.
   var ef=$('efreq');if(ef)ef.value=sbPayFreq(e);
   $('ephone').value=e.phone||'';$('eemail').value=e.email||'';$('estatus').value=e.status||'Active';
-  $('eec').value=e.ec||'';$('enotes').value=e.notes||'';$('empmodal').classList.add('on');
+  $('eec').value=e.ec||'';$('enotes').value=e.notes||'';
+  var ea=$('eaddr');if(ea)ea.value=e.addr||'';var ed=$('edob');if(ed)ed.value=e.dob||'';
+  $('empmodal').classList.add('on');
 }
 // ── SEQUENTIAL, UNIQUE IDS (b42) ───────────────────────────────────────────
 // Invoice and employee ids were the LAST FOUR DIGITS OF Date.now(): not
@@ -2491,12 +2500,33 @@ function sbNextId(prefix,list){
   seq[head]=n;st(SB_ID_SEQ_KEY,seq);
   return id;
 }
+// b46 Z9 -- CONCEPT: under 19 means the 19th birthday has not yet arrived on
+// the given day (default today); a blank or unreadable DOB is null (unknown).
+function sbUnder19(dob,asOf){
+  var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dob||''));if(!m)return null;
+  var t=String(asOf||sbLocalToday());
+  return t<(String(+m[1]+19)+'-'+m[2]+'-'+m[3]);
+}
 function saveEmp(){
   var emps=ld('sb_emps',[]);
   var existing=eid?emps.find(function(x){return x.id===eid;}):null;
   var r={id:eid||sbNextId('E',emps),fn:$('efn').value.trim(),ln:$('eln').value.trim(),role:$('erole').value.trim(),dept:$('edept2').value,type:$('etype').value,rate:parseFloat($('ehr').value)||0,pay_freq:(($('efreq')||{}).value)||SB_PAY_FREQ_DEFAULT,start:$('estart').value,phone:$('ephone').value.trim(),email:$('eemail').value.trim(),status:$('estatus').value,ec:$('eec').value.trim(),notes:$('enotes').value.trim()};
   if(existing&&existing.ben)r.ben=existing.ben;
   if(!r.fn||!r.ln){toast('Name required');return;}
+  // b46 Z9 -- CONCEPT: home address and DOB are stored as entered; a blank DOB
+  // stays blank (unknown), never a made-up date. A future DOB is refused.
+  r.addr=(($('eaddr')||{}).value||'').trim();r.dob=(($('edob')||{}).value)||'';
+  if(r.dob&&r.dob>sbLocalToday()){toast('Date of birth is in the future');return;}
+  // b46 Z9 -- CONCEPT: a rate change is APPENDED, not overwritten, so a past
+  // workweek is still priced at the rate in force then (29 CFR 516.2(a)(6)).
+  // The first change seeds the prior rate with effective_from null, meaning
+  // "in force before rate history was kept" -- its start date is not known.
+  var hist=(existing&&Array.isArray(existing.rate_history))?existing.rate_history.slice():[];
+  if(existing&&Number(existing.rate)!==r.rate){
+    if(!hist.length)hist.push({rate:Number(existing.rate)||0,effective_from:null,changed_at:null});
+    hist.push({rate:r.rate,effective_from:sbWeekStart(new Date()),changed_at:new Date().toISOString()});
+  }
+  if(hist.length)r.rate_history=hist;
   if(eid){var i=emps.findIndex(function(x){return x.id===eid;});if(i>-1)emps[i]=r;else emps.push(r);}else emps.push(r);
   // The promise used to be DISCARDED here, so a failed sync left the "Synced"
   // badge green and said nothing -- see sbRecordSyncResult() above. The local
@@ -3379,7 +3409,7 @@ function rTS(){
         '<td style="text-align:right;">--</td>'+btn+'</tr>';
     }
     var t=d.reduce(function(a,b){return a+(Number(b)||0);},0);
-    var wp=sbWeekPay(e.rate,t);var ot=wp.ot;var c=wp.total;
+    var wp=sbWeekPay(sbRateForWeek(e,sbTsWeek),t);var ot=wp.ot;var c=wp.total;// b46: that week's rate, the one payroll uses
     // COUNTED IN THE TOTALS, and this is a decision rather than a consequence
     // of rendering the row. Hours recorded against a week were WORKED in that
     // week and were payable in it; whether the person is on the roster TODAY
@@ -3637,7 +3667,9 @@ function sbPeriodsPerYear(e){ return SB_PAY_FREQ[sbPayFreq(e)].periods; }
 // employee nobody has recorded AT ALL. This is the same distinction the
 // timesheet panel already makes on screen -- "the figures above stay -- rather
 // than 0, because nobody has said anyone worked zero" -- applied to the money.
-function sbRecordedWeeklyHours(e){
+// b46: the most recent recorded week's ROW, split out so the pay line can say
+// WHICH week it priced (and at that week's rate) -- same selection as before.
+function sbLatestTsRow(e){
   var id=e&&e.id;
   if(id===undefined||id===null||id==='')return null;
   var rows=sbTsRows(),best=null;
@@ -3648,6 +3680,10 @@ function sbRecordedWeeklyHours(e){
     // formats it that way.
     if(best===null||String(r.week)>String(best.week))best=r;
   }
+  return best;
+}
+function sbRecordedWeeklyHours(e){
+  var best=sbLatestTsRow(e);
   if(best===null)return null;
   var t=0;
   for(var j=0;j<best.hours.length;j++){
@@ -3695,8 +3731,24 @@ function sbWeekPay(rate,hours){
   var straight=(hours-ot)*rate, otPay=ot*rate*1.5;
   return {ot:ot, straight:straight, otPay:otPay, total:straight+otPay};
 }
-function sbGrossPerPeriod(e){ return sbWeekPay(e&&e.rate, sbWeeklyHours(e)).total * 52 / sbPeriodsPerYear(e); }
-function sbAnnualGross(e){ return sbWeekPay(e&&e.rate, sbWeeklyHours(e)).total * 52; }
+// b46 Z9 -- CONCEPT: the rate for a workweek is the LAST rate_history entry
+// whose effective_from is on or before that week; an undated (null) entry is
+// the rate in force before history was kept. No history, or no week (hours
+// from the schedule, not a worked week), is the current e.rate.
+function sbRateForWeek(e,week){
+  var h=(e&&Array.isArray(e.rate_history))?e.rate_history:[],hit=null;
+  if(!week||!h.length)return Number(e&&e.rate)||0;
+  for(var i=0;i<h.length;i++){
+    var x=h[i];if(!x)continue;
+    if(x.effective_from===null||x.effective_from===undefined){if(hit===null)hit=x;}
+    else if(String(x.effective_from)<=String(week))hit=x;
+  }
+  return hit?(Number(hit.rate)||0):(Number(e.rate)||0);
+}
+// The week payroll prices: the latest recorded week, or null for the schedule.
+function sbPricedWeek(e){ var r=sbLatestTsRow(e); return r?r.week:null; }
+function sbGrossPerPeriod(e){ return sbWeekPay(sbRateForWeek(e,sbPricedWeek(e)), sbWeeklyHours(e)).total * 52 / sbPeriodsPerYear(e); }
+function sbAnnualGross(e){ return sbWeekPay(sbRateForWeek(e,sbPricedWeek(e)), sbWeeklyHours(e)).total * 52; }
 // The employer's real recorded monthly share if one was entered, else the
 // stated $520 assumption. A zero or negative stored cost is treated as "not
 // recorded" rather than as a real $0 -- saveBenEnroll() already refuses a
@@ -3864,6 +3916,54 @@ function sbPayrollBasisText(t){
     SB_PAY_FREQ_DEFAULT.toLowerCase()+'.';
 }
 
+// b46 Z8 -- CONCEPT: the pay period a run pays is the LATEST period of the
+// employee's own frequency that has ENDED on or before the run date (paid in
+// arrears). Weekly/biweekly end on a Sunday, because sbWeekStart() makes the
+// workweek Monday-Sunday; semi-monthly is 1-15 / 16-end; monthly is the month.
+// ASSUMPTION, stated on the run: no biweekly anchor date is stored, so a
+// biweekly period is the two workweeks ending on that Sunday.
+var SB_PAY_PERIOD_RULE='each line pays the latest period of the employee\'s frequency that ended on or before the run date: weekly/biweekly end on the Sunday on or before it (biweekly = the two workweeks ending then; no biweekly anchor date is stored), semi-monthly is 1-15 or 16-end of month, monthly is the calendar month';
+function sbPayPeriod(e,runOn){
+  var p=String(runOn).split('-'),r=new Date(+p[0],+p[1]-1,+p[2]),f=sbPayFreq(e),y=r.getFullYear(),m=r.getMonth(),d=r.getDate(),s,en;
+  var ymd=function(x){return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');};
+  var last=new Date(y,m+1,0).getDate();
+  if(f==='Weekly'||f==='Biweekly'){
+    en=new Date(y,m,d-r.getDay());              // getDay() 0 = Sunday: the Sunday on or before
+    s=new Date(en.getFullYear(),en.getMonth(),en.getDate()-(f==='Weekly'?6:13));
+  }else if(f==='Monthly'){
+    if(d===last){s=new Date(y,m,1);en=new Date(y,m,last);}else{s=new Date(y,m-1,1);en=new Date(y,m,0);}
+  }else{
+    if(d===last){s=new Date(y,m,16);en=new Date(y,m,last);}
+    else if(d>=15){s=new Date(y,m,1);en=new Date(y,m,15);}
+    else{s=new Date(y,m-1,16);en=new Date(y,m,0);}
+  }
+  return {start:ymd(s),end:ymd(en)};
+}
+// b46 Z8 -- CONCEPT: one employee's pay line (29 CFR 516.2(a)(7)-(12)), from
+// the SAME week, rate and sbWeekPay() price as sbGrossPerPeriod(), so the
+// lines add up to the run gross. Per-period figures are that one priced week
+// x weeks-per-period -- the model the run gross already uses, said on the line
+// (hours_basis) rather than passed off as a sum of the period's own weeks.
+// Withholding and net pay are not computed by this app: recorded as the
+// string "not computed", never as 0.
+function sbPayLine(e,runOn,payDate){
+  var week=sbPricedWeek(e),hours=sbWeeklyHours(e),rate=sbRateForWeek(e,week),wp=sbWeekPay(rate,hours);
+  var k=52/sbPeriodsPerYear(e),per=sbPayPeriod(e,runOn),c=function(n){return Math.round(n*100)/100;};
+  return {employee_id:e.id,name:(e.fn||'')+' '+(e.ln||''),
+    pay_freq:sbPayFreq(e),pay_freq_assumed:sbPayFreqIsDefault(e),
+    period_start:per.start,period_end:per.end,pay_date:payDate,
+    hours_source:week?'timesheet':'schedule',hours_week:week,
+    hours_basis:'one '+(week?'recorded':'scheduled')+' week x '+c(k)+' weeks per period',
+    rate:rate,total_hours:c(hours*k),regular_hours:c((hours-wp.ot)*k),ot_hours:c(wp.ot*k),
+    straight_pay:c(wp.straight*k),ot_pay:c(wp.otPay*k),
+    // 516.2(a)(8)/(9) split: straight time on ALL hours, then the premium alone.
+    straight_time_earnings:c(hours*rate*k),ot_premium:c((wp.otPay-wp.ot*rate)*k),
+    gross:c(wp.total*k),
+    employer_fica:c(wp.total*k*SB_TAX_FICA_RATE),
+    employer_benefits:c(sbBenefitPerPeriod(e)),benefits_assumed:sbBenefitIsAssumed(e),
+    withholding:'not computed',net_pay:'not computed'};
+}
+
 function runPayroll() {
   var findings = checkPayrollAnomalies();
   renderPayrollAnomalyBanner(findings);
@@ -3883,9 +3983,18 @@ function runPayroll() {
   // convey it, because a CSV or a later reader sees the row and not the page.
   var t=sbPayrollTotals();
   var runs=ld('sb_payruns',[]);
+  // b46 Z8 -- CONCEPT: the date of payment (516.2(a)(12)) is asked for in the
+  // run UI; left blank it defaults to the run date and the record says so.
+  var runOn=sbLocalToday(),pdEl=$('prpaydate'),pdIn=(pdEl&&pdEl.value)||'';
+  var payDate=pdIn||runOn,payDateSource=pdIn?'entered':'defaulted to the run date (none entered)';
+  var lines=ld('sb_emps',[]).filter(function(e){return e.status==='Active';}).map(function(e){return sbPayLine(e,runOn,payDate);});
   runs.unshift({
     id:'PR'+Date.now().toString(36),
-    run_on:sbLocalToday(),
+    run_on:runOn,
+    pay_date:payDate,
+    pay_date_source:payDateSource,
+    period_rule:SB_PAY_PERIOD_RULE,
+    lines:lines,
     employees:t.employees,
     gross:t.gross,
     taxes_fica:t.taxes_fica,
@@ -3906,7 +4015,7 @@ function runPayroll() {
   });
   st('sb_payruns',runs);
   rPayRuns();
-  toast('Payroll calculated and recorded - no real payment was sent. Process through your bank or payroll provider.', 4000);
+  toast('Payroll calculated and recorded - no real payment was sent. Process through your bank or payroll provider.'+(pdIn?'':' Pay date defaulted to the run date.'), 4000);
   // ACCRUAL, not a payment -- and that distinction is the reason this posts to
   // 2100 Accrued Wages and 2130 FICA Payable rather than to cash. The app is
   // explicit that no money moved; the ledger has to say the same thing, and
@@ -5331,7 +5440,7 @@ function csv(type){
       var ot=Math.max(0,t-sbOtThreshold());
       if(rr.correctionOnly)tsDeparted.push(e.fn+' '+e.ln+' ('+(e.status||'not active')+')');
       rows.push([e.fn+' '+e.ln,e.status||'',sbTsWeek].concat(row.hours).concat(
-        [t,ot,sbWeekPay(e.rate,t).total.toFixed(2)]));
+        [t,ot,sbWeekPay(sbRateForWeek(e,sbTsWeek),t).total.toFixed(2)]));
     });
     // THE RULE TRAVELS WITH THE FILE. An OT column in a spreadsheet somebody
     // costs a week against is uninterpretable without the threshold that made

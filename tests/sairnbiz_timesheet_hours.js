@@ -147,6 +147,12 @@ function harness(opts) {
     + fnBody('function sbOtThresholdNote(') + '\n'
     // b45 (Z7): rTS() prices each week through the one shared function.
     + fnBody('function sbWeekPay(') + '\n'
+    // b46 (Z9): rTS() now prices the shown week at the rate in force THAT week
+    // (sbRateForWeek over e.rate_history), so payroll and the timesheet cannot
+    // price a past week at two different rates. The old line above still holds
+    // ("rTS() prices each week through the one shared function"); this adds the
+    // one new dependency, the same stale-extraction-list repair as 2026-09-27.
+    + fnBody('function sbRateForWeek(') + '\n'
     + fnBody('function sbWeekStart(') + '\n'
     + 'var sbTsWeek=' + JSON.stringify(opts.week || WEEK) + ';\n'
     + fnBody('function tsShiftWeek(') + '\n'

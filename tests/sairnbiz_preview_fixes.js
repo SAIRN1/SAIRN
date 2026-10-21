@@ -200,8 +200,14 @@ test('A5. the routing was never the defect: the writer posts to /api/sd-data, '
 section('B. payroll must use recorded timesheet hours when there are any');
 
 function hoursSandbox(tsRows) {
+  // b46 (Z8): the latest-week selection that sbRecordedWeeklyHours() did inline
+  // moved, unchanged, into sbLatestTsRow() so the pay line can name the week it
+  // priced. The original list ['sbTsRows', 'sbWeeklyHours',
+  // 'sbRecordedWeeklyHours', 'sbWeeklyHoursIsAssumed'] still stands; the one
+  // new dependency is appended so the B arms test the real selection, not a
+  // ReferenceError.
   const names = ['sbTsRows', 'sbWeeklyHours', 'sbRecordedWeeklyHours',
-                 'sbWeeklyHoursIsAssumed'];
+                 'sbWeeklyHoursIsAssumed', 'sbLatestTsRow'];
   const bodies = names.map((n) => {
     try { return extract(n); } catch (e) { return null; }
   });
