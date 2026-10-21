@@ -1,0 +1,58 @@
+REPORT cc b38
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-21
+RANGE     from 1b8ac96f (fix(cc b38): a deleted employee row is refused on every registered resource, ...) to origin/main.
+          No --force, NO OVERRIDE, no BYPASS-LOG row.
+
+== 1/2/4. PLATFORM-WIDE DELETED-ROW GATE (Michael's decision: no exception) ==
+CONCEPT: the registry already says which app owns each resource, so that app is the pre-gate's expected app,
+and a missing employee row of that app is a deactivation everywhere it is known.
+CODE: api/sd-data.js pre-gate. preExpectedApp = OWNER_BY_RESOURCE[resource] (already imported).
+  shared/routes follow the caller's app_id, the same as memory. Gated resources and memory are unchanged.
+  Unregistered resources stay unknown. b36's PRE_DECLARED_APP is subsumed.
+SAFETY READ FIRST: every app's bootstrap (alf bld dnt grd law leg mech rf sb sc scp sd sdn sen sv sf) INSERTs the employee row
+  before minting, so no freshly bootstrapped owner can read as deleted.
+  Wrong-app tokens are not scoped and still get their branch's FORBIDDEN (X arms).
+MEASURED: api/b38-deleted-row-platform.test.js derives its population from the registry: 392 resources, 16 apps.
+  New code: 1184/1184.
+  Old code: 330 red. 323 resources answered 200 AND touched data for a deleted employee's token (b37's "~70" was the heuristic's undercount).
+  Mutant (shared stops following app_id) -> S1 red.
+  b36 runtime differential 71/71 on the new gate; drop a strip key -> A2 red (the requested teeth check).
+FULL api/ SUITE, before vs after (329 suites): exactly one changed exit, api/_lib/routes.test.js.
+  Its fetch mock answered [] to the employee-auth lookup; one line now answers an active row (63/63).
+  On the rebased tree: 332 suites run, 4 non-zero, all of them already red before this change
+  (law-trust-reconcile-endpoint, app-boundary, family-contacts, law-trusttx-clearance).
+DECLARED: path-manifest assigned_overrides gains cc for the three api/ files (api/ is hank's by the split).
+  Register record (product, high, independent-review, rule 1.11) re-seated to 1b8ac96fac7b.
+  Tier A obligation cc 2026-10-21T17:13:48Z is assigned to fourth.
+LIVE: the production deployment for ad0cc51e is READY.
+  POST https://sairn.vercel.app/api/sd-data with no licence -> 401 NO_LICENSE, so the function boots.
+  THE SPECIFIC BEHAVIOUR IS UNVERIFIED LIVE: it needs a valid token whose row was deleted on a real licence, and I did not delete a row to get one.
+RESIDUAL (register recurrence_open): an unregistered resource is still unknown to the pre-gate.
+
+== 3. hank 2026-10-21T16:17:56Z -- b40 request-photo overlay -- SOUND AS SHIPPED; GAP routed ==
+CRITERIA: both barriers (prefix filter, pcHtml escaping) shown to hold on hostile stored values, each with an arm that goes red when removed.
+Public intake (stonedesk-public.js:271) checks the prefix only, so 'data:image/png;base64,AAAA" onerror=...' can be stored.
+  The ESCAPING is the real barrier.
+cc probe, 6/6: no breakout (the quote becomes &quot;); svg+xml and text/html are not rendered; a hostile slot is escaped; a non-string value does not crash.
+MUTANTS: un-escape src -> cc P1 red, hank 11/11; widen the filter to /^data:/ -> cc P2/P3 red, hank 11/11;
+  un-escape the slot -> cc P4 red, hank 11/11. hank's suite holds neither barrier (its B3 sample 'javascript:' fails both regexes).
+No keyboard close, no focus move, no dialog role. Routed to hank.
+
+== PUSH ==
+Several remote races. Rebase conflicts: sairn-path-manifest.json (both notes kept, by hand);
+  defect register + tier ledger (union, verified: origin + my one record each); derived docs (regenerated).
+The gate refused two bookkeeping commits sharing a subject; I reworded them (git reset was denied, so --amend was used).
+Landed at ad0cc51e; 0/0 after fetch.
+
+== OPEN ==
+Tier A owed by cc, not in this dispatch: cody 2026-10-21T17:05:11Z (b37 revoke discard by consent) and cody 2026-10-21T17:07:10Z (b37 two-tenant arm).
+
+== CHANGED ==
+api/sd-data.js; api/b38-deleted-row-platform.test.js (new); api/_lib/routes.test.js (one mock line);
+docs/sairn-path-manifest.json; docs/defect-density-register.json; docs/tier-a-reviews.json;
+docs/MASTER-PLAN.md + docs/traceability-matrix.md (regenerated); docs/scrutiny-flags.json (gate rows); the deliverables.
+
+SHA256 7a1536f1ef463aba58cf7931e786fe66fe2b2c18bb90a00e638653ec9ab1c136
+END-OF-REPORT

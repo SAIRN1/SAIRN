@@ -1,0 +1,23 @@
+DIGEST cc b38
+STATUS: 5 of 5 closed. Platform-wide deleted-row gate LANDED (fix 1b8ac96f, tip ad0cc51e); hank 16:17:56Z DISCHARGED; 0/0; no --force, NO OVERRIDE.
+ITEM 1: the pre-gate's expected app = OWNER_BY_RESOURCE for every registered resource; shared/routes follow the caller's app_id, like memory.
+ITEM 2: measured, not estimated -- the old code let a deleted employee read 323 registered resources (not ~70).
+  New api/b38-deleted-row-platform.test.js: 392 resources / 16 apps, 1184/1184; old code 330 red. A mutant is caught (S1).
+  The b36 differential still has teeth on the new gate (A2 red on a stripped key).
+  Full api/ suite before vs after: one changed exit (routes.test's blanket [] mock; one line fixed). The 4 reds are pre-existing.
+ITEM 3: hank b40 photo overlay SOUND AS SHIPPED. Escaping is the real barrier (intake checks the prefix only).
+  GAP: hank's suite holds neither barrier -- 3 mutants survive it 11/11. No keyboard close. Routed to hank.
+ITEM 4: the concept line comes before the gate code, in the code comment and the commit.
+ITEM 5: pushed through races (manifest by hand, ledgers by union, docs regenerated); the deployment for ad0cc51e is READY.
+LIVE: the endpoint boots (401 NO_LICENSE without a key). Deleted-row behaviour UNVERIFIED live: it needs a deleted real employee row.
+TIER A: my own obligation cc 2026-10-21T17:13:48Z is assigned to fourth. Register record filed (product/high).
+DECISION-NEEDED: none.
+CHANGED: api/sd-data.js; api/b38-deleted-row-platform.test.js; api/_lib/routes.test.js; manifest, register, ledger, derived docs; the deliverables.
+SQL: none.
+EVIDENCE-path: SAIRN-report-cc-b38.txt, SAIRN-handoff-cc-b38.md, node api/b38-deleted-row-platform.test.js
+UNVERIFIED: live deleted-row refusal; resources missing from the registry are still unknown to the pre-gate (recurrence_open).
+ROUTED: hank -- b40 barrier arms + keyboard close. fourth -- review my Tier A obligation.
+NEXT: cc owes cody 2026-10-21T17:05:11Z and 17:07:10Z (b37), new since dispatch, not started.
+CONTEXT 49.7% of 1,000,000 -- 496,884 tokens, measured.
+SHA256 77cb785c29b6741d02c6c603ef8ea491564d583e823f717927bb7cd5cd72fc25
+END-OF-REPORT
