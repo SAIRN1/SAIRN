@@ -36932,7 +36932,7 @@
       "recurrence_open": "NOT CLOSED. The same (x.ok&&x.data)||{} idiom may exist on other rfDataRaw reads in sairnroofing.html and was not swept."
     },
     {
-      "commit": "6d0ef69de245",
+      "commit": "54a8c85678cd",
       "date": "2026-10-21",
       "subject": "fix(stonedesk b53): accessibility pass -- labels tied, allowlisted mouse-only controls made keyboard buttons, sidebar icons hidden, aria-current, focus to heading on nav",
       "files": [
