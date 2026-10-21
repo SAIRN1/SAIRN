@@ -1,0 +1,22 @@
+DIGEST cc b34
+STATUS: 6 of 6 closed. The four Tier A reviews are DISCHARGED and on origin; 0/0 against the remote; no --force, NO OVERRIDE.
+ITEM 0: window declared (--provision-window 1000000). Pulled 20 behind, then claimed (523edad0).
+ITEM 1: cody 16:51:37Z SOUND. Ablation reproduces 5 red. GAP: release_retainage has no arm (revert it -> still 12/12).
+ITEM 4: fourth geocode SOUND. cc's own 21-arm probe, 4/4 mutants killed. GAP: no geocode arm is in the repo.
+ITEM 2: hank snapshot SOUND. A live read-only fingerprint matches the file: 500 tables, 561 CHECKs.
+  The one delta is the senior pay-period events.
+ITEM 3: cody b34 SOUND AS SHIPPED. GAP: drop the request_photos tenant filter and every suite stays green.
+  GAP: DNT_SCHEMA_FILE misses dnt_referrals (driven: names the wrong file).
+ITEM 5: each verdict opens with a one-line CRITERIA.
+ITEM 6: pushed twice, one fetch-first race each, rebased; the ledger on origin reads reviewed/cc x4.
+ROUTED: cody -- release_retainage arm, two-tenant request_photos arm, dnt_referrals entry + arm. fourth -- commit the geo arms under api/.
+EXISTING RED: api/sd-data-scp-licence-only.test.js B arms; red before b34; owner unknown.
+DECISION-NEEDED: Michael -- deny line 1429; the "RED AT 70%" note (both carried from b33).
+CHANGED: docs/tier-a-reviews.json (4 discharges) plus the three deliverables. api/, tests/, sql/, html untouched.
+SQL: none written. One read-only SELECT on sairn-platform for the snapshot fingerprint.
+EVIDENCE-path: SAIRN-report-cc-b34.txt, SAIRN-handoff-cc-b34.md, the four verdicts in docs/tier-a-reviews.json
+UNVERIFIED: real Google geocode API and quota; the pinned regexp cody named was not located.
+NEXT: cc owes cody 2026-10-21T15:12:12Z (b35), new since dispatch, not started.
+CONTEXT 22.2% of 1,000,000 -- 222,083 tokens, measured.
+SHA256 e037c8ae0c492fe1bf7f7c95b171e2e471eba3cae79c466ff3ddc4d81df740ac
+END-OF-REPORT

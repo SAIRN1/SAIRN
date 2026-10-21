@@ -1,0 +1,75 @@
+REPORT cc b34
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-21
+RANGE     from 7192021e (tier-a(cc b34): discharge cody 2026-10-20T16:51:37Z ...) to origin/main.
+          Claim 523edad0. No --force, NO OVERRIDE, no BYPASS-LOG row.
+WINDOW    declared this session: context_verify --provision-window 1000000.
+
+== ORDER ==
+cody 16:51:37Z first, as item 1 said. fourth's next, as item 4 asked, because their work was waiting on the signoff.
+fourth's 769590ac was already on origin with the obligation open: the push was not held, the signoff was.
+Then hank's snapshot, then cody's b34. The ledger on origin reads reviewed/cc for all four.
+
+== 1. cody 2026-10-20T16:51:37Z -- b33 projection order -- SOUND ==
+CRITERIA: each named attack point confirmed by driving or ablating the code, not by reading the description.
+(a) sairncare.html never writes alf_payer_rules or alf_compliance_rules. tools/load_compliance_seed.py checks only resp.ok.
+(c) Reverse-applying the four serving hunks of 01ae3ddf in a worktree: 7 passed, 5 failed (A1 B1 C1 D1 S1). Fixed: 12/12.
+(b) GAP: revert ONLY the two release_retainage sites and the suite is 12/12 GREEN. No arm covers it.
+    It is also not key-order only: `summary: after` is returned at :6958, and wip-accounting.js:102 copies draw_id into it.
+(d) cody's b34 pair_by_resource.py re-run at HEAD: PAIRED 44, NO-STRIP 17, GENERIC 2, matching the notes.
+    sen_visits was spot-checked by reading the write: the visitData allowlists cannot carry id or assigned_employee_id.
+
+== 2. fourth 2026-10-21T15:04:43Z -- b46 Field Map geocode -- SOUND ==
+CRITERIA: the gate precedes the branch; the key and error_message never reach the response; no guessed coordinate;
+the client agrees with the server. Checked by cc's OWN probe, with mutation controls.
+Probe: 21 behavioural arms PASS against the real handler, signed in as role install.
+  Covered: no session, a foreign-licence session, 26/25 addresses, '&key=EVIL' injection, 0,0 / 91 / 181 / '40' / NaN / Inf,
+  partial_match, REQUEST_DENIED quoting the key, a mixed batch of six in order, unreadable JSON, and no key -> 503.
+Mutants, 4 of 4 killed: drop the 0,0 check; drop partial_match; raise the cap; move the branch above verifySessionToken.
+Client: the same X-SD-Auth header that auth.js:694 reads. fmGeoFix matches the server's rule, and routes.js:471-482 re-validates.
+GAP: no geocode arm is in the repo. The 38 arms are in fourth's session scratchpad.
+NOTE: BAD_ADDRESS echoes a non-string address verbatim, but only to the same caller.
+NOT VERIFIED: the real Google API, and quota.
+
+== 3. hank 2026-10-21T11:01:51Z -- schema snapshot -- SOUND ==
+CRITERIA: equal to the live database, proved against the DATABASE by an independent fingerprint, and every consumer reads it.
+Read-only SELECT on sairn-platform (ejrlrrkvhtllxbbypdjb): 500 base tables, 561 CHECKs.
+  columns md5 4cd114a894a5eaba0824c5ff51cc6bbf and constraints md5 ab2ab4a98fbbfe5f3910638081a2287f.
+  Both equal the digests computed from the file.
+vs b2b02bbd: tables identical; 560 of 561 constraints identical once decoded.
+  The one change is sairnsenior_audit_log +pay_period_closed/+pay_period_reopened, which is exactly the 10-20 widen migration.
+Every object in the file is in jsonb key order, so this is jsonb_pretty output from sql/schema_snapshot_query.sql.
+Encoding went from base64 to plain text. audit_event_type_check reads both (exit 0).
+  sairn_sql_preflight compares plain text: old snapshot 505 unchecked, new 98, 0 findings either way.
+freshness: 0 absent tables that api/ queries (exit 1 only for the 6 known never-run).
+
+== 4. cody 2026-10-21T12:21:14Z -- b34 dental, roofing, request_photos -- SOUND AS SHIPPED ==
+CRITERIA: each point driven or ablated; the role gate and the tenant filter each need an arm that goes red without it.
+Guard: the session check and the owner/admin check are the first two statements of the block (:5081-5087).
+  licHash comes from the server-side licence. payload.id is encodeURIComponent'd.
+Role gate ablated -> D5c red. GUARDED.
+GAP: with the tenant filter deleted, every suite still passes: b34 12/12, cross-tenant isolation 9/9, ownbranch 76/76, dispatchers 418/418.
+  cross_tenant_isolation_scope grades the RESOURCE genuine, so a new verb on a different table inherits that grade.
+GAP: DNT_SCHEMA_FILE misses dnt_referrals (17 resources = 11 data schema + 5 mapped + referrals).
+  Driven in a scratch copy: 503 'run sql/sairndental_data_schema.sql', a file that does not create it.
+  It is message-only, and the table is live.
+(2) I could not find the pinned regexp. Instead: 35 suites read sd-data.js; 34 exit 0.
+  The one that fails, sd-data-scp-licence-only.test.js, also fails at 9922c8ee~1, so it is not b34's.
+Observation: request_photos does not check that the request is not soft-deleted.
+
+== ROUTED ==
+cody: release_retainage arm; two-tenant request_photos arm; dnt_referrals map entry + arm.
+fourth: commit the geocode server arms under api/.
+unowned: sd-data-scp-licence-only.test.js B arms, red before b34.
+
+== OPEN / NEXT ==
+NEW Tier A owed by cc, not in this dispatch: cody 2026-10-21T15:12:12Z (b35 roofing 503s + accounting revoke).
+Michael: deny line 1429; "RED AT 70%" note. Carried b29-b33 routings as in the b33 handoff.
+Scratch worktree scratchpad/wt-abl is detached and holds one untracked probe file; rm was denied. Nothing reads it.
+
+== CHANGED ==
+docs/tier-a-reviews.json (4 discharges); SAIRN-handoff-cc-b34.md; this report; the digest. api/, tests/, sql/, html untouched.
+
+SHA256 cbd6507123b22cf7edd04b33d7a87615f9997b026884f97ac0d4ba3a1c369fa1
+END-OF-REPORT
