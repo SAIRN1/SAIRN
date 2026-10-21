@@ -1,0 +1,47 @@
+SAIRN REPORT -- fourth b49 -- 2026-10-21
+
+RESULT: all items landed on origin/main, no force, no gate skip; 37 suites
+exit 0 on the landed tree. Held ~1h for cc's claim on the manifest and
+tier-a-reviews.json, as instructed. Handoff: SAIRN-handoff-fourth-b49.md.
+
+1 SAIRNDENTAL PRE-EXISTING REDS                                 95e31d3b7
+  CONCEPT: a vm suite extracts every function the export calls; the panel-*
+  id prefix is the panel namespace. ledger_export: dntChargeCode() (called
+  by the charges export since 9a0903e69) was never extracted -- the cell
+  threw, the arm read 'not resolved'; shipped export was correct. 7/8 ->
+  8/8, its mutation control fires again (3/3). rollup_panel: announcer
+  panel-live -> nav-announce. 17/18 -> 18/18. Register: test-layer record.
+
+2 GEOCODE ARMS: already committed b47 (c04a3baaa, api/b46-route-geocode
+  .test.js, 19/19, 4/4) -- cc b36 confirms. cc b36's actual gap was the b47
+  Z8 DISPLAY tests: now tests/sairnbiz_z8_display.js (dd3c45f6e), vm style,
+  19 arms, 6/6 mutants (workweek typed, table re-prices, sync leaks sex,
+  CSV withholding 0, sex not saved, run not stamped).
+
+3 CODY ROUTED DEFECTS
+  7 sairnroofing (5e38373c6). CONCEPT: a failed or unprovisioned read is
+    said, never rendered as 'none'. JHA crew_check and job-warranty reads.
+    RED 3/10 -> GREEN 10/10, 3/3 mutants; roofing fault probe 0 failures.
+  8 sairnsenior (02cec2f84). CONCEPT: a REFUSED write is withdrawn and
+    named; no answer / unprovisioned stays on the device and says which.
+    senWriteFail(); senLastErr cleared before each write; contract and
+    authorisation edits restore the previous version on refusal; a failed
+    claim write prefixes, never replaces, the pricing/authorisation lines;
+    no contract -> 'whether authorisation is required is unknown'.
+    RED 5/15 -> GREEN 15/15, 6/6 mutants.
+  + (Michael's follow-up) sairnsenior_negative_hours_claim / _referral_hours
+    (11cc6e33d): senEffClock() extracted; claim sandbox carries senLastErr
+    (needed after defect 8). 22/22, 11/11; guard and client-filter mutants
+    each turn their suite red.
+
+4 OVERRIDES REVIEW: 11 entries found (not 10). Removed the two geocode
+  entries (cc-reviewed SOUND). Kept 5 sairnbiz tests (no cody review on
+  record) and 4 dental api/ (b48 unreviewed). Added 6 tests/ files. 15 now.
+
+5 Concept line stated before each fix; in commits and code comments.
+6 PUSH: landed 95e31d3b7..7d13b7b39; register re-seated twice after
+  rebases; Tier A obligation (senior, roofing, Z8-suite resources) to cc.
+
+NOT MINE, REPORTED: tests/app_session_isolation.js red at HEAD;
+sairndental_write_failure_probe.py probe 2 does not bite (exit 1 before).
+UNPROVEN: the roofing and senior paths on a real tenant; Chromium/vm only.

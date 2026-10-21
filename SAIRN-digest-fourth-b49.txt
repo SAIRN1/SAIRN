@@ -1,0 +1,22 @@
+SAIRN DIGEST -- fourth b49 -- 2026-10-21
+CONTEXT 44.7% of 1,000,000 -- 447,415 tokens, measured.
+STATUS: all landed on origin/main (95e31d3b7..7d13b7b39), no force, no skip; live pages = origin bytes (18:03Z); 37 suites exit 0.
+DECISION-NEEDED: none.
+READ: SAIRN-handoff-fourth-b49.md (whole state). Detail: SAIRN-report-fourth-b49.txt.
+SQL: none this batch.
+CHANGED:
+  95e31d3b7 dental reds: ledger_export extracts dntChargeCode (8/8, mc 3/3); announcer panel-live -> nav-announce (18/18)
+  5e38373c6 roofing defect 7: failed/unprovisioned JHA + warranty reads said, not 'none' (10/10, 3/3 mutants)
+  02cec2f84 senior defect 8: refusal withdraws + names; no-answer/unprovisioned kept + says which (15/15, 6/6)
+  11cc6e33d senior reds: senEffClock extracted, senLastErr in sandbox (22/22, 11/11)
+  dd3c45f6e tests/sairnbiz_z8_display.js -- the b47 Z8 arms in the repo (19, 6/6 mutants)
+  a1052d124 register, overrides (+6 tests/, -2 geocode), Tier A to cc, regenerated docs
+1 geocode arms were already in the repo since b47 (c04a3baaa); cc b36's gap was Z8 display.
+2 overrides: 11 -> 15; 5 sairnbiz tests await cody review, 4 dental api/ await b48 review.
+EVIDENCE-path: tests/sairnroofing_unreadable_reads.js, tests/sairnsenior_contract_auth_save.js, tests/sairnbiz_z8_display.js
+NEXT, in order:
+  a cc: Tier A review (senior contracts/auth, 4 rf_*, Z8-suite resources) + Z8 display (dbac30771)
+  b cody: review fourth's 5 sairnbiz test overrides so they can be removed
+  c not mine: app_session_isolation red at HEAD; dental write-failure probe 2 does not bite
+UNVERIFIED: roofing and senior paths on a real tenant; vm/Chromium only.
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\fd66c7b5-98f7-4e46-ac2a-b0383cde9210.jsonl
