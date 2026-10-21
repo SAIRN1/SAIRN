@@ -4615,6 +4615,24 @@
         "SAIRN-handoff-cc-b43.md",
         "SAIRN-report-cc-b43.txt"
       ]
+    },
+    {
+      "id": "cc-1792608963",
+      "session": "cc",
+      "subject": "cc",
+      "task": "b44: Dependabot #5 -- firebase-admin 12.7.0 -> 13.10.0 (drops node-forge), lockfile, mint test; triage addendum goes in the cc report because fourth holds the path manifest  FILES: package.json package-lock.json docs/tier-a-reviews.json SAIRN-handoff-cc-b44.md SAIRN-report-cc-b44.txt SAIRN-digest-cc-b44.txt NOT-html NOT-sql",
+      "claimed_at": "2026-10-21T18:56:03Z",
+      "claimed_at_epoch": 1792608963.599763,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-cc-b44.txt",
+        "SAIRN-handoff-cc-b44.md",
+        "SAIRN-report-cc-b44.txt",
+        "docs/tier-a-reviews.json",
+        "package-lock.json",
+        "package.json"
+      ]
     }
   ],
   "refusals": [
@@ -4956,6 +4974,21 @@
       "other_claimed_at": "2026-10-21T16:31:21Z",
       "shared_files": [
         "docs/tier-a-reviews.json"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-21T18:55:41Z",
+      "my_subject": "cc",
+      "my_task": "b44: Dependabot #5 -- firebase-admin 12.7.0 -> 13.10.0 (drops node-forge), lockfile, mint test, triage addendum  FILES: package.json package-lock.json docs/2026-10-05-dependabot-high-triage.md docs/sairn-path-manifest.json docs/tier-a-reviews.json SAIRN-handoff-cc-b44.md SAIRN-report-cc-b44.txt SAIRN-digest-cc-b44.txt NOT-html NOT-sql",
+      "other_session": "fourth",
+      "other_subject": "fourth",
+      "other_task": "b51: real NVDA run on sairndental, J1 focus-to-heading on nav, a11y pass on sairnlegacy.  FILES: sairndental.html sairnlegacy.html tests/sairndental_a11y_pass.js tests/sairnlegacy_a11y_pass.js docs/sairn-path-manifest.json SAIRN-handoff-fourth-b51.md SAIRN-report-fourth-b51.txt SAIRN-digest-fourth-b51.txt NOT-api",
+      "other_claimed_at": "2026-10-21T18:49:02Z",
+      "shared_files": [
+        "docs/sairn-path-manifest.json"
       ],
       "source": "status-registry",
       "why": "same declared FILES",
