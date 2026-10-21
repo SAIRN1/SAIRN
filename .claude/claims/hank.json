@@ -4534,6 +4534,23 @@
         "api/b45-leg-settings-owner-write.test.js",
         "api/sd-data.js"
       ]
+    },
+    {
+      "id": "hank-1792611015",
+      "session": "hank",
+      "subject": "sairnlegacy",
+      "task": "b46: leg_settings audit-log write + live owner verify. FILES: api/sd-data.js api/b45-leg-settings-owner-write.test.js SAIRN-handoff-hank-b46.md SAIRN-report-hank-b46.txt SAIRN-digest-hank-b46.txt",
+      "claimed_at": "2026-10-21T19:30:15Z",
+      "claimed_at_epoch": 1792611015.6584065,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-hank-b46.txt",
+        "SAIRN-handoff-hank-b46.md",
+        "SAIRN-report-hank-b46.txt",
+        "api/b45-leg-settings-owner-write.test.js",
+        "api/sd-data.js"
+      ]
     }
   ],
   "refusals": [
