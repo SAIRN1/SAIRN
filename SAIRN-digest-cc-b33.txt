@@ -1,0 +1,23 @@
+DIGEST cc b33
+STATUS: 8 of 8 closed (item 5 as a FINDING, routed). Push range STARTS at a87a4beb; 0/0 against the REMOTE; no --force, NO OVERRIDE.
+ITEM 1: fix-deny.ps1 ran and all 8 deny entries are present. As given (-File) it wrote ONE merged entry; re-run with -Command split them.
+The merged junk entry is still at settings.local.json line 1429: inert, and not removable by me (.claude/ is write-denied).
+ITEM 2: the status line goes red at 85 for builders AND auditors (was 80 / 70); an unidentified clone keeps 70.
+REGRESSION LOCK: RED_AT_BUILD is asserted equal to builder_context_watch THRESHOLD. 84/85 boundary driven through render(). 42/42; old values fail 9.
+ITEM 3a: path manifest now case-folds both sides (one capital letter had crossed the auditor boundary). 48/48; 0 real verdict changes over 21,360 path x agent pairs.
+ITEM 3b: tier checker reads a registry's app through NODE, not a regex (six valid shapes were invisible). 19/19; real output byte-identical.
+All three fixes have register records, appended while fourth holds the register (union-by-identity) and declared to fourth.
+ITEM 4: Tier A cody 05:51:44Z and cody 14:09:30Z both DISCHARGED, no defects. Note: the rt_* gate trusts p.app_id from the body.
+ITEM 5: DOES NOT MATCH. The reopen gate is a FIXED role set (owner + billing, api/sen-auth.js:93), not owner + per-owner payroll designees.
+Not owner-only, so no fix fired. Spec routed to hank: payroll_designees list, owner-only write, gate = owner OR designee, fail closed. My b31 owner-only recommendation is withdrawn.
+ITEM 6: output filtered to counts and failures; app files read by window. Context 72.9% at the write-up -- one session since b28.
+DECISION-NEEDED: Michael -- delete deny line 1429 in SAIRN-cc/.claude/settings.local.json, and fix "RED AT 70%" in ~/.claude/settings.json _statusline_note.
+CHANGED: tools/sairn_status_line.py; tools/sairn_path_manifest.py; tools/criticality_tier_check.py; docs/tier-a-reviews.json (2); docs/defect-density-register.json (3).
+SQL: none.
+EVIDENCE-path: SAIRN-report-cc-b33.txt, SAIRN-handoff-cc-b33.md, docs/2026-10-21-cc-b33-notes.md
+UNVERIFIED: the pay-period mismatch was read from code, not driven. The deny entries were not exercised (that needs the forbidden write). rt_routes not hit live.
+ROUTED: hank -- payroll designees, legacy id, overlapping closings, inert_until. cody -- job_ref byte cap, sd-sub-data cap, consolidate, P2, 3f9e48e0, ce15ddaa6a3c. fourth -- optimise toast.
+NEXT: hank implements notes section 5; Michael clears line 1429; cc -- TWO new open Tier A owed (cody 2026-10-20T16:51:37Z, hank 2026-10-21T11:01:51Z), checked in the ledger, not started.
+CONTEXT 73.7% of 1,000,000 -- 736,938 tokens, measured.
+SHA256 d94c778bad23f45aefb81fbbcd10dae77bdd870b2cf5afade7d065966a4c436d
+END-OF-REPORT

@@ -1,0 +1,66 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "cc",
+  "batch": "b33",
+  "id_lock": "6fa3703f5c50f50b",
+  "items": [
+    {
+      "id": 1,
+      "title": "Run fix-deny.ps1 on the cc clone and confirm",
+      "status": "done",
+      "evidence": "docs/2026-10-21-cc-b33-notes.md section 1; .claude/settings.local.json deny lines 1430-1437"
+    },
+    {
+      "id": 2,
+      "title": "Status-line threshold bugfix to 85 with a regression fixture",
+      "status": "done",
+      "evidence": "python tools/sairn_status_line.py --fixtures (42/42); commit a87a4beb"
+    },
+    {
+      "id": 3,
+      "title": "Fix the b74 path-manifest case-folding and tier-checker regex defects",
+      "status": "done",
+      "evidence": "python tools/sairn_path_manifest.py --fixtures (48/48), d94a2e3d; python tools/criticality_tier_check.py (19/19), 03f50bd4"
+    },
+    {
+      "id": 4,
+      "title": "Discharge cody 05:51:44Z then cody 14:09:30Z Tier A",
+      "status": "done",
+      "evidence": "docs/tier-a-reviews.json records cody 2026-10-20T05:51:44Z and 2026-10-20T14:09:30Z"
+    },
+    {
+      "id": 5,
+      "title": "Confirm pay-period reopen matches the decision; fix if owner-only",
+      "status": "done",
+      "evidence": "docs/2026-10-21-cc-b33-notes.md section 5 (fixed role set, not owner-only; conditional did not fire; mismatch routed to hank)"
+    },
+    {
+      "id": 6,
+      "title": "Context discipline; report real context %",
+      "status": "done",
+      "evidence": "docs/2026-10-21-cc-b33-notes.md section 7; python tools/context_verify.py --digest-line"
+    },
+    {
+      "id": 7,
+      "title": "One-line concept before new logic",
+      "status": "done",
+      "evidence": "docs/2026-10-21-cc-b33-notes.md sections 2, 3, 4 (concept lines)"
+    },
+    {
+      "id": 8,
+      "title": "Push, no force, confirm landed",
+      "status": "done",
+      "evidence": "git push to origin/main; rev-list --left-right --count = 0 0; a87a4beb d94a2e3d 03f50bd4 on origin"
+    }
+  ],
+  "closed": {
+    "drive_verify": "PASS",
+    "verified_by": "python tools/drive_upload_verify.py --agent cc --batch b33 --verify-only",
+    "criteria": "2026-10-20.1",
+    "deliverables": [
+      "SAIRN-handoff-cc-b33.md sha256 8f3a6038826c9231",
+      "SAIRN-report-cc-b33.txt sha256 667bbe0a19f79d01",
+      "SAIRN-digest-cc-b33.txt sha256 5f26736940d4e063"
+    ]
+  }
+}

@@ -1,0 +1,86 @@
+REPORT cc b33
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-21
+RANGE     from a87a4beb (fix(cc b33): the status line goes red at the 85% wrap-up rule...) to origin/main.
+          Claim 578daa03. No --force, NO OVERRIDE, no BYPASS-LOG row.
+
+== 1. DENY SCRIPT ==
+fix-deny.ps1 ran. All 8 entries are present (settings.local.json lines 1430-1437).
+Run with -File as given, it wrote ONE merged entry: -File passes "a","b" as a single string.
+Re-run with -Command, which split the list. The merged entry is still at line 1429 and is inert.
+My tools are denied on .claude/, and a python write would be the b28 bypass, so it is left for Michael.
+
+== 2. STATUS LINE: RED AT 85 ==
+CONCEPT: the red is the wrap-up rule each identified population runs on -- 85 for builders and
+auditors; only an unidentified clone keeps the earlier 70.
+Before: builders 80, hover/hover2 70 (hover2 seq 1095: red 145,050 tokens early).
+Fixed: RED_AT_BUILD 85, AUDITOR_AGENTS + RED_AT_AUDITOR 85, unidentified clone 70.
+REGRESSION LOCK: a fixture asserts RED_AT_BUILD == builder_context_watch.THRESHOLD.
+Also: the 84/85 boundary driven through render() for cc and hover2, and an identity-only ablation.
+Fixtures 42/42. Failing-first: 80/70 -> 33/42; 80/85 -> 36/42.
+Commit a87a4beb. ~/.claude/settings.json's _statusline_note still says 70; that file is denied.
+
+== 3. b74 DEFECTS (hover2 seq 1067, both against my own 38bbd455) ==
+PATH MANIFEST
+  CONCEPT: ownership is decided on a case-folded path against case-folded rules, with one
+  platform-independent matcher.
+  _under() now casefolds both sides and then uses fnmatchcase.
+  48/48. The old code allowed all four bypass paths. 0 verdict changes over 5,340 files x 4 agents.
+  Commit d94a2e3d.
+TIER CHECKER
+  CONCEPT: ask Node, which the platform loads, for the exported app; an unloadable module is a
+  loud SHAPE_ERROR.
+  declared_app() now uses node require() and raises RegistryLoadError on failure.
+  19/19 (hover2's six shapes, a load failure). The old regex returned None on all six.
+  The real output is byte-identical.
+  Commit 03f50bd4.
+REGISTER: three records appended while fourth holds the register (union-by-identity), declared to
+fourth. FMEA scored the manifest and the tier checker PREDICTED, and the status line MISSED.
+
+== 4. TIER A ==
+cody 2026-10-20T05:51:44Z -- discharged.
+  CROSS_APP_NAMES == [rt_routes, rt_stops], read from the module.
+  The session gate comes before every verb. S0/H1 inside 18/18; routes 63/63.
+  Note: the rt_* gate verifies the token against p.app_id taken from the body.
+cody 2026-10-20T14:09:30Z (rf_jobs) -- discharged.
+  7/7. The strip list holds all four keys; columns are applied last; null assignee -> ''.
+
+== 5. PAY-PERIOD REOPEN: DOES NOT MATCH THE DECISION ==
+Decision: the owner, plus anyone the owner designates for payroll, configurable per owner.
+Code: SEN_PERIOD_CLOSE_ROLES = roleSet({owner, billing}) (api/sen-auth.js:93), one fixed set for
+both close and reopen (api/sd-data.js:8270).
+It is NOT owner-only, so the conditional fix did not fire. But it IS a fixed role list:
+  - an undesignated billing user can reopen;
+  - a designated HR person or assistant cannot.
+Spec routed to hank (api/ is outside this claim):
+  1. a per-owner payroll_designees list, owner-only write;
+  2. gate = owner || designee;
+  3. an unreadable designation list falls back to owner-only, and says so;
+  4. four arms.
+My b31 owner-only recommendation is withdrawn.
+
+== 6. CONTEXT ==
+Output was filtered to counts and failures; app files were read by grep and windows.
+Measured at the write-up: 72.9% of 1,000,000. The session is cumulative from b28.
+
+== 8. PUSH ==
+One fetch-first race. The rebase hook re-seated 3 register shas; they were amended into my
+unpublished register commit. 0 0 against origin; all three fix shas are on origin.
+
+== OPEN TIER A OWED BY cc (checked in the ledger at write-up) ==
+cody 2026-10-20T16:51:37Z and hank 2026-10-21T11:01:51Z -- new, not in this dispatch, not started.
+
+== UNVERIFIED ==
+- The pay-period mismatch was read from code, not driven live.
+- rt_routes was not hit live.
+- The deny entries' effect on a real Edit/Write into the hover clones was not exercised -- testing
+  it would mean attempting the forbidden write.
+
+== EVIDENCE ==
+docs/2026-10-21-cc-b33-notes.md, tools/sairn_status_line.py --fixtures, tools/sairn_path_manifest.py
+--fixtures, tools/criticality_tier_check.py, docs/tier-a-reviews.json, docs/defect-density-register.json,
+SAIRN-handoff-cc-b33.md
+
+SHA256 9234ec4f0d84fbc3c92e0820dd5693f241617a518060e4fd13cca445d552dbba
+END-OF-REPORT
