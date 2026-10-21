@@ -4524,8 +4524,8 @@
       "task": "b45: leg_settings owner read/write resource (F2/F3), Tier A. FILES: api/_resources/sairnlegacy.js api/sd-data.js api/b45-leg-settings-owner-write.test.js SAIRN-handoff-hank-b45.md SAIRN-report-hank-b45.txt SAIRN-digest-hank-b45.txt NOT-package-json",
       "claimed_at": "2026-10-21T19:04:37Z",
       "claimed_at_epoch": 1792609477.6503332,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T19:19:11Z",
       "files": [
         "SAIRN-digest-hank-b45.txt",
         "SAIRN-handoff-hank-b45.md",
