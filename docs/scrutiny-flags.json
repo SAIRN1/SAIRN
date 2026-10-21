@@ -3286,6 +3286,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairndental_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "45aac9a8c7291f705e0c8c760954cb95fc7a2201",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_b14_leg_aftercare_probe.py",
    "class": "test file",
    "level": "WEAKENING",
