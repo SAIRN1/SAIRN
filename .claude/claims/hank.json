@@ -4447,8 +4447,8 @@
       "task": "b39 npm install deny diagnosis",
       "claimed_at": "2026-10-21T15:22:09Z",
       "claimed_at_epoch": 1792596129.1135907,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T15:24:30Z",
       "files": null
     }
   ],
