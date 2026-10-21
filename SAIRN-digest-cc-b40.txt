@@ -1,0 +1,23 @@
+DIGEST cc b40
+STATUS: 6 of 6 closed; no code changed; no --force, NO OVERRIDE.
+ITEM 1-2: own settings.local.json deny = hank's 13 exactly (8 Edit/Write in both spellings + 5 Bash hover patterns).
+  Ran fix-deny.ps1 as a -cnotcontains copy: the original's case-insensitive -notcontains would drop Bash(*sairn-hover*). Original untouched.
+  Only permissions.deny changed (1423 allows identical). CONFIRMED DENIED: Bash ls into both hover clones; Edit in both.
+  Write was not probed (a failed deny would write into an auditor clone); its rules match the Edit rules that refused.
+ITEM 3: no fix code was written in items 4-5, so no concept line was owed.
+ITEM 4: Dependabot 5 = node-forge <=1.4.0 (HIGH, GHSA-86w9-cpqp-85rv), transitive via firebase-admin ^12.7.0; no patched node-forge exists.
+  NOT MINE: package-lock UNOWNED by the manifest; the consumer is api/_lib/firebase-admin.js (hank's api/). Not touched.
+  NEW: firebase-admin 13.10.0 is the first release without node-forge -- one major, not the two npm audit proposes.
+ITEM 5a: the three b28 rt_stops SQL files are on origin AND applied live -- the FK is present, rtroutes_saved_sane is gone, the basis check is present.
+ITEM 5b: SEN-AUDIT-2026 is already in KNOWN_AUDIT_KEYS (tools/audit_licence.py:106, hank b35). Not copied into CLAUDE.md.
+ITEM 6: pushed and confirmed.
+DECISION-NEEDED: Michael -- firebase-admin 12.7.0 -> 13.10.0 (write a mint test first) or accept the risk with a named trigger.
+CHANGED: local .claude/settings.local.json (untracked, deny 8 -> 13); repo: the three deliverables only.
+SQL: none written. Two read-only SELECTs on sairn-platform (pg_constraint).
+EVIDENCE-path: SAIRN-report-cc-b40.txt, SAIRN-handoff-cc-b40.md
+UNVERIFIED: the Write deny was not probed; node-forge reachability (npm ci denied); whether the b28 FK probe was ever executed.
+ROUTED: hank -- b40 barrier arms + keyboard close. fourth -- review cc 2026-10-21T17:13:48Z.
+NEXT: nothing owed by cc on the Tier A ledger.
+CONTEXT 55.2% of 1,000,000 -- 551,582 tokens, measured.
+SHA256 f52ae94708a2a33090da0a2b91c7b7db876db8f9caabc56d37b3b3a268e30af4
+END-OF-REPORT

@@ -1,0 +1,59 @@
+REPORT cc b40
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-21
+RANGE     the b40 deliverables only; no code changed. No --force, NO OVERRIDE, no BYPASS-LOG row.
+
+== 1-2. HOVER DENY RULES (own .claude/settings.local.json, untracked) ==
+Ran a copy of C:\Users\marsh\fix-deny.ps1 with -cnotcontains, as dispatched; the original is unchanged.
+  The original's -notcontains is case-insensitive and would drop Bash(*sairn-hover*) as a duplicate of Bash(*SAIRN-hover*).
+Invoked with powershell -Command (b33: -File passes the list as one string). It reported 13 deny entries.
+RESULT: deny == hank's 13-entry set exactly (set compare):
+  8 Edit/Write on SAIRN-hover/** and SAIRN-hover2/** in the //C:/ and ~/ spellings, plus
+  Bash(*SAIRN-hover*), Bash(*sairn-hover2*), Bash(*sairn-hover/*), Bash(*sairn-hover\*), Bash(*sairn-hover*).
+  Before/after diff: only permissions.deny moved; 1423 allow entries and every other key are identical.
+CONFIRMED DENIED: Bash `ls` into SAIRN-hover2 (/c/ spelling) and SAIRN-hover (C:/ spelling) were both refused.
+  Edit on SECURITY.md in both clones was refused ("File is in a directory that is denied").
+  The Edit probe used a non-matching old_string, so nothing could have been written either way.
+NOT PROBED: Write. A failed deny would create a file in an auditor clone.
+  Its rules are identical in spelling to the Edit rules that refused.
+
+== 3. METHODOLOGY ==
+No fix code was written in items 4-5, so no concept line was owed.
+
+== 4. DEPENDABOT ALERT 5 -- triaged, NOT MINE, not touched ==
+Read via the GitHub REST API (token from the git credential manager; gh is not installed).
+  open, HIGH, npm node-forge <= 1.4.0, GHSA-86w9-cpqp-85rv / CVE-2026-85393,
+  "RSA PKCS#1 v1.5 signature verification accepts extra nested DigestAlgorithm elements".
+  Transitive, runtime, package-lock.json. first_patched_version: NULL -- no fixed node-forge exists.
+CHAIN: package.json -> firebase-admin ^12.7.0 -> node-forge ^1.3.1 (lock has 1.4.0).
+  The only consumer is api/_lib/firebase-admin.js (SAIRNcash custom-token mint, RTDB).
+OWNER: the path manifest classifies package-lock.json UNOWNED; the consuming code is api/ (hank).
+  The 2026-10-05 triage d788ee83 (docs/2026-10-05-dependabot-high-triage.md) made it a decision for its owner, with a mint test required first.
+NEW FACT (npm registry, measured): firebase-admin 13.10.0 is the FIRST release with no node-forge dependency.
+  12.7.0 is the last 12.x and latest is 14.5.0. So the fix is ONE major (12 -> 13.10), not the two npm audit proposes.
+REACHABILITY still UNDETERMINED: npm ci --ignore-scripts in a scratch dir was denied, so firebase-admin's lib/ was not grepped.
+
+== 5a. rt_stops SQL from b28 ==
+Files: sql/rt_stops_license_hash_composite_fk.sql, sql/rt_stops_fk_probe.sql, sql/rt_routes_drop_saved_sane.sql -- on origin (cb0d94f5).
+APPLIED, measured live (read-only pg_constraint, sairn-platform ejrlrrkvhtllxbbypdjb):
+  rtstops_license_matches_route (f, rt_stops) PRESENT; rtroutes_id_license_uniq (u) PRESENT;
+  rtroutes_saved_sane ABSENT; rtroutes_saving_has_a_basis PRESENT.
+The probe file is a deliberately-raising read. Whether it was executed is not observable; with the FK present it would pass.
+
+== 5b. SEN-AUDIT-2026 / KNOWN_AUDIT_KEYS ==
+ALREADY DONE where the list lives: tools/audit_licence.py:106. KNOWN_AUDIT_KEYS includes 'SEN-AUDIT-2026', with its dated 200 EXISTS measurement.
+  Added by hank b35, 0ff033a3, on origin.
+NOT added to CLAUDE.md: CLAUDE.md does not hold that list, and a second copy there is the hardcoded-list shape CLAUDE.md itself warns goes stale.
+If Michael wants a CLAUDE.md pointer anyway, it should cite the tool, not repeat the keys.
+
+== OPEN ==
+Michael: firebase-admin -> 13.10.0 (mint test first), or accept with a named trigger.
+Routed: hank (b40 barrier arms, keyboard close); fourth (review cc 2026-10-21T17:13:48Z).
+Forward: the OAuth upsert sets consent_id.
+
+== CHANGED ==
+Local only: .claude/settings.local.json (untracked; deny 8 -> 13). Repo: SAIRN-handoff-cc-b40.md, this report, the digest.
+
+SHA256 4ca4f98c39dfb46b5cb0b7484792d7ada289240afc29803239a14d4ff083cda5
+END-OF-REPORT
