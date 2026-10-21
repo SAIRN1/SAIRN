@@ -1,0 +1,44 @@
+REPORT -- cody b35, 2026-10-21
+
+ITEMS: 6 of 6 done. Item 4's premise was wrong (cc's b29, not mine, as b33 also found). Item 6's live check of the specific fix is UNVERIFIED (Vercel 403).
+
+PUSHED, no --force, no skip, no exemption. origin/main = 792654a38 (git ls-remote). Local 0 ahead / 0 behind. Five changed files match the remote by sha256 after CR normalisation.
+Commits: 43c32bf6c work · a7e349679 derived docs regenerated · 5f6d18809 push-gate scrutiny rows · 792654a38 path manifest + Tier A obligation. The handoff/report/digest commit follows.
+Gate refusals, both fixed at the cause: (1) MASTER-PLAN.md and traceability-matrix.md stale after two new suites -> regenerated; (2) three api/ test paths were outside cody's scope -> declared in docs/sairn-path-manifest.json, and a Tier A obligation was opened on seven roofing resources, assigned to cc.
+
+ITEM 1 -- CONCEPT: a missing table on a write is a 503 NOT_PROVISIONED naming the file that creates THAT table, classified by body, not a retryable 502.
+  api/sd-data.js +8 lines: subcontractors, sub_assignments, rf_safety_equipment, rf_job_hazard_assessments, rf_buildings, rf_roof_sections, rf_warranty_tiers, rf_job_warranties now go through notProvisioned(res, w, msg, saved). That is the b34 prequal/bonding line, so a 23xxx is ROW_REFUSED and a missing column is not "run the migration".
+  api/b35-missing-table-writes.test.js 24/0; 16 arms red on the old file; the 8 control arms are green on both.
+
+ITEM 2 -- CONCEPT: a revocation is a historical fact; a repeat revoke leaves revoked_on/revoked_by and still completes the discard.
+  api/accounting.js: the consent PATCH is filtered revoked_on=is.null. When zero rows match, the consent is re-read: 404 NO_CONSENT / already revoked -> discard with already_revoked:true and the original row / 502 REVOKE_UNCONFIRMED (the re-read failed, or the consent still reads active).
+  api/b35-accounting-revoke-repeat.test.js 8/0; 5 arms red on the old file. b34-accounting-revoke is still 9/0.
+
+ITEM 3 -- CONCEPT: a suite red at HEAD is stale when the code moved deliberately and the fixture did not. VERDICT: STALE TEST, no code bug.
+  Cause A: the active-credential pre-gate (c8b5e5b12, 2026-09-26) reads _employee_auth before any branch; the test's recorder answered it with customer rows, so the owner happy path got 403 and the sales/install arms counted one call.
+  Cause B: the pinned EXTRA_ACTIONS list lacked write_batch (be352a7d0, 2026-09-26).
+  Fix: the recorder answers the pre-gate outside `calls`, and the list gains write_batch. 10 passed, exit 0; the old test still exits 1.
+
+ITEM 4 -- cc's b29 eight, at HEAD 792654a38:
+  1 dental schema message -- FIXED b34
+  2 prequal/bonding 502 -- FIXED b34 (+8 siblings b35)
+  3 accounting false tokens_discarded -- FIXED b34 (+ repeat-revoke clobber b35)
+  4 accounting 400 -> NOT_PROVISIONED -- FIXED b34
+  5 sd_quote_request_photos unread -- server read verb b34; NO CLIENT CALLER (hank)
+  6 stonedesk.html style profile reads d.provisioned/d.ok on inner data -- STILL OPEN, re-read (sdData returns j.data; :30746, :30760) -- hank
+  7 sairnroofing.html JHA !j.ok -> empty list (:4188); warranties ignore ok and provisioned (:4845) -- STILL OPEN, re-read -- fourth
+  8 sairnsenior.html contract/prior-auth -- NOT re-verified (no line cited, fourth's file)
+
+ITEM 6 -- LIVE: Vercel list_deployments 403 -> deploy sha UNVERIFIED. POST /api/sd-data and /api/accounting with no licence both answer 401 live, so the modules load. The changed branches need a licence and were not reached.
+
+VERIFICATION: 25 suites, every one EXIT=0, listed in SAIRN-handoff-cody-b35.md s6. Guardian v2 on the diff: 0a clean on all five files; no proxy/service_role/RESEND/env/session-gate changes; LF preserved; numstat matched intent.
+
+OPEN / ROUTED:
+  cc -- Tier A review on the seven roofing resources (b35), plus b31-b34.
+  hank -- request_photos client caller (defect 5); style profile client (defect 6).
+  fourth -- defects 7 and 8.
+  Observation, not acted on: sd_customers is not in SD_SESSION_GATED, so a token whose employee row was DELETED (not deactivated) reaches the branch gate on the token's role. Gating decision, Tier A, out of scope.
+  Check 29 real write not performed: no licence and no live-write authorisation; the storage shape is unchanged.
+
+CLAIM: platform claim 7a549be28, released after the deliverables commit.
+CONTEXT: measured 21.5% of 1,000,000 before wrap-up.

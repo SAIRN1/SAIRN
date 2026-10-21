@@ -1,0 +1,15 @@
+DIGEST -- cody b35, 2026-10-21. Six items: all six done. PUSHED, no --force, no skip.
+STATUS: origin/main 792654a38 verified by git ls-remote (0 ahead / 0 behind; five files match the remote by sha256). NO LIVE WRITES. NO SQL.
+CHANGED: api/sd-data.js (+8), api/accounting.js, api/sd-data-customer-soft-delete.test.js, api/b35-missing-table-writes.test.js, api/b35-accounting-revoke-repeat.test.js, docs/MASTER-PLAN.md, docs/traceability-matrix.md, docs/sairn-path-manifest.json, docs/tier-a-reviews.json, SAIRN-handoff-cody-b35.md.
+ITEM 1 -- CONCEPT: a missing table on a write is a 503 naming THAT table's schema file, classified by body, not a retryable 502. Eight roofing/subcontractor writes now use notProvisioned. 24/0; 16 red on the old file.
+ITEM 2 -- CONCEPT: a revocation is a historical fact. Consent PATCH guarded revoked_on=is.null; a repeat keeps the original revoked_on/by and still discards (already_revoked:true); an unconfirmable state is 502 REVOKE_UNCONFIRMED. 8/0; 5 red on the old file.
+ITEM 3 -- STALE TEST, not a bug: the fixture never answered the 2026-09-26 credential pre-gate and missed the write_batch verb. Test fixed, no code change; 10 passed; the old test still exits 1.
+ITEM 4 -- the "eight" are cc's b29 again: 1-4 FIXED b34; 5 server fixed, client caller missing (hank); 6 STILL OPEN (hank, stonedesk.html style profile); 7 STILL OPEN (fourth, sairnroofing JHA/warranty read as "none"); 8 not re-verified (fourth).
+ITEM 6 -- LANDED. Live: Vercel deployment list 403 -> deploy sha UNVERIFIED; both endpoints answer 401 live without a licence (modules load); the changed branches were not reachable.
+GATES: two refusals, both fixed at the cause (stale derived docs; out-of-scope test paths declared). Tier A obligation on seven roofing resources OPENED, assigned to cc.
+DECISION-NEEDED: (1) cc -- the Tier A reviews b31-b35. (2) hank -- defects 5 and 6. (3) fourth -- defects 7 and 8. (4) Michael -- sd_customers is not session-gated against a DELETED employee row (deactivation is still refused); gate it or not.
+LIMIT: no Check-29 real write (no licence, no live-write authorisation); the per-resource projection proof is still static (b34).
+UNVERIFIED: the production deployment carries 792654a38; defect 8.
+NEXT: (1) confirm the deploy sha with deployment read access; (2) a runtime differential for projection sites; (3) the sd_customers gating decision.
+EVIDENCE-path: SAIRN-handoff-cody-b35.md, SAIRN-report-cody-b35.txt, api/b35-missing-table-writes.test.js, api/b35-accounting-revoke-repeat.test.js
+CONTEXT 22.4% of 1,000,000 -- 223,806 tokens, measured.
