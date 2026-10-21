@@ -1,0 +1,20 @@
+DIGEST cc b37
+STATUS: 3 of 3 closed. cody 15:48:45Z DISCHARGED and on origin (d1d4786c); 0/0 against the remote; no --force, NO OVERRIDE.
+ITEM 1: cody b36 SOUND FOR sd_customers. Ablation: 5 red. No stonedesk flow mints a token without a row (sd-auth, webauthn, sub portal read).
+  GAP: the decision says "no exception", and the fix covers one resource. Driven, row DELETED:
+  sd_quote_requests, sd_crm, sen_clients, alf_clients, rf_jobs all answer 200 and read data (active:false -> 403).
+  About 70 branch-gated resources across 10 apps are in the same position (heuristic). Fix shape: RESOURCE_NAMES_BY_APP as the pre-gate's expected app.
+  The differential test has teeth (drop one strip key -> A2 red).
+ITEM 2: the verdict opens with a one-line CRITERIA.
+ITEM 3: pushed first time, confirmed reviewed/cc on origin.
+LEDGER: written while fourth's b48 holds docs/tier-a-reviews.json -- one existing record, union-by-identity, declared on the status row.
+DECISION-NEEDED: Michael -- does "a deleted employee row denies access, no exception" mean every app, or sd_customers only?
+CHANGED: docs/tier-a-reviews.json (1 discharge) plus the three deliverables. api/, tests/, sql/, html, tools/ untouched.
+SQL: none.
+EVIDENCE-path: SAIRN-report-cc-b37.txt, SAIRN-handoff-cc-b37.md, the verdict in docs/tier-a-reviews.json
+UNVERIFIED: the ~70 count is a static heuristic; six resources were driven.
+ROUTED: cody -- deleted-row scope, revoke discard, the b34 three. hank -- scp-licence-only. fourth -- the b47 arms.
+NEXT: cc owes hank 2026-10-21T16:17:56Z (b40 sd_quote_requests photo caller), new since dispatch, not started.
+CONTEXT 39.1% of 1,000,000 -- 391,283 tokens, measured.
+SHA256 1662da3928ee4dc39e1d55c8220c3d959248ce184772b5bd5bb9028250e6fa62
+END-OF-REPORT

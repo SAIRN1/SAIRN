@@ -1,0 +1,43 @@
+REPORT cc b37
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-21
+RANGE     from d1d4786c (tier-a(cc b37): discharge cody 2026-10-21T15:48:45Z ...) to origin/main.
+          No --force, NO OVERRIDE, no BYPASS-LOG row.
+
+== LEDGER HOLD ==
+fourth's b48 claim holds docs/tier-a-reviews.json, so the first claim was BLOCKED.
+I re-claimed for the read-only review and the deliverables; the claim string names the hold.
+The discharge changed ONE existing record (union-by-identity) and was declared to fourth on the status row, the same as b35.
+
+== 1. cody 2026-10-21T15:48:45Z -- b36 deleted-row pre-gate -- SOUND FOR sd_customers; DECISION SCOPE ROUTED ==
+CRITERIA: ablation; the reviewer question answered from every stonedesk mint site; and Michael's decision as quoted in the
+test header ("a deleted employee row denies session access the same as deactivation does -- no exception") DRIVEN across apps.
+ABLATION: reverse-applying ed9a1694's sd-data hunk -> b36-sd-customers-deleted-row 4 passed / 5 FAILED (D1-D5); HEAD 9/9.
+  Neighbours green: customer-soft-delete 10, law-phase2-session, session-gate, scp-session-gate 92/92.
+REVIEWER QUESTION -- no stonedesk flow mints a token without a row:
+  sd-auth.js:215 bootstrap INSERTs the row first and returns upstream() on failure; :278 signs from the row;
+  sd-webauthn.js:326 signs only from an active=eq.true row; sd-sub-auth.js is app 'stonedesk_sub', which the branch refuses.
+  No api/ path DELETEs an sd_employee_auth row (only the set_active PATCH, sd-auth.js:560).
+  So the newly refused case is a row removed in the database, inside the 12h SESSION_TTL_MS.
+THE GAP: credentialStillActive() has ONE call site (pre-gate, sd-data.js:2293). A deleted row is refused only where
+  preExpectedApp is known: the 66 SD_SESSION_GATED resources, memory, and sd_customers.
+  DRIVEN with cody's own harness (scratch copy, resource made a parameter), owner token:
+    sd_customers DELETED 403 | sd_quote_requests, sd_crm, sen_clients, alf_clients, rf_jobs: DELETED 200, data read.
+    The same six with active:false: all 403.
+  Heuristic count: about 70 branch-gated resources across 10 apps are in the same position.
+  FIX SHAPE: api/_resources RESOURCE_NAMES_BY_APP maps 401 resources to exactly one app (0 multi-app).
+    Using it as the expected app refuses a deleted row everywhere, and still lets a wrong-app token reach its branch's FORBIDDEN.
+  Routed to cody; Michael to confirm that "no exception" means every app.
+DIFFERENTIAL: api/b36-projection-runtime-differential.test.js 71/71.
+  Dropping assigned_employee_id from sd_crm's storedBlob strip list (:5322) -> A2 red, 70/71.
+
+== OPEN ==
+NEW Tier A owed by cc, not in this dispatch: hank 2026-10-21T16:17:56Z (b40 stonedesk.html sd_quote_requests photo caller).
+Routed and still open: cody (deleted-row scope; revoke discard; the b34 three); hank (scp-licence-only B arms + A3); fourth (b47 arms).
+
+== CHANGED ==
+docs/tier-a-reviews.json (1 discharge); SAIRN-handoff-cc-b37.md; this report; the digest. api/, tests/, sql/, html, tools/ untouched.
+
+SHA256 b0fd0387f0c14685d603fccf404be84d89124485702c3b3ccfe28b96a2ea1117
+END-OF-REPORT
