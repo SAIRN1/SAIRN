@@ -4443,8 +4443,8 @@
       "task": "b33: status-line red threshold 85 (bugfix, drift-locked to the wrap-up watcher); path-manifest case folding; tier-checker registry read by node not regex (hover2 seq1067); Tier A cody 05:51:44Z + 14:09:30Z; pay-period reopen check; push. Register records for these fixes will be APPENDED to docs/defect-density-register.json (fourth holds it; union-by-identity merge policy) and declared to fourth.  FILES: tools/sairn_status_line.py tools/sairn_path_manifest.py tools/criticality_tier_check.py docs/tier-a-reviews.json docs/2026-10-21-cc-b33-notes.md docs/batch-manifest-cc-b33.json SAIRN-handoff-cc-b33.md SAIRN-report-cc-b33.txt SAIRN-digest-cc-b33.txt NOT-api NOT-html NOT-tests NOT-sql",
       "claimed_at": "2026-10-21T12:18:17Z",
       "claimed_at_epoch": 1792585097.3994155,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T12:36:37Z",
       "files": [
         "SAIRN-digest-cc-b33.txt",
         "SAIRN-handoff-cc-b33.md",
