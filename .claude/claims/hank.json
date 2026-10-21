@@ -4498,6 +4498,24 @@
         "SAIRN-report-hank-b43.txt",
         "sql/sd_audit_b42_test_request_cleanup.sql"
       ]
+    },
+    {
+      "id": "hank-1792606071",
+      "session": "hank",
+      "subject": "stonedesk",
+      "task": "b44: b40 photo overlay barriers (whole-value data URL check client + intake), keyboard close, mutant-killing arms (cc b38). FILES: stonedesk.html api/stonedesk-public.js api/b40-stonedesk-style-profile-request-photos.test.js SAIRN-handoff-hank-b44.md SAIRN-report-hank-b44.txt SAIRN-digest-hank-b44.txt",
+      "claimed_at": "2026-10-21T18:07:51Z",
+      "claimed_at_epoch": 1792606071.1714225,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-hank-b44.txt",
+        "SAIRN-handoff-hank-b44.md",
+        "SAIRN-report-hank-b44.txt",
+        "api/b40-stonedesk-style-profile-request-photos.test.js",
+        "api/stonedesk-public.js",
+        "stonedesk.html"
+      ]
     }
   ],
   "refusals": [
