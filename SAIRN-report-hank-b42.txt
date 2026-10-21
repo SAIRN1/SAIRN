@@ -1,0 +1,30 @@
+HANK b42 REPORT -- 2026-10-21
+
+1. LIVE PHOTOS (N) ON SD-AUDIT-2026 -- VERIFIED, one named limit.
+   Concept: create exactly one labelled test request through the real public form, drive the real server read under a
+   real session, then click the real button in a signed-in browser; whatever cannot be driven is named, not passed.
+     publish test shop sd-audit-b42-test          200  (unpublished again right after: 200)
+     public quote_request + 1 photo               200  QR-1792602627030-534, photos_sent 1, photos_saved 1
+     session read sd_quote_requests               200  photo_count 1
+     request_photos                               200  1 slot, byte-identical to the photo sent
+     browser, Michael signed in (I did not enter the PIN): Public Catalog row shows "Photos (1)";
+       click event on the button -> inline pcShowRequestPhotos -> overlay -> <img> loaded 96x96;
+       screenshot shows the orange square with the blue diagonal stripe.
+   LIMIT: automation pointer clicks landed on <html> on this page (sidebar too) while elementFromPoint returned the
+   button (dpr 1.5), so the opening event was button.click() -- real handler and DOM, not a human pointer.
+   LEFT IN PLACE: the pending test request; the shop row, unpublished.
+
+2. scp-licence-only B ARMS + A3 (cc b35 routing) -- FIXED.
+   Concept: the nine are session-gated on purpose, so the suite asserts the gate that ships, and A3 reads the
+   declared table rather than the first mention of its name.
+   B1 no session -> 403 FORBIDDEN; B2 signed-in sairnscape owner not refused; C unchanged.
+   A3 parses const SD_SESSION_GATED = {...} with controls (invoices present, sd_customers absent).
+   api/sd-data-scp-licence-only.test.js 33/0 (was 15/9). Mutations: scp_jobs ungated -> A3 + B1 FAIL;
+   gate refusing every session -> 9 x B2 FAIL. api/sd-data-scp-session-gate.test.js 92/0.
+
+3. PUSH: b27df033c (test fix) and e9a4c7aff (2 register records + regenerated docs) on origin/main, not forced.
+   A first push raced the remote; the register commit was dropped, the fix rebased, and the records re-derived at
+   the final sha before pushing. Deliverables commit follows.
+
+4. OPEN: Michael -- optional human click; keep or delete the test request. Not swept: other fixed-window SD_DATA
+   slices (same shape as A3).

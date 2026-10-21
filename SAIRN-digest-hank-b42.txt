@@ -1,0 +1,13 @@
+HANK b42 DIGEST -- 2026-10-21 -- Photos (N) verified live on SD-AUDIT-2026; scp-licence-only suite fixed
+CONTEXT 33.6% of 1,000,000 -- 335,967 tokens, measured.
+STATUS: b27df033c + e9a4c7aff on origin/main, NOT FORCED.
+1. Test request QR-1792602627030-534 + 1 photo created via the public form; test shop unpublished after.
+2. request_photos returns the photo byte-identical; browser overlay renders it 96x96 (screenshot).
+3. Limit: opening event was button.click(); automation pointer clicks hit <html> on this page.
+4. scp-licence-only: B arms assert the shipped gate (403 / session passes); A3 reads the real table.
+5. 33/0 (was 15/9); two mutation controls fire; sibling gate suite 92/0.
+DECISION-NEEDED (Michael): keep or delete the test request; optional human click on Photos (1).
+NEXT: handoff sec.4 -- P1, P2 (Michael), S1 (unswept), T1 (cc), carried items.
+CHANGED: api/sd-data-scp-licence-only.test.js, register, 2 derived docs; live: 1 test request.
+EVIDENCE-path: SAIRN-handoff-hank-b42.md, SAIRN-report-hank-b42.txt
+UNVERIFIED: a human pointer click on Photos (1).
