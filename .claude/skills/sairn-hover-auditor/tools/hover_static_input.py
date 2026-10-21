@@ -38,6 +38,12 @@ were handed in); a parse/rule failure named in stdout even at exit 0; or
 unparseable output. INCONCLUSIVE also wins over FINDINGS, because a run
 that found two things and could not finish has an unknown third.
 
+b74 UPDATE: semgrep is NOW an analyser here (hover_semgrep_signal.py, a
+fail-closed wrapper with its own rule pack), and Stryker is named in every
+review input's not_available list with its live availability. The paragraph
+below is the b72 state, kept as the dated record of why nothing is installed
+BY THIS TOOL -- it still does not install anything.
+
 WHAT IS DELIBERATELY NOT HERE: a bundled analyser. semgrep is not on this
 machine (checked, b72) and this tool does not install one -- the repo's
 deny list blocks package installs for good reason and an auditor
@@ -154,25 +160,53 @@ def run_py_compile(paths):
     return worst, '\n'.join(outs), '\n'.join(errs), timed, seen
 
 
+def run_semgrep(paths):
+    """b74: Semgrep as an analyser. hover_semgrep_signal owns the fail-closed
+    logic (canary positive AND negative control, errors array, coverage,
+    timeout); this adapter only hands its answer to classify() in this
+    file's contract, so an unusable engine reads INCONCLUSIVE here and never
+    CLEAN."""
+    sys.path.insert(0, HERE)
+    import hover_semgrep_signal as G
+    return G.run_semgrep(paths)
+
+
 ANALYSERS = (
     ('node --check', ('.js',), run_node_check),
     ('python -m py_compile', ('.py',), run_py_compile),
+    ('semgrep (hover-risk rule pack)', ('.js', '.mjs', '.cjs'), run_semgrep),
 )
 
 # Named, checked, and ABSENT. Reported as missing rather than omitted --
 # "we ran the analysers we had" and "the tree is clean" are different
 # claims and only the first one is true here.
 NOT_AVAILABLE = (
-    ('semgrep', 'not on PATH on this machine (checked b72). NOT installed '
-                'by this tool: the repo denies package installs, and an '
-                'auditor self-provisioning a toolchain is a change nobody '
-                'reviewed.'),
     ('eslint with a project config', 'npx eslint resolves, but this repo '
                                       'carries no eslint config, so a run '
                                       'would report on default rules '
                                       'nobody chose. Not run rather than '
                                       'run meaninglessly.'),
 )
+
+
+def not_available():
+    """The static NOT_AVAILABLE rows plus Stryker, whose absence is read from
+    the machine EVERY time rather than written down once. Stryker is not an
+    analyser here (a mutation run takes minutes and needs Node 22), so it is
+    named in every review input: an absence that is printed cannot be mistaken
+    for a clean mutation result."""
+    rows = list(NOT_AVAILABLE)
+    sys.path.insert(0, HERE)
+    try:
+        import hover_stryker_signal as Sk
+        line = Sk.availability_line()
+        rows.append(('stryker (mutation testing, on demand)',
+                     line or 'installed and found, but NOT run by analyse(): run '
+                             'python hover_stryker_signal.py --run --sha <sha>'))
+    except Exception as e:
+        rows.append(('stryker (mutation testing, on demand)',
+                     'COULD NOT CHECK its availability: %s' % e))
+    return rows
 
 
 def analyse(paths):
@@ -215,7 +249,7 @@ def review_input(paths):
         'why': why,
         'analysers': [{'name': n, 'verdict': v, 'reasons': rs, 'detail': d}
                        for n, v, rs, d in rows],
-        'not_available': [{'name': n, 'reason': r} for n, r in NOT_AVAILABLE],
+        'not_available': [{'name': n, 'reason': r} for n, r in not_available()],
         'how_to_read_this': (
             'INCONCLUSIVE IS NOT CLEAN. Do not treat the absence of findings '
             'from an incomplete run as evidence. The not_available list is '
@@ -285,7 +319,7 @@ def selftest():
     ck('S11 the review-input block NAMES the analysers that are absent, so '
        'a reader cannot mistake what ran for full coverage',
        [a['name'] for a in review_input(['notes.txt'])['not_available']]
-       == [n for n, _ in NOT_AVAILABLE])
+       == [n for n, _ in not_available()])
 
     ck('S12 and it carries an explicit how-to-read line saying INCONCLUSIVE '
        'is not clean',
@@ -310,6 +344,20 @@ def selftest():
            'NOT reported CLEAN by the real analyser (%s)'
            % (rows2[0][1] if rows2 else 'no row'),
            rows2 and rows2[0][1] in ('FINDINGS', 'INCONCLUSIVE'))
+
+    # ── b74: semgrep and stryker wired in as feeding signals ─────────────
+    ck('S15 semgrep is a registered analyser for .js files, so a js target '
+       'ALWAYS gets a semgrep row (never silently omitted)',
+       any(n.startswith('semgrep') and '.js' in exts for n, exts, _fn in ANALYSERS))
+    js_rows = analyse([os.path.join(HERE, 'witness', 'pgrest_emulator.js')])
+    sg = [r for r in js_rows if r[0].startswith('semgrep')]
+    ck('S16 driving the REAL semgrep analyser on a real .js file returns a row whose verdict '
+       'is a definite CLEAN / FINDINGS / INCONCLUSIVE with reasons (%s) -- and an unusable '
+       'engine would read INCONCLUSIVE, never CLEAN' % (sg[0][1] if sg else 'NO ROW'),
+       bool(sg) and sg[0][1] in ('CLEAN', 'FINDINGS', 'INCONCLUSIVE') and bool(sg[0][2]))
+    names = [a['name'] for a in review_input(['notes.txt'])['not_available']]
+    ck('S17 every review input names stryker with its live availability, so the absence of a '
+       'mutation run is printed, not implied', any(n.startswith('stryker') for n in names))
 
     print('%d ok, %d failed' % (ok[0], bad[0]))
     return EXIT_CLEAN if not bad[0] else EXIT_FINDINGS

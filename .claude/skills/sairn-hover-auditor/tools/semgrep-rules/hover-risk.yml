@@ -1,0 +1,119 @@
+# hover-risk.yml -- H1's OWN semgrep rule pack (b74, item 5). Written from the six
+# defect classes in hover_planted_bug_recall, NOT from H2's pack (never read) and
+# NOT tuned to a detector: each rule says what the class IS in the Semgrep
+# pattern language. These are FEEDING SIGNALS for a human review, never a verdict:
+# a hit is a prompt to look, silence is not a clean bill. The behaviour measured
+# against the witnessed planted set is locked in hover_semgrep_signal --selftest.
+# EVERY pattern is a block scalar: a plain YAML scalar cannot hold ": ", and the
+# first draft of this file failed to LOAD for exactly that reason (semgrep exit 7)
+# -- the case the wrapper's INCONCLUSIVE-on-error rule exists for.
+rules:
+  - id: hover.write-without-readable-row-count
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      A PATCH or DELETE does not ask PostgREST for return=representation, so a
+      write that matched ZERO rows is indistinguishable from one that changed a
+      row (204 either way) and the caller cannot report what the write DID.
+      Class zero-row-false-success.
+    patterns:
+      - pattern-either:
+          - pattern: |
+              fetch($URL, {..., method: 'PATCH', ...})
+          - pattern: |
+              fetch($URL, {..., method: 'DELETE', ...})
+      - pattern-not-regex: 'return=representation'
+
+  - id: hover.activate-write-without-state-guard
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      A PATCH sets a row active / un-suspended with an id-only filter: anything
+      that deactivated the row between the guard's read and this write is
+      silently overwritten. Class revocation-clobber.
+    patterns:
+      - pattern-either:
+          - pattern: |
+              fetch($URL, {..., method: 'PATCH', ..., body: JSON.stringify({..., status: 'active', ...}), ...})
+          - pattern: |
+              fetch($URL, {..., method: 'PATCH', ..., body: JSON.stringify({..., active: true, ...}), ...})
+          - pattern: |
+              $WRITE(..., {..., suspended: false, ...})
+          - pattern: |
+              $WRITE(..., {..., active: true, ...})
+      - pattern-not-regex: 'neq\.revoked|active=eq\.|status=neq\.|return=representation'
+
+  - id: hover.request-data-into-postgrest-url
+    mode: taint
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Caller-controlled data reaches a PostgREST URL without encodeURIComponent,
+      so '&' and ',' in the value become URL STRUCTURE. Class
+      postgrest-filter-injection.
+    pattern-sources:
+      - pattern: req.body.$F
+      - pattern: req.query.$F
+      - pattern: body.$F
+    pattern-sanitizers:
+      - pattern: encodeURIComponent(...)
+    pattern-sinks:
+      - patterns:
+          - pattern: fetch($SINK, ...)
+          - focus-metavariable: $SINK
+
+  - id: hover.decoded-claims-trusted-without-verify
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      A value decoded from a client-supplied header or token with
+      Buffer.from(..., 'base64') and JSON.parse is used as if it were
+      authenticated. Nothing here verifies a signature. Class client-trusted-role.
+    pattern-either:
+      - pattern: JSON.parse(Buffer.from($X, 'base64').toString(...))
+      - pattern: JSON.parse(Buffer.from($X || '', 'base64').toString(...))
+      - pattern: JSON.parse(Buffer.from($X, 'base64').toString())
+
+  - id: hover.role-read-from-request-body
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      A role or privilege is read straight from the request body, which the
+      caller writes. Class client-trusted-role.
+    pattern-either:
+      - pattern: $V = req.body.role
+      - pattern: |
+          if (req.body.role !== $X) {...}
+      - pattern: |
+          if (req.body.role === $X) {...}
+      - pattern: |
+          if (req.body.role != $X) {...}
+      - pattern: |
+          if (req.body.role == $X) {...}
+
+  - id: hover.read-modify-write-increment
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      A value is read, incremented in application code and written back: two
+      concurrent callers read the same number and one update is lost. Class
+      lost-update-counter / money-toctou.
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $CUR = ...;
+              ...
+              fetch($URL, {..., method: 'PATCH', ..., body: JSON.stringify({..., $K: $CUR + 1, ...}), ...})
+          - pattern: |
+              $N = await $READ(...);
+              ...
+              $WRITE(..., $N + 1)
+          - pattern: |
+              $NEXT = $N + 1;
+              ...
+              fetch($URL, {..., method: 'PATCH', ..., body: JSON.stringify({..., $K: $NEXT, ...}), ...})
+          - pattern: |
+              $NEXT = $N + 1;
+              ...
+              fetch($URL, {..., method: $VERB, ..., body: JSON.stringify({..., $K: $NEXT, ...}), ...})
+      - pattern-not-regex: 'neq\.revoked|=eq\.\s*\x27\s*\+\s*prior|CAS'

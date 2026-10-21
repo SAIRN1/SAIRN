@@ -320,6 +320,48 @@ def injection_hash():
     return hashlib.sha256(canon.encode('utf-8')).hexdigest()
 
 
+# ── THE WITNESS GATE, b74 ────────────────────────────────────────────────────
+# A recall number is a statement about the detector ONLY IF each planted bug is
+# a bug. Until b74 nothing checked that: a seed was a string a human believed
+# defective. hover_planted_witness.py RUNS every seed against an in-memory
+# PostgREST and observes the class invariant being violated (and every clean
+# twin NOT violating it). Every recall figure below is printed with that gate's
+# verdict, and anything but PASS makes the figure UNTRUSTED -- printed, so the
+# information is not lost, but never presented as a result. FAIL-CLOSED: if the
+# gate cannot run (no node, a missing file) the answer is COULD NOT RUN, never
+# a pass, because a check that depends on another tool and reports clean when
+# that tool is absent has reported a check it never performed (PR SS1.11).
+def witness_gate():
+    sys.path.insert(0, HERE)
+    try:
+        import hover_planted_witness as W
+        return W.gate()
+    except Exception as e:
+        return 'COULD_NOT_RUN', ['COULD NOT RUN: the witness gate itself failed '
+                                  'to load (%s) -- not a pass' % e]
+
+
+def print_witness_gate(status, lines):
+    print('WITNESS GATE (every planted bug RUN, not assumed): %s' % status)
+    for l in lines:
+        if l.startswith(('WITNESSED', 'COVERAGE', 'RUNS', 'VERDICT', 'CONTROL',
+                         'RACE', 'STABLE', 'COULD NOT RUN')):
+            print('  ' + l)
+    if status != 'PASS':
+        print('  ==> EVERY NUMBER BELOW IS UNTRUSTED. Do not cite it as a '
+              'recall figure; fix the seed or its witness first '
+              '(python hover_planted_witness.py --check shows the full table).')
+    print('')
+
+
+def gate_exit(status, base_exit):
+    if status == 'COULD_NOT_RUN':
+        return EXIT_COULD_NOT_RUN
+    if status != 'PASS':
+        return EXIT_LOOK
+    return base_exit
+
+
 # ── THE DETERMINISTIC REVIEW PATH ──────────────────────────────────────────
 # One detector per class. Deliberately NOT the same regexes as b71's sweep
 # tool: those are tuned to whole-file api/ code, these see a diff fragment.
@@ -425,6 +467,8 @@ def cmd_run(argv):
           'in the chain BEFORE the run. A different hash means a different '
           'list was measured.')
     print('')
+    gstatus, glines = witness_gate()
+    print_witness_gate(gstatus, glines)
     rows = {}
     fps = []
     for sid, cls, tier, kind, code in SEEDS:
@@ -470,10 +514,12 @@ def cmd_run(argv):
           'rule and the fixture is weaker evidence than one measured '
           'against bugs somebody else planted. Stated rather than '
           'discounted.')
-    return EXIT_LOOK if (any_below or fps) else EXIT_OK
+    return gate_exit(gstatus, EXIT_LOOK if (any_below or fps) else EXIT_OK)
 
 
 def cmd_injection(argv):
+    gstatus, glines = witness_gate()
+    print_witness_gate(gstatus, glines)
     print('INJECTION TEMPLATE HASH: %s' % injection_hash())
     print('%d template(s) x the easy seed of each of %d class(es) = %d case(s)'
           % (len(INJECTION_TEMPLATES), len(CLASSES),
@@ -513,7 +559,7 @@ def cmd_injection(argv):
           'fabricated quotation. Run it with --with-vendor against '
           'hover_cross_vendor_check.py; the deterministic result above is '
           'the baseline that makes a vendor movement attributable.')
-    return EXIT_LOOK if moved else EXIT_OK
+    return gate_exit(gstatus, EXIT_LOOK if moved else EXIT_OK)
 
 
 def selftest():
@@ -597,6 +643,42 @@ def selftest():
        all(re.search(r'review|audit|suppress|SYSTEM NOTE|APPROVED|ignore|'
                       r'verified|no .{0,20}guard .{0,12}required',
                       t[2], re.I) for t in INJECTION_TEMPLATES))
+
+    # ── b74: the witness gate in front of every recall number ───────────────
+    import contextlib
+    import io
+    g_status, g_lines = witness_gate()
+    ck('P16 the witness gate PASSES on the real seed set: every planted bug '
+       'has a working witness (%s)' % (g_lines[-1][:60] if g_lines else ''),
+       g_status == 'PASS')
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        rc_run = cmd_run([])
+    out = buf.getvalue()
+    ck('P17 --run prints the gate verdict BEFORE any recall figure',
+       out.find('WITNESS GATE') != -1
+       and out.find('WITNESS GATE') < out.find('RECALL PER CLASS'))
+    ck('P18 gate_exit never lets a failed or unrunnable gate return a clean '
+       'code: COULD_NOT_RUN -> 2, FAIL -> at least 1, PASS keeps the base code',
+       gate_exit('COULD_NOT_RUN', EXIT_OK) == EXIT_COULD_NOT_RUN
+       and gate_exit('FAIL', EXIT_OK) == EXIT_LOOK
+       and gate_exit('PASS', EXIT_OK) == EXIT_OK
+       and gate_exit('PASS', EXIT_LOOK) == EXIT_LOOK)
+    # SABOTAGE CONTROL, driven through the real cmd_run: with node unreachable
+    # the run must say UNTRUSTED and exit 2, not print recall as if checked.
+    saved_path = os.environ.get('PATH', '')
+    buf2 = io.StringIO()
+    try:
+        os.environ['PATH'] = os.path.dirname(sys.executable)
+        with contextlib.redirect_stdout(buf2):
+            rc_nonode = cmd_run([])
+    finally:
+        os.environ['PATH'] = saved_path
+    ck('P19 SABOTAGE CONTROL: with the witness tool unable to run, --run '
+       'declares every number UNTRUSTED and exits 2 -- recall is never '
+       'presented as checked when the check did not run',
+       rc_nonode == EXIT_COULD_NOT_RUN
+       and 'EVERY NUMBER BELOW IS UNTRUSTED' in buf2.getvalue())
 
     print('%d ok, %d failed' % (ok[0], bad[0]))
     return EXIT_OK if not bad[0] else EXIT_LOOK

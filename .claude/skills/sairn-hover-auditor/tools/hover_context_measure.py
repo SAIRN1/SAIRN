@@ -88,7 +88,17 @@ EXIT_COULD_NOT_RUN = 2
 # of a 1M window with no degradation, so 70% was costing real work. 80%
 # still leaves ~200k tokens on a 1M window -- more than a whole b67's worth
 # of measured usage -- to finish and hand off cleanly.
-RED_FLAG_PCT = 80.0
+# ── b74: 80% -> 85%, TO MATCH THE WRAP-UP WATCHER, AND LOCKED TO IT ────────
+# Michael's b74 standing rule: 85% REAL context is an automatic hard wrap-up,
+# and this role's own red-flag threshold must match it. The honest
+# before-state: hover_context_watch.py moved to 85 in b72 (WRAP_PCT) and this
+# file stayed at 80, so the two instruments this role runs disagreed for a
+# whole batch about the same question -- one said STOP at 80, the other said
+# wrap at 85 -- and nothing noticed, because each was internally consistent.
+# Fixed by moving the number AND by a fixture (T14) that reads WRAP_PCT from
+# the watcher and fails if the two ever differ again: a threshold that has to
+# be remembered in two files will be remembered in one.
+RED_FLAG_PCT = 85.0
 
 # The same window table and the same inference convention the platform's own
 # tools/context_verify.py uses -- deliberately the SAME numbers rather than
@@ -357,9 +367,9 @@ def cmd_measure(argv):
     if pct >= RED_FLAG_PCT:
         print('RED FLAG: %.1f%% is at or past the %.0f%% threshold -- STOP '
               'STARTING NEW ITEMS. Finish, hand off and close out what is '
-              'already open. (Threshold moved 70%%->80%% and made mechanical '
-              'at b68; it was prose in a handoff before that and gated '
-              'nothing.)' % (pct, RED_FLAG_PCT))
+              'already open. (70%% -> 80%% at b68, which made it mechanical, '
+              'then 80%% -> 85%% at b74 to match hover_context_watch.WRAP_PCT; '
+              'it was prose before b68 and gated nothing.)' % (pct, RED_FLAG_PCT))
         return EXIT_RED_FLAG
     print('Under the %.0f%% red-flag threshold -- a measured all-clear, not '
           'an unrun check.' % RED_FLAG_PCT)
@@ -454,8 +464,9 @@ def _selftest():
 
         # ── THE RED-FLAG THRESHOLD, b68. Locked in BOTH directions, and
         # the number itself asserted so a silent edit back to 70 fails here.
-        ck('T0 the threshold constant is 80%, not the old prose 70%',
-           RED_FLAG_PCT == 80.0)
+        ck('T0 the threshold constant is 85% (b74), not the 80% of b68 or the '
+           'old prose 70%',
+           RED_FLAG_PCT == 85.0)
 
         big = json.dumps({'type': 'assistant',
                            'message': {'role': 'assistant',
@@ -494,15 +505,35 @@ def _selftest():
            w5 is None and 'no published window' in why5)
 
         # The threshold arithmetic itself, both sides of the line.
-        ck('T9 850002 of 1,000,000 is 85.0% -- at/over 80%, a RED FLAG',
+        ck('T9 850002 of 1,000,000 is 85.0% -- at/over 85%, a RED FLAG',
            (100.0 * 850002 / 1000000) >= RED_FLAG_PCT)
         ck('T10 KNOWN-BAD CONTROL: 700,000 of 1,000,000 is 70.0% -- this is '
            'exactly the figure the OLD 70% rule would have red-flagged and '
-           'the new 80% rule must NOT, which is the whole point of the move',
+           'the current 85% rule must NOT, which is the whole point of the move',
            (100.0 * 700000 / 1000000) < RED_FLAG_PCT)
-        ck('T11 the 80% boundary is inclusive (>=), so exactly 800,000 of '
+        ck('T11 the 85% boundary is inclusive (>=), so exactly 850,000 of '
            '1,000,000 still red-flags',
-           (100.0 * 800000 / 1000000) >= RED_FLAG_PCT)
+           (100.0 * 850000 / 1000000) >= RED_FLAG_PCT)
+        ck('T13 KNOWN-BAD CONTROL for the b74 move: 800,000 of 1,000,000 is '
+           '80.0% -- the figure that red-flagged under b68 and must NOT now',
+           (100.0 * 800000 / 1000000) < RED_FLAG_PCT)
+        # T14 reads the WATCHER'S number. Import failure is a FAILURE of this
+        # arm, not a skip: an unverifiable match is not a match.
+        watch_wrap = None
+        for d in (HERE, os.path.join(os.path.expanduser('~'), 'Documents',
+                                      'SAIRN-hover', '.claude', 'skills',
+                                      'sairn-hover-auditor', 'tools')):
+            try:
+                sys.path.insert(0, d)
+                import hover_context_watch as _w
+                watch_wrap = _w.WRAP_PCT
+                break
+            except Exception:
+                continue
+        ck('T14 this red-flag threshold EQUALS hover_context_watch.WRAP_PCT '
+           '(%r vs %r) -- the two instruments can no longer disagree about '
+           'when to stop' % (RED_FLAG_PCT, watch_wrap),
+           watch_wrap is not None and RED_FLAG_PCT == watch_wrap)
 
         declared_missing, dwhy = declared_window('no-such-session-id')
         ck('T12 a session with no declared-window marker line returns None '
