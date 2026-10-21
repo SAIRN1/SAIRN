@@ -35181,53 +35181,6 @@
       "recurrence_open": "NOT CLOSED FOR THE CLASS, and it is the same open class as the GFE record filed against this commit: a summary that cannot distinguish nothing-wrong from nothing-known. Specifically still open here: the four null conditions are still not distinguished from each other in the UI, so a practice cannot tell a missing licence key from an unreachable server. And nothing sweeps the platform for hardcoded KPI defaults that an early return leaves standing -- every app on this platform renders tiles from markup defaults the same way."
     },
     {
-      "commit": "ece9de35ba08",
-      "date": "2026-10-20",
-      "subject": "fix(sairnbiz b45): Z7 -- payroll priced overtime hours at the straight rate; one OT-aware week price now feeds payroll, the timesheet and the CSV",
-      "files": [
-        "docs/sairn-path-manifest.json",
-        "sairnbiz.html",
-        "tests/sairnbiz_benefits_and_overtime.js",
-        "tests/sairnbiz_pay_frequency.js",
-        "tests/sairnbiz_timesheet_hours.js"
-      ],
-      "lines_added": 42,
-      "lines_removed": 12,
-      "app": "sairnbiz",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "Found by the b44 sairnbiz US-limb audit (29 CFR 516.2(a)(9), 778.107). RED 3/9: a 50-hour week at $20 entered payroll as $1,000 while the timesheet panel showed $1,100; a 35-h threshold moved the panel and not payroll. GREEN 9/9 with sbWeekPay(), one OT-aware week price shared by payroll gross, annual gross, the panel and the CSV.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "2d9f81ba34cb",
-        "date": "2026-09-26",
-        "subject": "fix(sairnbiz): the plan cards stop asserting Ohio to every customer, and the overtime threshold is read",
-        "lag_days": 24
-      },
-      "citation_note": "No coding rule covers this class: one money figure computed in two places with different formulas. Proposed: every money figure for a period derives from one pricing function.",
-      "contributing_factors": [
-        {
-          "factor": "Payroll gross was rate x hours; the timesheet and CSV each carried their own (t-ot)*rate+ot*rate*1.5.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "One sbWeekPay() priced week, called by all four figures."
-        },
-        {
-          "factor": "The suites pinned two separate OT sites and never compared payroll with the panel for the same week, so they defended the split.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "C1/C2 now pin one site and its callers; the drive compares payroll with the panel directly."
-        }
-      ],
-      "recurrence_open": "NOT CLOSED. Per-employee pay lines (516.2(a)(8)-(12)) and withholding are still not computed; the pay run stays one aggregate row."
-    },
-    {
       "commit": "2eb738de4e6f",
       "date": "2026-10-20",
       "subject": "fix(sairndental b41): the credential board's first paint said a request had failed while it was still in flight",
@@ -35281,6 +35234,49 @@
         }
       ],
       "recurrence_open": "NOT CLOSED. (1) addCredential() still calls rCredentials() after a local add, which replaces a real board with the not-checked view during the write -- a different defect, not fixed here. (2) Out-of-order completion is unguarded: two evaluations render in the order they SETTLE, so an older response can overwrite a newer one. (3) Nothing sweeps for the class across the other apps."
+    },
+    {
+      "commit": "41f825dbb689",
+      "date": "2026-10-20",
+      "subject": "fix(stonedesk b45): Field Map -- stops can be locked in place, a manual optimise confirms itself, and a zero saving is said rather than shown as \"~0 min\"",
+      "files": [
+        "stonedesk.html"
+      ],
+      "lines_added": 39,
+      "lines_removed": 12,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "fault-injection",
+      "summary": "From the b44 optimiser check. RED 14/33 -> GREEN 33/33 with 3 mutation controls: a per-stop lock persisted on the person|day order record and sent; the reorder banner shown on manual presses with saving and basis; savings wording separates null, zero, sub-minute and minutes. Coordinates not sent: StoneDesk stores none.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "scratchpad b45/agent_route/drive_route.py (Playwright, /api/sd-data intercepted; not in repo)",
+      "found_by_session": null,
+      "injection": {
+        "commit": "f4208738e2f5",
+        "date": "2026-10-19",
+        "subject": "feat(routing): phase 1 -- the shared primitive, two consumers, and the one branch that is blocked",
+        "lag_days": 1
+      },
+      "citation_note": "No coding rule covers this class: a request field sent with a value nothing can ever set. Proposed: a payload field must have a writer, or not be sent.",
+      "contributing_factors": [
+        {
+          "factor": "The payload carried locked:s.locked===true with no UI or store that could set it, so fixed appointments were never protected.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Lock toggle stored on the order record and copied through."
+        },
+        {
+          "factor": "The confirmation and saving text lived inside if(silent), so the user who pressed the button saw nothing.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Banner on both paths; fmSavedText() wording."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. No stored coordinates, so the great-circle fallback stays unreachable; a lock is dropped if the job installer or date changes; the button was verified through generated HTML, not a click."
     },
     {
       "commit": "5217024d6958",
@@ -35503,6 +35499,50 @@
         }
       ],
       "recurrence_open": "NOT CLOSED. While the timesheet holds SIX days the maximum recordable week is 144 hours, so thresholds 145-167 are equally unreachable and still honoured; the exact bound is the record own maximum and moves to 168 only when day seven lands (held on api/sd-data.js, cody b29)."
+    },
+    {
+      "commit": "687d60360e7e",
+      "date": "2026-10-20",
+      "subject": "fix(stonedesk b45): anti-framing on stonedesk and stonedesk-hr, applied from hank's b33 patch as written",
+      "files": [
+        "stonedesk-hr.html",
+        "stonedesk.html"
+      ],
+      "lines_added": 71,
+      "lines_removed": 7,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "fault-injection",
+      "summary": "Measured live in b43/b44: stonedesk and stonedesk-hr CLICKABLE when framed, normal and sandboxed. LAYER 4 reassigned top.location, which Chrome blocks from a cross-origin frame without a user gesture, then rewrote body.innerHTML. Fixed by applying hank b33 patch (hide-until-top-window block, LAYER 4 removed). GREEN: both HIDDEN framed in both modes, usable top-level.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "scratchpad b43 drive_frame.py (Playwright, cross-origin and sandboxed iframe framing; not in repo)",
+      "found_by_session": null,
+      "injection": {
+        "commit": "57db94fbf375",
+        "date": "2026-06-22",
+        "subject": "Fix JavaScript syntax errors in stonedesk.html - 94/106 scripts passing Node syntax check",
+        "lag_days": 120
+      },
+      "citation_note": "Same class as the b43 clickjacking record: a defence present in source and inert in the browser. Proposed: security controls are verified by driving the attack.",
+      "contributing_factors": [
+        {
+          "factor": "The buster depended on navigating the top window, which modern Chrome refuses cross-origin without a gesture.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Hide-until-proven-top block from hank b33."
+        },
+        {
+          "factor": "stonedesk.html was claimed by another session when the 16-app sweep shipped, so the most-used app was the last protected.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "hank built the patch while holding the file; fourth applied it as written."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. No header-level frame-ancestors (vercel.json) anywhere; Chromium-only verification; no repo suite drives framing."
     },
     {
       "commit": "72dfaf5cb644",
@@ -35824,6 +35864,49 @@
       "recurrence_open": "The widening is not applied until Michael runs it; any other table whose CHECK was widened in a create-table-if-not-exists has the same drift and nothing finds it but a snapshot comparison."
     },
     {
+      "commit": "b5eef18d58b9",
+      "date": "2026-10-20",
+      "subject": "fix(sairndental b45): seven client-side defects from the b44 correctness audit -- on-time appeals, the GFE snapshot, two disclaimers, holidays, the binding date, the badge",
+      "files": [
+        "sairndental.html"
+      ],
+      "lines_added": 97,
+      "lines_removed": 19,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "fault-injection",
+      "summary": "From the b44 correctness audit. RED 4/19 (controls only) -> GREEN 19/19, 5/5 mutants killed: appeal judged on submitted_on; GFE check and print read one snapshot; (c)(1)(vi) and (x) completed; holiday text says later and 31-Dec New Year caught; binding date is the earlier (A) date; payer revalidation days rendered; (xi) wording and CE tile label.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "scratchpad b45/agent_dental/driver.py (Playwright, fetch stubbed; not in repo)",
+      "found_by_session": null,
+      "injection": {
+        "commit": "876bd84cfad4",
+        "date": "2026-08-24",
+        "subject": "feat(sairndental): licensing/credentialing -- state licences, DEA/MATE, CE pacing",
+        "lag_days": 57
+      },
+      "citation_note": "No single rule: these are rule-text conformance defects against 45 CFR 149.610 plus two rendering defects. Proposed: each regulated document element is asserted against the quoted rule text.",
+      "contributing_factors": [
+        {
+          "factor": "Deadline and completeness logic compared against the wrong reference (today vs submitted_on; live record vs printed snapshot).",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Each check reads the same value the outcome depends on."
+        },
+        {
+          "factor": "Disclaimer text was written from memory of the rule, not quoted from it.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Re-written from the eCFR text of 149.610(c)(1)."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. Server gfeMissing (api/_lib/dental-gfe.js) still reads the live record; DEA keying in api/_lib/dental-credentials.js (cody) not fixed."
+    },
+    {
       "commit": "bc5ca0d18cb4",
       "date": "2026-10-20",
       "subject": "b29(cody): the database's error message is not the client's, three caps that were never this gate's business, and a policy nothing passed the arguments to",
@@ -35884,47 +35967,74 @@
       "recurrence_open": "The DETECTION factor is closed for these three files and open everywhere else: arms C1/C2 scan api/sd-data.js, api/sc-eligibility.js and api/audit-checkpoint.js only. Nothing sweeps the other 60-odd api/*.js files, and the shape is not specific to these three -- any handler that reads an upstream body to classify it can fall through carrying it. The PROCESS factor is also open: upstream()'s convention is still written down only inside upstream(), so the next branch to classify a body itself has nothing telling it what to do with the body afterwards. The right close is a repo-wide sweep plus one sentence in docs/SAIRN-PROCESS-RULES.md, and neither is done."
     },
     {
-      "commit": "b5eef18d58b9",
+      "commit": "c57e65a899cf",
       "date": "2026-10-20",
-      "subject": "fix(sairndental b45): seven client-side defects from the b44 correctness audit -- on-time appeals, the GFE snapshot, two disclaimers, holidays, the binding date, the badge",
+      "subject": "fix(cc b32): the push-retry loop stops on a gate refusal and retries only remote races",
       "files": [
-        "sairndental.html"
+        "docs/2026-10-20-cc-b32-notes.md",
+        "docs/batch-manifest-cc-b32.json",
+        "docs/fmea/.claude_skills_sairn-hover-auditor_tools-hover2_anchor_drift_check.py.json",
+        "docs/fmea/.claude_skills_sairn-hover-auditor_tools-hover2_bld_draws_bypass_repro.py.json",
+        "docs/fmea/.claude_skills_sairn-hover-auditor_tools-hover2_hover2-external-files-index.json.json",
+        "docs/fmea/.claude_skills_sairn-hover-auditor_tools-hover2_hover2_external_file_check.py.json",
+        "docs/fmea/.claude_skills_sairn-hover-auditor_tools-hover2_hover2_log_mirror.py.json",
+        "docs/fmea/.claude_skills_sairn-hover-auditor_tools-hover2_hover_editor_review.py.json",
+        "docs/fmea/.claude_skills_sairn-hover-auditor_tools-hover2_hover_log.py.json",
+        "docs/fmea/.claude_skills_sairn-hover-auditor_tools-hover2_sabotage_closed_system_check.py.json",
+        "docs/fmea/.claude_skills_sairn-hover-auditor_tools-hover2_scp_session_gate_repro.py.json",
+        "docs/fmea/.claude_skills_sairn-hover-auditor_tools_citation_class_check.py.json",
+        "docs/fmea/.claude_skills_sairn-hover-auditor_tools_hover_backup_mirror.py.json",
+        "docs/fmea/.claude_skills_sairn-hover-auditor_tools_hover_editor_review.py.json",
+        "docs/fmea/.claude_skills_sairn-hover-auditor_tools_hover_log.py.json",
+        "docs/fmea/.claude_skills_sairn-hover-auditor_tools_hover_tip_beacon.py.json",
+        "docs/fmea/stonedesk-hr.html.json",
+        "docs/fmea/tests_sairnbiz_pay_frequency.js.json",
+        "docs/tier-a-reviews.json",
+        "tools/push_retry.py"
       ],
-      "lines_added": 97,
-      "lines_removed": 19,
-      "app": "sairndental",
-      "layer": "product",
+      "lines_added": 27138,
+      "lines_removed": 10,
+      "app": "tooling",
+      "layer": "tooling",
       "severity": "moderate",
-      "detection_method": "fault-injection",
-      "summary": "From the b44 correctness audit. RED 4/19 (controls only) -> GREEN 19/19, 5/5 mutants killed: appeal judged on submitted_on; GFE check and print read one snapshot; (c)(1)(vi) and (x) completed; holiday text says later and 31-Dec New Year caught; binding date is the earlier (A) date; payer revalidation days rendered; (xi) wording and CE tile label.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
+      "detection_method": "code-review",
+      "summary": "tools/push_retry.py cmd_loop RETRIED EVERY REFUSED PUSH, INCLUDING DETERMINISTIC PRE-PUSH GATE REFUSALS. After `git push` failed it printed the refusal and went to the next attempt regardless of what the refusal said, so a Tier A, register-feed or could-not-run refusal -- decided from an outgoing range that another attempt does not change -- was re-sent up to --attempts times, each one advancing the gate's per-tip escalation counter. Driven with git stubbed over 4 attempts: a Tier A refusal produced 4 pushes before the fix and 1 after (exit 5). Fixed by classify_refusal(): git's remote-race and transport rejections retry; a gate refusal naming a GENERATED document gets the existing regenerate-and-fold retry and stops if nothing folded; any other gate refusal or unclassified text stops. Selftest +11 arms, including a loop-level arm and a fetch-first control that still retries.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
       "phase_confidence": "inferred",
-      "found_by_tool": "scratchpad b45/agent_dental/driver.py (Playwright, fetch stubbed; not in repo)",
+      "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "commit": "876bd84cfad4",
-        "date": "2026-08-24",
-        "subject": "feat(sairndental): licensing/credentialing -- state licences, DEA/MATE, CE pacing",
-        "lag_days": 57
+        "commit": "ad11ef1c27e4",
+        "date": "2026-09-26",
+        "subject": "feat(methodology): the retry loop refuses to amend mid-rebase, instead of relying on somebody reading the log",
+        "lag_days": 24
       },
-      "citation_note": "No single rule: these are rule-text conformance defects against 45 CFR 149.610 plus two rendering defects. Proposed: each regulated document element is asserted against the quoted rule text.",
+      "citation_note": "1.11 is cited for the shape that matters here: a check whose result cannot change is treated as if it could, and an unclassified refusal is now a stop rather than a retry -- could-not-tell is not folded into try-again.",
       "contributing_factors": [
         {
-          "factor": "Deadline and completeness logic compared against the wrong reference (today vs submitted_on; live record vs printed snapshot).",
+          "factor": "The loop's only notion of failure was 'the push did not land'. It printed the refusal and went to the next attempt whatever the refusal said, so a deterministic pre-push gate refusal was handled exactly like a lost race, although nothing between attempts changes the outgoing range the gate decides from.",
           "kind": "technical",
           "action_status": "done",
-          "action": "Each check reads the same value the outcome depends on."
+          "action": "classify_refusal() sorts refusals by who spoke; only git's remote-race and transport rejections retry, a GENERATED-document refusal retries only after a successful fold, everything else stops with exit 5."
         },
         {
-          "factor": "Disclaimer text was written from memory of the rule, not quoted from it.",
-          "kind": "process",
+          "factor": "The gate counts refusals per tip and escalates past a cap, so each pointless retry advanced the escalation counter. Observed 2026-10-20 (cc b31): an inline loop of the same shape sent one Tier A refusal four times and the gate escalated at the third.",
+          "kind": "latent-condition",
           "action_status": "done",
-          "action": "Re-written from the eCFR text of 149.610(c)(1)."
+          "action": "The stop on a gate refusal means the loop sends a deterministic refusal once; the escalation counter now only moves on a human re-run."
+        },
+        {
+          "factor": "No arm drove the loop against a gate refusal. The selftest covered the amend guard and the scrutiny fold in depth and never counted how many times the loop pushes when the gate says no.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Selftest arms drive cmd_loop with git stubbed and count pushes: 1 on a Tier A refusal (exit 5), 4 on a fetch-first race as the control; 9 more arms classify the real b31 refusal texts."
         }
       ],
-      "recurrence_open": "NOT CLOSED. Server gfeMissing (api/_lib/dental-gfe.js) still reads the live record; DEA keying in api/_lib/dental-credentials.js (cody) not fixed."
+      "recurrence_open": "THE CLASSIFIER IS A MARKER LIST, so a new gate refusal whose text carries none of 'Blocked:', 'blocked by .githooks/pre-push', the hook's filename or 'ESCALATING:' falls to 'unknown' -- which STOPS, the safe direction, but a new transient git wording would also stop rather than retry. AND INLINE LOOPS ARE NOT COVERED: the b31 instance was a shell loop in a session, not this tool, and nothing stops a session writing that loop again; the durable half is the memory note and this tool being the loop to use."
     },
     {
       "commit": "cc919c308efd",
@@ -36078,49 +36188,6 @@
         }
       ],
       "recurrence_open": "NOT CLOSED. (1) Vendor ids use the same shape (\"V\"+Date.now() last 4, sairnbiz.html saveVendor) and were not in scope. (2) Two TABS of one browser minting in the same instant share the counter and can race. (3) Nothing sweeps the platform for Date.now()-derived ids; stonedesk.html has INV-+Date.now() at two sites."
-    },
-    {
-      "commit": "41f825dbb689",
-      "date": "2026-10-20",
-      "subject": "fix(stonedesk b45): Field Map -- stops can be locked in place, a manual optimise confirms itself, and a zero saving is said rather than shown as \"~0 min\"",
-      "files": [
-        "stonedesk.html"
-      ],
-      "lines_added": 39,
-      "lines_removed": 12,
-      "app": "stonedesk",
-      "layer": "product",
-      "severity": "low",
-      "detection_method": "fault-injection",
-      "summary": "From the b44 optimiser check. RED 14/33 -> GREEN 33/33 with 3 mutation controls: a per-stop lock persisted on the person|day order record and sent; the reorder banner shown on manual presses with saving and basis; savings wording separates null, zero, sub-minute and minutes. Coordinates not sent: StoneDesk stores none.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": "scratchpad b45/agent_route/drive_route.py (Playwright, /api/sd-data intercepted; not in repo)",
-      "found_by_session": null,
-      "injection": {
-        "commit": "f4208738e2f5",
-        "date": "2026-10-19",
-        "subject": "feat(routing): phase 1 -- the shared primitive, two consumers, and the one branch that is blocked",
-        "lag_days": 1
-      },
-      "citation_note": "No coding rule covers this class: a request field sent with a value nothing can ever set. Proposed: a payload field must have a writer, or not be sent.",
-      "contributing_factors": [
-        {
-          "factor": "The payload carried locked:s.locked===true with no UI or store that could set it, so fixed appointments were never protected.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Lock toggle stored on the order record and copied through."
-        },
-        {
-          "factor": "The confirmation and saving text lived inside if(silent), so the user who pressed the button saw nothing.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Banner on both paths; fmSavedText() wording."
-        }
-      ],
-      "recurrence_open": "NOT CLOSED. No stored coordinates, so the great-circle fallback stays unreachable; a lock is dropped if the job installer or date changes; the button was verified through generated HTML, not a click."
     },
     {
       "commit": "e137c3bc1dab",
@@ -36288,48 +36355,51 @@
       "recurrence_open": "NOT CLOSED. No suite in tests/ covers the coded-items panel at all; the b42 drive lives in the scratchpad, not the repo."
     },
     {
-      "commit": "687d60360e7e",
+      "commit": "ece9de35ba08",
       "date": "2026-10-20",
-      "subject": "fix(stonedesk b45): anti-framing on stonedesk and stonedesk-hr, applied from hank's b33 patch as written",
+      "subject": "fix(sairnbiz b45): Z7 -- payroll priced overtime hours at the straight rate; one OT-aware week price now feeds payroll, the timesheet and the CSV",
       "files": [
-        "stonedesk-hr.html",
-        "stonedesk.html"
+        "docs/sairn-path-manifest.json",
+        "sairnbiz.html",
+        "tests/sairnbiz_benefits_and_overtime.js",
+        "tests/sairnbiz_pay_frequency.js",
+        "tests/sairnbiz_timesheet_hours.js"
       ],
-      "lines_added": 71,
-      "lines_removed": 7,
-      "app": "stonedesk",
+      "lines_added": 42,
+      "lines_removed": 12,
+      "app": "sairnbiz",
       "layer": "product",
-      "severity": "moderate",
-      "detection_method": "fault-injection",
-      "summary": "Measured live in b43/b44: stonedesk and stonedesk-hr CLICKABLE when framed, normal and sandboxed. LAYER 4 reassigned top.location, which Chrome blocks from a cross-origin frame without a user gesture, then rewrote body.innerHTML. Fixed by applying hank b33 patch (hide-until-top-window block, LAYER 4 removed). GREEN: both HIDDEN framed in both modes, usable top-level.",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "Found by the b44 sairnbiz US-limb audit (29 CFR 516.2(a)(9), 778.107). RED 3/9: a 50-hour week at $20 entered payroll as $1,000 while the timesheet panel showed $1,100; a 35-h threshold moved the panel and not payroll. GREEN 9/9 with sbWeekPay(), one OT-aware week price shared by payroll gross, annual gross, the panel and the CSV.",
       "rules": [],
       "citation_confidence": "not-citable",
       "injection_phase": "design",
       "phase_confidence": "inferred",
-      "found_by_tool": "scratchpad b43 drive_frame.py (Playwright, cross-origin and sandboxed iframe framing; not in repo)",
+      "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "commit": "57db94fbf375",
-        "date": "2026-06-22",
-        "subject": "Fix JavaScript syntax errors in stonedesk.html - 94/106 scripts passing Node syntax check",
-        "lag_days": 120
+        "commit": "2d9f81ba34cb",
+        "date": "2026-09-26",
+        "subject": "fix(sairnbiz): the plan cards stop asserting Ohio to every customer, and the overtime threshold is read",
+        "lag_days": 24
       },
-      "citation_note": "Same class as the b43 clickjacking record: a defence present in source and inert in the browser. Proposed: security controls are verified by driving the attack.",
+      "citation_note": "No coding rule covers this class: one money figure computed in two places with different formulas. Proposed: every money figure for a period derives from one pricing function.",
       "contributing_factors": [
         {
-          "factor": "The buster depended on navigating the top window, which modern Chrome refuses cross-origin without a gesture.",
+          "factor": "Payroll gross was rate x hours; the timesheet and CSV each carried their own (t-ot)*rate+ot*rate*1.5.",
           "kind": "technical",
           "action_status": "done",
-          "action": "Hide-until-proven-top block from hank b33."
+          "action": "One sbWeekPay() priced week, called by all four figures."
         },
         {
-          "factor": "stonedesk.html was claimed by another session when the 16-app sweep shipped, so the most-used app was the last protected.",
-          "kind": "process",
+          "factor": "The suites pinned two separate OT sites and never compared payroll with the panel for the same week, so they defended the split.",
+          "kind": "detection",
           "action_status": "done",
-          "action": "hank built the patch while holding the file; fourth applied it as written."
+          "action": "C1/C2 now pin one site and its callers; the drive compares payroll with the panel directly."
         }
       ],
-      "recurrence_open": "NOT CLOSED. No header-level frame-ancestors (vercel.json) anywhere; Chromium-only verification; no repo suite drives framing."
+      "recurrence_open": "NOT CLOSED. Per-employee pay lines (516.2(a)(8)-(12)) and withholding are still not computed; the pay run stays one aggregate row."
     },
     {
       "commit": "f92444ddf917",

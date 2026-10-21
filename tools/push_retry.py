@@ -50,8 +50,11 @@ CLI:
     python tools/push_retry.py --capture            # print the safe-subject set
     python tools/push_retry.py --amend-guard        # exit 0 only if safe
     python tools/push_retry.py --loop [--attempts N]  # the whole retry loop
+        # exit 5: STOPPED on a deterministic refusal (the push gate, or text
+        # nobody classified) -- see classify_refusal(); only remote races retry
     python tools/push_retry.py --selftest           # fixtures, both directions
 """
+import contextlib
 import io
 import json
 import os
@@ -717,6 +720,74 @@ def selftest():
     finally:
         REPO, STATE_FILE = saved
         shutil.rmtree(tmp, ignore_errors=True)
+
+    # ── THE REFUSAL CLASSIFIER (cc b32), on the texts the gate and git really
+    # print -- copied from the b31 refusals, not composed for the test.
+    tier_a = ('Blocked: this push changes code serving a Tier A resource and no\n'
+              'error: failed to push some refs to \'https://github.com/SAIRN1/SAIRN.git\'')
+    cnr = ('Blocked: the path-scope check could not be run, so this push is unchecked\n'
+           '  FileNotFoundError: [WinError 206] The filename or extension is too long\n'
+           '(blocked by .githooks/pre-push -> tools/sairn_push_gate_hook.py --pre-push)')
+    esc = 'ESCALATING: this is refusal 3 for tip b2b02bbd07bd, and the cap is 2.'
+    gen = ('Blocked: 1 generated document(s) are stale: docs/TOOLING-INVENTORY.md\n'
+           'error: failed to push some refs')
+    race = (' ! [rejected]          main -> main (fetch first)\n'
+            'error: failed to push some refs')
+    lock = (" ! [remote rejected]   main -> main (cannot lock ref 'refs/heads/main': "
+            "is at 8eeabd1c but expected df8118c9)")
+    net = 'fatal: unable to access \'https://github.com/SAIRN1/SAIRN.git/\': Could not resolve host: github.com'
+    arm('a Tier A gate refusal is "gate" -- STOP, never retried',
+        classify_refusal(tier_a) == 'gate', classify_refusal(tier_a))
+    arm('a gate check that COULD NOT RUN is "gate" -- the same range fails the same way',
+        classify_refusal(cnr) == 'gate', classify_refusal(cnr))
+    arm('the gate\'s own ESCALATING line is "gate"',
+        classify_refusal(esc) == 'gate', classify_refusal(esc))
+    arm('a gate refusal naming a GENERATED document is "generated" -- the one it can fix',
+        classify_refusal(gen) == 'generated', classify_refusal(gen))
+    arm('git\'s fetch-first race is "transient"',
+        classify_refusal(race) == 'transient', classify_refusal(race))
+    arm('git\'s cannot-lock-ref race is "transient"',
+        classify_refusal(lock) == 'transient', classify_refusal(lock))
+    arm('a network failure is "transient"',
+        classify_refusal(net) == 'transient', classify_refusal(net))
+    arm('unclassified text is "unknown", and the loop STOPS on it',
+        classify_refusal('error: something nobody has seen') == 'unknown'
+        and classify_refusal('') == 'unknown',
+        classify_refusal('error: something nobody has seen'))
+    arm('gate text WINS over the generic git line every gate refusal ends with',
+        classify_refusal(tier_a + '\n' + race) == 'gate',
+        classify_refusal(tier_a + '\n' + race))
+
+    # ── AND THE LOOP OBEYS IT: cmd_loop driven with git stubbed, counting
+    # pushes. FAILING-FIRST: the pre-b32 loop pushed 4 times on the Tier A text.
+    g = globals()
+    keep = (g['git'], g['capture'], g['fold_scrutiny'])
+
+    def _drive(blob):
+        pushes = []
+
+        def _git(*a):
+            if a[0] == 'push':
+                pushes.append(1)
+                return 1, '', blob
+            if a[0] == 'rev-list':
+                return 0, '0', ''
+            return 0, '', ''
+        g['git'], g['capture'] = _git, (lambda write=True: ['s'])
+        g['fold_scrutiny'] = lambda: (False, 'nothing')
+        try:
+            with contextlib.redirect_stdout(io.StringIO()), \
+                    contextlib.redirect_stderr(io.StringIO()):
+                rc = cmd_loop(4)
+        finally:
+            g['git'], g['capture'], g['fold_scrutiny'] = keep
+        return len(pushes), rc
+    n_gate, rc_gate = _drive(tier_a)
+    n_race, rc_race = _drive(race)
+    arm('the LOOP pushes ONCE on a gate refusal and stops (exit 5)',
+        n_gate == 1 and rc_gate == 5, 'pushes=%d rc=%s' % (n_gate, rc_gate))
+    arm('CONTROL -- the loop still retries a fetch-first race every attempt',
+        n_race == 4 and rc_race == 1, 'pushes=%d rc=%s' % (n_race, rc_race))
     return out, bad
 
 
@@ -806,6 +877,46 @@ def _regenerate_and_fold():
             return False, 'amend failed: %s' % (aerr or '')[:120]
         return True, 'folded'
     return False, 'nothing to fold -- the generated documents already match'
+
+
+# ── WHICH REFUSALS ARE WORTH ANOTHER ATTEMPT (cc b32) ─────────────────────
+# The loop used to treat EVERY refused push as a lost race and try again. A
+# gate refusal is not a race: the pre-push hook decides from the outgoing range,
+# the range does not change between attempts, and the gate COUNTS refusals per
+# tip -- on 2026-10-20 an inline loop of this shape sent the same Tier A
+# refusal four times and the gate escalated at the third. Retrying a
+# deterministic refusal changes nothing except the escalation count.
+#
+# So a refusal is classified by WHO SAID IT:
+#   'transient' -- git's own remote-race and transport rejections. The remote
+#                  moved or the network blinked; fetch, rebase and try again.
+#   'generated' -- a gate refusal naming a GENERATED document. The one gate
+#                  refusal this loop can fix itself (regenerate and fold), so
+#                  it gets ONE more attempt, and only if the fold happened.
+#   'gate'      -- anything else the pre-push gate printed. Deterministic for
+#                  this tip: STOP and let a human read it.
+#   'unknown'   -- text nobody classified. STOPS too: when retrying costs an
+#                  escalation and stopping costs a re-run, unknown goes to stop.
+# Gate text is checked BEFORE transient text, because a gate refusal also ends
+# in git's generic "failed to push some refs".
+_GATE_MARKERS = ('Blocked:', 'blocked by .githooks/pre-push',
+                 'sairn_push_gate_hook.py', 'ESCALATING:')
+_TRANSIENT_MARKERS = ('(fetch first)', '(non-fast-forward)', 'cannot lock ref',
+                      'Could not resolve host', 'Connection timed out',
+                      'Connection reset', 'RPC failed', 'early EOF',
+                      'The remote end hung up', 'Operation timed out',
+                      'unable to access')
+
+
+def classify_refusal(blob):
+    text = blob or ''
+    if any(m in text for m in _GATE_MARKERS):
+        if any(d in text for d, _g in GENERATED):
+            return 'generated'
+        return 'gate'
+    if any(m in text for m in _TRANSIENT_MARKERS):
+        return 'transient'
+    return 'unknown'
 
 
 def cmd_loop(attempts):
@@ -952,16 +1063,31 @@ def cmd_loop(attempts):
                     print('    %s' % l)
 
         # ── AND NOW ACT ON IT, which is the half that was missing ──────────
-        # A refusal naming a generated document is the exact failure
-        # `regenerate()` fixes, and the loop used to be unable to reach it
-        # unless something was behind. Try once per attempt.
-        if any(_d in blob for _d, _g in GENERATED):
+        # Only a refusal the loop can CHANGE is worth another attempt; see
+        # classify_refusal() above for why a gate refusal stops the loop.
+        kind = classify_refusal(blob)
+        print('  refusal class: %s' % kind)
+        if kind == 'generated':
+            # A refusal naming a generated document is the exact failure
+            # `regenerate()` fixes, and the loop used to be unable to reach it
+            # unless something was behind.
             print('  the refusal names a GENERATED document -- regenerating '
                   'and folding in, which this loop could not do before '
                   '2026-10-05 unless it was also behind:')
             _f, _why = _regenerate_and_fold()
-            print('    %s' % ('folded; retrying' if _f
-                              else 'not folded: %s' % _why))
+            if not _f:
+                print('    not folded: %s -- STOPPING: the same push would be '
+                      'refused the same way.' % _why, file=sys.stderr)
+                return 5
+            print('    folded; retrying')
+        elif kind != 'transient':
+            print('STOPPING: this refusal is %s, not a lost race. The gate '
+                  'decides from the outgoing range, which another attempt '
+                  'does not change, and it counts refusals per tip. Read it, '
+                  'fix the cause, then run the loop again. Nothing was '
+                  'forced.' % ('the push gate\'s' if kind == 'gate'
+                               else 'unclassified'), file=sys.stderr)
+            return 5
     print('gave up after %d attempt(s). Nothing was forced.' % attempts,
           file=sys.stderr)
     return 1

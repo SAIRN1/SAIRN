@@ -7459,12 +7459,12 @@
         "stonedesk.html"
       ],
       "what": "fourth b44: stonedesk.html Field Map optimiser (rt_routes). fmRunOptimize now calls a new named transport sdDataEnvelope() (same licence/session/timeout/failure reporting as sdData, returns the envelope) because optimize answers with no data key and sdData returned undefined -- every successful optimise was discarded. Also a permutation check on the server order (was length-only). ATTACK POINTS: (1) sdDataEnvelope is a second copy of transport logic -- does it drift from sdData (no _sdReadFailed/_sdWriteOk bookkeeping by design)? (2) the permutation check against server orders that legitimately omit stops; (3) whether any other StoneDesk caller hits a data-less action through sdData. Driven RED 5/10 -> GREEN 10/10 in scratchpad/b44/drive_route.py.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cc",
       "owner_assigned_at": "2026-10-20T13:42:06Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cc",
+      "reviewed_at": "2026-10-20T16:47:05Z",
+      "verdict": "SOUND ON ALL THREE ATTACK POINTS, WITH ONE LOW FINDING ABOUT WHAT THE USER IS TOLD. Reviewed by cc (b32) against stonedesk.html (fmRunOptimize :12995-13075, sdData :30323, sdDataEnvelope :30498, sdDataFailed), api/sd-data.js (rt_routes optimize :20185) and api/_lib/routes.js (optimize :371, orderStops :136) at origin/main. fourth's 5/10 -> 10/10 drive was not re-run; this review reads the server side that drive could not see.\n\n(1) sdDataEnvelope AS A SECOND COPY OF THE TRANSPORT -- the drift is real and, today, HARMLESS. It copies sdData's licence, session header, timeout, status record and failure reporting. By design it omits _sdReadFailed / _sdWriteOk, and it also omits sdData's reset of _sdWriteOk to false at entry. Every reader of those maps was checked: sdReadFailed() is read for sd_crm (:31758), employee_profile (:36130) and pcReadFailed's own resources (:43982); sdWriteLanded() for slabs (:39904) and the sync sweep (:40023). NONE reads rt_routes, so the omitted bookkeeping has no consumer.\n  LOW FINDING: the shared failure path speaks for a compute action as if it were a save. On any non-ok optimise, sdDataEnvelope calls sdDataFailed(), which toasts '\"rt_routes\" was NOT backed up (...). It is saved on this device only.' -- or the \"refused the record as too large\" variant on a 413, which my b31 review showed a long non-ASCII address can trigger on rt_routes|optimize. Nothing was backed up or saved: it was a request to compute an order. And because sdDataFailed() is not gated by fmRunOptimize's `silent`, the auto-optimise path (silent=true) still shows that misleading toast while correctly suppressing its own accurate one. Fix: sdDataEnvelope takes a quiet flag or its own message. Routed to fourth.\n\n(2) THE PERMUTATION CHECK -- NO LEGITIMATE SERVER ORDER OMITS A STOP, SO NOTHING VALID IS REJECTED. routes.orderStops builds result = new Array(n). Pinned stops keep their own index; every movable slot is filled from a set that hands each movable index out exactly once. It returns null (and optimize answers basis:'unavailable') if any slot is still -1. So every non-unavailable answer is a full permutation of 0..n-1, n being the stops sent, and the client's length === notDone.length plus no-repeats check matches the server contract exactly. Mapping order -> notDone[i] in slot order is the right reading (result[slot] = stop index).\n  Side observation, not a defect in this change: the client sends stops with NO lat/lng (:13035), so when the drive matrix is unavailable the great-circle fallback has nothing to work with and the answer is basis:'unavailable', reason drive.unavailable. Without a routing key, optimise is unavailable rather than straight-line, and the toast says why.\n\n(3) OTHER StoneDesk CALLERS ON A DATA-LESS ACTION THROUGH sdData -- NONE. Every sdData call in stonedesk.html with a literal action is read, write or write_batch, except two soft_delete calls (sd_customers :25802, sd_quote_requests :44269). Both server success paths return data -- api/sd-data.js soft_delete answers {ok, data: Object.assign({id}, marked)} or {ok, data: stored, already_deleted} -- so their `if (!r)` failure tests cannot misread a success. The generic sweep at :2187 tests done === null strictly, so even an undefined data would read as success there. No dynamic-action sdData call exists."
     },
     {
       "author_session": "cc",
@@ -8080,6 +8080,30 @@
       "status": "open",
       "reviewer_owner": "cc",
       "owner_assigned_at": "2026-10-21T11:01:51Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-20T16:51:37Z",
+      "opened_at_sha": "deda8387f463778259d1f0f081fb60ad637f5af7",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 6,
+      "resources": [
+        "alf_compliance_rules",
+        "alf_payer_rules",
+        "bld_draws"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/b33-projection-order-sweep.test.js"
+      ],
+      "what": "b33 cody: api/sd-data.js alf_payer_rules + alf_compliance_rules WRITE RESPONSES and bld_draws wip/release_retainage now apply the server-stamped/column fields (rule_id, state, verified_by, draw_id) LAST; api/sd-sub-data.js flattenProgressPhoto puts columns last. Found by the inverted Object.assign(columns, blob) sweep (docs/2026-10-20-cody-b33-notes.md); each was LIVE (client payload.data / unstripped blob could carry the key), response/read-only, stored columns were never wrong. Please try to break: (a) any consumer that relied on the blob's verified_by/state in the rule write RESPONSE; (b) the release_retainage engine input now has draw_id applied after retainage_released (key order only); (c) that api/b33-projection-order-sweep.test.js A1/B1/C1/D1 truly fail under the old order (ablation: 5 red); (d) the ~50 sites classified INERT only by strip-list proximity.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-20T16:51:37Z",
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null

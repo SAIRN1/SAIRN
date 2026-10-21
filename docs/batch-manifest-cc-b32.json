@@ -1,0 +1,48 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "cc",
+  "batch": "b32",
+  "id_lock": "acc5585cac164c2c",
+  "items": [
+    {
+      "id": 1,
+      "title": "Concept: deterministic Tier A refusal vs transient failure",
+      "status": "done",
+      "evidence": "docs/2026-10-20-cc-b32-notes.md section 1"
+    },
+    {
+      "id": 2,
+      "title": "Fix the push-retry bug: never retry deterministic refusals",
+      "status": "done",
+      "evidence": "tools/push_retry.py classify_refusal + cmd_loop; python tools/push_retry.py --selftest (11 new arms); notes section 2"
+    },
+    {
+      "id": 3,
+      "title": "Discharge fourth's rt_routes optimiser Tier A obligation",
+      "status": "done",
+      "evidence": "docs/tier-a-reviews.json record fourth 2026-10-20T13:42:06Z; notes section 3"
+    },
+    {
+      "id": 4,
+      "title": "Finish the last FMEA drafts; document the refused ones",
+      "status": "done",
+      "evidence": "docs/fmea/ (16 new); docs/2026-10-20-cc-b32-notes.md section 4 (4 refused by fmea_draft rule)"
+    },
+    {
+      "id": 5,
+      "title": "Push, no force, confirm landed",
+      "status": "done",
+      "evidence": "git push to origin/main c57e65a8, 35ed0fac; rev-list --left-right --count = 0 0"
+    }
+  ],
+  "closed": {
+    "drive_verify": "PASS",
+    "verified_by": "python tools/drive_upload_verify.py --agent cc --batch b32 --verify-only",
+    "criteria": "2026-10-20.1",
+    "deliverables": [
+      "SAIRN-handoff-cc-b32.md sha256 74440831f23e21eb",
+      "SAIRN-report-cc-b32.txt sha256 ab1d96cd0755e990",
+      "SAIRN-digest-cc-b32.txt sha256 60ff21c84e1cf3bc"
+    ]
+  }
+}

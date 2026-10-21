@@ -467,11 +467,13 @@ module.exports = async (req, res) => {
     // under someone else's name.
     const PROGRESS_PHOTO_SELECT = 'id,job_id,captured_by_type,captured_by_id,is_final,qc_status,qc_reviewer_id,qc_notes,qc_reviewed_at,data,created_at';
     function flattenProgressPhoto(row) {
-      return Object.assign({
+      // Columns LAST (b33 sweep): the write strips the qc_* and identity keys from the blob but
+      // NOT created_at, so a payload created_at used to override the real column on every read.
+      return Object.assign({}, row.data, {
         id: row.id, job_id: row.job_id, captured_by_type: row.captured_by_type, captured_by_id: row.captured_by_id,
         is_final: row.is_final, qc_status: row.qc_status, qc_reviewer_id: row.qc_reviewer_id, qc_notes: row.qc_notes,
         qc_reviewed_at: row.qc_reviewed_at, created_at: row.created_at
-      }, row.data);
+      });
     }
     if (resource === 'progress_photos' && action === 'read') {
       if (subCaller) {

@@ -1,0 +1,16 @@
+DIGEST -- cody b33, 2026-10-20. Four items: concept, sweep (FOUR LIVE SITES FIXED), the eight defects (they are cc's), push. PUSHED, no --force.
+STATUS: tip 9070e5477 verified by READING THE REMOTE (0 ahead / 0 behind, six files read back at identical sizes). NOTHING OVERRIDDEN. NO LIVE WRITES. NO SQL.
+CHANGED: api/sd-data.js, api/sd-sub-data.js, api/b33-projection-order-sweep.test.js (new), docs/b33-sweep/ (scanner), docs/2026-10-20-cody-b33-notes.md, docs/sairn-path-manifest.json, docs/tier-a-reviews.json, SAIRN-handoff-cody-b33.md.
+ITEM 1 -- CONCEPT: in Object.assign(a, b) the later source wins, so columns-first/blob-last lets the blob override the server; scan for keyed literal before a non-literal, then classify each hit by hand (LIVE only if the blob can carry the key).
+ITEM 2 -- scanner has 10 fixtures that lock its criteria and block the scan if they fail. 139 raw hits in api/, 68 blob projections in sd-data.js, 18 with keys in no nearby strip list, read by hand.
+ITEM 2 -- FOUR LIVE, FIXED: alf_payer_rules and alf_compliance_rules write responses (client payload.data stored unstripped, forged verified_by/state/rule_id won), bld_draws wip/release (no draw_id strip), sd-sub-data flattenProgressPhoto (created_at not stripped). All response/read side; no stored column was wrong. 12/0; ablation turns 5 arms red.
+ITEM 2 -- THE HOLE: ~50 { id } <- blob sites are INERT only by strip-list PROXIMITY (+-260 lines), pairing not individually proved. A runtime differential per resource would prove them; not run. HTML and two-statement merges not swept.
+ITEM 3 -- PREMISE WRONG: the "eight defects" are cc's b29 (cc-b31 digest line 21; table in docs/2026-10-20-cc-b29-notes.md s1), not mine. Five are routed to cody and ALL FIVE ARE STILL OPEN at HEAD, untouched (report-only).
+ITEM 3 -- SHARPEST: accounting.js ~296 never checks the revoke PATCH and answers tokens_discarded:true regardless (false success on a credential discard). Others: dental 503 names the wrong schema file; rf_prequal_documents/rf_bonding missing-table write is a 502; accounting 400->NOT_PROVISIONED; sd_quote_request_photos never read.
+GATES: path scope -> docs/ is fourth's, scanner scripts declared as files in assigned_overrides (b32 list replaced). Generated docs regenerated. Tier A -> obligation OPENED and assigned to cc (alf rules, bld_draws).
+DECISION-NEEDED: (1) Michael -- fix defects 1-5? #3 first. (2) cc -- discharge the b33 Tier A obligation. (3) H1 #1613/#1614 stays HELD.
+LIMIT: the ~50 heuristic sites; push_retry.py git() 120s bound is shorter than the gate (cc b32 changed the loop, not that bound).
+UNVERIFIED: defects 6-8 (hank/fourth files, not re-read); the ~50 sites; the follow-up commit with report and digest is confirmed in chat, not in this file.
+NEXT: (1) decide on defects 1-5; (2) per-resource differential for the heuristic sites; (3) cc discharges Tier A.
+EVIDENCE-path: SAIRN-handoff-cody-b33.md, SAIRN-report-cody-b33.txt, docs/2026-10-20-cody-b33-notes.md, api/b33-projection-order-sweep.test.js, docs/b33-sweep/projection_order_scan.py
+CONTEXT 41.2% of 1,000,000 -- 411,859 tokens, measured.

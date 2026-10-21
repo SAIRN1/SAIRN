@@ -6166,6 +6166,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b33-projection-order-sweep.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "897ee14c85417f5ce03215820f2de7386a62757b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/sd-data-scp-session-gate.test.js",
    "class": "test file",
    "level": "CHANGE",

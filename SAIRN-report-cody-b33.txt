@@ -1,0 +1,93 @@
+REPORT -- cody, batch b33, 2026-10-20. Four items: concept, sweep (four live sites fixed), the "eight defects" report (they are cc's), push.
+
+0. THE RESULT
+PUSHED WITHOUT --force. Remote tip 9070e5477, 0 ahead / 0 behind (git fetch,
+rev-list --left-right --count). Six files read back off the remote tree at
+identical sizes (api/sd-data.js 1343442, api/sd-sub-data.js 35253,
+api/b33-projection-order-sweep.test.js 8517, docs/2026-10-20-cody-b33-notes.md
+6067, docs/b33-sweep/projection_order_scan.py 7211, SAIRN-handoff-cody-b33.md
+5137). NOTHING OVERRIDDEN. NO LIVE WRITES. NO SQL. Wrapped at 41.2% measured,
+far below the 85% trigger. W3 left alone and H1 #1613/#1614 left HELD, both as
+decided.
+
+1. ITEM 1 -- THE CONCEPT, STATED BEFORE THE SCAN
+In Object.assign(a, b) the LATER source wins, so a projection with the
+authoritative columns first and a stored or client blob last lets the blob
+override the server's value. The scan finds every keyed object literal that
+precedes a non-literal source; each hit is then CLASSIFIED BY HAND -- LIVE only
+if the blob can actually carry that key, INERT if the write path allowlists or
+strips it. The scan reports shape, never intent.
+
+2. ITEM 2 -- THE SWEEP
+Scanner: docs/b33-sweep/projection_order_scan.py (comment/string-masked bracket
+matcher; also finds { key: v, ...blob } spreads). TEN SYNTHETIC FIXTURES LOCK THE
+CRITERIA and it refuses to scan if they fail. Companion strip_cross.py compares
+each hit's keys with every storedBlob(...,[list]) within +-260 lines.
+Over api/ (190 files): 139 raw shape hits (mostly extra||{}, base, patch,
+header merges); 68 blob-projection hits in sd-data.js; 18 with keys in no nearby
+strip list, each read by hand.
+
+FOUR LIVE SITES, FIXED (columns / server-stamped fields now last):
+ 1. alf_payer_rules write response     client payload.data is stored UNSTRIPPED, so
+                                       a sent verified_by / state / rule_id won
+ 2. alf_compliance_rules write response  same
+ 3. bld_draws wip (+ the two release_retainage summaries)  the generic writer stores
+                                       the payload with no draw_id strip
+ 4. sd-sub-data.js flattenProgressPhoto  the write strips identity and qc_* keys but
+                                       NOT created_at, so a payload value won
+All four are response/read side: no STORED column was ever wrong.
+api/b33-projection-order-sweep.test.js, 12/0. ABLATION: restoring the old order
+at all four sites turns A1, B1, C1, D1 and S1 red (7 pass / 5 fail); restored,
+12/0.
+
+INERT: allowlisted blobs (sd_public_shop, the public sd_quote_requests intake,
+sen_visits, rf_photos), a roster simulation at sd-data.js ~2631 (not a response),
+sd-sub-data jobs (strip list proved).
+
+THE HOLE IN THIS SWEEP: about 50 `{ id: ... } <- blob` sites are classified INERT
+only because their keys sit inside a storedBlob strip list within +-260 lines.
+The pairing of that list to that read was NOT individually proved. A runtime
+differential per resource would prove them; it was not run. Also not swept: *.html
+(not a trust boundary) and merges built in two statements.
+
+3. ITEM 3 -- "MY b29 EIGHT STILL-OPEN DEFECTS": THE PREMISE IS WRONG
+They are cc's b29. SAIRN-digest-cc-b31.txt line 21: "b29's eight defects still
+waiting" in a ROUTED line; the table is docs/2026-10-20-cc-b29-notes.md section 1.
+My own b29 (SAIRN-handoff-cody-b29.md) closed its items and has no list of eight.
+Re-read at HEAD this batch (none fixed -- the instruction was to report):
+ 1 dental missing-table 503 names a file that does not create dnt_gfe /
+   dnt_recall_outreach / dnt_txplans            cody   OPEN  sd-data.js ~18175
+ 2 rf_prequal_documents / rf_bonding write on a missing table -> generic 502
+                                                 cody   OPEN  ~10593, ~10695
+ 3 accounting.js ~296: the revoke PATCH is never checked; the endpoint answers
+   tokens_discarded:true regardless -- FALSE SUCCESS ON A CREDENTIAL DISCARD
+                                                 cody   OPEN  (sharpest of the eight)
+ 4 accounting.js :143 / :261: any 400 reported as NOT_PROVISIONED
+                                                 cody   OPEN
+ 5 sd_quote_request_photos written, never read (stonedesk-public.js:317)
+                                                 hank/cody OPEN, one writer, no reader
+ 6 stonedesk.html style profile reads the wrong object    hank    not re-verified
+ 7 sairnroofing.html JHA / job-warranty render "none recorded" on error
+                                                 fourth  not re-verified
+ 8 sairnsenior.html contract saved locally while the table is missing
+                                                 fourth  not re-verified
+Five of the eight are routed to cody and all five are still open.
+
+4. ITEM 4 -- THE PUSH
+Stopped four times, all correctly: path scope (docs/ is fourth's, so the two
+scanner scripts were declared in assigned_overrides as FILES, b32's list
+replaced); a GENERATED-document block (MASTER-PLAN, traceability matrix,
+regenerated); and two lost races (fetch-first), rebased. Tier A: obligation on
+alf_payer_rules, alf_compliance_rules, bld_draws OPENED and assigned to cc.
+
+5. VERIFICATION (commands run)
+EXIT=0 b33-projection-order-sweep 12/0; scanner fixtures 10/10; node --check on
+both api files. 34 suites touching alf rules / bld_draws / progress_photos /
+sd-sub-data: 32 green; 2 red (api/sd-data-scp-licence-only.test.js 15/9,
+tests/sairnfreedom_auth_review_probe.js) IDENTICAL at HEAD under a stash
+differential, both already in docs/known-red-suites.json.
+
+6. DECISIONS AND LIMITS
+- Michael: fix defects 1-5? #3 first.
+- cc: discharge the b33 Tier A obligation (point (d) names the ~50 heuristic sites).
+- Unproved: the ~50 heuristic sites; items 6-8 above.
