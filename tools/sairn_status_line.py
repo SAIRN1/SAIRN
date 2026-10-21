@@ -4,6 +4,7 @@
 """The status line: which agent, which model, and HOW MUCH CONTEXT IS GONE.
 
     python tools/sairn_status_line.py --fixtures     # the criteria lock
+    python tools/sairn_status_line.py --live-clones  # every REAL clone's line, 84/85
     echo '<status json>' | python tools/sairn_status_line.py
 
 Wired in `~/.claude/settings.json` as `statusLine`, which is USER-LEVEL and
@@ -54,7 +55,7 @@ import sys
 TOOLS = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, TOOLS)
 
-CRITERIA_VERSION = '2026-10-21.1'
+CRITERIA_VERSION = '2026-10-21.2'
 
 # ── THE RED THRESHOLD IS PER POPULATION, NOT PER PLATFORM (b24) ────────────
 # Michael's b8 decision was one threshold at 70 for everybody, and his b24
@@ -501,6 +502,44 @@ def run_fixtures():
               'ctx ??%' in line, True)
         check('...and that line carries NO digit percentage anywhere',
               '%' in line.replace('??%', ''), False)
+
+        # ── --live-clones, LOCKED ON A TMP ROOT OF SIX MARKED CLONES (b36) ──
+        # Its three exits, each forced: a correct root is 0; a marker that
+        # drifted (the seq 1095 shape) is 2, never 0; a threshold put back to
+        # 70 for the auditors is 1. Without these the live check could pass
+        # for the wrong reason and nothing would say so.
+        import contextlib
+        live = os.path.join(tmp, 'live-root')
+
+        def mark(name, as_name):
+            # A REAL repo: the identity is read through `git rev-parse`, so a
+            # bare .git folder would read as no identity at all.
+            gd = os.path.join(live, 'SAIRN-' + name, '.git')
+            if not os.path.isdir(gd):
+                _sp.run(['git', 'init', '-q', os.path.dirname(gd)],
+                        capture_output=True, timeout=60)
+            io.open(os.path.join(gd, 'sairn-session'), 'w', encoding='utf-8',
+                    newline='\n').write(as_name + '\n')
+
+        def live_exit():
+            with contextlib.redirect_stdout(io.StringIO()):
+                return run_live_clones(live)
+        for a in BUILD_AGENTS + AUDITOR_AGENTS:
+            mark(a, a)
+        check('--live-clones: six correctly marked clones -> 0', live_exit(), 0)
+        mark('hover2', 'H2')
+        check('--live-clones: a marker that drifted to a name the line does not '
+              'know -> 2 COULD NOT RUN, not 0', live_exit(), 2)
+        mark('hover2', 'hover2')
+        global RED_AT_AUDITOR
+        _keep = RED_AT_AUDITOR
+        RED_AT_AUDITOR = 70
+        try:
+            check('--live-clones: the auditors put back to 70 -> 1, the '
+                  'pre-b33 code hover2 seq 1095 measured', live_exit(), 1)
+        finally:
+            RED_AT_AUDITOR = _keep
+        check('--live-clones: ...and restored -> 0 again', live_exit(), 0)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
@@ -512,10 +551,83 @@ def run_fixtures():
     return 0
 
 
+# ── THE REAL CLONES, NOT A TMP ONE (b36) ────────────────────────────────────
+# CONCEPT: a threshold is only right if the line each REAL session renders is
+# right, so this drives render() from every real clone's own marker. The
+# fixtures' tmp clone cannot see a marker that drifted, and hover2 seq 1095's
+# 70% was exactly that shape: the arithmetic was fine, the IDENTITY fell
+# through to the default.
+CLONES_ROOT = os.path.join(os.path.expanduser('~'), 'Documents')
+LIVE_MODELS = (('claude-sonnet-5', SONNET_WINDOW), ('claude-opus-5', BIG_WINDOW))
+
+
+def run_live_clones(root=None):
+    """Exit 0 every real clone is plain at 84% and red at 85% on both windows;
+    1 at least one is not; 2 COULD NOT RUN -- a clone is absent or reads another
+    identity, which is never folded into 0."""
+    import shutil
+    import tempfile
+    root = root or CLONES_ROOT
+    print('SAIRN STATUS LINE -- live clones under %s' % root)
+    tmp = tempfile.mkdtemp(prefix='sairn-statusline-live-')
+    bad = cant = 0
+    try:
+        # The clones are FOUND ON DISK, not taken from the tuples under test --
+        # an auditor dropped from AUDITOR_AGENTS must show up as a wrong line,
+        # not as a clone this never looked at.
+        found = {}
+        for d in sorted(os.listdir(root)):
+            clone = os.path.join(root, d)
+            if d.startswith('SAIRN-') and os.path.isdir(os.path.join(clone, '.git')):
+                found[d[len('SAIRN-'):]] = clone
+        for name in sorted(set(BUILD_AGENTS + AUDITOR_AGENTS) - set(found)):
+            cant += 1
+            print('  COULD NOT RUN  %-7s no clone SAIRN-%s under %s' % (name, name, root))
+        for name, clone in sorted(found.items()):
+            who = agent_name(clone)
+            if who != name:
+                cant += 1
+                print('  COULD NOT RUN  %-7s %s reads identity %r, not %r'
+                      % (name, clone, who, name))
+                continue
+            for model, window in LIVE_MODELS:
+                for pct, want in ((84, False), (85, True)):
+                    t = os.path.join(tmp, '%s_%s_%d.jsonl' % (name, model, pct))
+                    with io.open(t, 'w', encoding='utf-8', newline='\n') as fh:
+                        fh.write(json.dumps({'type': 'assistant', 'message': {
+                            'usage': {'input_tokens': window * pct // 100,
+                                      'cache_read_input_tokens': 0,
+                                      'cache_creation_input_tokens': 0}}}) + '\n')
+                    line = render({'transcript_path': t,
+                                   'model': {'id': model, 'display_name': model},
+                                   'workspace': {'current_dir': clone}, 'cwd': clone})
+                    got = ('ctx %d%%' % pct in line, RED in line)
+                    if got != (True, want):
+                        bad += 1
+                        print('  WRONG  %-7s %s at %d%%: red=%s, wanted red=%s -- %r'
+                              % (name, model, pct, got[1], want, line))
+            print('  %-7s marker %r, red at %d' % (name, who, red_at(who)))
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    if bad:
+        print('FINDING: %d rendered line(s) on a real clone are red at the wrong '
+              'point.' % bad)
+        return 1
+    if cant:
+        print('COULD NOT RUN for %d clone(s): those lines were NOT checked, and '
+              'that is not a pass.' % cant)
+        return 2
+    print('CLEAN: every real clone is plain at 84% and red at 85%, on both '
+          'windows.')
+    return 0
+
+
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     if '--fixtures' in argv:
         return run_fixtures()
+    if '--live-clones' in argv:
+        return run_live_clones()
     try:
         raw = sys.stdin.read()
     except Exception:                                            # noqa: BLE001
