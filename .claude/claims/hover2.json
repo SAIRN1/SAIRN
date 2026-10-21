@@ -944,6 +944,17 @@
       "status": "released",
       "released_at": "2026-10-21T18:27:19Z",
       "files": null
+    },
+    {
+      "id": "hover2-1792608277",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "b83: second cold read of the PL-2 fixes and a cold review of stryker_feed.py (agents, scratch copies), PL-2 recipient fingerprint dry run, backslash audit; own tooling only, platform read-only",
+      "claimed_at": "2026-10-21T18:44:37Z",
+      "claimed_at_epoch": 1792608277.0376647,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
