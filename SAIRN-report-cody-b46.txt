@@ -1,0 +1,16 @@
+REPORT -- cody b46, 2026-10-21
+
+LANDED: 8aee7e758 (CHECK 5e), claim 08db3c424, bookkeeping f47ffb0ea, on origin/main. No force.
+ITEM 1 -- DONE. Concept: a tree difference matters only in a file the counts READ, so only then is the tip materialised.
+  In-place run first. If git diff --name-only <tip> + untracked hits tests/*.py, the two tools, a mutation target or a
+  freshness subject (new --json key `subjects`), the tip is checked out to a throwaway worktree and its own tools re-run.
+  Worktree fail / git cannot list -> DENY COULD NOT RUN. Worktree removed in finally (0 left).
+  First version took the worktree on ANY dirty tree. The gate's own scrutiny-flags write made that every push: +13.5s,
+  and push_retry's 120s timeout expired. Narrowed.
+ITEM 2 -- DONE. mutation_anchor_check --json gains `unguarded`; 5e names each on its own UNGUARDED row beside other findings.
+ABLATION (real --pre-push, isolated worktree): E tip-only dup -> DENY; F tree-only dup -> silent; H scrutiny-only dirty ->
+  silent in place (57s); G ambiguous + unguarded probe -> DENY naming both. Selftest 56/56. Both tools exit 0 at HEAD.
+CLAIM: fourth held the manifest at my claim time (refusal recorded); it released before I edited it.
+NOT EXPLAINED: push_retry --loop STOPPED twice, "refusal class: gate", refusal text truncated. Preflight 0, the direct pre-push
+  hook 0, and a plain push landed. Not investigated.
+LIMIT: the tool counts only 'wb' writes as in-place; 'w' text-mode probes are not flagged unguarded (tool criterion, unchanged).

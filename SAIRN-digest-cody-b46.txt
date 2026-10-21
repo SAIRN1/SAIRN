@@ -1,0 +1,15 @@
+DIGEST -- cody b46, 2026-10-21. Three items, all DONE.
+STATUS: GATE + TWO TOOL JSON KEYS. NO APP CODE. NO LIVE WRITES. NO SQL. Nothing deployed.
+CHANGED: tools/sairn_push_gate_hook.py (5e), tools/mutation_anchor_check.py (+unguarded), tools/probe_anchor_freshness.py (+subjects), docs/sairn-path-manifest.json.
+LANDED: 8aee7e758 on origin/main (claim 08db3c424, bookkeeping f47ffb0ea). No force.
+ITEM 1 -- 5e judges the TIP. In place first; if the tree differs from tip in a file the counts READ, the tip goes to a throwaway
+  worktree and its own tools re-run. Worktree fail -> DENY. A first version took the worktree on any dirty tree: the gate's own
+  scrutiny-flags write made that every push (+13.5s), and push_retry's 120s timeout expired. Narrowed.
+ITEM 2 -- --json carries 'unguarded'; 5e names each on its own UNGUARDED row beside other findings.
+ABLATION (real --pre-push): tip-only dup DENY; tree-only dup silent; scrutiny-only dirty silent in place; ambiguous+unguarded DENY naming both.
+  Selftest 56/56. 0 temp worktrees left. Both tools exit 0 at HEAD.
+DECISION-NEEDED: cc -- review 5e (already routed; now includes b46).
+UNVERIFIED: push_retry --loop STOPPED twice as "gate" (text truncated); preflight 0, direct hook 0, a plain push landed. Cause unknown.
+NEXT: carried: hank F2/F3; cc Tier A b31-b37; fourth 7/8.
+EVIDENCE-path: SAIRN-handoff-cody-b46.md, SAIRN-report-cody-b46.txt
+CONTEXT 32.1% of 1,000,000 -- 320,928 tokens, measured.
