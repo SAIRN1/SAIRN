@@ -12895,6 +12895,58 @@ function fmLoadMapImage(targetId, addrs){
     .catch(function(){ out('<div class="fm-map-placeholder">Map image unavailable -- the server could not be reached. The link above still works.</div>'); });
 }
 
+// COORDINATE LOOKUP (b46). Each stop address is geocoded ONCE by the server
+// (api/route-map.js, action 'geocode' -- the Maps key stays there) and the fix
+// is cached here by normalised address, so the optimiser's great-circle
+// fallback has coordinates when drive times are unavailable. Only real fixes
+// are cached or sent: an address that could not be located goes WITHOUT
+// lat/lng keys -- unknown is never 0,0 -- and the result says how many stops
+// that was. Failures are not cached, so a missing key or an outage is retried.
+var FM_GEO_KEY='sd_fm_geocode';
+var FM_GEO_BATCH=25; // = MAX_GEOCODE in api/route-map.js
+// The cache key: trimmed, lower-case, whitespace collapsed.
+function fmGeoNorm(a){ return String(a||'').trim().toLowerCase().replace(/\s+/g,' '); }
+// A usable fix is a finite in-range pair that is not 0,0; anything else is unknown (null).
+function fmGeoFix(v){
+  if(!v||typeof v.lat!=='number'||typeof v.lng!=='number'||!isFinite(v.lat)||!isFinite(v.lng)) return null;
+  if(v.lat<-90||v.lat>90||v.lng<-180||v.lng>180||(v.lat===0&&v.lng===0)) return null;
+  return {lat:v.lat, lng:v.lng};
+}
+// An unreadable or missing store is an empty cache, never an error.
+function fmGeoCache(){
+  try{ var c=JSON.parse(localStorage.getItem(FM_GEO_KEY)||'{}'); return (c&&typeof c==='object'&&!Array.isArray(c))?c:{}; }catch(e){ return {}; }
+}
+// Ask only for uncached addresses (de-duplicated, in batches), cache real fixes, and ALWAYS resolve to the cache.
+function fmGeocodeStops(stops){
+  var cache=fmGeoCache(), want=[], seen={}, added=0;
+  stops.forEach(function(s){
+    var k=fmGeoNorm(s.address);
+    if(!k||seen[k]) return;
+    seen[k]=true;
+    if(fmGeoFix(cache[k])) return;
+    want.push(s.address);
+  });
+  if(!want.length) return Promise.resolve(cache);
+  var hdrs={'Content-Type':'application/json','Authorization':'Bearer '+(typeof sdLicenseKey==='function'?(sdLicenseKey()||''):'')};
+  try{ var tok=sessionStorage.getItem('sd_session_token'); if(tok) hdrs['X-SD-Auth']=tok; }catch(e){}
+  var batches=[];
+  for(var i=0;i<want.length;i+=FM_GEO_BATCH) batches.push(want.slice(i,i+FM_GEO_BATCH));
+  return Promise.all(batches.map(function(b){
+    return fetch('https://sairn.vercel.app/api/route-map',{method:'POST',headers:hdrs,body:JSON.stringify({action:'geocode',addresses:b})})
+      .then(function(r){ return r.ok?r.json():null; })
+      .then(function(d){
+        (d&&Array.isArray(d.results)?d.results:[]).forEach(function(x){
+          var fx=fmGeoFix(x);
+          if(fx&&typeof x.address==='string'){ cache[fmGeoNorm(x.address)]=fx; added++; }
+        });
+      })
+      .catch(function(){}); // could not ask: those stops simply have no fix this time
+  })).then(function(){
+    if(added) stRaw(FM_GEO_KEY, JSON.stringify(cache));
+    return cache;
+  });
+}
+
 // HARD GATE (2026-08-06): a stop cannot be marked Done until a QC-APPROVED
 // finished-product photo exists for it -- not just "a photo was uploaded,"
 // an actual human (not the uploader) has reviewed and approved it. This is
@@ -13031,15 +13083,23 @@ function fmRunOptimize(person, dateStr, silent){
   // floored its saving at Math.max(0,...), so an unmeasurable route and an
   // already-optimal one both rendered "0 min" and a reader could not tell
   // which they had.
+  // COORDINATES FIRST (b46): cached fixes are attached as lat/lng; a stop with no fix carries no coordinate keys at all and is counted.
+  fmGeocodeStops(notDone).then(function(geo){
+  var noFix=0;
   var payload={
     app_id:'stonedesk',
     assignee_id:person,
     route_date:dateStr,
     stops:notDone.map(function(s){
-      return {job_ref:s.id, address:s.address, locked:s.locked===true, status:s.status||'pending'};
+      var o={job_ref:s.id, address:s.address, locked:s.locked===true, status:s.status||'pending'};
+      var fx=fmGeoFix(geo[fmGeoNorm(s.address)]);
+      if(fx){ o.lat=fx.lat; o.lng=fx.lng; } else noFix++;
+      return o;
     })
   };
-  Promise.resolve(sdDataEnvelope('optimize','rt_routes',payload))
+  // Said only where coordinates matter: the straight-line basis and the could-not-run answer.
+  var noFixTxt=noFix?' '+noFix+' of '+notDone.length+' stops had no map coordinates.':'';
+  return Promise.resolve(sdDataEnvelope('optimize','rt_routes',payload))
     .then(function(data){
       if(!data){
         // sdData already recorded WHY (auth refused vs could-not-ask vs
@@ -13060,7 +13120,7 @@ function fmRunOptimize(person, dateStr, silent){
                  'too-few-stops':'there are not enough stops to order',
                  'nothing-movable':'every remaining stop is locked or already done'}[data.reason]
                  ||('the server reported "'+String(data.reason||'no reason given')+'"');
-        if(!silent) showToast('Route not reordered -- '+why+'. Your stop order is unchanged.');
+        if(!silent) showToast('Route not reordered -- '+why+'. Your stop order is unchanged.'+noFixTxt);
         return;
       }
       var order=data.order; // indices into the stops we sent, in visiting order
@@ -13085,9 +13145,10 @@ function fmRunOptimize(person, dateStr, silent){
       fmRefreshCurrentView(person, dateStr);
       // CONFIRM EVERY SUCCESS (b45): the banner used to sit inside if(silent), so a manual press applied a new order and said nothing; both paths now name the saving and the basis.
       var basisTxt=(data.basis==='great-circle')?' (straight-line order; drive times were unavailable)':(data.basis==='drive-matrix')?' (by drive times)':'';
-      fmShowReoptBanner(escHtml(person)+'\'s route reordered'+fmSavedText(data.saved_seconds)+basisTxt+'.');
+      fmShowReoptBanner(escHtml(person)+'\'s route reordered'+fmSavedText(data.saved_seconds)+basisTxt+'.'+(data.basis==='great-circle'?noFixTxt:''));
       fmGenerateDaySummary(person, dateStr, finalOrder);
-    })
+    });
+  })
     .catch(function(){ if(!silent) showToast('Route optimisation did not run. Your stop order is unchanged.'); });
 }
 

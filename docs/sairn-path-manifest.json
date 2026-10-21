@@ -56,7 +56,8 @@
       "tests/sairnbiz_benefits_and_overtime.js",
       "tests/sairnbiz_pay_frequency.js",
       "tests/sairnbiz_timesheet_hours.js",
-      "tests/sairnbiz_preview_fixes.js"
+      "tests/sairnbiz_preview_fixes.js",
+      "api/route-map.js"
     ]
   },
 
