@@ -1371,6 +1371,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairndental_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "19bf00398a1c58507edbae349f6246c4d0d2e6a7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/report_only_checks.py",
    "class": "push-gate logic",
    "level": "WEAKENING",
