@@ -4466,6 +4466,22 @@
         "SAIRN-report-hank-b40.txt",
         "stonedesk.html"
       ]
+    },
+    {
+      "id": "hank-1792602217",
+      "session": "hank",
+      "subject": "stonedesk",
+      "task": "b42: SD-AUDIT-2026 test quote request with photo + live Photos(N) drive; api/sd-data-scp-licence-only.test.js B arms + A3 window (cc b35). FILES: api/sd-data-scp-licence-only.test.js SAIRN-handoff-hank-b42.md SAIRN-report-hank-b42.txt SAIRN-digest-hank-b42.txt",
+      "claimed_at": "2026-10-21T17:03:37Z",
+      "claimed_at_epoch": 1792602217.621099,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-hank-b42.txt",
+        "SAIRN-handoff-hank-b42.md",
+        "SAIRN-report-hank-b42.txt",
+        "api/sd-data-scp-licence-only.test.js"
+      ]
     }
   ],
   "refusals": [
