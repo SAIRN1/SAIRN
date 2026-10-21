@@ -1,0 +1,17 @@
+REPORT -- cody b37, 2026-10-21
+
+ITEMS: 4 of 4 done. PUSHED, no --force, no skip. origin/main = b05869ff6ac3a5c56d6aeebb00742354a3a418c1 (ls-remote == HEAD; four files match by sha256).
+Commits: a0cb367af work (plus regenerated derived docs and manifest) · b05869ff6 Tier A obligation (sd_quote_requests) · push-gate bookkeeping.
+Gate: one refusal, because the Tier A obligation did not cover sd_quote_requests; it was recorded and the push passed. One ref-lock race, rebased.
+
+1 -- CONCEPT: a revoke may discard only the credentials its own consent authorised.
+  api/accounting.js: the connection PATCH is now filtered by consent_id, not by payload provider.
+  api/b37-accounting-revoke-scope.test.js 5/0. S1 and S2 are red on the old file: a stale C-OLD repeat revoke cleared C-NEW's live tokens.
+  S5: the licence filter still holds.
+2 -- CONCEPT: the row's key comes from its column. R1-R2 in api/b37-routed-arms.test.js. Worktree ablation turns R1 red.
+3 -- CONCEPT: a read returns only the caller's licence's rows. P1-P2, two tenants. Worktree ablation of the licence filter turns P1 and P2 red.
+4 -- CONCEPT: a "not set up" message names the file that creates THIS table. DNT_SCHEMA_FILE gains dnt_referrals. N1 is red on the old file; N2 checks the file creates the table. It is the only dental generic resource that was missing.
+
+VERIFICATION: 30 suites, 29 exit 0. tests/sairnfreedom_auth_review_probe.js exits 1 at HEAD with or without b37 (stale "sf-auth setup guard anchor"); not mine, no owner yet.
+OPEN: cc -- Tier A b31-b37 (b37 point: live accounting_connections rows carry consent_id). Carried: fourth 7/8, hank 5/6.
+CLAIM: platform, released after the deliverables commit.

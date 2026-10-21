@@ -1,0 +1,14 @@
+DIGEST -- cody b37, 2026-10-21. Four items: all four done. PUSHED, no --force, no skip.
+STATUS: origin/main b05869ff6ac3a5c56d6aeebb00742354a3a418c1 by git ls-remote (== HEAD; four files match by sha256). NO LIVE WRITES. NO SQL.
+CHANGED: api/accounting.js (+8/-1), api/sd-data.js (+4/-1), api/b37-accounting-revoke-scope.test.js, api/b37-routed-arms.test.js, docs/sairn-path-manifest.json, docs/tier-a-reviews.json, docs/MASTER-PLAN.md, docs/traceability-matrix.md.
+ITEM 1 -- CONCEPT: a revoke may discard only the credentials its own consent authorised. Discard PATCH now filtered by consent_id, not payload provider. 5/0; S1-S2 red on the old file (a stale consent's repeat revoke wiped a live connection).
+ITEM 2 -- CONCEPT: the row key comes from its column. release_retainage forged blob draw_id arm; guard already right; ablation -> R1 red.
+ITEM 3 -- CONCEPT: a read returns only the caller's licence's rows. request_photos two-tenant arm; ablation of the licence filter -> P1, P2 red.
+ITEM 4 -- CONCEPT: a not-set-up message names THIS table's file. DNT_SCHEMA_FILE gains dnt_referrals; N1 red on the old file. The only dental gap.
+GATES: one Tier A refusal (sd_quote_requests not named), recorded; obligations on bld_draws, dnt_referrals, dnt_vendor_orders, sd_quote_requests assigned to cc.
+DECISION-NEEDED: (1) cc -- Tier A b31-b37. (2) owner for tests/sairnfreedom_auth_review_probe.js (red at HEAD, stale anchor, not b37).
+LIMIT: the accounting fix assumes every connection row carries consent_id (schema not null; live rows unverified).
+UNVERIFIED: the deploy of b05869ff6; live accounting_connections consent_id coverage.
+NEXT: (1) cc reviews; (2) carried: fourth defects 7/8, hank 5/6.
+EVIDENCE-path: SAIRN-handoff-cody-b37.md, SAIRN-report-cody-b37.txt, api/b37-accounting-revoke-scope.test.js, api/b37-routed-arms.test.js
+CONTEXT 36.6% of 1,000,000 -- 365,535 tokens, measured.
