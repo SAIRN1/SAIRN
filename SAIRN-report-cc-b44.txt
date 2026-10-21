@@ -1,0 +1,67 @@
+REPORT cc b44
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-21
+RANGE     the b44 fix(deps) commit (landed at 775ee2da) to origin/main. No --force, NO OVERRIDE, no BYPASS-LOG row.
+PLAN      ~/.claude/plans/h-serene-sloth.md, approved by Michael via ExitPlanMode.
+
+== RESULT ==
+Dependabot alert #5 (node-forge, HIGH, GHSA-86w9-cpqp-85rv): state FIXED, fixed_at 2026-10-21T19:13:16Z (REST dependabot/alerts/5).
+The platform has ZERO open Dependabot alerts.
+
+== WHAT CHANGED ==
+package.json: "firebase-admin": "^12.7.0" -> "^13.10.0". package-lock.json regenerated.
+  Michael ran npm install --package-lock-only --ignore-scripts --no-audit --no-fund; the harness denies npm.
+api/_lib/firebase-admin.js UNCHANGED: 13.10.0 still loads the namespaced API (firebase-namespace in lib/index.js). 14.5.0 does not.
+
+== LOCKFILE, measured against the pre-change lock ==
+removed 1: node_modules/node-forge.
+added 10: firebase-admin/node_modules/{gaxios, gcp-metadata, google-auth-library, google-logging-utils, node-fetch},
+  data-uri-to-buffer, fetch-blob, formdata-polyfill, node-domexception, web-streams-polyfill.
+changed 10: @firebase/{app-check-interop-types, app-types, auth-interop-types, component, database, database-compat 1.0.8->2.1.7,
+  database-types, logger, util}, firebase-admin 12.7.0->13.10.0.
+OSV querybatch: all 20 moved packages have 0 records. Nothing outside the firebase-admin subtree moved.
+
+== DRIVEN AGAINST 13.10.0 ==
+The api/ tree was copied into a scratch npm ci of this exact lock (Michael ran it).
+Proof: the scratch copy of api/_lib/firebase-admin.js was instrumented, and the repo copy untouched.
+  It printed SDK_VERSION=13.10.0 from <scratch>\npm13\node_modules\firebase-admin\lib\index.js.
+api/_lib/firebase-mint.test.js 16/16: real credential.cert(), initializeApp(), createCustomToken(); signature verified; no network.
+sairncash: verify 22/22, trial-start 10/10, trial-renew 4/4, trial-renew-idempotency 11/11, stripe-webhook pass. These stub the SDK.
+firebase-admin 13.10.0 lib/ and @firebase/*: no node-forge reference (grep).
+
+== DEPLOY ==
+Vercel project sairn nodeVersion 24.x (13.10.0 needs >=18). The production deployment for 775ee2da is READY.
+Smoke, malformed bodies only (no real token minted):
+  /api/sairncash/verify -> 400 "Missing sessionId or subscriptionId"; /api/sairncash/trial-verify -> 400 "Missing trialToken".
+  So the handlers load with the new SDK.
+/api/sairncash/stripe-webhook -> 500 "Server configuration error". This is PRE-EXISTING and unrelated:
+  stripeConfig.status('webhook:sairncash').ready is false, a check that runs before any Firebase call,
+  and the previous deployment (sairn-5lrpryw1c, commit 025b0c40) answers the identical 500.
+  The SAIRNcash webhook secret is not configured in this environment.
+
+== TRAP FOUND (not changed; Michael's home directory) ==
+C:\Users\marsh\node_modules contains firebase-admin 12.7.0 and node-forge.
+No clone carries its own node_modules, so Node's parent-directory walk resolves firebase-admin from the HOME directory.
+Every local api test that loads the SDK has been exercising 12.7.0, not the repo's lock. The first test run here did exactly that, and its passes were discarded.
+FIX: delete C:\Users\marsh\node_modules, or bump it to match the lock.
+
+== TIER A ==
+tier_a_review_gate --open: "Nothing in this change names a Tier A resource" -- no obligation recorded.
+
+== ADDENDUM FOR fourth, to paste into docs/2026-10-05-dependabot-high-triage.md (fourth held the path manifest, so cc did not edit docs/) ==
+"2026-10-21, cc b44: TRIGGER 2 FIRED AND THE RISK IS CLOSED. firebase-admin was upgraded 12.7.0 -> 13.10.0 (775ee2da), the first
+release with no node-forge dependency. node-forge is no longer in package-lock.json and Dependabot #5 reads fixed (2026-10-21T19:13:16Z).
+The namespaced API is unchanged in 13.x, so api/_lib/firebase-admin.js needed no edit. firebase-mint.test.js passes 16/16 against
+SDK_VERSION 13.10.0. The accepted-risk basis above no longer applies, because the package is not present.
+Not driven: rtdbUpdate/rtdbGet against a real RTDB (@firebase/database-compat 1.0.8 -> 2.1.7)."
+
+== OPEN ==
+rtdbUpdate/rtdbGet not driven against a real Realtime Database. The stripe-webhook config 500 is pre-existing and belongs to SAIRNcash's owner.
+The home-directory node_modules (Michael).
+
+== CHANGED ==
+package.json; package-lock.json; SAIRN-handoff-cc-b44.md; this report; the digest.
+
+SHA256 0b58f8cf9dfb1edbd287a75785ec58effd8ba0d68c178e3e6bb7bf4d2b1ee252
+END-OF-REPORT
