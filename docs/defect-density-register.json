@@ -34676,9 +34676,9 @@
       "recurrence_open": "E3b MEASURED THE typeof GUARD ALONE AND IT CHANGES NOTHING -- the per-step try covers it, so the guard is defence in depth and NOT the load-bearing layer. Recorded because an arm claiming otherwise would have been a green claim about a layer doing no work. And the pattern is unswept: other handlers in this file call unguarded globals after a confirmed success and nothing counts them."
     },
     {
-      "commit": "ce15ddaa6a3c",
+      "commit": "864e6b764909",
       "date": "2026-10-19",
-      "subject": "b27(cody): the rt_routes primitive made reachable, three routed role changes, and three routings that were incomplete",
+      "subject": "b27(cody): rt_routes made reachable, three routed role changes, and three routings that were incomplete",
       "files": [
         "api/_lib/routes.test.js",
         "api/_resources/index.js"
