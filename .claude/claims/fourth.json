@@ -4498,6 +4498,23 @@
         "sairnbiz.html",
         "stonedesk.html"
       ]
+    },
+    {
+      "id": "fourth-1792597057",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "b47: sairnbiz Z8 display (run lines, pay date, CSV, 516.2(a)(4)/(a)(5)) Tier A row; push; deliverables.  FILES: sairnbiz.html docs/tier-a-reviews.json SAIRN-handoff-fourth-b47.md SAIRN-report-fourth-b47.txt SAIRN-digest-fourth-b47.txt NOT-stonedesk-html NOT-api NOT-tools NOT-tests",
+      "claimed_at": "2026-10-21T15:37:37Z",
+      "claimed_at_epoch": 1792597057.1938565,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b47.txt",
+        "SAIRN-handoff-fourth-b47.md",
+        "SAIRN-report-fourth-b47.txt",
+        "docs/tier-a-reviews.json",
+        "sairnbiz.html"
+      ]
     }
   ],
   "refusals": [
@@ -4785,6 +4802,21 @@
       "other_subject": "cc",
       "other_task": "b31: discharge hank 2026-10-16T13:03:47Z Tier A; FMEA drafts + fix fmea_draft multi-path --save; handoff-convention CLAUDE.md:33 vs practice; Tier A rt routes 700B/stop job_ref worst case; Tier A sc_claims/sc_dme; commit Michael's 13:13Z snapshot re-capture (unwrapped); push.  FILES: tools/fmea_draft.py docs/fmea/ docs/tier-a-reviews.json db/schema_snapshot.json CLAUDE.md .claude/skills/sairn-session-handoff/ docs/2026-10-20-cc-b31-notes.md docs/batch-manifest-cc-b31.json SAIRN-handoff-cc-b31.md SAIRN-report-cc-b31.txt SAIRN-digest-cc-b31.txt NOT-api NOT-html NOT-tests NOT-sql",
       "other_claimed_at": "2026-10-20T14:04:44Z",
+      "shared_files": [
+        "docs/tier-a-reviews.json"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-21T15:19:29Z",
+      "my_subject": "fourth",
+      "my_task": "b47: geocode landing + live check; sairnbiz Z8 display (run lines, pay date, CSV, 516.2(a)(4)/(a)(5)); push.  FILES: sairnbiz.html docs/tier-a-reviews.json docs/scrutiny-flags.json SAIRN-handoff-fourth-b47.md SAIRN-report-fourth-b47.txt SAIRN-digest-fourth-b47.txt NOT-stonedesk-html NOT-api NOT-tools NOT-tests",
+      "other_session": "cc",
+      "other_subject": "cc",
+      "other_task": "b34 Tier A reviews: cody 2026-10-20T16:51:37Z alf rules, fourth b46 geocode, hank schema snapshot, cody b34 dental  FILES: docs/tier-a-reviews.json SAIRN-handoff-cc-b34.md SAIRN-report-cc-b34.txt SAIRN-digest-cc-b34.txt NOT-api NOT-html NOT-sql NOT-tests",
+      "other_claimed_at": "2026-10-21T15:13:41Z",
       "shared_files": [
         "docs/tier-a-reviews.json"
       ],
