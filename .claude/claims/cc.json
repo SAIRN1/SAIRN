@@ -4495,13 +4495,14 @@
       "task": "b36: Tier A review fourth 2026-10-21T15:37:25Z b47 Z8 display; status-line threshold fix + regression fixture  FILES: tools/sairn_status_line.py SAIRN-handoff-cc-b36.md SAIRN-report-cc-b36.txt SAIRN-digest-cc-b36.txt NOT-api NOT-html NOT-sql -- direct write per PR 4.3: check BLOCKED on hover2 b80 (shared phrase 'status-line'; hover2's own task says 'status-line file untouched'), judged lexical, task not reworded",
       "claimed_at": "2026-10-21T15:55:42Z",
       "claimed_at_epoch": 1792598142.9180217,
-      "status": "active",
+      "status": "released",
       "files": [
         "SAIRN-digest-cc-b36.txt",
         "SAIRN-handoff-cc-b36.md",
         "SAIRN-report-cc-b36.txt",
         "tools/sairn_status_line.py"
-      ]
+      ],
+      "released_at": "2026-10-21T16:11:30Z"
     }
   ],
   "refusals": [
