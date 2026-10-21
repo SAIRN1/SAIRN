@@ -44336,9 +44336,20 @@ sdSyncColorInputs('sd-brand-secondary', 'sd-brand-secondary-hex');
   // asked it, so staff saw a photo count and never the photos. Fetched on
   // click, not with the list -- each photo can be ~1.5MB of base64. Through the
   // ENVELOPE so "table not set up" is not said as "no photos", and a failed
-  // read is said as a failure. Only the three image types the intake accepts
-  // are rendered (api/stonedesk-public.js validates the same prefix).
+  // read is said as a failure.
+  //
+  // TWO INDEPENDENT BARRIERS (b44, cc b38): only a value that is a base64
+  // jpeg/png/webp data URL END TO END is rendered -- the same whole-value test
+  // api/stonedesk-public.js now applies at intake, re-applied here because rows
+  // stored before b44 were only prefix-checked -- AND src/alt still go through
+  // pcHtml. api/b40-stonedesk-style-profile-request-photos.test.js removes each
+  // barrier alone and requires the other to hold.
+  //
+  // A DIALOG, NOT JUST A LAYER: role/aria-modal, focus moves in, Escape or a
+  // click closes it, and focus goes back to the button that opened it.
+  var PC_PHOTO_RX=/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/]+={0,2}$/;
   window.pcShowRequestPhotos=async function(id){
+    var opener=document.activeElement;
     var r;
     try{ r=await sdDataEnvelope('request_photos','sd_quote_requests',{id:id}); }catch(e){ r=null; }
     if(!r){
@@ -44346,11 +44357,22 @@ sdSyncColorInputs('sd-brand-secondary', 'sd-brand-secondary-hex');
       return;
     }
     var imgs=(Array.isArray(r.data)?r.data:[]).filter(function(p){
-      return p && /^data:image\/(jpeg|png|webp);base64,/.test(p.photo_base64||'');
+      return p && typeof p.photo_base64==='string' && PC_PHOTO_RX.test(p.photo_base64);
     });
     var ov=document.createElement('div');
     ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:center;padding:24px;overflow:auto;cursor:zoom-out';
-    ov.onclick=function(){ ov.remove(); };
+    ov.setAttribute('role','dialog');
+    ov.setAttribute('aria-modal','true');
+    ov.setAttribute('aria-label','Customer photos -- press Escape or click to close');
+    ov.tabIndex=-1;
+    function close(){
+      document.removeEventListener('keydown',onKey,true);
+      ov.remove();
+      try{ if(opener&&typeof opener.focus==='function') opener.focus(); }catch(e){}
+    }
+    function onKey(e){ if(e.key==='Escape'){ e.preventDefault(); close(); } }
+    ov.onclick=close;
+    document.addEventListener('keydown',onKey,true);
     ov.innerHTML=imgs.length
       ? imgs.map(function(p){
           return '<img alt="Customer photo'+(p.slot?' '+pcHtml(String(p.slot)):'')+'" src="'+pcHtml(p.photo_base64)+'" style="max-width:min(90vw,640px);max-height:80vh;border-radius:8px">';
@@ -44361,6 +44383,7 @@ sdSyncColorInputs('sd-brand-secondary', 'sd-brand-secondary-hex');
             : 'This request says it has photos, but none are stored for it.')+
         '</div>';
     document.body.appendChild(ov);
+    try{ ov.focus(); }catch(e){}
   };
 
   window.pcToggleHandled=function(){

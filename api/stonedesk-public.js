@@ -268,7 +268,11 @@ module.exports = async (req, res) => {
     // worth reproducing here a day later.
     const photos = Array.isArray(body.photos) ? body.photos.slice(0, MAX_PHOTOS) : [];
     for (const p of photos) {
-      if (typeof p !== 'string' || !/^data:image\/(jpeg|png|webp);base64,/.test(p)) {
+      // THE WHOLE VALUE, NOT THE PREFIX (hank b44, cc b38): a prefix test let
+      // 'data:image/png;base64,AAAA" onerror=...' be stored, which left the
+      // staff page's escaping as the only barrier. Base64 has no quote, angle
+      // bracket or ampersand, so a value matching end to end cannot break out.
+      if (typeof p !== 'string' || !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/]+={0,2}$/.test(p)) {
         res.status(400).json({ error: { code: 'INVALID_PHOTO', message: 'Photos must be JPEG, PNG or WebP images' } });
         return;
       }
