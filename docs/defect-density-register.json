@@ -36456,6 +36456,49 @@
       "recurrence_open": "The detection factor is NOT closed: no selftest arm yet asserts the post-drill answer, so a regression would again be found only by a human checking after a drill rather than by the suite."
     },
     {
+      "commit": "013d368cd4df",
+      "date": "2026-10-21",
+      "subject": "fix(stonedesk b48): a Field Map lock follows the stop across an installer or date change, and unlocking clears it everywhere",
+      "files": [
+        "stonedesk.html"
+      ],
+      "lines_added": 26,
+      "lines_removed": 7,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "fault-injection",
+      "summary": "Left open by b45 (41f825dbb). The lock lived on the person|day order record, so a job reassigned to another installer or moved a day lost its lock, and the stale entry in the old record could not be cleared from the new day. FIXED: fmLockedSet() reads locks across every record; the toggle clears the id everywhere before locking. Driven by a REAL click on the rendered My Day card (b45 only checked generated HTML): RED 6/12 -> GREEN 12/12, 2 mutants killed.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "scratchpad b48 drive_lock.py (Playwright real mouse click; not in repo)",
+      "found_by_session": null,
+      "injection": {
+        "commit": "41f825dbb689",
+        "date": "2026-10-20",
+        "subject": "fix(stonedesk b45): Field Map -- stops can be locked in place, a manual optimise confirms itself, and a zero saving is said rather than shown as \"~0 min\"",
+        "lag_days": 1
+      },
+      "citation_note": "No coding rule covers this class: state keyed by a container the item can leave. Proposed: per-item state is keyed by the item, never by its current grouping.",
+      "contributing_factors": [
+        {
+          "factor": "Lock state was keyed by the person|day route, which a job leaves when its installer or date changes.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Lock looked up by stop id across all records."
+        },
+        {
+          "factor": "The b45 lock arms called functions and inspected generated HTML; no arm clicked the button or moved a job.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "drive_lock.py clicks the rendered card and reassigns installer and date."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. A lock carried to a new day keeps the stop at its old index in the new route, which may not be what the dispatcher meant; stale ids for deleted stops stay in old records."
+    },
+    {
       "commit": "03f50bd4cc8b",
       "date": "2026-10-21",
       "subject": "fix(cc b33): the tier checker reads a registry's app through node, not a regex",
@@ -36633,6 +36676,59 @@
         }
       ],
       "recurrence_open": "THE AUDITORS' 85 IS NOT LOCKED TO A SOURCE: tools-hover2/context_red_flag.py is the auditors' own trigger, in their scope, and this file must not read it. If the auditors move their rule again, this file will not know. Stated rather than reached across."
+    },
+    {
+      "commit": "b14228a4563f",
+      "date": "2026-10-21",
+      "subject": "fix(sairndental b48): DEA rows keyed per registration number; the server's GFE check reads the copy an Issued estimate prints; the GFE export's name/DOB read gfeSnapshot()",
+      "files": [
+        "api/_lib/dental-credentials.js",
+        "api/_lib/dental-gfe.js",
+        "api/_lib/dental-gfe.test.js",
+        "api/b48-dental-dea-gfe.test.js",
+        "sairndental.html"
+      ],
+      "lines_added": 146,
+      "lines_removed": 4,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "From fourth b44 dental audit, left open in b45 as server-side. (1) latestByKey keyed DEA rows by provider + empty string, so a provider's second registration (21 CFR 1301.12(a): one per principal place of business) superseded the first and an expired registration vanished from the board. FIXED: provider + normalised registration number. (2) dental-gfe.js checked the live patient record while an Issued estimate prints its frozen patient_name/patient_dob, so a blank printed DOB passed. FIXED: an Issued estimate needs both the printed copy and the server-side record. The app export now reads gfeSnapshot(). api/b48-dental-dea-gfe.test.js RED 6/11 -> GREEN 11/11, 5 mutants killed; export RED 3/4 -> GREEN 4/4.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "876bd84cfad4",
+        "date": "2026-08-24",
+        "subject": "feat(sairndental): licensing/credentialing -- state licences, DEA/MATE, CE pacing",
+        "lag_days": 58
+      },
+      "citation_note": "No coding rule covers this class: a dedupe key that omits the field which makes two records distinct. Proposed: a latest-by-key function names, per record type, the regulation or fact that makes two rows the same thing.",
+      "contributing_factors": [
+        {
+          "factor": "The DEA branch of latestByKey fell through to the default empty key, so every DEA row for one provider was one record.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "deaKey(rec.number): upper-case, spaces and hyphens removed."
+        },
+        {
+          "factor": "The server completeness check and the printed document read two different copies of the patient's name and DOB.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Issued estimates are checked on the printed copy and the live record."
+        },
+        {
+          "factor": "Every DEA fixture used one registration per provider, and every GFE fixture passed the patient separately from the record.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Two-registration and printed-copy arms with in-file mutants."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. A DEA row with no number still keys as one per provider; a corrected (re-typed) number leaves the old row live; the server does not compare the printed copy to the live record for equality. Injection for (2) is a8f74bc83."
     },
     {
       "commit": "d94a2e3d1bf3",
