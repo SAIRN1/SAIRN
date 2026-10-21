@@ -4476,6 +4476,28 @@
         "stonedesk-hr.html",
         "stonedesk.html"
       ]
+    },
+    {
+      "id": "fourth-1792584446",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "b46: Field Map geocoding via Google Geocoding API on the existing Maps key; sairnbiz Z8/Z9 pay lines, pay date/period, address/DOB/rate history; push. FILES: api/route-map.js api/route-geocode.js stonedesk.html sairnbiz.html docs/defect-density-register.json docs/sairn-path-manifest.json docs/batch-manifest-fourth-b46.json SAIRN-handoff-fourth-b46.md SAIRN-report-fourth-b46.txt SAIRN-digest-fourth-b46.txt NOT-api-sd-data-js NOT-tests NOT-tools NOT-CLAUDE-md NOT-dot-claude-skills NOT-docs-tier-a-reviews-json",
+      "claimed_at": "2026-10-21T12:07:26Z",
+      "claimed_at_epoch": 1792584446.2740579,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b46.txt",
+        "SAIRN-handoff-fourth-b46.md",
+        "SAIRN-report-fourth-b46.txt",
+        "api/route-geocode.js",
+        "api/route-map.js",
+        "docs/batch-manifest-fourth-b46.json",
+        "docs/defect-density-register.json",
+        "docs/sairn-path-manifest.json",
+        "sairnbiz.html",
+        "stonedesk.html"
+      ]
     }
   ],
   "refusals": [
