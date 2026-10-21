@@ -6948,6 +6948,23 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold CHANGED",
+     "detail": "was: errors='replace', timeout=300, cwd=repo,  now: errors='replace', timeout=300, cwd=root,"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(_pa_wt, ignore_errors=True)"
+    }
+   ],
+   "sha": "8aee7e7589789dc34bbd36129af7eb1c2cde0eed",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/tier_a_review_gate.py",
    "class": "push-gate logic",
    "level": "WEAKENING",
@@ -9735,6 +9752,23 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "b5d467f7cc46a4798a42c8cab07306d6ffd8fbdb",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold CHANGED",
+     "detail": "was: errors='replace', timeout=300, cwd=repo,  now: errors='replace', timeout=300, cwd=root,"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(_pa_wt, ignore_errors=True)"
+    }
+   ],
+   "sha": "b6b5af2d306a7effcd3db3e6f938444bdba793eb",
    "criteria_version": "2026-10-06.1"
   },
   {
