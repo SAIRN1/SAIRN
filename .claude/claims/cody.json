@@ -4279,6 +4279,17 @@
         "docs/2026-10-21-cody-b34-notes.md",
         "docs/b33-sweep/pair_by_resource.py"
       ]
+    },
+    {
+      "id": "cody-1792594753",
+      "session": "cody",
+      "subject": "platform",
+      "task": "b35 sd-data missing-table writes, accounting revoke guard, customer-soft-delete test",
+      "claimed_at": "2026-10-21T14:59:13Z",
+      "claimed_at_epoch": 1792594753.4360201,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
