@@ -4641,8 +4641,8 @@
       "task": "b45: re-run local api tests after the home node_modules removal; confirm firebase-admin resolves to the lock's 13.10.0  FILES: SAIRN-handoff-cc-b45.md SAIRN-report-cc-b45.txt SAIRN-digest-cc-b45.txt",
       "claimed_at": "2026-10-21T19:37:06Z",
       "claimed_at_epoch": 1792611426.8200967,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T19:53:30Z",
       "files": [
         "SAIRN-digest-cc-b45.txt",
         "SAIRN-handoff-cc-b45.md",
