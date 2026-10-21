@@ -1,0 +1,60 @@
+REPORT cc b35
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-21
+RANGE     from 5123c2b6 (tier-a(cc b35): discharge cody 2026-10-21T15:12:12Z ...) to origin/main.
+          Claim 05f6831d. No --force, NO OVERRIDE, no BYPASS-LOG row.
+
+== LEDGER HOLD ==
+The first claim was BLOCKED: fourth's b47 claim holds docs/tier-a-reviews.json.
+I re-claimed for the read-only review and the deliverables only, and that claim string says the ledger write waited on fourth.
+The discharge changes ONE existing record and adds none. The file's merge_policy is union-by-identity (author_session, opened_at).
+It was declared to fourth on my status row, the same way b33 declared its register append.
+
+== 1. cody 2026-10-21T15:12:12Z -- b35 -- SOUND; one routed defect ==
+CRITERIA: driven or ablated at origin/main; every caller of the old 502 checked; the revoke discard must reach only the revoked consent.
+Roofing: reverse-applying 43c32bf6's sd-data.js hunk -> b35-missing-table-writes 8 passed / 16 failed; HEAD 24/24.
+  The eight messages each name a file whose CREATE TABLE makes that table (checked by parsing).
+  Callers: sairnroofing.html via rfDataRaw (:1882-1888), which shows msg and never branches on 502. No html in the repo tests === 502.
+Revoke: revoked_on=is.null on the PATCH; zero rows -> re-read -> 404 / already_revoked / 502 REVOKE_UNCONFIRMED.
+  repeat 8/8, b34 9/9. Revoke is behind MANAGEMENT_ROLES; the re-read selects no token column.
+DEFECT, pre-existing and routed to cody: the discard is PATCH accounting_connections?license_hash&provider=eq.<provider>.
+  provider = payload.provider || 'quickbooks_online' (accounting.js:141), taken from the request, not the consent; there is no consent_id filter.
+  DRIVEN with the suite's own store-backed mock: revoked XERO consent C-X plus active QBO consent C-Q; revoke {consent_id:C-X}
+  -> 200 already_revoked:true tokens_discarded:true, and the discard URL was provider=eq.quickbooks_online.
+  The QBO connection is cleared while its consent stays active. The same shape existed before b35.
+  Latent: OAuth returns 501, so no connection holds tokens yet.
+FIX: filter by consent_id (the column exists), take provider from saved[0].provider, and add a two-consent arm.
+
+== 2. api/sd-data-scp-licence-only.test.js B arms -- PREDATES b34; owners cody (1 arm) and hank (8 arms) ==
+git bisect, criterion = the test's exit code: green at c512d8f9 (2026-09-29, when the test was added); first bad 5e33157e (2026-10-05).
+  5e33157e: customers session-gated. Tier A record cody 2026-10-05T13:23:46Z; reviewed by fourth. Fails: 1 (customers).
+Fail count along every SAIRNscape sd-data commit since: 1 until 0442646c (2026-10-11) -> 3.
+  Then d99b47f9 (2026-10-14) -> 8, then 5776ef19 (2026-10-14) -> 9.
+  All three commits are hank's (hank b4, b8 and b9 reports list them as their own).
+  So 9 of 9 are red, and all nine resources are deliberately gated: "SAIRNscape 12 of 12".
+The code is right. The test still asserts the retired licence-only posture. OWNER OF THE FIX: hank (8 of 9 arms; api/ is hank's).
+SECOND DEFECT in the same file: tripwire A3 cannot fire.
+  It regex-searches SD_DATA from the first 'SD_SESSION_GATED' for 9,000 characters.
+  That first occurrence is a comment at line 99 (char 5,648); the table entry for scp_jobs is at line 1931 (char 120,441).
+  So A3 passes ("none of the nine is gated") while all nine are gated. This is a check that stopped testing anything.
+
+== 3. "RED AT 70%" -- CLOSED ==
+~/.claude/settings.json _statusline_note reads "RED AT 85%" (line 304). Verified; no longer carried.
+
+== 4. deny entry -- CLOSED, named ==
+File: C:\Users\marsh\Documents\SAIRN-cc\.claude\settings.local.json (untracked). Key: permissions.deny.
+It now holds exactly 8 entries, all well-formed, parsed by JSON:
+  Edit / Write on //C:/Users/marsh/Documents/SAIRN-hover/**, //C:/.../SAIRN-hover2/**, ~/Documents/SAIRN-hover/**, ~/Documents/SAIRN-hover2/**.
+The merged junk entry b33 named is gone. Line 1429 is now "Edit(//C:/Users/marsh/Documents/SAIRN-hover/**)". Not carried again.
+
+== OPEN ==
+NEW Tier A owed by cc, not in this dispatch: fourth 2026-10-21T15:37:25Z (b47 sairnbiz Z8 display, employees).
+Routed: hank -- invert or retire the scp-licence-only B arms and fix A3's window.
+  cody -- scope the revoke discard by consent_id, plus the three b34 items. fourth -- commit the geocode arms.
+
+== CHANGED ==
+docs/tier-a-reviews.json (1 discharge); SAIRN-handoff-cc-b35.md; this report; the digest. api/, tests/, sql/, html untouched.
+
+SHA256 1c51fa9e64f9da3bc9b6d6204ce5fa293b1dce9a3d7379b5bc1f530cf3771373
+END-OF-REPORT

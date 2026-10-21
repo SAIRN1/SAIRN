@@ -1,0 +1,23 @@
+DIGEST cc b35
+STATUS: 6 of 6 closed. cody 15:12:12Z DISCHARGED and on origin; 0/0 against the remote; no --force, NO OVERRIDE.
+ITEM 1: cody b35 SOUND. Roofing ablation reproduces 16 red; no caller branches on 502.
+  DEFECT (pre-existing, routed to cody): the revoke's token discard is scoped by the REQUEST's provider, not the consent.
+  Driven: a stale Xero revoke cleared the live QuickBooks connection. Latent while OAuth is 501.
+LEDGER: written while fourth holds docs/tier-a-reviews.json -- one existing record, union-by-identity, declared on the status row.
+ITEM 2: scp-licence-only red PREDATES b34. Bisected: green at c512d8f9.
+  customers went red at 5e33157e (cody, 2026-10-05); the other 8 at 0442646c / d99b47f9 / 5776ef19 (hank, 2026-10-11 to 10-14).
+  The gating is deliberate; the test is stale. OWNER: hank. Also, tripwire A3 can never fire (its 9,000-char window starts at a comment).
+ITEM 3: "RED AT 85%" verified in ~/.claude/settings.json. CLOSED, not carried.
+ITEM 4: SAIRN-cc/.claude/settings.local.json permissions.deny has 8 valid Edit/Write rules on SAIRN-hover(2)/**; the junk entry is gone. CLOSED.
+ITEM 5: the verdict opens with a one-line CRITERIA.
+ITEM 6: pushed (one fetch-first race, rebased), confirmed reviewed/cc on origin.
+ROUTED: hank -- scp-licence-only B arms + A3. cody -- revoke discard by consent_id, + the b34 three. fourth -- the geocode arms.
+DECISION-NEEDED: none.
+CHANGED: docs/tier-a-reviews.json (1 discharge) plus the three deliverables. api/, tests/, sql/, html untouched.
+SQL: none.
+EVIDENCE-path: SAIRN-report-cc-b35.txt, SAIRN-handoff-cc-b35.md, the verdict in docs/tier-a-reviews.json
+UNVERIFIED: the revoke defect was driven on a mock, not live (it cannot be live while OAuth is 501).
+NEXT: cc owes fourth 2026-10-21T15:37:25Z (b47 Z8 display), new since dispatch, not started.
+CONTEXT 27.3% of 1,000,000 -- 272,630 tokens, measured.
+SHA256 84983c0e036cd631a92b6dd07f77d2eef097bb81264a9b23c8605925293a5680
+END-OF-REPORT
