@@ -6581,6 +6581,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairnlegacy_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "87a433f31e17ad4d173a47a30fefdd5961cac131",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/_lib/location-scope.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -12763,6 +12771,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "f67e1ca869640cec15edc9f0bb0e28990c0789e3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairndental_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f6afdcbae28bbd44c220710256da99ed4d8bfd94",
    "criteria_version": "2026-10-06.1"
   },
   {
