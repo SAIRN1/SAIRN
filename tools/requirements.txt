@@ -1,0 +1,27 @@
+# tools/requirements.txt -- the third-party Python packages tools/ imports.
+#
+# CONCEPT (cc b41): a dependency nobody declares is one Dependabot cannot see.
+# tools/ had no manifest, so the only Dependabot alert on the repo was npm and
+# the installed pypdf 6.16.1 carried twelve advisories (eight HIGH, all
+# denial-of-service on a crafted PDF) that no alert ever named.
+# tools/sairn_source_fetch.py parses PDFs fetched from the network, so that
+# input is not ours.
+#
+# DERIVED, not remembered: every top-level import under tools/ that is neither
+# standard library nor a tools/ module, measured 2026-10-21 by AST walk. A new
+# third-party import belongs here on the same day.
+#
+# Each floor is the lowest version with NO known advisory (OSV, 2026-10-21).
+# Both packages are imported lazily and each tool says COULD NOT RUN when the
+# package is absent, so this is a floor for the tools that need them, not an
+# install step for every clone.
+
+# tools/sairn_source_fetch.py, tools/reclassification_sweep.py
+# 6.20.1 clears GHSA-39mj-jf6j-2qj3, -5jq2-8x83-x246, -7mh2-4gg2-979f,
+# -9mx8-4j7g-633p, -fp3h-c4fm-7vvf, -g9cg-prrw-2r8q, -jw7q-gvrg-4vj3,
+# -php9-fj8v-98fj, -qfv9-64jg-mh7p, -qv6h-rv94-w285, -v247-6f48-mgcj,
+# -w23x-9jrw-r45c (all present in 6.16.1).
+pypdf>=6.20.1
+
+# tools/wcag_contrast_check.py -- 1.61.0 has no OSV advisory.
+playwright>=1.61.0
