@@ -900,6 +900,17 @@
         "SAIRN-handoff-H2-b78.md",
         "SAIRN-report-H2-b78.txt"
       ]
+    },
+    {
+      "id": "hover2-1792583685",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "hover2 b79, audit role, writes only to its own hover-audit-log and tools-hover2: fix frame_protection_sweep frame-buster false positive with fixtures that catch the class; live-verify cody b28 7e43c9da against hank b74 matching issues with a headless browser; H1 vs H2 token-budget write-up as a log entry; methodology punch list in the audit log; no vendor coverage pass, no vendor arm on real-fix buckets",
+      "claimed_at": "2026-10-21T11:54:45Z",
+      "claimed_at_epoch": 1792583685.390545,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
