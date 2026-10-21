@@ -36735,7 +36735,7 @@
       "recurrence_open": "An UNREGISTERED resource is still unknown to the pre-gate and a deleted row there is logged, not refused; nothing yet asserts that every resource sd-data.js serves is in the registry."
     },
     {
-      "commit": "c9f53a61275c",
+      "commit": "aed82209c52d",
       "date": "2026-10-21",
       "subject": "fix(sairndental, sairnlegacy b52): sidebar emoji icons hidden from screen readers -- found by the real NVDA run",
       "files": [
@@ -36882,7 +36882,7 @@
       "recurrence_open": "NOT CLOSED. The same (x.ok&&x.data)||{} idiom may exist on other rfDataRaw reads in sairnroofing.html and was not swept."
     },
     {
-      "commit": "506d73b4151a",
+      "commit": "b5d467f7cc46",
       "date": "2026-10-21",
       "subject": "fix(sairnfreedom b52): SAIRNveterans accessibility pass -- keyboard sidebar, labelled fields, Enter to sign in, headings, aria-current, focus to heading on nav",
       "files": [
