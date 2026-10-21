@@ -7422,6 +7422,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/_lib/routes.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9b533faf0a4c98156298a8de26b6dfd2c7c40f89",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b38-deleted-row-platform.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9b533faf0a4c98156298a8de26b6dfd2c7c40f89",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/legal-citator-feedback-attribution.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -9185,6 +9201,22 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "b1df1aa4f7c2ff5cfe2df0307f42ab7a4459e63b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/routes.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "b24dbd32d9019bc68a6e20df429be5fa01186639",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b38-deleted-row-platform.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "b24dbd32d9019bc68a6e20df429be5fa01186639",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -13088,22 +13120,6 @@
     }
    ],
    "sha": "ff94f9bba54b8f2c60c6c186c4b88474549c7794",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/_lib/routes.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "b24dbd32d9019bc68a6e20df429be5fa01186639",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/b38-deleted-row-platform.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "b24dbd32d9019bc68a6e20df429be5fa01186639",
    "criteria_version": "2026-10-06.1"
   }
  ],
