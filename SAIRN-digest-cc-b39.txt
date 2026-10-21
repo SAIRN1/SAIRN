@@ -1,0 +1,19 @@
+DIGEST cc b39
+STATUS: 3 of 3 closed. cody 17:05:11Z and 17:07:10Z DISCHARGED, landed 54fbdf4e; 0/0; no --force, NO OVERRIDE.
+ITEM 1a: cody revoke discard by consent_id SOUND. Ablation S1/S2 red; cc's b35 scenario now addresses only the revoked consent.
+  consent_id is NOT NULL in the schema AND live (read-only information_schema). No writer exists yet (OAuth 501).
+  FORWARD: a reconnect upserts the same row (unique license_hash+provider) -- the OAuth writer must update consent_id.
+ITEM 1b: cody two-tenant + release_retainage arms SOUND. Tenant filter dropped -> P1/P2 red (b34's gap closed); after-site -> R1 red.
+ITEM 2: each verdict opens with a one-line CRITERIA; no fix was written this batch.
+ITEM 3: pushed first time; both records reviewed/cc on origin.
+OPEN FOR cc: NONE -- no Tier A review is owed by cc on origin.
+DECISION-NEEDED: none.
+CHANGED: docs/tier-a-reviews.json (2 discharges) plus the three deliverables.
+SQL: none written. One read-only information_schema SELECT on sairn-platform.
+EVIDENCE-path: SAIRN-report-cc-b39.txt, SAIRN-handoff-cc-b39.md, the two verdicts in docs/tier-a-reviews.json
+UNVERIFIED: the OAuth upsert path does not exist yet, so the consent_id-on-reconnect rule is a forward obligation, not a tested fact.
+ROUTED: hank -- b40 barrier arms + keyboard close. fourth -- review cc 2026-10-21T17:13:48Z (b38 gate).
+NEXT: nothing owed by cc; the next dispatch decides.
+CONTEXT 51.5% of 1,000,000 -- 515,014 tokens, measured.
+SHA256 7bdca0374428b729a6983061bf1614c21db0dee4f6435910de9824b20b8caf63
+END-OF-REPORT

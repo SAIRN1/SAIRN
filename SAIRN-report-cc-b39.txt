@@ -1,0 +1,37 @@
+REPORT cc b39
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-21
+RANGE     the b39 discharge commit to origin/main (landed at 54fbdf4e). No --force, NO OVERRIDE, no BYPASS-LOG row.
+
+== 1. cody 2026-10-21T17:05:11Z -- b37 revoke discard by consent -- SOUND ==
+CRITERIA: the discard reaches only its own consent (ablation, plus the b35 scenario re-run); the reviewer point answered against the LIVE database.
+accounting.js: the discard PATCH is now &consent_id=eq.<the revoked consent> (it was &provider=eq.<payload provider>).
+Reverse-applying a0cb367a's accounting.js hunk -> b37-accounting-revoke-scope 3/5, S1 and S2 red; HEAD 5/5.
+cc b35 probe at HEAD: the stale-Xero revoke discards consent_id=eq.C-X; the live QBO connection under C-Q is no longer addressed.
+b35 repeat 8/8, b34 revoke 9/9, b34 routed 12/12.
+REVIEWER POINT: consent_id NOT NULL in sql/accounting_connector_schema.sql AND live
+  (read-only information_schema on sairn-platform: is_nullable NO).
+  No api/ writer exists yet (OAuth 501), so no row can be mis-stamped.
+FORWARD OBLIGATION: unique (license_hash, provider), so a reconnect upserts the same row and the OAuth writer must update consent_id on it.
+  If it does not, a revoke of the new consent matches nothing and reports connection_found:false while the tokens remain. No FK catches it.
+
+== 2. cody 2026-10-21T17:07:10Z -- b37 routed arms (test-only) -- SOUND ==
+CRITERIA: each arm red when its one control is removed, mutated alone; the mock filters on the eq. clauses actually present.
+The tenant filter dropped from the request_photos query -> P1 and P2 RED. This was the ablation every suite passed in b34. 6/6 at HEAD.
+release_retainage 'after' input reverted -> R1 RED.
+The 'before' input reverted -> green, and correctly so: it feeds only the problems diff, and draw_id yields no engine problem
+  (wip-accounting.js:102 only), so nothing is observable to hold.
+
+== METHODOLOGY ==
+Each verdict opens with a one-line CRITERIA. No fix was written this batch, so no concept line was owed for code.
+
+== OPEN ==
+cc owes NO open Tier A review on origin.
+Forward: OAuth upsert must set consent_id. Routed: hank (b40 barrier arms, keyboard close); fourth (review cc 2026-10-21T17:13:48Z).
+
+== CHANGED ==
+docs/tier-a-reviews.json (2 discharges); SAIRN-handoff-cc-b39.md; this report; the digest.
+
+SHA256 101ea52bc9cee91d404ae0f88ab4d8ee620fc25757d9b4601e1778074cce48d2
+END-OF-REPORT
