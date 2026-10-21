@@ -4323,6 +4323,17 @@
       "status": "released",
       "released_at": "2026-10-21T17:37:50Z",
       "files": null
+    },
+    {
+      "id": "cody-1792605345",
+      "session": "cody",
+      "subject": "sairnlegacy",
+      "task": "b40 funeral F2 livery billing and F3 apprentice clearance policy wiring in sd-data.js",
+      "claimed_at": "2026-10-21T17:55:45Z",
+      "claimed_at_epoch": 1792605345.385909,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
