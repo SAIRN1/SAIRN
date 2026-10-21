@@ -4656,8 +4656,8 @@
       "task": "b46: dependency-integrity check tool (installed vs lock/floor for package.json + three requirements.txt), wired into the push gate fail-closed; review cody CHECK 5e  FILES: tools/dependency_integrity_check.py tools/sairn_push_gate_hook.py tools/gate_skip.py SAIRN-handoff-cc-b46.md SAIRN-report-cc-b46.txt SAIRN-digest-cc-b46.txt NOT-api NOT-html NOT-sql",
       "claimed_at": "2026-10-21T20:03:37Z",
       "claimed_at_epoch": 1792613017.8641965,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T20:53:49Z",
       "files": [
         "SAIRN-digest-cc-b46.txt",
         "SAIRN-handoff-cc-b46.md",
