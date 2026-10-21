@@ -1,0 +1,16 @@
+REPORT -- cody b47, 2026-10-21
+
+LANDED: 5195d38d6 (classifier fix + full-text file), 88885b711 (git-dir guard), claim 36d345842, on origin/main. No force.
+  88885b711 went through the fixed push_retry --loop: attempt 1, PUSHED.
+FULL STOP TEXT: NOT RECOVERABLE. --loop kept 14 lines + up to 8 remedy lines and nothing else captured stderr. Both excerpts:
+  gate notices only, no "Blocked:" line.
+THE GATE DID NOT DENY: every collected deny bumps ~/SAIRN-SESSION-LOCKS/push-retries/<agent>-<tip>.json. No record for either
+  stopped tip (0db1e0a6e 16:10, aaedf44bd 16:14; none for cody after 15:34), while the same minutes' worktree denies are recorded.
+CAUSE: _GATE_MARKERS included the bare name sairn_push_gate_hook.py. A PASSING gate prints it (EXTRA SCRUTINY "[WEAKENING]
+  tools/sairn_push_gate_hook.py" on any gate edit; reproduced on 8aee7e758, 4 occurrences). The remote moved during the ~85s hook
+  (behind 14, then 5); git's race rejection was outvoted by the marker -> "gate" -> STOP. Which race line: inferred, not observed.
+FIX: markers = deny-only text (Blocked:, the pre-push trailer, ESCALATING:). +3 selftest arms on the real notice text; ALL ARMS PASS.
+  Ablation: old tuple -> "gate", new -> "transient" on the b46 shape. Full refusal now kept in .git/push_retry_last_refusal.txt.
+SELF-INFLICTED, CONTAINED: the first version wrote that file to the repo ROOT under the selftest's stubbed git. Fixed (only where
+  HEAD exists); a re-run leaves it untouched. The stray untracked file remains: rm was DENIED. Michael: ! rm the file (handoff).
+OPEN: a gate-crash traceback now labels "unknown" not "gate" (both STOP). cc review of push_retry with 5e. Claim `platform` held.

@@ -1,0 +1,16 @@
+DIGEST -- cody b47, 2026-10-21. One item: EXPLAINED and FIXED.
+STATUS: TOOLING ONLY (tools/push_retry.py). NO APP CODE. NO LIVE WRITES. NO SQL. Nothing deployed.
+CHANGED: tools/push_retry.py, docs/sairn-path-manifest.json (cody override b47 = push_retry.py).
+LANDED: 5195d38d6 + 88885b711 on origin/main, no force; the second went through the fixed --loop, attempt 1.
+FINDING -- the gate did NOT deny either b46 stop: no per-tip deny record in ~/SAIRN-SESSION-LOCKS/push-retries/ for 0db1e0a6e
+  or aaedf44bd, while denies from the same minutes are recorded. Full stop text: not recoverable (the loop kept 22 lines max).
+CAUSE -- the bare name sairn_push_gate_hook.py was a "gate" marker, and a PASSING gate prints it (EXTRA SCRUTINY on any gate edit).
+  The remote moved during the ~85s hook; git's race rejection was read as "gate" -> STOP. The exact race line is inferred.
+FIX -- markers are deny-only text; +3 selftest arms on the real notice; ablation old->gate, new->transient. The whole refusal
+  is now kept in .git/push_retry_last_refusal.txt.
+DECISION-NEEDED: Michael -- ! rm C:/Users/marsh/Documents/SAIRN-cody/push_retry_last_refusal.txt (my first version's selftest
+  leaked it to the root; fixed; my rm was denied).
+UNVERIFIED: which race line (fetch-first or cannot-lock-ref) each stop hit -- it was in the dropped text.
+NEXT: release the platform claim. cc: review push_retry alongside 5e. Carried: hank F2/F3; cc Tier A b31-b37; fourth 7/8.
+EVIDENCE-path: SAIRN-handoff-cody-b47.md, SAIRN-report-cody-b47.txt
+CONTEXT 36.6% of 1,000,000 -- 366,200 tokens, measured.
