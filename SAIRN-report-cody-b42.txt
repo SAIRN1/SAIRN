@@ -1,0 +1,14 @@
+REPORT -- cody b42, 2026-10-21
+
+ITEM 1 -- DONE: all 8 read-only "test -d" probes were REFUSED by the permission layer.
+  Variants: /c/.../SAIRN-hover, /c/.../SAIRN-hover2, /c/.../sairn-hover2, /c/.../sairn-hover/,
+  /c/.../sairn-hover2/, C:\...\sairn-hover\, C:\...\sairn-hover2\, /c/.../sairn-hover.
+  Each returned "Permission to use Bash with command ... has been denied." No marker printed. (b41: all 8 ran.)
+  Deny list read before probing: 13 entries, 8 Edit/Write + 5 Bash, no joined "),Bash(" entry.
+ITEM 2 -- NOT NEEDED: no probe succeeded. fix-deny.ps1 not run.
+ITEM 3 -- DONE: settings.local.json compared to settings.local.json.bak (pre-deny, 10:46) with json.load.
+  deny 0 -> 13 (exactly the 13 intended). allow 1007 -> 1007, none added or removed, same order. No other keys.
+  Formatting only: re-serialised, indent 2 -> 4, LF -> CRLF, 84,805 -> 92,550 bytes. Not a content change.
+  I made no write to the file this batch.
+OPEN: settings.local.json.bak is untracked here, left for Michael. Other clones' deny lists not read.
+CONTEXT window declared once this session as 1,000,000 (same as b41) via --provision-window; token count is measured.

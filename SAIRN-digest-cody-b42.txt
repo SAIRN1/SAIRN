@@ -1,0 +1,13 @@
+DIGEST -- cody b42, 2026-10-21. Three items: 1 DONE (all refused), 2 not needed, 3 DONE (unchanged apart from deny).
+STATUS: NO CODE CHANGED. NO LIVE WRITES. NO SQL. I did not write settings.local.json this batch.
+CHANGED: SAIRN-handoff-cody-b42.md, SAIRN-report-cody-b42.txt, SAIRN-digest-cody-b42.txt (deliverables only).
+ITEM 1 -- PROBED: the same 8 read-only test -d probes as b41, both hover clones, all path variants: ALL 8 REFUSED by the permission layer.
+  Deny list before probing: 13 entries (8 Edit/Write + 5 Bash). The inert joined "),Bash(" entry is gone.
+ITEM 2 -- nothing succeeded, so nothing to investigate. fix-deny.ps1 not run.
+ITEM 3 -- vs settings.local.json.bak (pre-deny): allow 1007 -> 1007, same entries, same order; deny 0 -> 13; no other keys.
+  Formatting only: re-serialised (indent 2->4, LF->CRLF). Not a content change.
+DECISION-NEEDED: Michael -- keep or delete the untracked .claude/settings.local.json.bak in the cody clone.
+UNVERIFIED: other clones' deny lists. Any built with the b40 -File command has the same inert joined entry.
+NEXT: carried: hank F2/F3 write path; cc Tier A b31-b37; fourth defects 7/8.
+EVIDENCE-path: SAIRN-handoff-cody-b42.md, SAIRN-report-cody-b42.txt
+CONTEXT 8.5% of 1,000,000 -- 85,233 tokens, measured.
