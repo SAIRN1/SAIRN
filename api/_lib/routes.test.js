@@ -554,8 +554,12 @@ try {
   if (!hm) throw new Error('could not read the session header name out of api/_lib/auth.js');
   SESSION_HEADER = hm[1];
   // Every PostgREST call answers 200 with an empty list, so the branch reaches
-  // its own answer rather than dying on a transport error.
-  global.fetch = async () => ({ ok: true, status: 200, json: async () => [] });
+  // its own answer rather than dying on a transport error -- EXCEPT the
+  // employee-auth lookup, which answers an ACTIVE row (cc b38): since the
+  // pre-gate refuses a deleted row on every registered resource, an empty
+  // answer there is a deleted employee, not a neutral one.
+  global.fetch = async (url) => ({ ok: true, status: 200,
+    json: async () => (/_employee_auth\?/.test(String(url)) ? [{ active: true }] : []) });
   delete require.cache[require.resolve(SD_DATA)];
   dispatch = require(SD_DATA);
 } catch (e) {

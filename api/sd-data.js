@@ -2320,18 +2320,23 @@ module.exports = async (req, res) => {
         // all, and for those the answer is honestly unknown.
         const preIsGated = !!(SD_SESSION_GATED[resource]
           && SD_SESSION_GATED[resource].indexOf(action) !== -1);
-        // ── A DELETED ROW ON sd_customers (b36, Michael's decision 2026-10-21) ──
-        // CONCEPT: a missing employee row counts as a deactivation once the
-        // resource's app is known. sd_customers is not on SD_SESSION_GATED, so
-        // its app was "unknown" here and a stonedesk token whose row had been
-        // DELETED read and wrote customers on the token's role alone -- while
-        // active:false was refused. Its branch already asserts 'stonedesk'
-        // (verifySessionToken(..., 'stonedesk')), so this restates that fact; it
-        // does not invent one. api/b36-sd-customers-deleted-row.test.js.
-        const PRE_DECLARED_APP = { sd_customers: 'stonedesk' };
+        // ── A DELETED ROW IS REFUSED ON EVERY REGISTERED RESOURCE (b38) ─────
+        // Michael's decision, 2026-10-21: platform-wide, no exception.
+        // CONCEPT: the registry already says which app owns each resource, so
+        // that app is the expected app here, and a missing employee row of that
+        // app is a deactivation on every registered resource -- not only on the
+        // SD_SESSION_GATED ones and sd_customers (b36), which left ~70
+        // branch-gated resources reading on a deleted employee's token.
+        // `shared` and `routes` resources serve every app, so like `memory` they
+        // follow the caller's declared app_id. A token from ANOTHER app still
+        // mismatches, is not scoped, and still reaches its branch's FORBIDDEN.
+        // An UNREGISTERED resource stays unknown, as before.
+        // api/b38-deleted-row-platform.test.js.
+        const preOwner = Object.prototype.hasOwnProperty.call(OWNER_BY_RESOURCE, resource)
+          ? OWNER_BY_RESOURCE[resource] : undefined;
+        const preRegistryApp = (preOwner === 'shared' || preOwner === 'routes') ? memApp : preOwner;
         const preExpectedApp = (resource === 'memory') ? memApp
-          : (preIsGated ? (SD_GATE_APP[resource] || 'stonedesk')
-            : (Object.prototype.hasOwnProperty.call(PRE_DECLARED_APP, resource) ? PRE_DECLARED_APP[resource] : undefined));
+          : (preIsGated ? (SD_GATE_APP[resource] || 'stonedesk') : preRegistryApp);
         const preScoped = preExpectedApp !== undefined
           && preExpectedApp === preSession.app;
         const preHardRefusal = !preActive.ok
