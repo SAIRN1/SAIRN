@@ -1108,8 +1108,8 @@
       "task": "b77: fix 1658 hover_vendor_sample review path never records into RateGate with a two-call fixture that fails first, log the evidence against the rolling-window Model B 1645 and relay to hover2, mirror restore drill, Stryker relay, compaction trace baseline, platform read-only FILES: .claude/skills/sairn-hover-auditor/tools/hover_vendor_sample.py .claude/claims/hover.json",
       "claimed_at": "2026-10-21T17:09:52Z",
       "claimed_at_epoch": 1792602592.1732206,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T17:26:47Z",
       "files": [
         ".claude/claims/hover.json",
         ".claude/skills/sairn-hover-auditor/tools/hover_vendor_sample.py"
