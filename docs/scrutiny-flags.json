@@ -10457,6 +10457,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "errors='replace', timeout=300, cwd=repo,"
+    }
+   ],
+   "sha": "c48fa2c50d366bcc01f3e79887e439d4583d70ce",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_audit_event_type_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -10989,6 +11002,19 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "d0eb2d33fc3fd864306baf0ee1cb262da08c43f5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "errors='replace', timeout=300, cwd=repo,"
+    }
+   ],
+   "sha": "d123bd03a945f12119f3713f4898d159efe51336",
    "criteria_version": "2026-10-06.1"
   },
   {
