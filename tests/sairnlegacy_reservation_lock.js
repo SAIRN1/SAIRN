@@ -63,6 +63,12 @@ process.env[['SD', 'AUTH', 'SECRET'].join('_')] =
 
 const reg = require(path.join(ROOT, 'api/_resources'));
 const LEG = require(path.join(ROOT, 'api/_resources/sairnlegacy.js'));
+// THE 36 DATA RESOURCES, NOT EVERY REGISTERED NAME (hank b45). `leg_settings`
+// is registered too, but it is the owner's F2/F3 settings row with its own
+// branch in api/sd-data.js and no `data` column -- it is NOT served by the
+// generic LEG_RESOURCES branch this file measures. Section 0 asserts it is
+// the ONLY registered name excluded, so a second exclusion cannot hide here.
+const LEG_DATA = LEG.resources.filter((r) => r !== 'leg_settings');
 // The overlap guard's OWN spec map, so the resources that need a window-shaped
 // payload are read from the handler's source of truth rather than named here.
 // See the derivation note in section 4.
@@ -189,8 +195,11 @@ console.log('SAIRNlegacy: the reservation lock, both halves, and the posture of 
 
   // ── 0. THE FIXTURE ────────────────────────────────────────────────────────
   section('0. the registry and the fixture are real');
-  ok(LEG.resources.length === 36,
-     'the registry still owns 36 SAIRNlegacy resources -- ' + LEG.resources.length);
+  ok(LEG_DATA.length === 36,
+     'the registry still owns 36 SAIRNlegacy DATA resources -- ' + LEG_DATA.length);
+  ok(LEG.resources.length === LEG_DATA.length + 1 && LEG.resources.indexOf('leg_settings') !== -1,
+     'and leg_settings is the ONE registered name outside them -- registered '
+     + LEG.resources.length + ', data ' + LEG_DATA.length);
   const notOwned = LEG.resources.filter((r) => reg.OWNER_BY_RESOURCE[r] !== 'sairnlegacy');
   ok(notOwned.length === 0,
      'and every one is owned by sairnlegacy in the shared registry'
@@ -311,7 +320,7 @@ console.log('SAIRNlegacy: the reservation lock, both halves, and the posture of 
     let missingId = 0, notProvisionedWrite = 0, honestEmptyRead = 0;
     const odd = [];
     const preconditionUnmet = [];
-    for (const resource of LEG.resources) {
+    for (const resource of LEG_DATA) {
       const a = await call(h, { resource, action: 'write', payload: {} });
       if (a.code === 400 && a.calls.length === 0) missingId += 1;
       else odd.push(resource + ' (no id -> ' + a.code + ')');
@@ -451,7 +460,7 @@ console.log('SAIRNlegacy: the reservation lock, both halves, and the posture of 
   section('5. the session posture, measured against a written table');
   {
     const gated = [];
-    for (const resource of LEG.resources) {
+    for (const resource of LEG_DATA) {
       const r = await call(h, { resource, action: 'read',
                                 replies: [{ status: 200, rows: [] }] });
       if (r.code !== 200) gated.push(resource + ':' + r.code);

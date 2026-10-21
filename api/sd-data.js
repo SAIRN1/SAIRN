@@ -16989,6 +16989,189 @@ module.exports = async (req, res) => {
     // other thirty-five is indistinguishable from no policy when read one
     // branch at a time. This is ONE call, before the dispatch, so neither the
     // read branch nor the write branch can be reached without it.
+    // ── leg_settings: THE OWNER'S F2/F3 WRITE PATH (hank b45) ─────────────
+    // CONCEPT: a home's F2/F3 settings are set by its OWNER alone, and only
+    // as the values decide()'s own normalisers would produce -- livery billing
+    // through liveryBilling(), the apprentice config through
+    // apprenticePolicy(), and a livery grant only for a resource this home's
+    // F2 setting makes grantable. Anything a normaliser would silently narrow
+    // at READ time is REFUSED at WRITE time instead, so what the owner saved
+    // is exactly what decide() enforces (cody b40 routing, F2/F3).
+    //
+    // NOT in LEG_RESOURCES or LEG_ROLE_MATRIX, on purpose: the table is
+    // `sairnlegacy_settings`, one row per licence with named columns and no
+    // `data`, and api/sd-data-leg-role-matrix.test.js A2 requires every matrix
+    // row to be a LEG_RESOURCES resource. The role check is here instead. It
+    // is registered in api/_resources/sairnlegacy.js, which is also what puts
+    // it behind the active-credential pre-gate above.
+    //
+    // NOT AUDITED beyond updated_by/updated_at, which the schema itself says
+    // is "not an audit log". The audit-log write is open work, stated in the
+    // b45 handoff rather than implied done.
+    if (resource === 'leg_settings' && (action === 'read' || action === 'write')) {
+      const setSess = verifySessionToken(tokenFromRequest(req), licHash, 'sairnlegacy');
+      if (!setSess) {
+        res.status(401).json({ error: { code: 'NO_SESSION', message: 'Your sign-in could not be verified, so nothing was read or saved. Sign out and sign in again, then try once more.' } });
+        return;
+      }
+      if (setSess.role !== 'owner') {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only the owner can read or change the home\'s livery and apprentice settings. Your role (' + String(setSess.role || 'unknown') + ') cannot.' } });
+        return;
+      }
+      // Same two-select fallback as the decide() read below: a missing
+      // livery_grants column answers 400 undefined_column, which must not be
+      // read as "no table".
+      const setRead = async (sel) => fetch(rest('sairnlegacy_settings?license_hash=eq.' + enc(licHash)
+        + '&select=' + sel + '&limit=1'), { headers });
+      let hasGrantsCol = true;
+      let cur = await setRead('livery_billing,apprentice,livery_grants,updated_by,updated_at');
+      if (cur.status === 400) {
+        const t = await cur.text().catch(function () { return ''; });
+        if (/livery_grants|undefined_column|42703/i.test(t)) {
+          hasGrantsCol = false;
+          cur = await setRead('livery_billing,apprentice,updated_by,updated_at');
+        } else {
+          return notProvisionedText(res, cur, 'SAIRNlegacy settings are not set up yet - run sql/sairnlegacy_settings_schema.sql in Supabase first.', t);
+        }
+      }
+      if (cur.status === 404) {
+        if (action === 'read') {
+          res.status(200).json({ ok: true, provisioned: false, data: {
+            livery_billing: legRoles.liveryBilling(null),
+            apprentice: legRoles.apprenticePolicy(null), livery_grants: {},
+            grants_supported: false, saved: false } });
+          return;
+        }
+        return notProvisioned(res, cur, 'SAIRNlegacy settings are not set up yet - run sql/sairnlegacy_settings_schema.sql in Supabase first.');
+      }
+      const curRows = await cur.json().catch(function () { return null; });
+      if (!cur.ok) return upstream(res, curRows);
+      const row = (Array.isArray(curRows) && curRows[0]) || null;
+      const isPlainObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
+      const storedGrants = (row && isPlainObj(row.livery_grants)) ? row.livery_grants : {};
+
+      if (action === 'read') {
+        res.status(200).json({ ok: true, provisioned: true, data: {
+          livery_billing: legRoles.liveryBilling(row && row.livery_billing),
+          apprentice: legRoles.apprenticePolicy(row && row.apprentice),
+          livery_grants: storedGrants,
+          grants_supported: hasGrantsCol,
+          saved: !!row,
+          updated_by: (row && row.updated_by) || null,
+          updated_at: (row && row.updated_at) || null } });
+        return;
+      }
+
+      // ── WRITE: an absent field keeps what is stored; a present one is
+      // validated whole and REFUSED, not narrowed, if it is not exactly what
+      // the normaliser would keep.
+      const p = isPlainObj(payload) ? payload : {};
+      const problems = [];
+      const has = (k) => Object.prototype.hasOwnProperty.call(p, k);
+
+      let billing = legRoles.liveryBilling(row && row.livery_billing);
+      if (has('livery_billing')) {
+        if (legRoles.LEG_LIVERY_BILLING_VALUES.indexOf(p.livery_billing) === -1) {
+          problems.push('livery_billing must be one of: ' + legRoles.LEG_LIVERY_BILLING_VALUES.join(', '));
+        } else {
+          billing = p.livery_billing;
+        }
+      }
+
+      const stored = legRoles.apprenticePolicy(row && row.apprentice);
+      let apprentice = { countersign: stored.countersign, forbidden: stored.forbidden,
+                         presence_disclosure: stored.presence_disclosure };
+      if (has('apprentice')) {
+        const a = p.apprentice;
+        if (!isPlainObj(a)) {
+          problems.push('apprentice must be an object with countersign, forbidden and presence_disclosure');
+        } else {
+          const lists = { countersign: a.countersign, forbidden: a.forbidden };
+          Object.keys(lists).forEach(function (k) {
+            const v = lists[k] === undefined ? [] : lists[k];
+            if (!Array.isArray(v)) { problems.push('apprentice.' + k + ' must be a list of record types'); return; }
+            v.forEach(function (r) {
+              if (typeof r !== 'string' || !Object.prototype.hasOwnProperty.call(legRoles.LEG_ROLE_MATRIX, r)) {
+                problems.push('apprentice.' + k + ' names "' + String(r) + '", which is not a SAIRNlegacy record type');
+              }
+            });
+          });
+          const cs = Array.isArray(a.countersign) ? a.countersign : [];
+          const fb = Array.isArray(a.forbidden) ? a.forbidden : [];
+          cs.forEach(function (r) {
+            if (fb.indexOf(r) !== -1) {
+              problems.push('"' + r + '" is in both countersign and forbidden; an apprentice cannot both prepare it and be barred from it');
+            } else if (typeof r === 'string' && !legRoles.requiresCountersignature(r)
+                       && Object.prototype.hasOwnProperty.call(legRoles.LEG_ROLE_MATRIX, r)) {
+              problems.push('"' + r + '" does not take a countersignature, so listing it under countersign would change nothing');
+            }
+          });
+          if (a.presence_disclosure !== undefined && typeof a.presence_disclosure !== 'boolean') {
+            problems.push('apprentice.presence_disclosure must be true or false');
+          }
+          const norm = legRoles.apprenticePolicy(a);
+          apprentice = { countersign: norm.countersign, forbidden: norm.forbidden,
+                         presence_disclosure: norm.presence_disclosure };
+        }
+      }
+
+      let grants = storedGrants;
+      const grantsGiven = has('livery_grants');
+      if (grantsGiven) {
+        if (!hasGrantsCol) {
+          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Per-employee livery grants are not set up yet - run sql/sairnlegacy_settings_livery_grants.sql in Supabase first. Nothing was saved.' } });
+          return;
+        }
+        if (!isPlainObj(p.livery_grants)) {
+          problems.push('livery_grants must be an object keyed by employee id');
+        } else {
+          grants = p.livery_grants;
+        }
+      }
+      // The MERGED grants are checked against the MERGED billing, so changing
+      // F2 back to through_the_home while a driver still holds a
+      // leg_liverybookings grant is refused rather than leaving a stored grant
+      // decide() would ignore.
+      if (isPlainObj(grants)) {
+        Object.keys(grants).forEach(function (emp) {
+          const g = grants[emp];
+          if (!emp || emp.length > 128) { problems.push('livery_grants has an invalid employee id'); return; }
+          if (!isPlainObj(g)) { problems.push('livery_grants["' + emp + '"] must be an object of record types'); return; }
+          Object.keys(g).forEach(function (r) {
+            if (g[r] !== true) {
+              problems.push('livery_grants["' + emp + '"]["' + r + '"] must be true (remove the key to revoke)');
+            } else if (!legRoles.liveryGrantable(r, billing)) {
+              problems.push('"' + r + '" cannot be granted to a livery driver while livery billing is ' + billing);
+            }
+          });
+        });
+      }
+
+      if (problems.length) {
+        res.status(400).json({ error: { code: 'INVALID_SETTING', message: 'Nothing was saved: ' + problems.join('; ') + '.', problems: problems } });
+        return;
+      }
+
+      const body = { license_hash: licHash, livery_billing: billing, apprentice: apprentice,
+                     updated_by: String(setSess.employee_id || ''), updated_at: nowISO() };
+      if (hasGrantsCol) body.livery_grants = grants;
+      const w = await fetch(rest('sairnlegacy_settings?on_conflict=license_hash'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify(body)
+      });
+      if (w.status === 404 || w.status === 400) {
+        return notProvisioned(res, w, 'SAIRNlegacy settings are not set up yet - run sql/sairnlegacy_settings_schema.sql in Supabase first.');
+      }
+      const wRows = await w.json().catch(function () { return null; });
+      if (!w.ok) return upstream(res, wRows);
+      res.status(200).json({ ok: true, provisioned: true, data: {
+        livery_billing: billing, apprentice: legRoles.apprenticePolicy(apprentice),
+        livery_grants: hasGrantsCol ? grants : {}, grants_supported: hasGrantsCol, saved: true,
+        updated_by: body.updated_by, updated_at: body.updated_at } });
+      return;
+    }
+
     if (LEG_RESOURCES[resource]) {
       const legSess = verifySessionToken(tokenFromRequest(req), licHash, 'sairnlegacy');
       if (!legSess) {

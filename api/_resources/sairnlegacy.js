@@ -60,5 +60,9 @@ module.exports = {
     'leg_processions',
     'leg_tributes',
     'leg_vehicles',
+  // hank b45: the owner's F2/F3 settings (table sairnlegacy_settings, one row
+  // per licence). Its own branch in api/sd-data.js -- deliberately NOT in
+  // LEG_RESOURCES / LEG_ROLE_MATRIX; the comment above that branch says why.
+    'leg_settings',
   ],
 };

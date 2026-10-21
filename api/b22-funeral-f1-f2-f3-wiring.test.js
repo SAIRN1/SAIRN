@@ -243,25 +243,30 @@ t('D1. api/sd-data.js NOW calls legRoles.decide with FIVE arguments, so `home` '
     + wired.map((c) => 'sd-data.js:' + c.line + '  ' + c.text).join(', '));
 });
 
-t('D2. ...and `leg_settings` is registered as a resource NOWHERE in '
-  + 'api/sd-data.js, so there is no row to pass even if the call took it. The '
-  + 'only occurrence is the handler\'s own comment saying exactly that', () => {
+// ── D2 FIRED AS DESIGNED, RE-AIMED 2026-10-21 (hank b45). ─────────────────
+// It asserted `leg_settings` appeared in no CODE line and told whoever tripped
+// it to "check it, then update D1 and D2 together". hank b45 landed the owner
+// write path. D1 still holds unchanged (the five-argument call). D2 now holds
+// the SHAPE that landed, so a regression to "no owner path" or to "the matrix
+// carries a row the handler does not dispatch" is visible here.
+t('D2. `leg_settings` is REGISTERED (api/_resources/sairnlegacy.js), served by '
+  + 'its OWN owner-only branch in api/sd-data.js, and is NOT in LEG_RESOURCES '
+  + '-- the role-matrix invariant (every matrix row is a dispatched leg_ '
+  + 'resource) stays true', () => {
   const src = fs.readFileSync(SD_DATA, 'utf8');
-  const lines = src.split('\n');
-  const hits = [];
-  lines.forEach((l, i) => {
-    if (l.indexOf('leg_settings') !== -1) {
-      hits.push({ line: i + 1, comment: l.trim().indexOf('//') === 0 });
-    }
-  });
-  const code = hits.filter((h) => !h.comment);
-  assert.strictEqual(code.length, 0,
-    'leg_settings now appears in CODE at sd-data.js:'
-    + code.map((h) => h.line).join(', ') + ' -- the registration may have '
-    + 'landed. Check it, then update D1 and D2 together.');
-  assert.ok(hits.length >= 1,
-    'the handler no longer even mentions leg_settings -- the comment that '
-    + 'records this gap has been deleted, which is worse than the gap');
+  const reg = require(path.join(__dirname, '_resources', 'sairnlegacy.js'));
+  assert.ok(reg.resources.indexOf('leg_settings') !== -1,
+    'leg_settings is not registered -- checkEnvelope() answers 400 and the owner has no path');
+  const branchAt = src.indexOf("if (resource === 'leg_settings' && (action === 'read' || action === 'write')) {");
+  assert.ok(branchAt !== -1, 'the dedicated leg_settings branch is gone');
+  const branch = src.slice(branchAt, src.indexOf('if (LEG_RESOURCES[resource]) {', branchAt));
+  assert.ok(/setSess\.role !== 'owner'/.test(branch),
+    'the leg_settings branch no longer refuses every role but owner');
+  const dict = src.slice(src.indexOf('const LEG_RESOURCES = {'), src.indexOf('};', src.indexOf('const LEG_RESOURCES = {')));
+  const codeLines = dict.split('\n').filter((l) => l.trim().indexOf('//') !== 0);
+  assert.ok(!codeLines.some((l) => /\bleg_settings\s*:/.test(l)),
+    'leg_settings has been added to LEG_RESOURCES -- it has no data column and '
+    + 'would need a LEG_ROLE_MATRIX row; read the branch comment first');
 });
 
 t('D3. NEGATIVE CONTROL ON D1 AND D2: decide() really does take five '

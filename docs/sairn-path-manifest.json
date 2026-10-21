@@ -34,6 +34,7 @@
     "_b26_added_stonedesk_html_for_hank": "hank b26, 2026-10-20. stonedesk.html -- ASSIGNED in the b26 dispatch by file and line (delete the dead pos_sale push at :7795; the Field Map catch arm that named the Maps key). Two edits, no other change to the file. *.html is fourth's by the split and no active claim names stonedesk.html. EXACT FILENAME, not a glob. REMOVE once fourth has reviewed the two edits.",
   "_b42_added_two_sairnbiz_test_files_for_fourth": "fourth b42, 2026-10-20, APPROVED BY MICHAEL in-session. tests/sairnbiz_ot_threshold_coalesce.js and tests/sairnbiz_benefits_and_overtime.js -- ASSIGNED in the b42 dispatch (fix the sbOtThreshold off-by-one, n>168, one arm). Both suites pinned the old bound (168 honoured) and had to change with the fix; the old reasoning is quoted in place, not deleted. tests/ is cody's by the split and no active claim names either file. EXACT FILENAMES. REMOVE once cody has reviewed the two arms.",
   "_b34_added_audit_event_type_check_for_hank": "hank b34, 2026-10-20. tools/audit_event_type_check.py carries `# OWNER: hank` and the b33 handoff routed its blind spot back to its owner: it read the CHECK from the SQL file only, so it passed while production refused every pay-period close. EXACT FILENAME, not tools/.",
+  "_b45_added_sairnlegacy_reservation_lock_for_hank": "hank b45, 2026-10-21. Registering leg_settings (the owner F2/F3 settings row, its own branch in api/sd-data.js) made api/_resources/sairnlegacy.js carry 37 names, and this suite treated every registered name as a generic LEG_RESOURCES data resource. Its loops are scoped to the 36 data resources, with an arm asserting leg_settings is the ONLY name excluded. EXACT FILENAME, not tests/.",
   "_b35_added_audit_licence_for_hank": "hank b35, 2026-10-20. tools/audit_licence.py -- one tuple entry, SEN-AUDIT-2026, with its dated measurement: the hygiene item the b27-b34 handoffs carried. No active claim held the file (sairn_claim check: CLEAR). EXACT FILENAME, not tools/.",
   "assigned_overrides": {
     "hank": [
@@ -44,7 +45,8 @@
       "tools/audit_licence.py",
       "sairnbiz.html",
       "tests/sairnbiz_incidents_kpi.js",
-      "stonedesk.html"
+      "stonedesk.html",
+      "tests/sairnlegacy_reservation_lock.js"
     ],
     "cc": [
       "api/sd-data.js",
