@@ -1,0 +1,40 @@
+SAIRN REPORT -- fourth b52 -- 2026-10-21
+
+RESULT: landed and live (26f966694, 4dcd23a26), no force, no gate skip.
+Handoff: SAIRN-handoff-fourth-b52.md.
+
+1 NVDA READOUT
+  Premise correction: no completed run existed. b51's script matched the
+  window title 'Chromium'; Playwright's window is 'Google Chrome for
+  Testing', so Michael's click was refused, and NVDA was left running
+  (quit this batch). Title match fixed; run re-launched and COMPLETED.
+  Clean result for Dashboard only -- the machine was in use, so NVDA read
+  other windows for the other 22 panels (that log holds private-window
+  speech; scratchpad only, not shared).
+  What NVDA actually said vs the axe+keyboard pass:
+    sidebar focus: '...Dashboard, button, current page' -> b50 aria-current
+      CONFIRMED; but the emoji's name is spoken first ('bar chart
+      Dashboard') -- a defect axe and the a11y tree both passed.
+    Enter: 'main landmark, Dashboard, heading, level 2' -> b51 J1 CONFIRMED.
+  FIX (26f966694). CONCEPT: the emoji icon is decoration, so it is hidden
+  from the reader -- aria-hidden on .sb .sico at load, sairndental (23) and
+  sairnlegacy (27). Arms + killed mutant in both suites; axe still 0.
+
+2 SAIRNVETERANS = sairnfreedom.html (sairnvet is veterinary)   4dcd23a26
+  Before (live, SF-PINNACLE-2026, writes blocked): the whole sidebar was
+  <div onclick> -- 0/28 panels reachable by keyboard; 168 axe nodes (label
+  x106, select-name x62); Enter dead on licence and PIN; no current
+  marking; nav silent.
+  Fixes, concept each: sidebar items are <button>s; a visible label labels
+  the control that follows it (tied at load); Enter submits; .ptitle is a
+  heading; aria-current; sfNav() focuses the heading (J1; Access falls back
+  to its first h3); the import file input named.
+  After (live): 0 axe nodes, 28/28 keyboard items, focus on a heading 28/28.
+  tests/sairnfreedom_a11y_pass.js 10 arms, 8/8 mutants.
+
+3 PUSH: landed ..79568896d after rebase rounds; register re-seated; live
+  bytes = origin 20:04Z; live re-pass of sairnfreedom clean.
+
+OPEN: a clean NVDA pass of the rest (needs ~4 min with nobody at the
+machine). NOT MINE: sairnfreedom_segregation_of_duties red at HEAD too.
+NOT COVERED: modals; script-rendered freedom fields; other apps.

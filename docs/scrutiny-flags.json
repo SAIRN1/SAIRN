@@ -1984,6 +1984,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairndental_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "26f9666949a8d8b1c3795243223726bfc97a5e88",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlegacy_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "26f9666949a8d8b1c3795243223726bfc97a5e88",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/bridge-unknown-action.test.js",
    "class": "test file",
    "level": "WEAKENING",
@@ -3929,6 +3945,14 @@
     }
    ],
    "sha": "4c8d2fc2d1af7dcafbbcd65cfa15ee5d0ca8457b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnfreedom_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "4dcd23a26fe8381a8914b1ac63a0b8a39c419d08",
    "criteria_version": "2026-10-06.1"
   },
   {

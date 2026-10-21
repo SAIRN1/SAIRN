@@ -1,0 +1,22 @@
+SAIRN DIGEST -- fourth b52 -- 2026-10-21
+CONTEXT 64.7% of 1,000,000 -- 647,084 tokens, measured.
+STATUS: landed and live (26f966694, 4dcd23a26), no force, no skip; live bytes = origin 20:04Z.
+DECISION-NEEDED: when to give the NVDA run ~4 min with nobody using the machine (only Dashboard was heard cleanly).
+READ: SAIRN-handoff-fourth-b52.md (whole state). Detail: SAIRN-report-fourth-b52.txt.
+SQL: none this batch.
+CORRECTION: no completed NVDA run existed -- b51's title match ('Chromium') refused Michael's click and
+  left NVDA running. Fixed; re-run completed; machine in use, so 22 panels unusable.
+CHANGED:
+  26f966694 NVDA-found: sidebar emoji read first ('bar chart Dashboard') -> aria-hidden, dental + legacy
+            (NVDA also CONFIRMED b50 'current page' and b51 J1 'Dashboard, heading, level 2')
+  4dcd23a26 SAIRNveterans (sairnfreedom.html): div-onclick sidebar -> 28 buttons (keyboard 0 -> 28/28);
+            axe 168 -> 0 (labels tied at load); Enter submits sign-in; headings; aria-current; J1
+  ..79568896d register, override (fourth holds 18), regenerated docs
+EVIDENCE-path: tests/sairnfreedom_a11y_pass.js; scratchpad nvda_after.json, a11y_freedom_*.json (paths in handoff).
+NEXT, in order:
+  a clean NVDA pass: remaining dental panels + legacy + freedom (hands-off machine)
+  b next launch-wave app
+  c not mine: tests/sairnfreedom_segregation_of_duties.js red at HEAD too
+UNVERIFIED: NVDA beyond Dashboard; modals; script-rendered freedom fields.
+PRIVACY: scratchpad nvda_after.log holds speech from Michael's other windows -- do not share.
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\fd66c7b5-98f7-4e46-ac2a-b0383cde9210.jsonl
