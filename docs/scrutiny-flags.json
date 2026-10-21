@@ -4399,6 +4399,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/stonedesk_a11y_pass.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "check('B1. an allowlisted handler div becomes a button (role, tabindex 0)', chip"
+    }
+   ],
+   "sha": "54a8c85678cd0168bddcd5534c4ee5a5744b4944",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_external_file_index_probe.py",
    "class": "test file",
    "level": "WEAKENING",

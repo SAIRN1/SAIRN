@@ -1,0 +1,37 @@
+SAIRN REPORT -- fourth b53 -- 2026-10-21
+
+RESULT: StoneDesk a11y fix landed and live (54a8c8567), no force, no gate
+skip; NVDA script summary bug fixed. Handoff: SAIRN-handoff-fourth-b53.md.
+
+2 NVDA SUMMARY BUG + WHAT THE REAL LOG SHOWS (Michael's 16:14 re-run)
+  The bug was mine: the summary listed every panel with ANY refused step as
+  'could-not-run', so all 23 were reported. The real log: sign-in
+  succeeded; Dashboard focus -> 'Main navigation, complementary landmark,
+  Dashboard, button, current page' (no emoji: b52 fix CONFIRMED); Enter ->
+  'main landmark, Dashboard, heading, level 2' (J1 CONFIRMED again). Then
+  Windows Quick Settings took the foreground (a volume change is in the
+  log) and every later step was correctly refused.
+  Fix: steps are captured / refused / not attempted; panels heard / partial
+  / refused / not attempted; first refusal named; run stops after 30 s
+  without the foreground. Fixtures PASS. Re-summarised real run: 2 captured,
+  90 refused; Dashboard partial, 22 refused.
+
+1 STONEDESK A11Y (a11y tree + axe-core 4.10.2 + keyboard; SD-AUDIT-2026;
+  every write blocked) -- 67 nav targets                        54a8c8567
+  CONCEPTS: a visible label names the control after it; an element wired to
+  an allowlisted button handler is a keyboard button (backdrops never; cards
+  with inner controls skipped; 24px minimum); sidebar icons hidden; sbNav()
+  sets aria-current and focuses the panel's first heading. Runs at load and
+  after each nav.
+  Before -> after (live): mouse-only 53 -> 6 (skipped cards); label 86 ->
+  44; select-name 101 -> 79; aria-current none -> set; focus after nav
+  sidebar -> heading on 60/67. Suite 12 arms, 9/9 mutants.
+  FILED, need wording/design: contrast x73 (tokens), 79 selects with no
+  visible label, 44 labels, 7 panels with no heading (quote, draw,
+  field-quote, check-register, market, business, doc-scan), target-size x5.
+
+3 PUSH: landed ..60e2b6ca1; register re-seated (54a8c8567); live bytes =
+  origin 20:50Z; live re-pass matches the after-state.
+
+NOT MINE: tests/stonedesk_exec_msgs_gate.js red at HEAD too.
+HELD: clean hands-off NVDA pass (Michael's timing).
