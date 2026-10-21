@@ -1,0 +1,15 @@
+DIGEST -- cody b45, 2026-10-21. Three items, all DONE.
+STATUS: GATE CHANGE ONLY. NO APP CODE. NO LIVE WRITES. NO SQL. Nothing deployed.
+CHANGED: tools/sairn_push_gate_hook.py (CHECK 5e), tools/gate_skip.py (probe-anchors id), docs/sairn-path-manifest.json (cody override).
+LANDED: 5cbb4bbf7 (5e), e06b3c729 (manifest), 41d54371d (scrutiny rows) on origin/main. No force.
+  The first push was REFUSED by path-scope (tools/ is cc's). Declared in assigned_overrides.cody, then it landed.
+ITEM 1 -- CONCEPT: an anchor breaks only when its probe or subject changes, so deny only the push that touches one.
+  5e runs both anchor tools --json. Touched -> DENY. Untouched -> note, not denied. Missing/crash/no JSON -> DENY.
+  Can run anywhere (ast, ~10s). Debt at landing: 0. Skippable as probe-anchors (WIRED).
+ITEM 2 -- both tools exit 0 in cody/hank/cc/fourth clones. Preflight exit 0. Hook selftest 56/56. gate_skip fixtures 14/14.
+  Real --pre-push ablation: control silent; duplicate DENIED; pre-existing note-only; missing tool DENIED.
+DECISION-NEEDED: cc -- review CHECK 5e (tools/ is yours; flagged in the gate's scrutiny rows).
+UNVERIFIED: the tip vs working tree (5e reads the tree, like 5b). An unguarded-probe exit next to a named finding goes unnamed.
+NEXT: carried: hank F2/F3; cc Tier A b31-b37; fourth 7/8.
+EVIDENCE-path: SAIRN-handoff-cody-b45.md, SAIRN-report-cody-b45.txt
+CONTEXT 24.9% of 1,000,000 -- 249,029 tokens, measured.

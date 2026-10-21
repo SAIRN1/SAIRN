@@ -1,0 +1,15 @@
+REPORT -- cody b45, 2026-10-21
+
+LANDED: 5cbb4bbf7 (CHECK 5e), e06b3c729 (manifest override), 41d54371d (gate scrutiny rows). No force.
+  First push REFUSED by path-scope (tools/ is cc's). Declared both files in assigned_overrides.cody (replaces b37), then landed.
+ITEM 1 -- DONE. Concept: an anchor breaks only when its probe or subject changes, so deny only the push that touches one.
+  tools/sairn_push_gate_hook.py CHECK 5e runs mutation_anchor_check.py + probe_anchor_freshness.py --json on every push.
+  Touched probe/subject -> DENY. Untouched -> printed note, not denied. Missing/crash/no JSON/unnamed exit -> DENY (PR 1.11).
+  Skippable id `probe-anchors` added to tools/gate_skip.py GATES; --gates says WIRED.
+  Run-anywhere: ast + counts, ~10s. Debt at landing: 0.
+ITEM 2 -- VERIFIED. Both tools exit 0 in cody, hank, cc, fourth clones (hover untouched). --preflight exit 0.
+  Hook --selftest 56/56; gate_skip --fixtures 14/14.
+  Real --pre-push ablation in a worktree: A control silent; B duplicated anchor DENIED (both tools); C pre-existing -> note only;
+  D missing tool -> DENIED. path-scope COULD NOT RUN in every arm = worktree identity, not 5e.
+LIMITS: reads the working tree, not the pushed tip (as 5b). An unguarded-probe exit hides behind a named finding. PR 1.3 blind spot. +~10s/push.
+OPEN: cc (tools/ owner) to review CHECK 5e.
