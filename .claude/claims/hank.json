@@ -4567,6 +4567,21 @@
         "SAIRN-report-hank-b48.txt",
         "api/b48-sen-straight-time-floor-coverage.test.js"
       ]
+    },
+    {
+      "id": "hank-1792615105",
+      "session": "hank",
+      "subject": "sairnsenior",
+      "task": "b49: live run of the b48 straight-time floor shapes on SEN-AUDIT-2026 (audit licence fixtures, no code). FILES: SAIRN-handoff-hank-b49.md SAIRN-report-hank-b49.txt SAIRN-digest-hank-b49.txt",
+      "claimed_at": "2026-10-21T20:38:25Z",
+      "claimed_at_epoch": 1792615105.2345035,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-hank-b49.txt",
+        "SAIRN-handoff-hank-b49.md",
+        "SAIRN-report-hank-b49.txt"
+      ]
     }
   ],
   "refusals": [
