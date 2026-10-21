@@ -4309,8 +4309,8 @@
       "task": "b37 accounting revoke discard scoped by consent_id, release_retainage arm, two-tenant request_photos arm, dnt_referrals map entry",
       "claimed_at": "2026-10-21T16:59:47Z",
       "claimed_at_epoch": 1792601987.197598,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T17:13:10Z",
       "files": null
     }
   ],
