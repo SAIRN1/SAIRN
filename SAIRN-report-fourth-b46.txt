@@ -1,0 +1,34 @@
+SAIRN REPORT -- fourth b46 -- 2026-10-21
+
+RESULT: 5/6 landed; geocoding committed but HELD locally by the Tier A gate
+(the obligation file docs/tier-a-reviews.json is held by cc); not skipped.
+Wrapped at ~80.5% real context. Handoff: SAIRN-handoff-fourth-b46.md.
+
+1 FIELD MAP GEOCODING (owner's decision: Geocoding API, existing Maps key)
+  CONCEPT: an address becomes a coordinate only when Google returns a real
+  fix; anything else is a named failure and the stop goes without one.
+  action:'geocode' on api/route-map.js (same gate, same key, key never in
+  the browser); client cache sd_fm_geocode; "N of M stops had no map
+  coordinates". RED 10/38 -> GREEN 38/38, 4/4 mutation controls; b45 route
+  33/33; b33 route-map 17/17. Commit 53f62b866 -- LOCAL, see handoff.
+  Not verified against the real Google API.
+
+2 SAIRNBIZ Z8/Z9                                       37b5dc630 (live)
+  CONCEPT: a pay run is lines, not one total -- each employee priced
+  through sbWeekPay() at the rate in force that week, with its own period
+  and pay date. Address, DOB (under-19 badge), rate history. Withholding
+  and net "not computed". RED 6/58 -> GREEN 58/58; 18/18 suites; Z7 9/9
+  live. Sync not extended (managers can read the shared employees row).
+
+3 PERMISSION FIX: fix-deny.ps1 ran; first -File run produced one malformed
+  comma-joined rule; re-run with array syntax and the malformed entry
+  removed -> exactly the 8 requested deny entries.
+
+4 CONTEXT DISCIPLINE: implementation delegated to two agents with
+  failures-and-totals-only reporting; all verification runs printed only
+  FAIL lines and totals; app files read by grep/line ranges only.
+  Context at wrap: 80.5% (measured, tools/context_verify.py).
+
+5 Concept lines in every commit and as code comments.
+
+6 PUSH: Z8/Z9 pushed as a prefix (no force); geocode held by the gate.

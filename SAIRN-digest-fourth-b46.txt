@@ -1,0 +1,20 @@
+SAIRN DIGEST -- fourth b46 -- 2026-10-21
+CONTEXT 80.6% of 1,000,000 -- 805,710 tokens, measured.
+STATE: 5/6 landed; geocode commit 53f62b866 HELD LOCALLY by the Tier A gate; no force, no skip.
+READ: SAIRN-handoff-fourth-b46.md (whole state). Detail: SAIRN-report-fourth-b46.txt.
+SQL: none this batch.
+LANDED: 37b5dc630 sairnbiz Z8/Z9 (live; Z7 9/9 live) | permission fix (local settings, 8 deny entries)
+HELD: 53f62b866 Field Map geocoding -- gate needs a Tier A obligation; docs/tier-a-reviews.json is cc's
+1 geocoding: action:'geocode' on api/route-map.js, existing Maps key; named failures, never 0,0;
+  client cache sd_fm_geocode; 38/38, 4/4 mutants. Not tested against real Google.
+2 Z8/Z9: per-employee pay lines + period + pay date; address, DOB, rate history; 58/58.
+3 fix-deny.ps1: first run made one malformed rule; re-run fixed; exactly 8 entries now.
+4 context: agents did the builds; only failures+totals printed; 80.6% at wrap.
+NEXT, in order:
+  a when cc releases tier-a-reviews.json: tier_a_review_gate.py --open for the geocode, then land
+  b live-check geocoding with a real StoneDesk login; measure the key's quota
+  c Z8 display: show pay lines + pay date in the pay-runs table and CSV
+  d cody: DEA keying, server gfeMissing, day seven
+ROUTED: cc -- release tier-a-reviews.json / Tier A reviews (b44, b46). cody -- (d).
+UNPROVEN: real Google API; real tenant; Chromium only.
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\fc1f8565-6013-48a4-b66b-d27902506016.jsonl
