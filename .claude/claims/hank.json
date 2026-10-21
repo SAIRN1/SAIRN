@@ -4482,6 +4482,22 @@
         "SAIRN-report-hank-b42.txt",
         "api/sd-data-scp-licence-only.test.js"
       ]
+    },
+    {
+      "id": "hank-1792604699",
+      "session": "hank",
+      "subject": "stonedesk",
+      "task": "b43: remove SD-AUDIT-2026 test quote request QR-1792602627030-534 (soft delete via API + sql cleanup file for Michael). FILES: sql/sd_audit_b42_test_request_cleanup.sql SAIRN-handoff-hank-b43.md SAIRN-report-hank-b43.txt SAIRN-digest-hank-b43.txt",
+      "claimed_at": "2026-10-21T17:44:59Z",
+      "claimed_at_epoch": 1792604699.998784,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-hank-b43.txt",
+        "SAIRN-handoff-hank-b43.md",
+        "SAIRN-report-hank-b43.txt",
+        "sql/sd_audit_b42_test_request_cleanup.sql"
+      ]
     }
   ],
   "refusals": [
