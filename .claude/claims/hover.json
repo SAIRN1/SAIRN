@@ -1122,8 +1122,8 @@
       "task": "b78: first real Stryker run (hover_stryker_signal on api/route-map.js at 769590ac), zero-row-false-success live data (hover_vendor_sample injection-defense, Groq pool checked first), 1655 fix (hover_scope_prepush_check merge-base diff) fixture first with a concept line first, platform read-only FILES: .claude/skills/sairn-hover-auditor/tools/hover_scope_prepush_check.py .claude/claims/hover.json docs/defect-density-register.json",
       "claimed_at": "2026-10-21T17:38:00Z",
       "claimed_at_epoch": 1792604280.3422093,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T17:47:17Z",
       "files": [
         ".claude/claims/hover.json",
         ".claude/skills/sairn-hover-auditor/tools/hover_scope_prepush_check.py",
