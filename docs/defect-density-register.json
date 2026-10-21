@@ -36544,7 +36544,7 @@
       "recurrence_open": "RESOURCE NAMES ARE STILL READ AS TEXT: resource_names() parses the `resources: [...]` array from the source, so a registry whose resources are built in a shape that parser does not know is a SHAPE_ERROR (loud), not a node read. Converting that half was out of this change's scope."
     },
     {
-      "commit": "0bbbb9f8da42",
+      "commit": "f5e000a2ec66",
       "date": "2026-10-21",
       "subject": "fix(sairnsenior b49): a refused contract or authorisation is withdrawn and named; no answer and an unprovisioned table stay on the device and say which; a claim's message survives a failed save (cody b35/b36 defect 8)",
       "files": [
@@ -36594,7 +36594,7 @@
       "recurrence_open": "NOT CLOSED. Other sairnsenior saves keep the old one-line failure message; a claim whose write is refused still stays on the device."
     },
     {
-      "commit": "15ccb52183e2",
+      "commit": "1b1d980963bd",
       "date": "2026-10-21",
       "subject": "fix(sairnroofing b49): a failed or unprovisioned JHA / job-warranty read is said on screen, never rendered as 'none' (cody b35 defect 7)",
       "files": [
@@ -36690,7 +36690,7 @@
       "recurrence_open": "An UNREGISTERED resource is still unknown to the pre-gate and a deleted row there is logged, not refused; nothing yet asserts that every resource sd-data.js serves is in the registry."
     },
     {
-      "commit": "9f6e4ca22888",
+      "commit": "d77fdc9d875b",
       "date": "2026-10-21",
       "subject": "fix(sairndental b49): the two pre-existing reds -- the ledger-export suite extracts dntChargeCode(), and the screen-reader announcer leaves the panel- namespace",
       "files": [
