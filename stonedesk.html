@@ -12580,8 +12580,20 @@ function fmAllStopsForDate(dateStr){
       address:s.address, customer:s.customer||'', date:dateStr, status:s.status||'not-started', notes:s.notes||''});
   });
   // LOCK COPY-THROUGH (b45): a lock lives in the person|day order record (job/remake stops are read-only here), and is copied onto every stop so the optimise payload can send it.
-  stops.forEach(function(s){ var locked=fmLockedIds(s.person, dateStr); s.locked=locked.indexOf(s.id)!==-1; });
+  // LOCK FOLLOWS THE STOP (b48): looked up across EVERY person|day record, so a job whose installer or date changes keeps its lock instead of leaving it behind in the old record.
+  var lk=fmLockedSet();
+  stops.forEach(function(s){ s.locked=lk[s.id]===true; });
   return stops;
+}
+
+// b48 -- CONCEPT: a lock belongs to the STOP, not to the person|day record it was set on. Every locked id in every order record, as a set.
+function fmLockedSet(){
+  var set={};
+  Object.keys(sdFieldOrder||{}).forEach(function(k){
+    var r=sdFieldOrder[k];
+    if(r && !Array.isArray(r) && Array.isArray(r.locked)) r.locked.forEach(function(id){ set[id]=true; });
+  });
+  return set;
 }
 
 // LOCK STORE (b45): locked stop ids for one person's day, read from the same sd_field_order record saveFM() already persists; the old plain-array record shape has none.
@@ -12591,13 +12603,20 @@ function fmLockedIds(person, dateStr){
 }
 
 // LOCK TOGGLE (b45): flips one stop's lock in its person|day record and persists it; a legacy plain-array record is upgraded to the object shape with its order kept.
+// b48: the toggle reads the lock the card SHOWS (any record) and clears the id from EVERY record first, so a lock carried over from an old installer or date can still be released.
 function fmToggleStopLock(person, dateStr, stopId){
-  var key=person+'|'+dateStr, rec=sdFieldOrder[key];
-  if(Array.isArray(rec)) rec={order:rec, insight:''};
-  if(!rec) rec={order:[], insight:''};
-  var locked=Array.isArray(rec.locked)?rec.locked:[];
-  rec.locked=locked.indexOf(stopId)===-1 ? locked.concat([stopId]) : locked.filter(function(id){ return id!==stopId; });
-  sdFieldOrder[key]=rec;
+  var wasLocked=fmLockedSet()[stopId]===true;
+  Object.keys(sdFieldOrder).forEach(function(k){
+    var r=sdFieldOrder[k];
+    if(r && !Array.isArray(r) && Array.isArray(r.locked) && r.locked.indexOf(stopId)!==-1) r.locked=r.locked.filter(function(id){ return id!==stopId; });
+  });
+  if(!wasLocked){
+    var key=person+'|'+dateStr, rec=sdFieldOrder[key];
+    if(Array.isArray(rec)) rec={order:rec, insight:''};
+    if(!rec) rec={order:[], insight:''};
+    rec.locked=(Array.isArray(rec.locked)?rec.locked:[]).concat([stopId]);
+    sdFieldOrder[key]=rec;
+  }
   saveFM();
   fmRefreshCurrentView(person, dateStr);
 }
