@@ -41022,12 +41022,58 @@ document.addEventListener('click', function(e) {
   if (wrap && results && !wrap.contains(e.target)) results.style.display = 'none';
 });
 
+// ── b53 ACCESSIBILITY PASS (axe-core + keyboard on the live demo login) ──────
+// CONCEPTS, one per rule:
+//  * a visible <label> names the control that follows it (148 controls had a
+//    label beside them and no for=, so a screen reader announced them unnamed);
+//  * an element wired to one of the named button handlers below IS a button --
+//    focusable, role=button, Enter/Space activate it (53 were mouse-only).
+//    An ALLOWLIST by handler, not every [onclick]: a backdrop that closes a
+//    modal on click must not become a tab stop;
+//  * the sidebar's emoji icon is decoration and is hidden from the reader
+//    (NVDA read sairndental's as "bar chart Dashboard", b52).
+// Run at load and again after each sbNav(), because panels render late.
+var SD_A11Y_BUTTON_HANDLER = /^(shAsk|emailToggleChecklist|setTier|selTrade|showPanel|sdCommsTpl|sdSMSSetTpl|sdIntegQuickAdd|switchDimTab)\(|^document\.getElementById\('[^']+'\)\.click\(\)/;
+function sdA11yPass(root) {
+  root = root || document;
+  root.querySelectorAll('label:not([for])').forEach(function(l) {
+    var c = l.nextElementSibling;
+    if (c && /^(INPUT|SELECT|TEXTAREA)$/.test(c.tagName) && c.id && !l.querySelector('input,select,textarea')) l.htmlFor = c.id;
+  });
+  root.querySelectorAll('[onclick]').forEach(function(el) {
+    if (/^(BUTTON|A|INPUT|SELECT|TEXTAREA|SUMMARY|LABEL)$/.test(el.tagName) || el.getAttribute('data-sd-kbd')) return;
+    if (!SD_A11Y_BUTTON_HANDLER.test((el.getAttribute('onclick') || '').trim())) return;
+    // A card that already CONTAINS a control stays as it is: those controls are reachable on their own,
+    // and a button wrapping a button is announced as neither (axe nested-interactive).
+    if (el.querySelector('button,a[href],input,select,textarea')) return;
+    el.setAttribute('role', 'button'); el.setAttribute('tabindex', '0'); el.setAttribute('data-sd-kbd', '1');
+    // WCAG 2.5.8: a target is at least 24px tall; these were never targets before, so their size was never checked.
+    if (getComputedStyle(el).display === 'inline') el.style.display = 'inline-block';
+    el.style.minHeight = '24px';
+    el.addEventListener('keydown', function(e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); } });
+  });
+  root.querySelectorAll('.sb-btn .sb-icon').forEach(function(s) { s.setAttribute('aria-hidden', 'true'); });
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function() { sdA11yPass(document); });
+else sdA11yPass(document);
 function sbNav(id) {
   closeSidebar(); // picking a panel on phone must dismiss the drawer, or the menu covers it
   showPanel(id);
-  document.querySelectorAll('.sb-btn').forEach(function(b){ b.classList.remove('active'); });
+  // b53 -- CONCEPT: the current item carries aria-current="page", and focus moves
+  // to the new panel's first heading (J1, Michael's decision, as in sairndental),
+  // so a screen reader hears the change and the next Tab enters the panel.
+  document.querySelectorAll('.sb-btn').forEach(function(b){ b.classList.remove('active'); b.removeAttribute('aria-current'); });
   var btn = document.getElementById('sb-'+id);
-  if (btn) btn.classList.add('active');
+  if (btn) { btn.classList.add('active'); btn.setAttribute('aria-current', 'page'); }
+  setTimeout(function() {
+    var vis = function(e) { return !!e && !!(e.offsetWidth || e.offsetHeight || e.getClientRects().length); };
+    var root = document.getElementById('panel-' + id);
+    if (!vis(root)) root = Array.prototype.slice.call(document.querySelectorAll('.page')).filter(vis)[0] || null;
+    if (!root) return;
+    sdA11yPass(root);
+    var h = Array.prototype.slice.call(root.querySelectorAll('h1,h2,h3,[role=heading]')).filter(vis)[0];
+    if (h) { if (!h.hasAttribute('tabindex')) h.setAttribute('tabindex', '-1'); try { h.focus(); } catch (e) {} }
+  }, 60);
   // Render hooks (consolidated - replaces all window.sbNav IIFE wrappers)
   setTimeout(function(){
     if(id==='agreements'&&typeof agRender==='function')agRender();
