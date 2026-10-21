@@ -2320,8 +2320,18 @@ module.exports = async (req, res) => {
         // all, and for those the answer is honestly unknown.
         const preIsGated = !!(SD_SESSION_GATED[resource]
           && SD_SESSION_GATED[resource].indexOf(action) !== -1);
+        // ── A DELETED ROW ON sd_customers (b36, Michael's decision 2026-10-21) ──
+        // CONCEPT: a missing employee row counts as a deactivation once the
+        // resource's app is known. sd_customers is not on SD_SESSION_GATED, so
+        // its app was "unknown" here and a stonedesk token whose row had been
+        // DELETED read and wrote customers on the token's role alone -- while
+        // active:false was refused. Its branch already asserts 'stonedesk'
+        // (verifySessionToken(..., 'stonedesk')), so this restates that fact; it
+        // does not invent one. api/b36-sd-customers-deleted-row.test.js.
+        const PRE_DECLARED_APP = { sd_customers: 'stonedesk' };
         const preExpectedApp = (resource === 'memory') ? memApp
-          : (preIsGated ? (SD_GATE_APP[resource] || 'stonedesk') : undefined);
+          : (preIsGated ? (SD_GATE_APP[resource] || 'stonedesk')
+            : (Object.prototype.hasOwnProperty.call(PRE_DECLARED_APP, resource) ? PRE_DECLARED_APP[resource] : undefined));
         const preScoped = preExpectedApp !== undefined
           && preExpectedApp === preSession.app;
         const preHardRefusal = !preActive.ok

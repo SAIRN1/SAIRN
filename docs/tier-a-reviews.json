@@ -8211,6 +8211,48 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-21T15:48:45Z",
+      "opened_at_sha": "f7dab19902eeef8d8eb7ce54a3d55240edd3ba8e",
+      "opened_at_sha_basis": "head",
+      "opened_at_sha_extra_files": null,
+      "resources": [
+        "alf_activities",
+        "alf_billing",
+        "alf_claim_routes",
+        "alf_clients",
+        "alf_facility",
+        "alf_incidents",
+        "alf_mar",
+        "alf_signals",
+        "alf_staff",
+        "alf_staff_credentials",
+        "bld_bids",
+        "sd_crm",
+        "sdn_clients",
+        "sen_authorizations",
+        "sen_branches",
+        "sen_caregivers",
+        "sen_claims",
+        "sen_clients",
+        "sen_franchise_agreements",
+        "sen_pay_rates",
+        "sen_payer_contracts"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/b36-projection-runtime-differential.test.js"
+      ],
+      "what": "cody b36: (1) api/sd-data.js pre-gate now treats a MISSING stonedesk employee row as a deactivation on sd_customers (PRE_DECLARED_APP), so a deleted employee is refused 403 CREDENTIAL_INACTIVE on every sd_customers verb, same path as active:false (Michael's decision). Cross-app tokens and a failed lookup are unchanged. (2) a runtime differential test over the 22 PAIRED projection resources, no code change. Reviewer point: confirm no StoneDesk flow holds a valid token for an employee with no sd_employee_auth row (setup inserts the row before minting).",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-21T15:48:45Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
