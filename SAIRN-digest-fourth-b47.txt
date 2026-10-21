@@ -1,23 +1,24 @@
 SAIRN DIGEST -- fourth b47 -- 2026-10-21
 CONTEXT 21.7% of 1,000,000 -- 217,293 tokens, measured.
-STATE: all landed, no force, no skip. Geocode live but Google REFUSES the Maps key.
+STATUS: all landed on origin/main, no force, no skip; HEAD ahead 0. Geocode live but Google REFUSES the Maps key.
+DECISION-NEEDED: Michael -- fix the Google key (billing, Geocoding + Static APIs enabled, key restrictions allow Vercel).
 READ: SAIRN-handoff-fourth-b47.md (whole state). Detail: SAIRN-report-fourth-b47.txt.
 SQL: none this batch.
-LANDED:
+CHANGED:
   769590aca geocode + Tier A e7c9ba9e1 (cc discharged SOUND)
   170d75f8e Z8 display + Tier A dbac30771 -- live 37/37
   c04a3baaa api/b46-route-geocode.test.js -- 19/19, 4/4 mutants
   b2539f7f7, 9bcba36d3 scrutiny rows / manifest / regenerated docs
 1 geocode live: login + gate + named failures PASS; every address REQUEST_DENIED,
-  Static Maps 403 on the same key -> billing/API enablement/key restriction.
+  Static Maps 403 on the same key.
 2 Z8: run table pay date + stored lines; CSV line columns from sbPayLine;
   (a)(5) workweek read from sbWeekStart; (a)(4) sex device-only, not synced.
 3 .bak removed by Michael (my rm was permission-denied).
 4 Vercel deployed out of order: an older commit replaced e7c9ba9e1 at 15:14Z.
+EVIDENCE-path: api/b46-route-geocode.test.js; scratchpad drive_z8d.py + live_geo.py (paths in handoff).
 NEXT, in order:
-  a Michael: fix the Google key; then re-run live_geo.py (expect 2 located)
+  a Michael: the Google key; then re-run live_geo.py (expect 2 located)
   b cc: Tier A review of Z8 display (employees, sairnbiz.html)
   c cody: DEA keying, server gfeMissing, day seven
-ROUTED: Michael -- Google key. cc -- (b). cody -- (c).
-UNPROVEN: a real Google fix; key quota; Z8 on a real tenant; Chromium only.
+UNVERIFIED: a real Google fix; key quota; Z8 on a real tenant; Chromium only.
 Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\fd66c7b5-98f7-4e46-ac2a-b0383cde9210.jsonl
