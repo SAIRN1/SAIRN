@@ -352,7 +352,14 @@ module.exports = async (req, res) => {
       // The consent above IS revoked at this point and the engine refuses a
       // revoked consent's tokens, so a failure here is reported as exactly that
       // and never as success.
-      const dw = await fetch(rest('accounting_connections?license_hash=eq.' + enc(licHash) + '&provider=eq.' + enc(provider)), {
+      // ── THE DISCARD BELONGS TO THIS CONSENT (b37, routed by cc b35) ────────
+      // CONCEPT: a revoke may discard only the credentials its own consent
+      // authorised. Filtered by `provider` alone (taken from the PAYLOAD), a
+      // repeat revoke of a stale consent matched -- and cleared -- the live
+      // connection made under a LATER consent for the same provider. The row
+      // carries `consent_id` ("the grant this connection was made under"), so
+      // that is the filter. api/b37-accounting-revoke-scope.test.js.
+      const dw = await fetch(rest('accounting_connections?license_hash=eq.' + enc(licHash) + '&consent_id=eq.' + enc(consentId)), {
         method: 'PATCH', headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
         body: JSON.stringify({ status: 'revoked', access_token_enc: null, refresh_token_enc: null, updated_at: new Date().toISOString() })
       });

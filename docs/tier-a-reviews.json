@@ -8276,6 +8276,29 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-21T17:05:11Z",
+      "opened_at_sha": "ed9a169471d96e2c0c59b9ce8d2adc3b6bdf6205",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 5,
+      "resources": [
+        "dnt_referrals",
+        "dnt_vendor_orders"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/sd-data.js"
+      ],
+      "what": "cody b37: (1) accounting.js revoke: the connection discard PATCH is filtered by consent_id instead of payload provider, so revoking a stale consent can no longer clear the live connection made under a later consent (cc b35 routed). (2) sd-data.js DNT_SCHEMA_FILE gains dnt_referrals (message text only). (3) test-only arms: bld_draws release_retainage forged blob draw_id, sd_quote_requests request_photos two-tenant. Reviewer point: confirm every accounting_connections row carries the consent_id it was made under (schema: not null).",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-21T17:05:11Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

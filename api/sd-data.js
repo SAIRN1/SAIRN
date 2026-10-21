@@ -17606,7 +17606,10 @@ module.exports = async (req, res) => {
       dnt_recall_outreach: 'sql/sairndental_recall_schema.sql',
       dnt_txplans: 'sql/sairndental_treatment_plans_schema.sql',
       dnt_supplies: 'sql/sairndental_vendor_schema.sql',
-      dnt_vendor_orders: 'sql/sairndental_vendor_schema.sql'
+      dnt_vendor_orders: 'sql/sairndental_vendor_schema.sql',
+      // b37 (cc b34 review): dnt_referrals is created by its own file, so the
+      // data-schema fallback sent the user to a file that cannot fix it.
+      dnt_referrals: 'sql/sairndental_referrals_schema.sql'
     };
     // Resources whose read hides soft-deleted rows. dnt_supplies is the only
     // one of the four with a delete path (removeSupply()), and without this
