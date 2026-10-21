@@ -25,8 +25,8 @@ makes this the one inventory whose staleness is hardest to notice.
 
 | Status | Count | Meaning |
 |---|---:|---|
-| **BLOCKING** | 23 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 83 | runs automatically on every push, never blocks |
+| **BLOCKING** | 25 | reachable from something that can refuse a push or a tool call |
+| **REPORT-ONLY** | 81 | runs automatically on every push, never blocks |
 | **ADVISORY** | 5 | session-start or prompt hooks, informational |
 | **DECIDED** | 79 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 79 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
@@ -150,7 +150,7 @@ outside world. Unwired is the right state for them and is not a finding.
 
 ---
 
-## BLOCKING (23)
+## BLOCKING (25)
 
 Two entry points, and they are not the same one. `.claude/settings.json`
 PreToolUse fires on a Claude Code **tool call**; `.githooks/pre-push` fires on
@@ -169,7 +169,9 @@ around it. The second exists because the first missed exactly that on
 | `external_file_index_check.py` | CHECKER | a tool, script or handoff sitting in a DECLARED external directory that is neither git-tracked nor named in docs/external-files-index.json -- i.e. work no other session can find | `run_external_file_index_probe.py` |
 | `gate_skip.py` | LIBRARY | ONE named push gate, for ONE agent, with a written reason and an expiry -- the approved replacement for SAIRN_SEED_GATE=off, which returned from the push hook before a single check ran. The argument is the measurement: docs/BYPASS-LOG.jsonl carried 94 rows and 80 of them were the blanket form, not because anyone chose to switch off the credential scanner, the register feed and the Tier A gate as well, but because the blanket form was the only thing available. It cannot be stopped from outside either -- b5 measured a deny rule against the real permission matcher and deny rules match PAST a leading env assignment, so the assignment is never the thing matched. Every use is appended to BYPASS-LOG with the gate, the agent, the reason and the expiry, and the blanket spelling now FAILS LOUDLY pointing at this form rather than silently working. | `refspec_and_override_probe.py`, `run_batch_manifest_probe.py`, `run_gate_skip_probe.py` |
 | `git_push_master_guard.py` | CHECKER | a push aimed at `master`, which is stale | `run_push_master_guard_probe.py` |
+| `mutation_anchor_check.py` | CHECKER | a mutation probe whose anchor no longer matches its target exactly once -- so the arm plants nothing and the control stops testing -- and a probe that mutates a tracked file in place without refusing an import | `check4_probe.py`, `live_mode_probe.py`, `run_mutation_anchor_probe.py`, `run_mutation_anchor_resolver_probe.py`, `run_or_default_probe.py`, `run_ref_probe.py`, `write_readback_shape_probe.py` |
 | `preauth_oracle_check.py` | CHECKER | an endpoint that answers before it authenticates (gate check 7) | `check7_probe.py`, `preauth_exemption_anchor_probe.py` |
+| `probe_anchor_freshness.py` | CHECKER | a fault probe whose sabotage anchor no longer matches its subject the way the probe assumes -- VANISHED (0 matches), AMBIGUOUS (>1 with no declared count), or COUNT DISAGREES (the edit declares N and the subject no longer has N) | `run_probe_anchor_freshness_probe.py` |
 | `rebase_state_guard.py` | CHECKER | an amend or a blanket stage while a rebase, merge or cherry-pick is stopped, and an amend of a commit already on origin/main | `run_rebase_state_guard_probe.py` |
 | `redaction_check.py` | CHECKER | credential shapes in what is about to be written, and in what a push ships | &mdash; |
 | `sairn_load_state_check.py` | LIVE | live seed content differing from the repo seed (gate check 1) | `missing_checker_probe.py`, `refspec_and_override_probe.py` |
@@ -211,7 +213,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (83)
+## REPORT-ONLY (81)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -643,7 +645,7 @@ number, and only one of them is a document.
 ```
   tools on disk                      363   git ls-files tools/
   hook entries                        19   docs\hooks-disabled-2026-10-13.json (RECORDED wiring -- this clone's live hooks are the committed disarm, and the record is read rather than the zero being believed)
-  push-gate invocations               17   tools\sairn_push_gate_hook.py
+  push-gate invocations               19   tools\sairn_push_gate_hook.py
   report-only registry                78   report_only_checks.REGISTRY
   tools invoked by tests/            239   tests/**/*.py, *.js
   recorded NOT-promoted decisions     88   report_only_checks.NOT_PROMOTED

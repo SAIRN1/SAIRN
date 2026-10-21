@@ -126,6 +126,8 @@ GATES = {
                       'typed estimate',
     'path-scope': 'a push must stay inside the pushing population\'s declared '
                   'paths, and out of the auditor\'s',
+    'probe-anchors': "a mutation probe this push touches, or whose subject it "
+                     'touches, must still match its anchor exactly once',
 }
 
 UNSKIPPABLE = {

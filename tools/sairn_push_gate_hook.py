@@ -2753,6 +2753,111 @@ def main():
                     OVERRIDE_HINT,
                 ]), gate='contrast')
 
+    # ── CHECK 5e: A PROBE'S MUTATION ANCHOR MATCHES ITS SUBJECT ONCE (2026-10-21, cody b45)
+    # MICHAEL'S DECISION: the two anchor counters stop being report-only.
+    # tools/mutation_anchor_check.py and tools/probe_anchor_freshness.py were
+    # both in report_only_checks.REGISTRY and both exited 1 for days while
+    # three probes tested nothing: a later commit copied an anchored line
+    # (cc919c308, bd836b641, 331cebe3c), the anchor matched twice, and the
+    # harness refused to plant it. Fixed in cody b43/b44; this stops a fourth.
+    #
+    # WHERE IT CAN RUN: everywhere. Both parse with ast and count strings --
+    # no node, no network, no worktree; about 10s together, measured.
+    # THE DEBT IT LANDS ON: zero. Both exit 0 at 0db6373d6.
+    #
+    # ATTRIBUTED, NOT A CLIFF. An anchor goes bad only when its probe or its
+    # subject changes, so a finding DENIES only when one of those two files is
+    # in this push. A finding on files this push does not touch was already on
+    # the branch: it is printed, not denied, so one session's debt never
+    # blocks every other session's push. A tool that is missing, crashes, or
+    # answers with nothing parseable is COULD NOT RUN and DENIES (PR 1.11).
+    if changed:
+        _pa_changed = {q.replace('\\', '/') for q in changed}
+        _pa_mine, _pa_old = [], []
+        for _pa_tool in ('mutation_anchor_check.py', 'probe_anchor_freshness.py'):
+            _pa_path = os.path.join(repo, 'tools', _pa_tool)
+            if not os.path.isfile(_pa_path):
+                deny(chr(10).join([
+                    "Blocked: tools/%s is not in this clone, so no probe anchor" % _pa_tool,
+                    "was counted. A missing checker is not a clean result.",
+                    OVERRIDE_HINT,
+                ]), gate='probe-anchors')
+                continue
+            try:
+                _pr = subprocess.run(
+                    [sys.executable, _pa_path, '--json'],
+                    capture_output=True, text=True, encoding='utf-8',
+                    errors='replace', timeout=300, cwd=repo,
+                    env=dict(os.environ, PYTHONIOENCODING='utf-8', PYTHONUTF8='1'))
+                _out = _pr.stdout or ''
+                _pj = json.loads(_out[_out.index('{'):]) if '{' in _out else None
+            except Exception as e:
+                _pr, _pj = None, None
+                _pa_err = '%s: %s' % (type(e).__name__, e)
+            else:
+                _pa_err = ((_pr.stdout or '') + (_pr.stderr or '')).strip()[-1500:]
+            if _pr is None or _pj is None or _pr.returncode not in (0, 1, 2):
+                deny(chr(10).join([
+                    "Blocked: tools/%s COULD NOT RUN (exit %s), which is a third state"
+                    % (_pa_tool, getattr(_pr, 'returncode', 'none')),
+                    "and not a pass.",
+                    "",
+                    _pa_err,
+                    "",
+                    OVERRIDE_HINT,
+                ]), gate='probe-anchors')
+                continue
+            _found = []
+            if _pa_tool == 'mutation_anchor_check.py':
+                _found += [(a['probe'], a['target'], 'ANCHOR-%d  %s' % (a['matches'], a['arm']))
+                           for a in _pj.get('arms', []) if a.get('matches') != 1]
+                _found += [(u[0], None, 'COULD NOT READ  ' + str(u[1])[:120])
+                           for u in _pj.get('unreadable', [])]
+            else:
+                for _k in ('vanished', 'ambiguous', 'miscounted', 'unreadable'):
+                    _found += [(r.get('probe'), r.get('subject'),
+                                '%s (count %s)  %s' % (_k.upper(), r.get('count'),
+                                                       str(r.get('anchor'))[:100]))
+                               for r in _pj.get(_k, [])]
+            if _pr.returncode != 0 and not _found:
+                # mutation_anchor_check also exits 1 on an in-place probe with
+                # no __main__ guard, which its --json does not list. Unnamed is
+                # not attributable, and unattributable is not a pass.
+                deny(chr(10).join([
+                    "Blocked: tools/%s exited %d and its --json names no anchor, so"
+                    % (_pa_tool, _pr.returncode),
+                    "the finding cannot be attributed. Run it without --json to read it.",
+                    OVERRIDE_HINT,
+                ]), gate='probe-anchors')
+                continue
+            for _p, _t, _why in _found:
+                _p = (_p or '').replace('\\', '/')
+                _t = (_t or '').replace('\\', '/')
+                _row = '  %s -> %s\n      %s' % (_p, _t or '?', _why)
+                (_pa_mine if (_p in _pa_changed or _t in _pa_changed)
+                 else _pa_old).append(_row)
+        if _pa_old:
+            note = ("Probe anchors: %d finding(s) on files this push does not touch -- "
+                    "already on the branch, NOT denied, still owed:\n%s"
+                    % (len(_pa_old), chr(10).join(_pa_old)[:3000]))
+            if MODE == 'prepush':
+                sys.stderr.write('\n' + note + '\n\n')
+            else:
+                print(json.dumps({"hookSpecificOutput": {
+                    "hookEventName": "PreToolUse", "additionalContext": note}}))
+        if _pa_mine:
+            deny(chr(10).join([
+                "Blocked: a mutation probe's anchor no longer matches its subject exactly",
+                "once, and this push changes that probe or that subject.",
+                "",
+                chr(10).join(_pa_mine)[:3000],
+                "",
+                "Twice means the harness refuses to plant it, or plants the first copy, and",
+                "the arm stops testing the line it names. Zero means the code moved. Widen",
+                "the anchor to text only its own site has (cody b43/b44), or re-derive it.",
+                OVERRIDE_HINT,
+            ]), gate='probe-anchors')
+
     # ── CHECK 5d: PATH SCOPE -- THE OWNER SPLIT (2026-10-19, cc b24 item 5) ─
     # MICHAEL'S INSTRUCTION: a push touching a path outside the pushing
     # population's scope, or touching any auditor-tooling path, is rejected
