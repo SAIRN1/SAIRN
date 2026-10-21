@@ -8139,6 +8139,28 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-10-21T15:04:43Z",
+      "opened_at_sha": "769590acad2f0d50bec46af73907e290b8469477",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 2,
+      "resources": [
+        "rt_routes"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "stonedesk.html"
+      ],
+      "what": "fourth b46: Field Map geocode (api/route-map.js action:'geocode', stonedesk.html coordinate cache + attach) -- 769590aca",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-21T15:04:43Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
