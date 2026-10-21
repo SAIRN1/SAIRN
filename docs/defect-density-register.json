@@ -36499,51 +36499,6 @@
       "recurrence_open": "NOT CLOSED. A lock carried to a new day keeps the stop at its old index in the new route, which may not be what the dispatcher meant; stale ids for deleted stops stay in old records."
     },
     {
-      "commit": "03f50bd4cc8b",
-      "date": "2026-10-21",
-      "subject": "fix(cc b33): the tier checker reads a registry's app through node, not a regex",
-      "files": [
-        "tools/criticality_tier_check.py"
-      ],
-      "lines_added": 88,
-      "lines_removed": 23,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "hover-audit",
-      "summary": "tools/criticality_tier_check.py READ A REGISTRY'S app: WITH A LINE-ANCHORED REGEX OVER THE FILE TEXT, so six ordinary spellings Node loads as a registry were invisible -- one-line object, double- or single-quoted key, template literal, shorthand property, module.exports.app = -- and every resource on such a file vanished from the completeness arm, fail-open (hover2 seq 1067, claim (b) of 38bbd455, broken latent: none of the 20 real files used them). Fixed: declared_app() require()s the module with node and reads the exported app; a module node cannot load raises and becomes a SHAPE_ERROR, never a skip. Fixtures +7 (19/19); real output byte-identical.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover2",
-      "injection": {
-        "commit": "38bbd45518f1",
-        "date": "2026-10-19",
-        "subject": "feat(scope): a name list becomes a property, a threshold becomes a population, and a push learns its own scope",
-        "lag_days": 2
-      },
-      "citation_note": "1.11 is cited because a registry the reader could not parse was treated as no registry at all -- an unreadable answer folded into the clean one.",
-      "contributing_factors": [
-        {
-          "factor": "The declaration was read as text by a pattern written for one formatting, while the platform reads it through the module system; the reader did not travel with the language.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The reader is node require() -- the same runtime the platform loads the file with."
-        },
-        {
-          "factor": "The fixtures only used the one formatting the regex expected, so the arm passed on every spelling the regex could see and asked nothing of the rest.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Fixtures carry hover2's six shapes and a module node cannot load."
-        }
-      ],
-      "recurrence_open": "RESOURCE NAMES ARE STILL READ AS TEXT: resource_names() parses the `resources: [...]` array from the source, so a registry whose resources are built in a shape that parser does not know is a SHAPE_ERROR (loud), not a node read. Converting that half was out of this change's scope."
-    },
-    {
       "commit": "02cec2f84efb",
       "date": "2026-10-21",
       "subject": "fix(sairnsenior b49): a refused contract or authorisation is withdrawn and named; no answer and an unprovisioned table stay on the device and say which; a claim's message survives a failed save (cody b35/b36 defect 8)",
@@ -36592,6 +36547,97 @@
         }
       ],
       "recurrence_open": "NOT CLOSED. Other sairnsenior saves keep the old one-line failure message; a claim whose write is refused still stays on the device."
+    },
+    {
+      "commit": "03f50bd4cc8b",
+      "date": "2026-10-21",
+      "subject": "fix(cc b33): the tier checker reads a registry's app through node, not a regex",
+      "files": [
+        "tools/criticality_tier_check.py"
+      ],
+      "lines_added": 88,
+      "lines_removed": 23,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "tools/criticality_tier_check.py READ A REGISTRY'S app: WITH A LINE-ANCHORED REGEX OVER THE FILE TEXT, so six ordinary spellings Node loads as a registry were invisible -- one-line object, double- or single-quoted key, template literal, shorthand property, module.exports.app = -- and every resource on such a file vanished from the completeness arm, fail-open (hover2 seq 1067, claim (b) of 38bbd455, broken latent: none of the 20 real files used them). Fixed: declared_app() require()s the module with node and reads the exported app; a module node cannot load raises and becomes a SHAPE_ERROR, never a skip. Fixtures +7 (19/19); real output byte-identical.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "commit": "38bbd45518f1",
+        "date": "2026-10-19",
+        "subject": "feat(scope): a name list becomes a property, a threshold becomes a population, and a push learns its own scope",
+        "lag_days": 2
+      },
+      "citation_note": "1.11 is cited because a registry the reader could not parse was treated as no registry at all -- an unreadable answer folded into the clean one.",
+      "contributing_factors": [
+        {
+          "factor": "The declaration was read as text by a pattern written for one formatting, while the platform reads it through the module system; the reader did not travel with the language.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The reader is node require() -- the same runtime the platform loads the file with."
+        },
+        {
+          "factor": "The fixtures only used the one formatting the regex expected, so the arm passed on every spelling the regex could see and asked nothing of the rest.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Fixtures carry hover2's six shapes and a module node cannot load."
+        }
+      ],
+      "recurrence_open": "RESOURCE NAMES ARE STILL READ AS TEXT: resource_names() parses the `resources: [...]` array from the source, so a registry whose resources are built in a shape that parser does not know is a SHAPE_ERROR (loud), not a node read. Converting that half was out of this change's scope."
+    },
+    {
+      "commit": "1b8ac96fac7b",
+      "date": "2026-10-21",
+      "subject": "fix(cc b38): a deleted employee row is refused on every registered resource, not only sd_customers",
+      "files": [
+        "api/_lib/routes.test.js",
+        "api/b38-deleted-row-platform.test.js",
+        "api/sd-data.js",
+        "docs/sairn-path-manifest.json"
+      ],
+      "lines_added": 170,
+      "lines_removed": 13,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "api/sd-data.js admitted a DELETED employee's still-valid session token on 323 registered resources across 14 apps (200 and a data read), while active:false was refused. The pre-gate counted a missing row as a deactivation only where the resource's app was known (SD_SESSION_GATED, memory, and b36's sd_customers). Fixed by taking the expected app from OWNER_BY_RESOURCE for every registered resource; shared/routes follow the caller's app_id. Measured: old code 330 of 1184 arms red, new 1184/1184.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the pre-gate's app-scoping predates the registry's OWNER_BY_RESOURCE; no single injecting commit was identified"
+      },
+      "citation_note": "1.11 is cited because a missing employee row was folded into 'unknown, let it through' on every resource whose app the pre-gate did not look up, although the registry knew it.",
+      "phase_note": "the scoping rule was designed around SD_SESSION_GATED only",
+      "contributing_factors": [
+        {
+          "factor": "The pre-gate only treated a missing row as a deactivation where the resource's app was known, and the only places that answered it were SD_SESSION_GATED, memory and (b36) sd_customers -- while the registry that already maps every resource to its app was never consulted.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "preExpectedApp is OWNER_BY_RESOURCE[resource] for every registered resource; shared/routes follow the caller's app_id like memory."
+        },
+        {
+          "factor": "The b36 fix was scoped to the one resource the finding named, so the decision's 'no exception' was not tested anywhere else; cc b37's driven sample and its heuristic count (~70) still undercounted the real 323.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/b38-deleted-row-platform.test.js derives its population from the registry (392 resources, 16 apps), so a resource added tomorrow is driven tomorrow."
+        }
+      ],
+      "recurrence_open": "An UNREGISTERED resource is still unknown to the pre-gate and a deleted row there is logged, not refused; nothing yet asserts that every resource sd-data.js serves is in the registry."
     },
     {
       "commit": "5e38373c6579",
@@ -36644,50 +36690,49 @@
       "recurrence_open": "NOT CLOSED. The same (x.ok&&x.data)||{} idiom may exist on other rfDataRaw reads in sairnroofing.html and was not swept."
     },
     {
-      "commit": "1b8ac96fac7b",
+      "commit": "9dbdc3d242fd",
       "date": "2026-10-21",
-      "subject": "fix(cc b38): a deleted employee row is refused on every registered resource, not only sd_customers",
+      "subject": "fix(hover scope pre-push, #1655): diff against the merge-base, not the two trees",
       "files": [
-        "api/_lib/routes.test.js",
-        "api/b38-deleted-row-platform.test.js",
-        "api/sd-data.js",
-        "docs/sairn-path-manifest.json"
+        ".claude/skills/sairn-hover-auditor/tools/hover_scope_prepush_check.py"
       ],
-      "lines_added": 170,
-      "lines_removed": 13,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "summary": "api/sd-data.js admitted a DELETED employee's still-valid session token on 323 registered resources across 14 apps (200 and a data read), while active:false was refused. The pre-gate counted a missing row as a deactivation only where the resource's app was known (SD_SESSION_GATED, memory, and b36's sd_customers). Fixed by taking the expected app from OWNER_BY_RESOURCE for every registered resource; shared/routes follow the caller's app_id. Measured: old code 330 of 1184 arms red, new 1184/1184.",
+      "lines_added": 96,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": ".claude/skills/sairn-hover-auditor/tools/hover_scope_prepush_check.py _git_diff ran `git diff --name-only remote_sha..local_sha`, a two-dot TREE diff, so when origin had moved ahead of the pusher the remote's own files appeared as changed and were blamed on the pusher (\"3 of 14 outside the manifest\"). The check failed closed and harmlessly, but a legitimate push was refused and a gate cycle burned (hover b75, logged #1655). Fixed: diff remote_sha...local_sha (merge-base to head); the empty-tree first-push sentinel keeps the two-dot form; a range with no merge-base is COULD NOT RUN. Fixture on a real bare-origin two-clone history failed on the old code and passes now, plus controls (a really out-of-manifest push still rejected, first push lists every file, unrelated history fails closed).",
       "rules": [
         "1.11"
       ],
       "citation_confidence": "arguable",
-      "injection_phase": "design",
+      "injection_phase": "coding",
       "phase_confidence": "inferred",
       "found_by_tool": null,
-      "found_by_session": null,
+      "found_by_session": "hover",
       "injection": {
-        "unknown_reason": "the pre-gate's app-scoping predates the registry's OWNER_BY_RESOURCE; no single injecting commit was identified"
+        "commit": "4721797c6690",
+        "date": "2026-10-19",
+        "subject": "feat(hover): clone-local pre-push scope manifest check, h1 b65",
+        "lag_days": 2
       },
-      "citation_note": "1.11 is cited because a missing employee row was folded into 'unknown, let it through' on every resource whose app the pre-gate did not look up, although the registry knew it.",
-      "phase_note": "the scoping rule was designed around SD_SESSION_GATED only",
+      "citation_note": "1.11 is cited for the fix's contract, not for a fail-open: the defect was a false REJECTION. The fix keeps the fail-closed direction: a range whose merge-base cannot be computed is COULD NOT RUN (exit 2), never an empty pass.",
       "contributing_factors": [
         {
-          "factor": "The pre-gate only treated a missing row as a deactivation where the resource's app was known, and the only places that answered it were SD_SESSION_GATED, memory and (b36) sd_customers -- while the registry that already maps every resource to its app was never consulted.",
+          "factor": "The range was passed to git diff as a two-dot tree comparison, which is only correct when the remote tip is an ancestor of the pushed head.",
           "kind": "technical",
           "action_status": "done",
-          "action": "preExpectedApp is OWNER_BY_RESOURCE[resource] for every registered resource; shared/routes follow the caller's app_id like memory."
+          "action": "_diff_range() turns remote..local into remote...local for every range whose left side is a commit."
         },
         {
-          "factor": "The b36 fix was scoped to the one resource the finding named, so the decision's 'no exception' was not tested anywhere else; cc b37's driven sample and its heuristic count (~70) still undercounted the real 323.",
+          "factor": "All seven fixtures were pure functions; none drove git, so the stale-pusher shape (the one that occurs with five sessions pushing to one branch) was never represented.",
           "kind": "detection",
           "action_status": "done",
-          "action": "api/b38-deleted-row-platform.test.js derives its population from the registry (392 resources, 16 apps), so a resource added tomorrow is driven tomorrow."
+          "action": "Fixtures on a real bare origin with two clones: stale pusher, really-out-of-manifest control, first-push control, no-merge-base control."
         }
       ],
-      "recurrence_open": "An UNREGISTERED resource is still unknown to the pre-gate and a deleted row there is logged, not refused; nothing yet asserts that every resource sd-data.js serves is in the registry."
+      "recurrence_open": "THE HOOK'S RANGE IS STILL BUILT FROM THE REMOTE SHA THE PUSH REPORTS: a remote tip this clone has not fetched is still resolved by one fetch-and-retry, and a force-push that rewrites history shows every commit since the merge-base, which is correct but large. Rebase onto origin/main before pushing remains cheaper than relying on either."
     },
     {
       "commit": "95e31d3b780e",
