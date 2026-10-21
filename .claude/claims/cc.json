@@ -4608,8 +4608,8 @@
       "task": "b43: confirm GitHub indexed tests/ and docs/ requirements; re-check Dependabot alert count  FILES: SAIRN-handoff-cc-b43.md SAIRN-report-cc-b43.txt SAIRN-digest-cc-b43.txt",
       "claimed_at": "2026-10-21T18:44:46Z",
       "claimed_at_epoch": 1792608286.273905,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T18:49:04Z",
       "files": [
         "SAIRN-digest-cc-b43.txt",
         "SAIRN-handoff-cc-b43.md",
