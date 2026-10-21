@@ -1,0 +1,20 @@
+DIGEST cc b43
+STATUS: 3 of 3 closed; no code changed; deliverables pushed; no --force, NO OVERRIDE.
+ITEM 1: INDEXED. The dependency graph lists 11 manifests, all parseable -- tests/requirements.txt (pyyaml), docs/requirements.txt
+  (markdown-it-py, pyyaml), tools/requirements.txt (playwright, pypdf), plus package.json, package-lock, testint, five workflows.
+  SBOM 207 packages (202 at b41, 204 at b42), including all four Python packages. The b42 UNVERIFIED note is closed.
+ITEM 2: still only #5. Alerts: open 1 (#5 node-forge, package-lock), fixed 4, dismissed 0, auto_dismissed 0.
+  Declaring the Python dependencies surfaced nothing new, consistent with every floor and installed version being OSV 0.
+ITEM 3: nothing in the repo changed; deliverables only.
+OBSERVATION: the graph stores the requirement string as "" for all five requirements.txt entries (the >= floors were not captured).
+  Whether Dependabot can match a future advisory against an unpinned range is UNVERIFIED; exact pins would make it certain.
+DECISION-NEEDED: Michael -- alert #5 (firebase-admin -> 13.10.0, mint test first); optionally pin vs floor for the requirements files.
+CHANGED: the three deliverables only.
+SQL: none.
+EVIDENCE-path: SAIRN-report-cc-b43.txt, SAIRN-handoff-cc-b43.md
+UNVERIFIED: Dependabot's matching on unpinned >= ranges (see above).
+ROUTED: hover -- declare anthropic/rfc3161ng. hank -- b40 barrier arms. fourth -- review cc 2026-10-21T17:13:48Z.
+NEXT: nothing owed by cc on the Tier A ledger.
+CONTEXT 61.2% of 1,000,000 -- 611,866 tokens, measured.
+SHA256 01086f63a68d4324175e55ae17eb7423c5e474536e9342b178904dcd1a8a0dc3
+END-OF-REPORT

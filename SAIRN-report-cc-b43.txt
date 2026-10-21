@@ -1,0 +1,41 @@
+REPORT cc b43
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-21
+RANGE     the b43 deliverables only; no code changed. No --force, NO OVERRIDE, no BYPASS-LOG row.
+
+== 1. INDEXING (GitHub dependency graph, read via GraphQL dependencyGraphManifests and REST SBOM; token from the git credential manager) ==
+MANIFESTS: 11, every one parseable:true.
+  tests/requirements.txt          1 dep   pyyaml
+  docs/requirements.txt           2 deps  markdown-it-py, pyyaml
+  tools/requirements.txt          2 deps  playwright, pypdf
+  packages/testint/pyproject.toml 1; package.json 3; package-lock.json 193;
+  .github/workflows: codeql 3, cron-liveness 3, hover-separation 2, nightly-backup 3, source-manifest 4.
+SBOM: created 2026-10-21T18:46:37Z, 207 packages (was 202 at b41 and 204 at b42).
+  It includes pkg:pypi/markdown-it-py, pkg:pypi/pyyaml (x2, one per manifest), pkg:pypi/pypdf and pkg:pypi/playwright.
+The b42 UNVERIFIED note is CLOSED.
+
+== 2. ALERT COUNT AFTER INDEXING ==
+Dependabot alerts by state: open 1, fixed 4, dismissed 0, auto_dismissed 0.
+  open:  #5 node-forge, package-lock.json (HIGH; not cc's -- root lockfile via firebase-admin, consumer api/_lib/firebase-admin.js)
+  fixed: #4 @grpc/grpc-js, #3 qs, #2 qs, #1 uuid
+Declaring pypdf, playwright, PyYAML and markdown-it-py surfaced NO new alert.
+  That is consistent with OSV: every declared floor and every installed version is OSV 0.
+
+== 3. PUSH ==
+No repo change, so only these deliverables were pushed.
+
+== OBSERVATION (not a defect, not acted on) ==
+The graph records the `requirements` string as "" for all five requirements.txt entries; the >= floors were not captured.
+The packages are visible, but whether Dependabot can match a FUTURE advisory against an unpinned >= range is UNVERIFIED.
+  Exact pins would make it certain, at the cost of a bump per release. This is a policy choice, so it is left for Michael.
+
+== OPEN ==
+Michael: alert #5 (firebase-admin 12.7.0 -> 13.10.0, mint test first); pin-vs-floor for the requirements files, if he wants certainty.
+hover: declare anthropic and rfc3161ng. Routed: hank (b40 barrier arms); fourth (review cc 2026-10-21T17:13:48Z).
+
+== CHANGED ==
+SAIRN-handoff-cc-b43.md; this report; the digest.
+
+SHA256 88947aa9bf4f4e8e1ff7399d467bf2e95cd92765b59329326eee8bc7760d2d79
+END-OF-REPORT
