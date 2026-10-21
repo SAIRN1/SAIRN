@@ -6369,3 +6369,20 @@ name in one commit and reported *"pushed and verified on origin/main"*.
 **NO CLAIMS HELD BY CODY AFTER b19.** The old sentence is left standing above
 rather than edited out, because this file is append-only and a published
 statement needs a correction and not a silent overwrite.
+
+## b36 item 3 — legacy-blob exposure CLOSED CLEAN (cody, 2026-10-21)
+
+Michael ran `sql/b36-legacy-blob-projection-keys.sql` and reported every count 0.
+No live row carries a projection key inside its `data` blob. **Decision: no read
+gets flipped.** The 21 inverted `Object.assign(columns, data)` reads that
+`api/b36-projection-runtime-differential.test.js` measured are inert. Arm A shows
+today's writes cannot create the condition, and the live data shows no older row
+holds it.
+
+**Count note:** the SQL has **21** statements, one per exposed resource, and the
+reported result says "22 resources". `alf_incidents`, the 22nd paired resource,
+was left out of the SQL because its read already lets the column win. So the
+22nd count was never queried. That does not change the verdict.
+
+**What would reopen this:** a new write path that does not strip its keys (arm A
+fails), or a bulk import or restore that writes `data` directly.
