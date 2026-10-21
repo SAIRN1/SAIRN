@@ -36735,6 +36735,52 @@
       "recurrence_open": "An UNREGISTERED resource is still unknown to the pre-gate and a deleted row there is logged, not refused; nothing yet asserts that every resource sd-data.js serves is in the registry."
     },
     {
+      "commit": "1f9a50b2d66f",
+      "date": "2026-10-21",
+      "subject": "fix(sairndental, sairnlegacy b52): sidebar emoji icons hidden from screen readers -- found by the real NVDA run",
+      "files": [
+        "sairndental.html",
+        "sairnlegacy.html",
+        "tests/sairndental_a11y_pass.js",
+        "tests/sairnlegacy_a11y_pass.js"
+      ],
+      "lines_added": 28,
+      "lines_removed": 0,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "user-report",
+      "summary": "Found by a real NVDA 2026.2 run (b52), the first one that completed: the Dashboard sidebar item was read with the emoji glyph's description before its name. Same .sb .sico markup in both apps (23 and 27 items). Fixed: aria-hidden on every .sb .sico at load. The same run confirmed aria-current is read as 'current page' and J1 lands on 'Dashboard, heading, level 2'.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "7d25a4689ce5",
+        "date": "2026-08-10",
+        "subject": "feat: SAIRNdental -- app shell, license/trial gate, vercel.json wiring",
+        "lag_days": 72
+      },
+      "citation_note": "No coding rule covers this class: decorative glyphs inside an accessible name. Proposed: icon spans inside controls carry aria-hidden by default.",
+      "contributing_factors": [
+        {
+          "factor": "Decorative emoji spans sat inside each nav button and became part of its accessible name.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "aria-hidden on .sb .sico."
+        },
+        {
+          "factor": "The axe and accessibility-tree passes do not flag a glyph inside a name; only listening did.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Arms in both a11y suites; real NVDA run kept as a method."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. Other apps with emoji in nav buttons not swept. 22 of 23 dental panels not yet heard cleanly under NVDA."
+    },
+    {
       "commit": "2fe89f267317",
       "date": "2026-10-21",
       "subject": "fix(stonedesk): request-photo barriers checked end to end, keyboard close, and arms that kill cc's b38 mutants",
@@ -36834,6 +36880,56 @@
         }
       ],
       "recurrence_open": "NOT CLOSED. The same (x.ok&&x.data)||{} idiom may exist on other rfDataRaw reads in sairnroofing.html and was not swept."
+    },
+    {
+      "commit": "77ec787e93dc",
+      "date": "2026-10-21",
+      "subject": "fix(sairnfreedom b52): SAIRNveterans accessibility pass -- keyboard sidebar, labelled fields, Enter to sign in, headings, aria-current, focus to heading on nav",
+      "files": [
+        "sairnfreedom.html",
+        "tests/sairnfreedom_a11y_pass.js"
+      ],
+      "lines_added": 152,
+      "lines_removed": 35,
+      "app": "sairnfreedom",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "fourth b52 pass on the live demo login (SF-PINNACLE-2026). Before: 0/28 sidebar items keyboard-reachable, 168 axe nodes (label x106, select-name x62), Enter did nothing on licence or PIN, no aria-current, nav silent. After: 28/28 buttons, 0 axe nodes, focus on a heading 28/28, Enter submits. tests/sairnfreedom_a11y_pass.js 10 arms, 8 mutants killed.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "axe-core 4.10.2 + Playwright keyboard walk, driven by scratchpad b52 a11y_dental.py (A11Y_APP=sairnfreedom; not in repo)",
+      "found_by_session": null,
+      "injection": {
+        "commit": "d5adddf5b3d9",
+        "date": "2026-08-31",
+        "subject": "feat(sairnfreedom): Phase 1 foundation -- entity, capabilities, roster, three money types and waivers as records",
+        "lag_days": 51
+      },
+      "citation_note": "No coding rule covers this class: navigation built from div onclick, and labels written without for=. Proposed: an axe + keyboard pass per app before launch.",
+      "contributing_factors": [
+        {
+          "factor": "The sidebar was built from div elements with onclick, which are not focusable.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "28 items converted to button type=button with CSS reset."
+        },
+        {
+          "factor": "Every form label was written without for=, so no field had an accessible name.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Labels tied to the following control at load."
+        },
+        {
+          "factor": "No keyboard or screen-reader pass had been run before launch.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Scripted live pass plus repo suite."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. Not verified with NVDA itself. Modals not opened. Fields rendered later by script are not covered by the load-time label pass."
     },
     {
       "commit": "95e31d3b780e",
@@ -37200,56 +37296,6 @@
       "recurrence_open": "Any posture-disclosure suite goes red silently on a deliberate scope change; nothing ties a SD_SESSION_GATED edit to its disclosure suites."
     },
     {
-      "commit": "dada3f33a880",
-      "date": "2026-10-21",
-      "subject": "fix(sairnlegacy b51): accessibility pass -- KPI caption contrast, labels tied to controls, named GPL prices, keyboard AI chips, panel headings, aria-current, focus to heading on nav",
-      "files": [
-        "sairnlegacy.html",
-        "tests/sairnlegacy_a11y_pass.js"
-      ],
-      "lines_added": 136,
-      "lines_removed": 21,
-      "app": "sairnlegacy",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "static-checker",
-      "summary": "fourth b51 accessibility pass on the live demo login (LEG-PINNACLE-2026), writes blocked. Before: 88 axe nodes (color-contrast x70, label x12, select-name x6), 0/27 headings, no aria-current, nav silent, 4 span-onclick chips. After: 0 axe nodes, 27/27 headings, aria-current, focus to heading on nav 27/27, chips are buttons. tests/sairnlegacy_a11y_pass.js 19 arms, 7 mutants killed.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": "axe-core 4.10.2 + Playwright keyboard walk, driven by scratchpad b51 a11y_dental.py (A11Y_APP=sairnlegacy; not in repo)",
-      "found_by_session": null,
-      "injection": {
-        "commit": "c2c470f16bf9",
-        "date": "2026-08-07",
-        "subject": "feat: SAIRNlegacy Phase 1 scaffold -- funeral home operations, ground-up build",
-        "lag_days": 75
-      },
-      "citation_note": "No coding rule covers this class: meaning conveyed only visually, and caption colours chosen from status tokens meant for icons. Proposed: an axe + keyboard pass per app before launch, and text colours checked against 4.5:1 rather than taken from status tokens.",
-      "contributing_factors": [
-        {
-          "factor": "Caption text used status tokens (--ok #22C55E, --danger #EF4444) chosen for icons, below 4.5:1 at 11px.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": ".kt uses #15803D / #B91C1C."
-        },
-        {
-          "factor": "Visible labels were not associated with their controls; generated price inputs had no name.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "for= on 10 labels; aria-label per GPL service."
-        },
-        {
-          "factor": "No accessibility pass had been run on the app before launch.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Scripted live pass plus repo suite."
-        }
-      ],
-      "recurrence_open": "NOT CLOSED. Not verified with NVDA itself. Modals not opened. Other launch-wave apps not passed."
-    },
-    {
       "commit": "c0187ce13a43",
       "date": "2026-10-21",
       "subject": "fix(hover b77): hover_vendor_sample records every completed vendor call into its RateGate (#1658)",
@@ -37338,6 +37384,56 @@
         }
       ],
       "recurrence_open": "UNOWNED STILL MEANS ALLOWED: a path no population claims is permitted and reported. Case folding closes the spelling route into a claimed area; it does not make an unclaimed area refuse."
+    },
+    {
+      "commit": "dada3f33a880",
+      "date": "2026-10-21",
+      "subject": "fix(sairnlegacy b51): accessibility pass -- KPI caption contrast, labels tied to controls, named GPL prices, keyboard AI chips, panel headings, aria-current, focus to heading on nav",
+      "files": [
+        "sairnlegacy.html",
+        "tests/sairnlegacy_a11y_pass.js"
+      ],
+      "lines_added": 136,
+      "lines_removed": 21,
+      "app": "sairnlegacy",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "fourth b51 accessibility pass on the live demo login (LEG-PINNACLE-2026), writes blocked. Before: 88 axe nodes (color-contrast x70, label x12, select-name x6), 0/27 headings, no aria-current, nav silent, 4 span-onclick chips. After: 0 axe nodes, 27/27 headings, aria-current, focus to heading on nav 27/27, chips are buttons. tests/sairnlegacy_a11y_pass.js 19 arms, 7 mutants killed.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "axe-core 4.10.2 + Playwright keyboard walk, driven by scratchpad b51 a11y_dental.py (A11Y_APP=sairnlegacy; not in repo)",
+      "found_by_session": null,
+      "injection": {
+        "commit": "c2c470f16bf9",
+        "date": "2026-08-07",
+        "subject": "feat: SAIRNlegacy Phase 1 scaffold -- funeral home operations, ground-up build",
+        "lag_days": 75
+      },
+      "citation_note": "No coding rule covers this class: meaning conveyed only visually, and caption colours chosen from status tokens meant for icons. Proposed: an axe + keyboard pass per app before launch, and text colours checked against 4.5:1 rather than taken from status tokens.",
+      "contributing_factors": [
+        {
+          "factor": "Caption text used status tokens (--ok #22C55E, --danger #EF4444) chosen for icons, below 4.5:1 at 11px.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": ".kt uses #15803D / #B91C1C."
+        },
+        {
+          "factor": "Visible labels were not associated with their controls; generated price inputs had no name.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "for= on 10 labels; aria-label per GPL service."
+        },
+        {
+          "factor": "No accessibility pass had been run on the app before launch.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Scripted live pass plus repo suite."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. Not verified with NVDA itself. Modals not opened. Other launch-wave apps not passed."
     }
   ],
   "started": "2026-09-09",
