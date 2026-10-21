@@ -36454,6 +36454,141 @@
         }
       ],
       "recurrence_open": "The detection factor is NOT closed: no selftest arm yet asserts the post-drill answer, so a regression would again be found only by a human checking after a drill rather than by the suite."
+    },
+    {
+      "commit": "a87a4beb755f",
+      "date": "2026-10-21",
+      "subject": "fix(cc b33): the status line goes red at the 85% wrap-up rule, not 15 points early",
+      "files": [
+        "tools/sairn_status_line.py"
+      ],
+      "lines_added": 70,
+      "lines_removed": 40,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "tools/sairn_status_line.py PAINTED THE CONTEXT LINE RED 5 POINTS EARLY FOR BUILDERS AND 15 FOR THE AUDITORS. RED_AT_BUILD = 80 and hover/hover2 fell to RED_AT_DEFAULT = 70, while every identified agent runs on an 85% REAL-context wrap-up (Michael's standing rule from cc b29; the auditors run the same 85). hover2 seq 1095 drove the real file: hover2 red at 70% of a 967K window, 145,050 tokens before its rule. Fixed: RED_AT_BUILD 85, new AUDITOR_AGENTS / RED_AT_AUDITOR 85, unidentified clone keeps 70; fixtures lock RED_AT_BUILD to tools/builder_context_watch.py THRESHOLD and drive the 84/85 boundary through render() for a builder and an auditor. 42/42; pre-b33 values fail 9.",
+      "rules": [
+        "1.10"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "commit": "38bbd45518f1",
+        "date": "2026-10-19",
+        "subject": "feat(scope): a name list becomes a property, a threshold becomes a population, and a push learns its own scope",
+        "lag_days": 2
+      },
+      "citation_note": "1.10 is cited because the line reported a verdict (red, wrap up) against a rule that had moved: the 85% decision landed in b29 and the display kept the b24 number, with nothing tying the two together.",
+      "contributing_factors": [
+        {
+          "factor": "The threshold was stated in two places -- tools/builder_context_watch.py THRESHOLD (85) and this file's RED_AT_BUILD (80) -- and nothing compared them. b29 verified the watcher and never this file.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "A fixture asserts RED_AT_BUILD == builder_context_watch.THRESHOLD; either moving alone turns the criteria lock red."
+        },
+        {
+          "factor": "The b24 change deliberately kept the auditors at 70 with a fixture locking it ('hover and hover2 UNCHANGED at 70'), so when the auditors' own policy became 85 the lock defended the stale value.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The auditor population has its own constant and its own 84/85 boundary arm driven through render()."
+        }
+      ],
+      "recurrence_open": "THE AUDITORS' 85 IS NOT LOCKED TO A SOURCE: tools-hover2/context_red_flag.py is the auditors' own trigger, in their scope, and this file must not read it. If the auditors move their rule again, this file will not know. Stated rather than reached across."
+    },
+    {
+      "commit": "03f50bd4cc8b",
+      "date": "2026-10-21",
+      "subject": "fix(cc b33): the tier checker reads a registry's app through node, not a regex",
+      "files": [
+        "tools/criticality_tier_check.py"
+      ],
+      "lines_added": 88,
+      "lines_removed": 23,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "tools/criticality_tier_check.py READ A REGISTRY'S app: WITH A LINE-ANCHORED REGEX OVER THE FILE TEXT, so six ordinary spellings Node loads as a registry were invisible -- one-line object, double- or single-quoted key, template literal, shorthand property, module.exports.app = -- and every resource on such a file vanished from the completeness arm, fail-open (hover2 seq 1067, claim (b) of 38bbd455, broken latent: none of the 20 real files used them). Fixed: declared_app() require()s the module with node and reads the exported app; a module node cannot load raises and becomes a SHAPE_ERROR, never a skip. Fixtures +7 (19/19); real output byte-identical.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "commit": "38bbd45518f1",
+        "date": "2026-10-19",
+        "subject": "feat(scope): a name list becomes a property, a threshold becomes a population, and a push learns its own scope",
+        "lag_days": 2
+      },
+      "citation_note": "1.11 is cited because a registry the reader could not parse was treated as no registry at all -- an unreadable answer folded into the clean one.",
+      "contributing_factors": [
+        {
+          "factor": "The declaration was read as text by a pattern written for one formatting, while the platform reads it through the module system; the reader did not travel with the language.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The reader is node require() -- the same runtime the platform loads the file with."
+        },
+        {
+          "factor": "The fixtures only used the one formatting the regex expected, so the arm passed on every spelling the regex could see and asked nothing of the rest.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Fixtures carry hover2's six shapes and a module node cannot load."
+        }
+      ],
+      "recurrence_open": "RESOURCE NAMES ARE STILL READ AS TEXT: resource_names() parses the `resources: [...]` array from the source, so a registry whose resources are built in a shape that parser does not know is a SHAPE_ERROR (loud), not a node read. Converting that half was out of this change's scope."
+    },
+    {
+      "commit": "d94a2e3d1bf3",
+      "date": "2026-10-21",
+      "subject": "fix(cc b33): the path manifest folds case, so one capital letter cannot cross a boundary",
+      "files": [
+        "tools/sairn_path_manifest.py"
+      ],
+      "lines_added": 50,
+      "lines_removed": 8,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "hover-audit",
+      "summary": "tools/sairn_path_manifest.py _under() COMPARED PREFIXES CASE-SENSITIVELY AND GLOBS WITH A WINDOWS-ONLY NORMCASE, so one capital letter moved a path across a boundary: fourth + docs/Hover-Evidence/x.md read OWNED where docs/hover-evidence/ is the auditor's, cc + API/sd-data.js read UNOWNED where api/ is FOREIGN, and CHECK 5d allowed both (hover2 seq 1067, claim (a) of 38bbd455 broken). On these clones that spelling IS the same directory and git records the typed case for a new one. Fixed: casefold both sides, then fnmatchcase, one rule for every shape on every OS. Fixtures +9 (48/48); 0 verdict changes over 5,340 tracked files x 4 agents.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "commit": "38bbd45518f1",
+        "date": "2026-10-19",
+        "subject": "feat(scope): a name list becomes a property, a threshold becomes a population, and a push learns its own scope",
+        "lag_days": 2
+      },
+      "citation_note": "1.11 is cited for the fail-open direction: a path the classifier could not match to any rule because of its case was ALLOWED as UNOWNED rather than refused.",
+      "contributing_factors": [
+        {
+          "factor": "Normalisation handled slashes and a leading ./ and never case, on a filesystem and a git config (core.ignorecase=true) where case is not significant.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "_under() casefolds path and rule and compares with fnmatchcase."
+        },
+        {
+          "factor": "The fixtures exercised every rule shape with correctly-cased paths only, so the boundary was never attacked by spelling.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Nine case-variant arms incl. the auditor boundary, both rule shapes, and owner controls."
+        }
+      ],
+      "recurrence_open": "UNOWNED STILL MEANS ALLOWED: a path no population claims is permitted and reported. Case folding closes the spelling route into a claimed area; it does not make an unclaimed area refuse."
     }
   ],
   "started": "2026-09-09",
