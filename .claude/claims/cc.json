@@ -4464,8 +4464,8 @@
       "task": "b34 Tier A reviews: cody 2026-10-20T16:51:37Z alf rules, fourth b46 geocode, hank schema snapshot, cody b34 dental  FILES: docs/tier-a-reviews.json SAIRN-handoff-cc-b34.md SAIRN-report-cc-b34.txt SAIRN-digest-cc-b34.txt NOT-api NOT-html NOT-sql NOT-tests",
       "claimed_at": "2026-10-21T15:13:41Z",
       "claimed_at_epoch": 1792595621.5269547,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T15:35:40Z",
       "files": [
         "SAIRN-digest-cc-b34.txt",
         "SAIRN-handoff-cc-b34.md",
