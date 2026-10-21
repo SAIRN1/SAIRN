@@ -2,30 +2,24 @@
 //
 // Run:  node api/sd-data-scp-licence-only.test.js
 //
-// THE NINE SAIRNscape RESOURCES NOBODY DRIVES.
+// THE NINE SAIRNscape RESOURCES THAT WERE LICENCE-KEY-ALONE, NOW SESSION-GATED.
 //
-// api/sd-data-scp-session-gate.test.js gates the two Tier A rows -- `invoices`
-// and `scp_quotes` -- and drives exactly ONE of the remaining ten as the
-// UNGATED_WITNESS, `scp_vendors`, "so the day somebody widens the scope it is
-// visible here". That witness is the right idea and it covers one tenth of the
-// surface: the other NINE licence-key-alone resources have no arm at all, so a
-// change to any of them is silent in both directions.
+// api/sd-data-scp-session-gate.test.js drives the two Tier A rows -- `invoices`
+// and `scp_quotes` -- and the witness `scp_vendors`. This file drives the other
+// NINE. It was written (2026-09-29) when they answered a valid licence with no
+// employee session. That posture was RETIRED on purpose: `customers` was
+// session-gated on 2026-10-05 (5e33157e) and the other eight on 2026-10-11 and
+// 2026-10-14 (0442646c, d99b47f9, 5776ef19). The B arms kept asserting the old
+// posture and went red for a correct reason (cc b35 bisect); inverted 2026-10-21
+// (hank b42) to assert the posture that is actually shipped.
 //
-// ── WHAT LICENCE-KEY-ALONE MEANS, AND WHAT IT MUST NOT MEAN ────────────────
-// It means a valid SAIRNscape licence reaches these nine with no employee
-// session. That is a deliberate product posture and this file does NOT argue
-// with it -- the same disclosure the witness arm makes, nine more times.
+// ── EACH RESOURCE NOW GETS THREE ARMS ─────────────────────────────────────
+//   B1  GATE      a valid sairnscape licence, NO session -> 403 FORBIDDEN
+//   B2  PASSES    a valid sairnscape licence WITH a session -> not refused
+//   C   BOUNDARY  a valid licence whose app_id is ANOTHER APP -> refused
 //
-// It must NOT mean the licence stops being the boundary. So each resource gets
-// TWO arms, and the second is what makes the first worth having:
-//
-//   POSTURE   a valid sairnscape licence, no session -> 200
-//   BOUNDARY  a valid licence whose app_id is ANOTHER APP -> refused
-//
-// Without the boundary arm, "answers 200 without a session" is satisfied by a
-// handler that answers 200 to everyone, which is the failure the arm exists to
-// rule out. Without the posture arm, the boundary arm is satisfied by a handler
-// that refuses everything.
+// B1 alone is satisfied by a handler that refuses everything; B2 rules that
+// out. C keeps the licence as the boundary underneath the session.
 //
 // ── THE TWO NAMES THAT ARE NOT THE TABLE NAMES ────────────────────────────
 // `customers` and `schedule` are registered under their BARE names and reach
@@ -108,11 +102,35 @@ function loadHandler(appId) {
   delete require.cache[require.resolve('./sd-data.js')];
   return require('./sd-data.js');
 }
-async function callAs(appId, body) {
+// A signed-in sairnscape owner, plus the one database answer the gate needs:
+// it re-checks that the employee is still ACTIVE. Same stub as
+// api/sd-data-scp-session-gate.test.js; without it B2 would fail 403
+// CREDENTIAL_INACTIVE and read exactly like the gate refusing a real session.
+const { signSessionToken } = require('./_lib/auth');
+function withSession() {
+  return {
+    'x-sd-auth': signSessionToken({ app: APP, employee_id: 'emp-1',
+                                    role: 'owner', license_hash: HASH }),
+    fetch: async function (url, opts) {
+      if (/_employee_auth\?/.test(String(url))) {
+        return { ok: true, status: 200, json: async () =>
+          [{ license_hash: HASH, employee_id: 'emp-1', role: 'owner', active: true }] };
+      }
+      return { ok: true, status: 200, json: async () => [] };
+    }
+  };
+}
+async function callAs(appId, body, session) {
   const h = loadHandler(appId);
   const res = mockRes();
-  await h({ method: 'POST', headers: { authorization: 'Bearer KEY' },
-            body: body }, res);
+  const headers = { authorization: 'Bearer KEY' };
+  const prevFetch = global.fetch;
+  if (session) { headers['x-sd-auth'] = session['x-sd-auth']; global.fetch = session.fetch; }
+  try {
+    await h({ method: 'POST', headers: headers, body: body }, res);
+  } finally {
+    global.fetch = prevFetch;
+  }
   return res;
 }
 
@@ -145,32 +163,57 @@ async function callAs(appId, body) {
         'a resource appears in more than one set: ' + all.join(', '));
     });
 
-  test('A3. none of the nine is in SD_SESSION_GATED. If one is gated now, its '
-    + 'POSTURE arm below would fail for a correct reason and this arm names it '
+  // THE TABLE, NOT THE FIRST MENTION. This arm used to search 9,000 characters
+  // after the first 'SD_SESSION_GATED' in the file -- a COMMENT at line 99 --
+  // while the entries sit ~1,800 lines later, so it could never see one and
+  // passed while all nine were gated (cc b35). Same declaration anchor as
+  // api/sd-data-scp-session-gate.test.js, plus a control on each side so a
+  // wrong window fails here instead of passing.
+  const GATE_TABLE = (SD_DATA.match(/const SD_SESSION_GATED = \{[\s\S]*?\n    \};/) || [''])[0];
+  function inGateTable(r) {
+    return new RegExp("\\n\\s*'" + r + "':\\s*\\[[^\\]]*'read'").test(GATE_TABLE);
+  }
+
+  test('A3. all nine are in the SD_SESSION_GATED table for read. If one leaves '
+    + 'it, its B1 arm below fails for a correct reason and this arm names it '
     + 'first', function () {
-      const gatedNow = UNDRIVEN.filter(function (r) {
-        return new RegExp("'" + r + "':\\s*\\[").test(
-          SD_DATA.slice(SD_DATA.indexOf('SD_SESSION_GATED'),
-                        SD_DATA.indexOf('SD_SESSION_GATED') + 9000));
-      });
-      assert.deepStrictEqual(gatedNow, [],
-        'these are gated now and this file still calls them licence-only: '
-        + gatedNow.join(', ') + ' -- a scope change nobody recorded');
+      assert.ok(GATE_TABLE.length > 0, 'const SD_SESSION_GATED = { ... } not found');
+      assert.ok(inGateTable('invoices'),
+        'CONTROL: the parsed table does not contain invoices -- the window is wrong');
+      assert.ok(!inGateTable('sd_customers'),
+        'CONTROL: the parsed table contains sd_customers, which is not gated -- the window is wrong');
+      const notGated = UNDRIVEN.filter(function (r) { return !inGateTable(r); });
+      assert.deepStrictEqual(notGated, [],
+        'these are no longer session-gated for read: ' + notGated.join(', ')
+        + ' -- a scope change nobody recorded');
     });
 
   // ── B. THE POSTURE, nine times ──────────────────────────────────────────
-  section('B. a valid sairnscape licence with NO session reaches all nine');
+  section('B. a valid sairnscape licence needs an employee session for all nine');
 
   for (const r of UNDRIVEN) {
-    await atest('B. ' + r + ' answers without a session -- a DISCLOSURE, not an '
-      + 'endorsement, so widening the scope becomes visible here',
+    await atest('B1. ' + r + ' is REFUSED without a session: 403 FORBIDDEN, '
+      + '"A valid employee session is required"',
       async function () {
         const res = await callAs(APP, { action: 'read', resource: r });
-        assert.notStrictEqual(res.statusCode, 401,
-          r + ' now answers 401 NO_SESSION. That may well be right -- it is a '
-          + 'scope change and this arm is where it gets noticed.');
-        assert.notStrictEqual(res.statusCode, 403,
-          r + ' now answers 403 FORBIDDEN, same point.');
+        const err = (res.body && res.body.error) || {};
+        assert.ok(res.statusCode === 403 && err.code === 'FORBIDDEN'
+                  && /valid employee session is required/.test(err.message || ''),
+          r + ' answered ' + res.statusCode + ' ' + JSON.stringify(err).slice(0, 120)
+          + ' with NO session. It is in SD_SESSION_GATED, so a licence alone '
+          + 'must not reach it.');
+      });
+  }
+
+  for (const r of UNDRIVEN) {
+    await atest('B2. ' + r + ' is NOT refused WITH a sairnscape session, so B1 '
+      + 'is a gate and not a handler that refuses everything',
+      async function () {
+        const res = await callAs(APP, { action: 'read', resource: r }, withSession());
+        assert.ok(res.statusCode !== 401 && res.statusCode !== 403,
+          r + ' answered ' + res.statusCode + ' '
+          + JSON.stringify((res.body && res.body.error) || {}).slice(0, 120)
+          + ' to a signed-in owner of its own app');
       });
   }
 
