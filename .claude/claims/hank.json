@@ -4516,6 +4516,24 @@
         "api/stonedesk-public.js",
         "stonedesk.html"
       ]
+    },
+    {
+      "id": "hank-1792609477",
+      "session": "hank",
+      "subject": "sairnlegacy",
+      "task": "b45: leg_settings owner read/write resource (F2/F3), Tier A. FILES: api/_resources/sairnlegacy.js api/sd-data.js api/b45-leg-settings-owner-write.test.js SAIRN-handoff-hank-b45.md SAIRN-report-hank-b45.txt SAIRN-digest-hank-b45.txt NOT-package-json",
+      "claimed_at": "2026-10-21T19:04:37Z",
+      "claimed_at_epoch": 1792609477.6503332,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-hank-b45.txt",
+        "SAIRN-handoff-hank-b45.md",
+        "SAIRN-report-hank-b45.txt",
+        "api/_resources/sairnlegacy.js",
+        "api/b45-leg-settings-owner-write.test.js",
+        "api/sd-data.js"
+      ]
     }
   ],
   "refusals": [
@@ -4752,6 +4770,21 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "same file or resource: sd-data.js",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-21T19:04:26Z",
+      "my_subject": "sairnlegacy",
+      "my_task": "b45: leg_settings owner read/write resource (F2/F3) + firebase-admin 13.10.0 mint test. FILES: api/_resources/sairnlegacy.js api/sd-data.js api/b45-leg-settings-owner-write.test.js api/b45-firebase-mint.test.js package.json SAIRN-handoff-hank-b45.md SAIRN-report-hank-b45.txt SAIRN-digest-hank-b45.txt",
+      "other_session": "cc",
+      "other_subject": "cc",
+      "other_task": "b44: Dependabot #5 -- firebase-admin 12.7.0 -> 13.10.0 (drops node-forge), lockfile, mint test; triage addendum goes in the cc report because fourth holds the path manifest  FILES: package.json package-lock.json docs/tier-a-reviews.json SAIRN-handoff-cc-b44.md SAIRN-report-cc-b44.txt SAIRN-digest-cc-b44.txt NOT-html NOT-sql",
+      "other_claimed_at": "2026-10-21T18:56:03Z",
+      "shared_files": [
+        "package.json"
+      ],
+      "source": "status-registry",
+      "why": "same file or resource: firebase-admin, package.json",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
