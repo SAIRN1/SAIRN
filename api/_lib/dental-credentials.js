@@ -94,6 +94,11 @@ function payerKey(s) {
   return String(s == null ? '' : s).trim().toLowerCase();
 }
 
+// "AB 1234563" and "ab1234563" are one DEA registration.
+function deaKey(s) {
+  return String(s == null ? '' : s).toUpperCase().replace(/[\s-]+/g, '');
+}
+
 function refuse(code, message, extra) {
   return Object.assign({ ok: false, error: { code: code, message: message } }, extra || {});
 }
@@ -248,7 +253,14 @@ function latestByKey(records) {
             // Cigna record would silently retire that provider's Delta Dental
             // one -- a superseding bug in a store whose whole design is that
             // nothing is ever superseded by accident.
-            rec.record_type === 'payer_enrollment' ? payerKey(rec.payer) : ''
+            rec.record_type === 'payer_enrollment' ? payerKey(rec.payer) :
+              // b48 -- CONCEPT: a DEA registration is per REGISTRATION NUMBER
+              // (21 CFR 1301.12(a): a separate registration for each principal
+              // place of business), so a provider's second registration is a
+              // second record with its own expiry, not a newer copy of the
+              // first. Case and spaces/hyphens are not part of the number. A
+              // row with no number cannot be told apart and keys as before.
+              rec.record_type === 'dea_registration' ? deaKey(rec.number) : ''
     ].join('|');
     const prev = best[key];
     // recorded_at is server-stamped; entry_id is the tiebreak so the result is

@@ -46,9 +46,17 @@ function gfeMissing(rec, patient, settings) {
   const pt = patient || null;
   const s = settings || {};
   const miss = [];
+  // b48 -- CONCEPT: an Issued estimate PRINTS its own frozen copy of the
+  // patient's name and DOB (patient_name / patient_dob, written by issueGfe
+  // from the record at issue -- sairndental.html gfeSnapshot()), so the check
+  // reads that copy AS WELL AS the server-side patient record. Checking only
+  // the live record passed an estimate that printed "date of birth --". The
+  // live read stays: the caller's copy alone is not trusted to show the
+  // patient exists.
+  const issued = String(r.status || '').trim().toLowerCase() === 'issued';
 
-  if (!pt || !pt.name) miss.push('(c)(1)(i) patient name');
-  if (!pt || !pt.dob) miss.push('(c)(1)(i) patient date of birth');
+  if (!pt || !pt.name || (issued && !r.patient_name)) miss.push('(c)(1)(i) patient name');
+  if (!pt || !pt.dob || (issued && !r.patient_dob)) miss.push('(c)(1)(i) patient date of birth');
   if (!r.primary_description) miss.push('(c)(1)(ii) description of the primary item or service');
   if (!r.lines || !r.lines.length) {
     miss.push('(c)(1)(iii) itemised list of items and services');

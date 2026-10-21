@@ -56,6 +56,8 @@ const SETTINGS = {
 };
 const REC = {
   id: 'GFE-1', patient_id: 'PT-1', status: 'Issued',
+  // b48: an Issued estimate carries the copy it prints (issueGfe writes it).
+  patient_name: 'A Patient', patient_dob: '1980-04-01',
   primary_description: 'D2740 -- crown, porcelain',
   lines: [{ cdt_code: 'D2740', expected_charge: 1200 }]
 };

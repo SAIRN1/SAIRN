@@ -2130,7 +2130,9 @@ var DNT_EXPORTS={
     ['Unit cost',function(r){return r.unit_cost;}],['Vendor SKU',function(r){return r.vendor_sku;}],
     ['Created',function(r){return r.created_at;}]]},
   gfe:{label:'good-faith-estimates',rows:function(){return gfeRecords();},columns:[
-    ['Patient',function(r){return r.patient_name;}],['Date of birth',function(r){return r.patient_dob;}],
+    // b48 -- CONCEPT: the export's name and DOB are the ones gfeMissing() checked
+    // and the document prints -- gfeSnapshot() -- not the save-time copy a Draft carries.
+    ['Patient',function(r){return gfeSnapshot(r).name;}],['Date of birth',function(r){return gfeSnapshot(r).dob;}],
     ['Trigger',function(r){return r.trigger;}],['Trigger date',function(r){return r.trigger_date;}],
     ['Service date',function(r){return r.service_date;}],
     ['Primary item',function(r){return r.primary_description;}],
