@@ -1,0 +1,14 @@
+HANK b49 DIGEST -- 2026-10-21 -- b48 floor shapes verified on the DEPLOYED pay run
+CONTEXT 64.2% of 1,000,000 -- 642,122 tokens, measured.
+STATUS: docs only, NOT FORCED. No code change.
+1. SEN-AUDIT-2026: new caregiver, $18->$22 mid-week rates, 42h closed week, 2 closed periods, 3 corrections.
+2. Deployed payroll 2026-10 -> 200: +60 adjusts 2200c with premium flag (2520 min seen).
+3. -60 is an 1800c overpayment for a human, not netted; +45 in period B adjusts 1650c, premium null.
+4. Caregiver: adjustment 3850 = 2200 + 1650, payable >= gross. Matches the local 23/0 suite.
+5. Not live: two agencies, successive runs, reopen (local suite covers them).
+6. cc b38 overlay finding was fixed in b44: commit 2fe89f267, suite 27/0.
+DECISION-NEEDED (Michael): none.
+NEXT: cc Tier A reviews (040ac5a95, 38b2b5069, 2fe89f267).
+CHANGED: these three docs; live residue on SEN-AUDIT-2026 (6 visits, 2 closings, 2 rates, 1 caregiver).
+EVIDENCE-path: SAIRN-handoff-hank-b49.md, SAIRN-report-hank-b49.txt
+UNVERIFIED: multi-agency and reopen shapes on the deployed run.

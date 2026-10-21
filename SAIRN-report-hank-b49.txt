@@ -1,0 +1,26 @@
+HANK b49 REPORT -- 2026-10-21
+
+1. b48 FLOOR SHAPES ON THE DEPLOYED PAY RUN -- VERIFIED (every arm green).
+   Method: SEN-AUDIT-2026 (audit licence), audit-owner via deployed /api/sen-auth (whoami-confirmed), new caregiver
+   hank-b49-caregiver; rates $18 (term_on 2026-09-15) / $22 (from 09-16); 6 visits scheduled by owner, clocked by
+   the caregiver (42h week of 2026-09-13 + one 8h visit on 09-22); closings A (09-13..19, paid 09-20) and
+   B (09-20..26, paid 09-27); corrections approved today: Thu +60, Mon -60, 09-22 +45; every write read back.
+   Request: POST /api/sd-data {action: payroll, resource: sen_visits, payload: {period_start 2026-10-01,
+   period_end 2026-10-31, week_start_day sunday}} -> 200.
+   Evidence (response):
+     zz-b49-ot-thu ADJUSTMENT  period A, 540->600 min, week 2026-09-13 seen 2520, +60 x 2200 = 2200c, premium TRUE
+     zz-b49-ot-mon OVERPAYMENT period A, -60 at 1800c/h = 1800c, requires_human_act true, not an adjustment
+     zz-b49-pb-tue ADJUSTMENT  period B (paid 09-27), 480->525, +45 x 2200 = 1650c, premium null (480 seen)
+     caregiver: gross 0, adjustment 3850, overpayment 1800, total_payable 3850 (payable >= gross; not netted)
+     run overpayment_cents 3800 = 1800 + b27's 2000 (approved 10-20, same window) -- consistent
+   All match the local 23/0 suite's O1/O2/O3/O4/P1 expectations.
+   Not driven live: two agencies, successive runs, reopen (need a second test licence / server time) -- local G/P arms.
+   Residue on the audit licence: 6 visits, 2 closings, 2 rates, 1 caregiver (undeletable by design).
+   Evidence file + script: scratchpad\b49\evidence.json, live.py, common.py (paths in the handoff).
+
+2. TRUST-LOCK: not touched, per dispatch.
+
+3. cc b38 / b40 overlay: ALREADY FIXED in b44, commit 2fe89f267 (on origin) -- whole-value check at intake and
+   overlay, escaping kept, all 3 surviving mutants (+2) killed, Escape close; suite 27/0. Done.
+
+4. PUSH: these three docs only, not forced; landing confirmed against origin/main after fetch.
