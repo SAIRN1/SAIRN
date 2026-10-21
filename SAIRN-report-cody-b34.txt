@@ -1,0 +1,93 @@
+REPORT -- cody, batch b34, 2026-10-21. Six items: five done, ONE NOT DONE (item 4 was denied by the permission layer).
+
+0. THE RESULT
+PUSHED WITHOUT --force. Remote tip b70633a69, 0 ahead / 0 behind (git fetch, rev-list
+--left-right --count). Eight files read back off the remote tree at identical sizes
+(api/accounting.js 25381, api/sd-data.js 1346632, api/_resources/stonedesk.js 19879,
+api/b34-accounting-revoke.test.js 7425, api/b34-routed-defects.test.js 7955,
+docs/2026-10-21-cody-b34-notes.md 9242, docs/b33-sweep/pair_by_resource.py 4457,
+SAIRN-handoff-cody-b34.md 7209). NOTHING OVERRIDDEN. NO LIVE WRITES. NO SQL.
+Measured context 52.7% (526,651 of 1,000,000), below the 85% trigger.
+
+1. ITEM 4 -- NOT DONE, AND WHY
+The Bash call "cp settings.local.json ... && powershell -ExecutionPolicy Bypass -File
+fix-deny.ps1 ..." was DENIED by the permission layer. I had read the script first: it
+only ADDS the eight hover / hover2 Edit+Write paths to permissions.deny, so it tightens.
+I did not retry and did not edit the file another way -- that would route around the
+guard. UNCONFIRMED: it has not run. Michael, type in this window:
+  ! powershell -ExecutionPolicy Bypass -File C:\Users\marsh\fix-deny.ps1 -Path "C:\Users\marsh\Documents\SAIRN-cody\.claude\settings.local.json" -Entries <the eight, as in your message>
+and look for "Done: ... deny entries."
+
+2. ITEM 1 -- DEFECT 3: THE FALSE CREDENTIAL-DISCARD SUCCESS
+CONCEPT: a response may claim a side effect only after the write that performs it came
+back ok AND matched a row. api/accounting.js revoke: the connection PATCH result was
+never read, so tokens_discarded:true went out regardless. Now: ok + a row ->
+tokens_discarded:true; ok + zero rows -> false with connection_found:false (nothing was
+stored); any failure -> 502 TOKEN_DISCARD_UNCONFIRMED carrying consent_revoked:true.
+api/b34-accounting-revoke.test.js 9/0; restoring the old file turns 8 of 9 red.
+Open concern: a re-run of revoke rewrites the consent's revoked_on/revoked_by (pre-existing,
+now likelier after an UNCONFIRMED); next step is in the handoff.
+
+3. ITEM 2 -- THE OTHER FOUR (cc's b29 defects 1, 2, 4, 5)
+ 4 accounting 400 -> NOT_PROVISIONED: classifyUpstream() (MISSING / SCHEMA_OUTDATED /
+   ROW_REFUSED / OTHER, mirroring notProvisionedDecide) in loadState and the consent write.
+ 1 dental 503: DNT_SCHEMA_FILE names the right file per resource (gfe, recall, treatment
+   plans, vendor x2); default stays the data schema.
+ 2 rf_prequal_documents / rf_bonding write on a missing table: 503 NOT_PROVISIONED naming
+   sairnroofing_prequal_schema.sql (was a generic 502).
+ 5 sd_quote_request_photos: new owner/admin-gated read verb sd_quote_requests/request_photos,
+   declared in _resources/stonedesk.js, classified in _resources/index.js. NO CALLER YET:
+   the stonedesk.html wiring is hank's and is routed.
+api/b34-routed-defects.test.js 12/0; restoring the old sd-data.js + registry files turns
+10 red. Two suites I broke and fixed: the tombstone-propagation regexp (guard order) and
+the quote-request pinned verb list (it is the FULL list on purpose).
+Same class found, NOT fixed: eight more writes end `if (!w.ok) return upstream(...)`
+(sd-data.js near 10399, 10508, 10781, 10844, 11099, 11221, 11320, 11386).
+
+4. ITEM 3 -- THE ~50 HEURISTIC SITES, PROVED PER RESOURCE
+CONCEPT: proximity is not pairing. docs/b33-sweep/pair_by_resource.py brace-matches each
+`if (resource === 'X')` block and compares a site's keys with the strip list of EVERY
+storedBlob() call for that resource (pooled across its read and write blocks), plus a
+check that no block stores the raw payload. 63 sites: 44 PAIRED, 17 NO-STRIP + 2 GENERIC
+read by hand (allowlisted blobs, a roster simulation, generic strip on 'id'). Cross-file
+writers of the paired tables checked (alf-pharmacy.js, stonedesk-track.js, sen-portal.js,
+alf-alerts.js): none introduces a column-named key. POSITIVE CONTROL: against the b32 tip
+the tool reports the live bld_draws sites NO-STRIP and the two live alf_* rule sites
+GENERIC -- none of the four b33 defects would have been classified clean.
+THE PUSH GATE CAUGHT A DEFECT OF MINE HERE: the raw-write regex was generated through a
+non-raw string, so each \b became a 0x08 backspace byte and the check could never match --
+my first "0 raw writes" meant nothing. The control-byte gate refused the push. Repaired,
+checked on six strings, re-run: still 0. The same byte had also reached the notes file;
+removed. THIS IS STATIC, NOT A RUNTIME DIFFERENTIAL -- what "individually" means here is
+per resource and per site, not per executed write.
+
+5. ITEM 5 -- CONTEXT DISCIPLINE, MEASURED
+Applied: test output filtered to FAIL / counts / HARNESS, grep and sed -n ranges for the
+1.3 MB sd-data.js, no whole-file reads of app files. Measured 49.4% before wrap-up and
+52.7% after the push and report (python tools/context_verify.py --digest-line, window
+declared with --provision-window 1000000). That is higher than the discipline alone would
+give because this session spans b31-b34; the transcript is most of it.
+
+6. ITEM 6 -- THE PUSH
+Stopped five times, all correct: a raw control byte (above); the register-feed gate on a
+commit titled "fix(...)" for an unshipped analysis script (answered with a real
+no-defect-record sentence); generated documents (regenerated); and four lost races or
+lock-ref races (rebased; the gate takes minutes and the remote moves meanwhile).
+Tier A: obligation on dnt_gfe, dnt_recall_outreach, dnt_txplans, dnt_vendor_orders,
+rf_bonding, rf_prequal_documents, sd_quote_requests OPENED and assigned to cc; its point
+(1) is that request_photos is a NEW READ of customer photos.
+The claim was taken LATE (after the work); nothing else touched those files.
+
+7. VERIFICATION (commands run)
+EXIT=0 b34-accounting-revoke 9/0; b34-routed-defects 12/0; b33-projection-order-sweep 12/0;
+b32-rf-jobs-projection 7/0; b30-cap-per-action 22/0; extra-actions 48/0;
+sd-data-quote-request-soft-delete 14; sd-data-tombstone-propagation; cross-tenant-dispatchers
+418/0; unconfirmed-write-sweep 30/0; preauth-envelope-ordering 59/0; session-gate 22.
+EXIT=1 sd-data-customer-soft-delete -- RED AT HEAD (stash differential), not b34.
+
+8. DECISIONS AND LIMITS
+- Michael: run item 4 yourself (above).
+- hank: wire request_photos into the intake panel (call and shape in the handoff).
+- cc: discharge the Tier A reviews opened b31-b34.
+- Unproved: defects 6-8 of cc's b29 (hank / fourth files); the per-resource proof is static.
+- H1 #1613/#1614 remains HELD.
