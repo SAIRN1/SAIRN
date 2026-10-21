@@ -76,6 +76,14 @@ function recorder(routes) {
     impl: async (url, init) => {
       const method = (init && init.method) || 'GET';
       const body = init && init.body ? JSON.parse(init.body) : null;
+      // The active-credential pre-gate (c8b5e5b12, 2026-09-26) reads the
+      // employee row before any branch runs; this suite predates it by two
+      // days and was red at HEAD from then on (b35). Answered here and kept
+      // out of `calls`, so "nothing touched" still means no customer data.
+      if (/_employee_auth\?/.test(String(url))) {
+        return { ok: true, status: 200, json: async () => [{ active: true }],
+                 text: async () => '[{"active":true}]' };
+      }
       calls.push({ url: String(url), method, body });
       const r = routes(String(url), method, body);
       return { ok: r.status >= 200 && r.status < 300, status: r.status,
@@ -204,7 +212,9 @@ async function main() {
     // stayed pinned to the pre-tombstone list and was red on origin for a
     // day. The assertion is the FULL list on purpose -- a verb appearing
     // here must be a decision, not a drift -- so it grows when the verbs do.
-    assert.deepStrictEqual(reg.EXTRA_ACTIONS['sd_customers'], ['soft_delete', 'tombstones']);
+    // 'write_batch' joined 2026-09-26 (be352a7d0, the customer list's batched
+    // write) and this arm was not grown with it; added b35.
+    assert.deepStrictEqual(reg.EXTRA_ACTIONS['sd_customers'], ['soft_delete', 'tombstones', 'write_batch']);
   });
 
   console.log(passed + ' passed');

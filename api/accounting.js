@@ -307,14 +307,39 @@ module.exports = async (req, res) => {
     if (action === 'revoke') {
       const consentId = String(payload.consent_id || '').trim();
       if (!consentId) { res.status(400).json({ error: { message: 'payload.consent_id is required' } }); return; }
-      const w = await fetch(rest('accounting_consents?license_hash=eq.' + enc(licHash) + '&consent_id=eq.' + enc(consentId)), {
+      // ── A REPEAT REVOKE DOES NOT REWRITE THE REVOCATION (b35) ─────────────
+      // CONCEPT: a revocation is a historical fact -- the first revoke writes
+      // revoked_on/revoked_by, a repeat leaves them as they were and still
+      // completes the discard. The PATCH matches only an un-revoked consent;
+      // zero rows is then either "no such consent" or "already revoked", and
+      // only a re-read can say which. The retry TOKEN_DISCARD_UNCONFIRMED
+      // invites is exactly this repeat, so it must reach the discard below.
+      const consentUrl = 'accounting_consents?license_hash=eq.' + enc(licHash) + '&consent_id=eq.' + enc(consentId);
+      const w = await fetch(rest(consentUrl + '&revoked_on=is.null'), {
         method: 'PATCH',
         headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
         body: JSON.stringify({ revoked_on: today, revoked_by: session.employee_id, updated_at: new Date().toISOString() })
       });
-      const saved = await w.json();
+      let saved = await w.json();
       if (!w.ok) { res.status(502).json({ error: { message: 'Data store rejected the revocation' } }); return; }
-      if (!Array.isArray(saved) || !saved.length) { res.status(404).json({ error: { code: 'NO_CONSENT', message: 'No consent with that id on this licence' } }); return; }
+      let alreadyRevoked = false;
+      if (!Array.isArray(saved) || !saved.length) {
+        const pr = await fetch(rest(consentUrl + '&select=consent_id,provider,granted_by,granted_on,scopes,revoked_on,revoked_by&limit=1'), { headers });
+        const prior = pr.ok ? await pr.json().catch(() => null) : null;
+        if (!Array.isArray(prior)) {
+          console.error('accounting: revoke matched no un-revoked consent and the re-read failed, HTTP', pr.status);
+          res.status(502).json({ error: { code: 'REVOKE_UNCONFIRMED', message: 'Could not confirm whether that consent exists or is already revoked. Nothing was changed -- try again.' } });
+          return;
+        }
+        if (!prior.length) { res.status(404).json({ error: { code: 'NO_CONSENT', message: 'No consent with that id on this licence' } }); return; }
+        if (!prior[0].revoked_on) {
+          console.error('accounting: revoke PATCH matched nothing but the consent reads as un-revoked');
+          res.status(502).json({ error: { code: 'REVOKE_UNCONFIRMED', message: 'The revocation could not be confirmed -- the consent still reads as active. Try again.' } });
+          return;
+        }
+        saved = prior;
+        alreadyRevoked = true;
+      }
       // The connection is marked revoked in the same breath. A token whose
       // consent is gone must not sit in a row still saying 'connected' --
       // the engine would refuse to use it, but the row would read as fine to
@@ -337,18 +362,18 @@ module.exports = async (req, res) => {
       if (dw.ok && Array.isArray(dRows)) {
         // ok + zero rows = there was no connection row, so no stored credentials
         // to discard: true, and different from "discarded".
-        res.status(200).json({ ok: true, data: saved[0], tokens_discarded: dRows.length > 0, connection_found: dRows.length > 0 });
+        res.status(200).json({ ok: true, data: saved[0], already_revoked: alreadyRevoked, tokens_discarded: dRows.length > 0, connection_found: dRows.length > 0 });
         return;
       }
       if (!dw.ok && classifyUpstream(dw.status, dText) === 'MISSING') {
-        res.status(200).json({ ok: true, data: saved[0], tokens_discarded: false, connection_found: false });
+        res.status(200).json({ ok: true, data: saved[0], already_revoked: alreadyRevoked, tokens_discarded: false, connection_found: false });
         return;
       }
       console.error('accounting: consent revoked but connection discard UNCONFIRMED, HTTP', dw.status);
       res.status(502).json({ error: {
         code: 'TOKEN_DISCARD_UNCONFIRMED',
         message: 'The consent is revoked, and the connector will not use its stored credentials, but clearing those credentials could not be confirmed. They may still be stored. Do not treat this as disconnected.' },
-        consent_revoked: true, tokens_discarded: false, data: saved[0] });
+        consent_revoked: true, already_revoked: alreadyRevoked, tokens_discarded: false, data: saved[0] });
       return;
     }
 

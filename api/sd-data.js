@@ -10418,6 +10418,7 @@ module.exports = async (req, res) => {
           body: JSON.stringify(row)
         });
         const saved = await w.json();
+        if (w.status === 404 || w.status === 400) return notProvisioned(res, w, 'The subcontractor roster is not set up yet — run sql/subcontractor_compliance_schema.sql in Supabase first.', saved);
         if (!w.ok) return upstream(res, saved);
         res.status(200).json({ ok: true, data: Array.isArray(saved) ? saved[0] : saved });
         return;
@@ -10527,6 +10528,7 @@ module.exports = async (req, res) => {
           body: JSON.stringify(row)
         });
         const saved = await w.json();
+        if (w.status === 404 || w.status === 400) return notProvisioned(res, w, 'Subcontractor assignments are not set up yet — run sql/subcontractor_compliance_schema.sql in Supabase first.', saved);
         if (!w.ok) return upstream(res, saved);
         res.status(200).json({ ok: true, data: subs.summariseAssignment(Array.isArray(saved) ? saved[0] : saved) });
         return;
@@ -10804,6 +10806,7 @@ module.exports = async (req, res) => {
           })
         });
         const saved = await w.json();
+        if (w.status === 404 || w.status === 400) return notProvisioned(res, w, 'The safety equipment register is not set up yet — run sql/sairnroofing_safety_schema.sql in Supabase first.', saved);
         if (!w.ok) return upstream(res, saved);
         res.status(200).json({ ok: true, data: Array.isArray(saved) ? saved[0] : saved });
         return;
@@ -10867,6 +10870,7 @@ module.exports = async (req, res) => {
           })
         });
         const saved = await w.json();
+        if (w.status === 404 || w.status === 400) return notProvisioned(res, w, 'Job hazard assessments are not set up yet — run sql/sairnroofing_safety_schema.sql in Supabase first.', saved);
         if (!w.ok) return upstream(res, saved);
         res.status(200).json({ ok: true, data: Array.isArray(saved) ? saved[0] : saved });
         return;
@@ -11122,6 +11126,7 @@ module.exports = async (req, res) => {
           body: JSON.stringify(bRow)
         });
         const saved = await w.json();
+        if (w.status === 404 || w.status === 400) return notProvisioned(res, w, 'The asset registry is not set up yet — run sql/sairnroofing_asset_registry_schema.sql in Supabase first.', saved);
         if (!w.ok) return upstream(res, saved);
         res.status(200).json({ ok: true, data: Array.isArray(saved) ? saved[0] : saved });
         return;
@@ -11244,6 +11249,7 @@ module.exports = async (req, res) => {
           })
         });
         const saved = await w.json();
+        if (w.status === 404 || w.status === 400) return notProvisioned(res, w, 'The asset registry is not set up yet — run sql/sairnroofing_asset_registry_schema.sql in Supabase first.', saved);
         if (!w.ok) return upstream(res, saved);
         res.status(200).json({ ok: true, data: Array.isArray(saved) ? saved[0] : saved });
         return;
@@ -11343,6 +11349,7 @@ module.exports = async (req, res) => {
           })
         });
         const saved = await w.json();
+        if (w.status === 404 || w.status === 400) return notProvisioned(res, w, 'Warranty tiers are not set up yet — run sql/sairnroofing_warranties_schema.sql in Supabase first.', saved);
         if (!w.ok) return upstream(res, saved);
         res.status(200).json({ ok: true, data: Array.isArray(saved) ? saved[0] : saved });
         return;
@@ -11409,6 +11416,7 @@ module.exports = async (req, res) => {
           })
         });
         const saved = await w.json();
+        if (w.status === 404 || w.status === 400) return notProvisioned(res, w, 'Job warranties are not set up yet — run sql/sairnroofing_warranties_schema.sql in Supabase first.', saved);
         if (!w.ok) return upstream(res, saved);
         res.status(200).json({ ok: true, data: Array.isArray(saved) ? saved[0] : saved });
         return;
