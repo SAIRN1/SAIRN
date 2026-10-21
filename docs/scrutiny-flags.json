@@ -2523,6 +2523,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/requirements.txt",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "3796b4468d0ecca7b3f88055fbbff6b3a07131b7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sairnbiz_preview_fixes.js",
    "class": "test file",
    "level": "CHANGE",
