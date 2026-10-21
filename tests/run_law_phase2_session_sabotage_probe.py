@@ -88,7 +88,14 @@ MUTATIONS = [
     ("4. THE CLIENT STOPS SENDING THE TOKEN -- the gate holds and the whole app "
      "starts answering 403, the shape SAIRNlegacy shipped on 2026-09-21",
      APP,
+     # WIDENED 2026-10-21 (Cody b44): bd836b641 gave lawCountersign() a
+     # byte-identical copy of these two lines, so the anchor matched twice.
+     # The `if(!lic)return` head is sdnData's alone; lawCountersign has none.
+     "  if(!lic)return Promise.resolve(null);\n"
+     "  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};\n"
      "  var tok=lawSessionToken();\n  if(tok)h['X-SD-Auth']=tok;\n",
+     "  if(!lic)return Promise.resolve(null);\n"
+     "  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};\n"
      "  var tok=null;\n  if(tok)h['X-SD-Auth']=tok;\n"),
 ]
 

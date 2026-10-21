@@ -84,7 +84,12 @@ MUTATIONS = [
     #    nobody cleaned up blocks work for ever -- the four-hour rule with the
     #    rule taken out, which is worse than having no row at all.
     ('a released or expired registry claim is treated as active', CLAIM,
+     # WIDENED 2026-10-21 (Cody b44): 331cebe3c gave own-claim reading a
+     # byte-identical copy of this line, so it matched twice. Only the
+     # registry fast path has it directly under `for sess, c in rows:`.
+     "    for sess, c in rows:\n"
      "        if not isinstance(c, dict) or c.get('status') != 'active':",
+     "    for sess, c in rows:\n"
      "        if not isinstance(c, dict):",),
 
     # 5. THE ONE THAT MATTERS MOST. publish_claims writes a row it does not
