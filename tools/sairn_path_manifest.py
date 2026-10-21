@@ -92,7 +92,7 @@ try:
 except Exception:                                                # noqa: BLE001
     EXIT_CLEAN, EXIT_FINDING, EXIT_COULD_NOT_RUN = 0, 1, 2
 
-CRITERIA_VERSION = '2026-10-19.1'
+CRITERIA_VERSION = '2026-10-21.1'
 MANIFEST = os.path.join('docs', 'sairn-path-manifest.json')
 
 # The verdicts. Each names the RULE that decided, because "refused" with no
@@ -146,13 +146,27 @@ def _norm(path):
 
 
 def _under(path, prefix):
-    """Is `path` inside `prefix`? Prefixes end in / and globs are globs."""
-    p = _norm(path)
-    if prefix.endswith('/'):
-        return p.startswith(prefix)
-    if '*' in prefix or '?' in prefix:
-        return fnmatch.fnmatch(p, prefix)
-    return p == prefix
+    """Is `path` inside `prefix`? Prefixes end in / and globs are globs.
+
+    CASE-FOLDED, BOTH SIDES, FOR EVERY RULE SHAPE (cc b33, hover2 seq 1067).
+    The prefix test was a case-SENSITIVE startswith, so one capital letter --
+    `docs/Hover-Evidence/x.md`, `API/sd-data.js` -- moved a path out of the
+    auditor's scope and out of every owner's prefix, and CHECK 5d allowed it.
+    On these clones (Windows, core.ignorecase=true) that spelling IS the same
+    directory, and git records whatever case is typed for a directory that
+    does not exist yet. And globs went through fnmatch.fnmatch, which normcases
+    on Windows only, so prefixes and globs disagreed and the verdict depended
+    on the platform. One rule now: casefold, then a case-exact comparison
+    (fnmatchcase), identical on every OS. Folding can only make a rule match
+    MORE paths, never fewer, so the auditor boundary refuses more, not less.
+    """
+    p = _norm(path).casefold()
+    rule = str(prefix).casefold()
+    if rule.endswith('/'):
+        return p.startswith(rule)
+    if '*' in rule or '?' in rule:
+        return fnmatch.fnmatchcase(p, rule)
+    return p == rule
 
 
 def classify(path, agent, manifest):
@@ -436,6 +450,34 @@ def run_fixtures():
        paths_from_argv(['--check', '--history', '200', 'a.html']), ['a.html'])
     ck('...and `--history` is still named in FLAGS_WITH_VALUES, which is what '
        'makes the arm above true', '--history' in FLAGS_WITH_VALUES, True)
+
+    # ── ONE SHIFT KEY MUST NOT CROSS A BOUNDARY (b33, hover2 seq 1067) ──────
+    # FAILING-FIRST: every arm below except the two controls was ALLOWED by
+    # the pre-b33 _under() -- a case-sensitive startswith for prefixes and a
+    # Windows-only normcase for globs.
+    M2 = dict(M, auditor_paths=['.claude/skills/sairn-hover-auditor/',
+                                'docs/hover-evidence/', 'docs/hover-audit-log/'])
+
+    def v2(path, agent):
+        return classify(path, agent, M2)[0]
+    ck('CASE: fourth + docs/Hover-Evidence/x.md is AUDITOR, as lower-case is',
+       v2('docs/Hover-Evidence/x.md', 'fourth'), AUDITOR)
+    ck('CASE: fourth + docs/HOVER-AUDIT-LOG/x.md is AUDITOR',
+       v2('docs/HOVER-AUDIT-LOG/x.md', 'fourth'), AUDITOR)
+    ck('CASE: cc + .claude/skills/Sairn-Hover-Auditor/SKILL.md is AUDITOR',
+       v2('.claude/skills/Sairn-Hover-Auditor/SKILL.md', 'cc'), AUDITOR)
+    ck('CASE: hank + TOOLS/x.py is FOREIGN, not UNOWNED',
+       v('TOOLS/x.py', 'hank'), FOREIGN)
+    ck('CASE: cc + API/sd-data.js is FOREIGN, not UNOWNED',
+       v('API/sd-data.js', 'cc'), FOREIGN)
+    ck('CASE, GLOB: hank + foo.HTML is FOREIGN -- globs and prefixes now fold '
+       'the same way on every platform', v('foo.HTML', 'hank'), FOREIGN)
+    ck('CASE, PREFIX: hank + Docs/x.md is FOREIGN -- the same rule as the glob',
+       v('Docs/x.md', 'hank'), FOREIGN)
+    ck('CONTROL: the OWNER is not refused by folding -- cc + TOOLS/x.py is '
+       'OWNED', v('TOOLS/x.py', 'cc'), OWNED)
+    ck('CONTROL: fourth + docs/x.md stays OWNED under the wider auditor list',
+       v2('docs/x.md', 'fourth'), OWNED)
 
     print('  %d/%d arms classify correctly' % (total - bad, total))
     return EXIT_FINDING if bad else EXIT_CLEAN
