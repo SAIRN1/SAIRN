@@ -1,0 +1,13 @@
+REPORT -- cody b41, 2026-10-21
+
+ITEM 1 -- ANSWERED: none of the 5 Bash entries were "already present". All 5 were stored as ONE deny entry (entry 8, verbatim):
+  'Bash(*SAIRN-hover*),Bash(*sairn-hover2*),Bash(*sairn-hover/*),Bash(*sairn-hover\*),Bash(*sairn-hover*)'
+  Cause: the b40 handoff's command ran fix-deny.ps1 with -File. Under -File, PowerShell passes "a","b",... as one string, not an array. So 8 + 1 = 9. The b40 command was my error.
+  REPRODUCED with a scratchpad test script: -File gives count=1; -Command "& 'script' -Entries 'a','b',..." gives count=5.
+  fix-deny.ps1 line 14 is already -cnotcontains, so nothing was dropped for case.
+ITEM 2 -- NOT DONE: 8 read-only "test -d" probes (all 5 variants, against SAIRN-hover and SAIRN-hover2) ALL RAN. None was denied.
+  The joined entry only matches a command containing the literal text "),Bash(", so in effect it is inert.
+  The fix (fix-deny.ps1 via -Command) was DENIED by the harness: the third time (b34, b40, b41). No retry, no workaround.
+  Michael: run the ! command in SAIRN-handoff-cody-b41.md (it uses -Command), expect 14, restart. Optional cleanup command there brings it to 13.
+  Not verified: whether other clones' deny lists carry the same joined entry. I did not read them.
+ITEM 3 -- Only the b41 handoff, report and digest changed. Pushed with no --force.
