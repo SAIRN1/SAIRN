@@ -17165,7 +17165,40 @@ module.exports = async (req, res) => {
       }
       const wRows = await w.json().catch(function () { return null; });
       if (!w.ok) return upstream(res, wRows);
-      res.status(200).json({ ok: true, provisioned: true, data: {
+
+      // ── THE AUDIT ROW (hank b46) ──────────────────────────────────────
+      // CONCEPT: every settings change that is actually SAVED writes one row
+      // to sairnlegacy_audit_log naming the owner, the time (the table's
+      // created_at) and each changed field's before -> after. A failed log
+      // write never undoes the save -- the same best-effort posture as every
+      // other api/_lib/audit.js caller -- but the answer says `audited:false`
+      // instead of implying a trail exists. A refused write returned above and
+      // logs nothing; a write that changes nothing logs nothing
+      // (`audited:null`). 'settings_changed' needs
+      // sql/sairnlegacy_audit_log_settings_event.sql; until that runs the
+      // table's CHECK refuses it and the answer is audited:false.
+      const before = {
+        livery_billing: legRoles.liveryBilling(row && row.livery_billing),
+        apprentice: { countersign: stored.countersign, forbidden: stored.forbidden,
+                      presence_disclosure: stored.presence_disclosure },
+        livery_grants: storedGrants
+      };
+      const after = { livery_billing: billing, apprentice: apprentice,
+                      livery_grants: hasGrantsCol ? grants : storedGrants };
+      const changed = {};
+      Object.keys(after).forEach(function (k) {
+        if (JSON.stringify(before[k]) !== JSON.stringify(after[k])) changed[k] = { from: before[k], to: after[k] };
+      });
+      let audited = null;
+      if (Object.keys(changed).length) {
+        audited = await require('./_lib/audit').writeAuditLog(SUPABASE_URL, SERVICE_KEY, {
+          license_hash: licHash, employee_id: setSess.employee_id, role: setSess.role,
+          event_type: 'settings_changed', table: 'sairnlegacy_audit_log',
+          detail: { resource: 'leg_settings', first_save: !row, changed: changed }
+        });
+      }
+
+      res.status(200).json({ ok: true, provisioned: true, audited: audited, data: {
         livery_billing: billing, apprentice: legRoles.apprenticePolicy(apprentice),
         livery_grants: hasGrantsCol ? grants : {}, grants_supported: hasGrantsCol, saved: true,
         updated_by: body.updated_by, updated_at: body.updated_at } });

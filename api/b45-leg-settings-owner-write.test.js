@@ -43,9 +43,15 @@ function section(t) { console.log('\n' + t); }
 // sql/sairnlegacy_settings_livery_grants.sql is run: PostgREST answers 400
 // 42703 for a select naming the column.
 function makeStore(opts) {
-  const s = { row: (opts && opts.row) || null, noGrantsCol: !!(opts && opts.noGrantsCol), writes: [] };
+  const s = { row: (opts && opts.row) || null, noGrantsCol: !!(opts && opts.noGrantsCol), writes: [],
+              audits: [], auditStatus: (opts && opts.auditStatus) || 201 };
   s.fetch = async function (url, o) {
     const u = String(url);
+    if (/sairnlegacy_audit_log/.test(u) && o && o.method === 'POST') {
+      s.audits.push(JSON.parse(o.body));
+      const ok = s.auditStatus < 300;
+      return { ok: ok, status: s.auditStatus, text: async () => (ok ? '' : '{"code":"23514"}'), json: async () => ({}) };
+    }
     if (/_employee_auth\?/.test(u)) {
       return { ok: true, status: 200, json: async () => [{ license_hash: HASH, employee_id: s.emp, role: s.role, active: true }] };
     }
@@ -107,6 +113,18 @@ async function armOwnerOnly(src) {
     const r = await call(s, role, 'write', { livery_billing: 'direct_to_family' }, src);
     assert.deepStrictEqual([r.statusCode, code(r), s.writes.length], [403, 'FORBIDDEN', 0], role + ' was not refused');
   }
+}
+// b46: a changing save writes ONE audit row naming the owner and each change.
+async function armAuditRow(src) {
+  const s = makeStore();
+  const r = await call(s, 'owner', 'write', { livery_billing: 'direct_to_family' }, src);
+  assert.strictEqual(r.statusCode, 200, JSON.stringify(r.body));
+  assert.strictEqual(s.audits.length, 1, 'audit rows written: ' + s.audits.length);
+  const a = s.audits[0];
+  assert.deepStrictEqual([a.license_hash, a.employee_id, a.role, a.event_type, a.detail.resource, a.detail.first_save,
+    a.detail.changed.livery_billing, Object.keys(a.detail.changed), r.body.audited],
+    [HASH, 'emp-owner', 'owner', 'settings_changed', 'leg_settings', true,
+     { from: 'through_the_home', to: 'direct_to_family' }, ['livery_billing'], true]);
 }
 async function armNeverGrantable(src) {
   const s = makeStore();
@@ -224,7 +242,41 @@ async function armNeverGrantable(src) {
     ], [legRoles.DENY, legRoles.ALLOW]);
   });
 
+  section('A. THE AUDIT ROW (b46)');
+  await test('A1. a changing save writes ONE settings_changed row: owner, licence, field from -> to; audited:true', function () { return armAuditRow(SD_SRC); });
+  await test('A2. a REFUSED write writes no audit row', async function () {
+    const s = makeStore();
+    await call(s, 'owner', 'write', { livery_billing: 'both' });
+    assert.deepStrictEqual([s.writes.length, s.audits.length], [0, 0]);
+  });
+  await test('A3. a save that changes NOTHING writes no audit row and answers audited:null', async function () {
+    const s = makeStore({ row: { livery_billing: 'direct_to_family', apprentice: { countersign: [], forbidden: [], presence_disclosure: true }, livery_grants: {} } });
+    const r = await call(s, 'owner', 'write', { livery_billing: 'direct_to_family' });
+    assert.deepStrictEqual([r.statusCode, s.writes.length, s.audits.length, r.body.audited], [200, 1, 0, null]);
+  });
+  await test('A4. a FAILED audit insert (e.g. the CHECK before the b46 SQL runs) does not undo the save; answers audited:false', async function () {
+    const s = makeStore({ auditStatus: 400 });
+    const r = await call(s, 'owner', 'write', { livery_billing: 'direct_to_family' });
+    assert.deepStrictEqual([r.statusCode, s.writes.length, s.audits.length, r.body.audited], [200, 1, 1, false]);
+  });
+  await test('A5. a refused role writes no audit row', async function () {
+    const s = makeStore();
+    await call(s, 'director', 'write', { livery_billing: 'direct_to_family' });
+    assert.strictEqual(s.audits.length, 0);
+  });
+  await test('A6. the SQL that admits settings_changed exists and restates the five existing values', function () {
+    const sql = fs.readFileSync(path.join(__dirname, '..', 'sql', 'sairnlegacy_audit_log_settings_event.sql'), 'utf8');
+    ['pin_bootstrap', 'pin_setup', 'credential_deactivated', 'credential_reactivated',
+     'credential_change_refused', 'settings_changed'].forEach(function (v) {
+      assert.ok(sql.indexOf("'" + v + "'") !== -1, v + ' missing from the CHECK');
+    });
+  });
+
   section('M. MUTANTS on api/sd-data.js -- each must turn its arm red');
+  await test('M3. replace the audit write with a stub that claims success -> A1 red', function () {
+    return mustFail(armAuditRow, mutate("require('./_lib/audit').writeAuditLog(SUPABASE_URL, SERVICE_KEY, {",
+      '(async function () { return true; })({'), 'stubbed audit write');
+  });
   function mutate(from, to) {
     const n = SD_SRC.split(from).length - 1;
     if (n !== 1) throw new Error('mutant anchor found ' + n + ' times');
