@@ -4515,6 +4515,24 @@
         "docs/tier-a-reviews.json",
         "sairnbiz.html"
       ]
+    },
+    {
+      "id": "fourth-1792597625",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "b47: sairnbiz Z8 display; geocode server arms under api/ (cc b34 gap); push; deliverables.  FILES: sairnbiz.html api/b46-route-geocode.test.js docs/tier-a-reviews.json SAIRN-handoff-fourth-b47.md SAIRN-report-fourth-b47.txt SAIRN-digest-fourth-b47.txt NOT-stonedesk-html NOT-api-route-map-js NOT-tools",
+      "claimed_at": "2026-10-21T15:47:05Z",
+      "claimed_at_epoch": 1792597625.28484,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b47.txt",
+        "SAIRN-handoff-fourth-b47.md",
+        "SAIRN-report-fourth-b47.txt",
+        "api/b46-route-geocode.test.js",
+        "docs/tier-a-reviews.json",
+        "sairnbiz.html"
+      ]
     }
   ],
   "refusals": [
