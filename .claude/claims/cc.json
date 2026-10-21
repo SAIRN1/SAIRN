@@ -4518,6 +4518,25 @@
         "SAIRN-handoff-cc-b37.md",
         "SAIRN-report-cc-b37.txt"
       ]
+    },
+    {
+      "id": "cc-1792602137",
+      "session": "cc",
+      "subject": "cc",
+      "task": "b38: platform-wide deleted-employee-row refusal in the sd-data pre-gate (RESOURCE_NAMES_BY_APP as expected app), runtime arms; Tier A review hank 2026-10-21T16:17:56Z  FILES: api/sd-data.js api/b38-deleted-row-platform.test.js docs/tier-a-reviews.json docs/sairn-path-manifest.json SAIRN-handoff-cc-b38.md SAIRN-report-cc-b38.txt SAIRN-digest-cc-b38.txt NOT-html NOT-sql",
+      "claimed_at": "2026-10-21T17:02:17Z",
+      "claimed_at_epoch": 1792602137.4819658,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-cc-b38.txt",
+        "SAIRN-handoff-cc-b38.md",
+        "SAIRN-report-cc-b38.txt",
+        "api/b38-deleted-row-platform.test.js",
+        "api/sd-data.js",
+        "docs/sairn-path-manifest.json",
+        "docs/tier-a-reviews.json"
+      ]
     }
   ],
   "refusals": [
