@@ -4334,6 +4334,20 @@
       "status": "released",
       "released_at": "2026-10-21T18:05:43Z",
       "files": null
+    },
+    {
+      "id": "cody-1792611617",
+      "session": "cody",
+      "subject": "platform",
+      "task": "b46 CHECK 5e reads the pushed tip and names unguarded probes; the one-line cody override in the path manifest waits for fourth b52 to release that file  FILES: tools/sairn_push_gate_hook.py tools/mutation_anchor_check.py",
+      "claimed_at": "2026-10-21T19:40:17Z",
+      "claimed_at_epoch": 1792611617.446341,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "tools/mutation_anchor_check.py",
+        "tools/sairn_push_gate_hook.py"
+      ]
     }
   ],
   "refusals": [
@@ -4688,6 +4702,21 @@
       "other_claimed_at": "2026-10-20T11:18:37Z",
       "shared_files": [
         "docs/defect-density-register.json"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-21T19:39:30Z",
+      "my_subject": "platform",
+      "my_task": "b46 CHECK 5e reads the pushed tip and names unguarded probes FILES: tools/sairn_push_gate_hook.py tools/mutation_anchor_check.py docs/sairn-path-manifest.json",
+      "other_session": "fourth",
+      "other_subject": "fourth",
+      "other_task": "b52: NVDA run readout sairndental, a11y pass + fixes on sairnvet.  FILES: sairnvet.html sairndental.html tests/sairnvet_a11y_pass.js tests/sairndental_a11y_pass.js docs/sairn-path-manifest.json SAIRN-handoff-fourth-b52.md SAIRN-report-fourth-b52.txt SAIRN-digest-fourth-b52.txt NOT-api",
+      "other_claimed_at": "2026-10-21T19:39:24Z",
+      "shared_files": [
+        "docs/sairn-path-manifest.json"
       ],
       "source": "status-registry",
       "why": "same declared FILES",
