@@ -1,0 +1,20 @@
+HANK b39 REPORT -- 2026-10-21
+
+1. NPM INSTALL BLOCK -- ROOT-CAUSED, HELD (not scoped to hank alone).
+   Concept: a deny that lives in a layer every clone shares cannot be fixed by one clone; the diagnosis names
+   the layer and the decision that put it there, and stops.
+   REPRODUCED: npm install --dry-run -> "Permission to use Bash with command npm install --dry-run has been
+   denied." (dry run writes nothing).
+   CAUSE: the same 12 package-install deny rules (npm install/i/ci/add, yarn add, pnpm add, pip/pip3/python -m
+   pip/py -m pip install) are in BOTH
+     - ~/.claude/settings.json permissions.deny   (user level: every session, every clone)
+     - .claude/settings.json permissions.deny     (tracked: every clone on main, hover clones included)
+   and none in .claude/settings.local.json. Added by 392249206 (2026-10-13, cc b5, on Michael's instruction).
+   Deny wins at every level; an allow cannot carve an exception. So no hank-local change can unblock it, and
+   removing either entry unblocks every session -> not a one-line hank fix -> HELD, no change made.
+   No hank transcript, handoff or report records hank needing npm install.
+
+2. DECISION (Michael): keep the deny (b5 intent) or name the one install to run by hand. Lifting requires
+   removing it from BOTH layers.
+
+3. PUSH: these three docs only, not forced; landing confirmed against origin/main after fetch.

@@ -1,0 +1,13 @@
+HANK b39 DIGEST -- 2026-10-21 -- root cause of hank's npm install block; held
+CONTEXT 12.5% of 1,000,000 -- 125,411 tokens, measured.
+STATUS: docs only, NOT FORCED. No code or settings change.
+1. Reproduced: npm install --dry-run denied (dry run writes nothing).
+2. Cause: 12 install deny rules in BOTH ~/.claude/settings.json and tracked .claude/settings.json.
+   Added 392249206 (2026-10-13, cc b5, Michael's instruction). None in settings.local.json.
+3. Deny wins at every level: no hank-only fix exists; removing either unblocks every session -> HELD.
+4. No record of hank actually needing npm install.
+DECISION-NEEDED (Michael): keep the deny, or run the one needed install by hand.
+NEXT: handoff sec.4 -- N1, H2, H3, C, B, D.
+CHANGED: these three docs only.
+EVIDENCE-path: SAIRN-handoff-hank-b39.md, SAIRN-report-hank-b39.txt
+UNVERIFIED: what H2's separate user-level instance was blocked running.
