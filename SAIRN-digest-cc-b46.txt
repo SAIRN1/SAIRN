@@ -1,0 +1,23 @@
+DIGEST cc b46
+STATUS: 4 of 4 closed; CHECK 5f landed (2cfd5b17); no --force, NO OVERRIDE.
+ITEM 1 (methodology, for all builders): a dependency installed is not verified until its resolution is checked against the lock, every time.
+ITEM 2: new tools/dependency_integrity_check.py covers package.json+lock and the three requirements.txt files:
+  DECLARED, MISSING, DRIFT (exact), SHADOW (a node_modules above the clone), LOADS (resolves outside the clone); pip MISSING/DRIFT/SHADOW/LOADS.
+  Fixtures 10/10. Real tree CLEAN. Mutation (installed firebase-admin -> 12.7.0) -> DRIFT, exit 1.
+  Push-gate CHECK 5f, gate dependency-integrity (WIRED), scoped by --paths to the manifests a push depends on.
+  Denies on findings and on COULD NOT RUN. Driven: clean -> ALLOW; drifted -> DENY; drifted + .md -> ALLOW.
+  Gate selftest 56/56.
+  firebase-admin restored -- cmp byte-identical to the pre-test 13.10.0. A full --preflight was NOT completed (>10 min; stopped before its mutation).
+ITEM 3: cody's CHECK 5e SOUND -- fails closed; parsed fields and path shapes verified against both tools' live --json.
+  GAP: probe_anchor_freshness 'skipped' anchors are neither denied nor printed (1 probe, 3 anchors today). Routed to cody.
+ITEM 4: pushed (commit hook required a PURPOSES entry; the derived-docs gate required TOOLING-INVENTORY -- both done). 0/0.
+DECISION-NEEDED: none. (hank/cody/fourth must npm ci once; until then 5f DENIES their SDK-touching pushes -- intended.)
+CHANGED: tools/dependency_integrity_check.py (new), sairn_push_gate_hook.py, gate_skip.py, tooling_inventory.py; docs/TOOLING-INVENTORY.md.
+SQL: none.
+EVIDENCE-path: SAIRN-report-cc-b46.txt, SAIRN-handoff-cc-b46.md, python tools/dependency_integrity_check.py
+UNVERIFIED: CHECK 5f inside a full --preflight run (driven through its exact call and predicate instead).
+ROUTED: cody -- 5e 'skipped'. hank/cody/fourth -- npm ci --ignore-scripts --no-audit --no-fund once.
+NEXT: nothing owed by cc on the Tier A ledger.
+CONTEXT 73.3% of 1,000,000 -- 733,064 tokens, measured.
+SHA256 6099384a5e49c66977dfa289cac7cfa23bbad020f68fdd9ad47c9c7ba5806889
+END-OF-REPORT

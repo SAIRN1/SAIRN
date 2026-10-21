@@ -1,0 +1,53 @@
+REPORT cc b46
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-21
+RANGE     from the b46 CHECK 5f commit to origin/main (landed at 2cfd5b17). No --force, NO OVERRIDE, no BYPASS-LOG row.
+
+== 1. METHODOLOGY (shared with hank/cody/fourth) ==
+A dependency installed is not verified until its resolution is checked against the lock, every single time.
+A stale global copy or a differently-versioned local install masks real test results indefinitely.
+Measured instance: the home-directory firebase-admin 12.7.0 and stripe answered three clones' tests while the lock said 13.10.0 (cc b44/b45).
+
+== 2. tools/dependency_integrity_check.py (new) + CHECK 5f ==
+npm: DECLARED (package.json deps != lock root), MISSING, DRIFT (exact version vs lock),
+  SHADOW (a node_modules in any ancestor of the clone), LOADS (node require.resolve from api/_lib lands outside <clone>/node_modules).
+pip (tools/, tests/, docs/ requirements.txt; sys.executable): MISSING, DRIFT (< >= floor or != == pin), SHADOW (>1 distribution), LOADS (find_spec origin not under the checked distribution).
+Exit 0/1/2 (2 = COULD NOT RUN, including an unparseable requirements line). --paths scopes; --json; --fixtures.
+CRITERIA LOCK 10/10: npm match, DRIFT (exact), MISSING, DECLARED, ancestor SHADOW; three version-order cases (incl. 13.10.0 > 13.9.0); requirements parsing incl. an unparseable line reported.
+REAL TREE: CLEAN (all four manifests).
+MUTATION on the real install: node_modules/firebase-admin/package.json version set to 12.7.0 -> DRIFT, exit 1. Restored -> CLEAN.
+SCOPE (--paths): api/_lib/firebase-admin.js -> npm; api/sd-data.js -> none; tools/sairn_source_fetch.py -> tools/requirements.txt;
+  tools/sairn_status_line.py -> none; tests/run_cron_liveness_probe.py -> tests/requirements.txt;
+  docs/...b18 render script -> docs/requirements.txt; package-lock.json -> npm; docs/requirements.txt -> itself; a .md -> none.
+CHECK 5f in tools/sairn_push_gate_hook.py; gate 'dependency-integrity' in tools/gate_skip.py GATES (gate_skip --gates: WIRED).
+  Denies on findings, a missing tool, an exception, unparseable JSON, rc not in (0,1), or a JSON exit != rc.
+DRIVEN with 5f's exact invocation and predicate:
+  clean   + api/_lib/firebase-admin.js -> ALLOW (scope npm)
+  drifted + api/_lib/firebase-admin.js -> DENY  [DRIFT node_modules/firebase-admin]
+  drifted + SAIRN-handoff-cc-b46.md    -> ALLOW (scope empty)
+push gate --selftest 56/56; gate_skip --fixtures 14/14; py_compile clean.
+NOT RUN: a full push-gate --preflight with a faked outgoing list. It runs every check (>10 min). I stopped it during its FIRST (clean) pass, before its mutation step ran.
+RESTORE: node_modules/firebase-admin/package.json is cmp byte-identical to the backup taken before any mutation (13.10.0).
+The commit hook required a PURPOSES entry (tools/tooling_inventory.py), added. The derived-docs gate required docs/TOOLING-INVENTORY.md, regenerated.
+
+== 3. REVIEW: cody's CHECK 5e (5cbb4bbf) -- SOUND, one gap ==
+Fails closed: missing tool, exception, unparseable JSON, rc outside 0-2, or rc != 0 with nothing attributable -> deny. gate='probe-anchors' is in GATES.
+Parsed fields checked against live --json: mutation_anchor_check arms[{probe,target,arm,matches}] (532 arms);
+  probe_anchor_freshness {vanished, ambiguous, miscounted, unreadable} rows {probe, subject, count, anchor}.
+  Paths are repo-relative with forward slashes, matching the outgoing list, so attribution is real. Both tools exit 0 at HEAD.
+deny() collects in COLLECT mode and exits otherwise, so the `continue` after it is meaningful.
+GAP (routed to cody): probe_anchor_freshness 'skipped' (anchors that are not a resolvable literal) is never denied nor printed by 5e.
+  Today: tests/run_adversarial_prompt_corpus_probe.py, 3 anchors -- invisible to the gate.
+MINOR: JSON is sliced from the first '{' in stdout; a '{' in a fixture label would read as COULD NOT RUN (fails safe). Two tools at up to 300s each.
+
+== OPEN ==
+cody: surface 5e 'skipped'. hank/cody/fourth: npm ci --ignore-scripts --no-audit --no-fund once per clone.
+  Until then CHECK 5f DENIES their pushes that touch SDK-dependent files (MISSING). That is intended fail-closed behaviour.
+
+== CHANGED ==
+tools/dependency_integrity_check.py (new); tools/sairn_push_gate_hook.py; tools/gate_skip.py; tools/tooling_inventory.py;
+docs/TOOLING-INVENTORY.md (regenerated); docs/scrutiny-flags.json (gate rows); the deliverables.
+
+SHA256 b60ea90d0e63440f4d8ad04721ca1230140415afe894960ccbdb08a6badb6679
+END-OF-REPORT
