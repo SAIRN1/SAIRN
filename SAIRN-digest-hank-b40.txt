@@ -1,0 +1,12 @@
+HANK b40 DIGEST -- 2026-10-21 -- cody b35 defects 5 and 6 fixed in stonedesk.html, live
+CONTEXT 23.1% of 1,000,000 -- 231,392 tokens, measured.
+STATUS: 9f9cf9235 + 5046eef56 on origin/main, NOT FORCED. Live page carries the fix.
+1. Defect 6: style profile now reads via sdDataEnvelope (sdData returns j.data only).
+2. Defect 5: quote-request rows with photos show Photos (N) -> request_photos on click.
+3. Test 11/0; pre-fix control 1/10; syntax 132/0; all stonedesk suites exit 0.
+4. Gates satisfied, none skipped: register, path-scope (test moved to api/), Tier A, derived docs.
+DECISION-NEEDED (Michael): none.
+NEXT: cc discharges Tier A on sd_quote_requests; someone drives Photos with a real session.
+CHANGED: stonedesk.html, api/b40-stonedesk-style-profile-request-photos.test.js, 4 derived docs.
+EVIDENCE-path: SAIRN-handoff-hank-b40.md, SAIRN-report-hank-b40.txt
+UNVERIFIED: behaviour with a real signed-in session (code-presence verified live only).
