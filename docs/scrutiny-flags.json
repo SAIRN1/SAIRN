@@ -337,6 +337,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b48-sen-straight-time-floor-coverage.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "040ac5a954905d46aaf36d3c7e7a7a538c29d039",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/ai-safeguards.test.js",
    "class": "test file",
    "level": "WEAKENING",

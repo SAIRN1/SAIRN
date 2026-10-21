@@ -1,0 +1,25 @@
+HANK b48 REPORT -- 2026-10-21
+
+1. leg_settings AUDIT ROWS, READ FROM THE DATABASE -- CLOSED.
+   Supabase sairn-platform (ejrlrrkvhtllxbbypdjb), read-only select on public.sairnlegacy_audit_log for
+   sha256(LEG-PINNACLE-2026), event_type settings_changed: exactly 2 rows, sairn-demo-owner / owner,
+   resource leg_settings, first_save false:
+     19:43:50.84  livery_billing through_the_home -> direct_to_family; livery_grants {} -> {b46-live-check-driver}
+     19:43:52.08  the exact reverse (restore)
+   No rows from b46 (audited:false before the CHECK migration) -- consistent.
+
+2. STRAIGHT-TIME FLOOR COVERAGE -- ADDED (test only).
+   Concept: the floor stays a floor in every shape -- priced at the visit's own rate, never negative or netted,
+   names its closed period, lands in exactly one later run, flags a possible premium rather than computing one.
+   api/b48-sen-straight-time-floor-coverage.test.js 23/0:
+     O overtime/multi-rate (engine): 2200c adjustment + premium flag on a 42h $18->$22 week; 1800c overpayment
+       not netted; 39h+2h true; 30h+1h null; weighted regular rate in the open run; 86410c mixed-rate OT week
+     P multiple closed periods (engine): each adjustment names its own period; exactly-one-run; pre-paid approval
+       never adjusts
+     G multiple agencies + reopen (real handler): same ids, only the closing agency adjusts; all reads licence-
+       scoped; reopened period freezes nothing
+     M five mutants, each red
+   Siblings: b17 11/0, b16 17/0, sen-payroll 27/0.
+   NOT DONE: SAIRNlaw trust-lock extension (its limit is one licence/paralegal, a different shape); no live run.
+
+3. PUSH: 040ac5a95 (test) + bec26b60e (Tier A -> cc, derived docs) on origin/main, not forced.

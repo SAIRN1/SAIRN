@@ -1,0 +1,14 @@
+HANK b48 DIGEST -- 2026-10-21 -- audit rows read from the DB; straight-time floor coverage widened
+CONTEXT 60.4% of 1,000,000 -- 603,816 tokens, measured.
+STATUS: 040ac5a95 (test) + bec26b60e (Tier A, derived docs) on origin/main, NOT FORCED.
+1. DB read: exactly 2 settings_changed rows for LEG-PINNACLE-2026, owner, correct before/after.
+2. Floor test 23/0: overtime + mid-week rate change, two closed periods, two agencies, reopen.
+3. Adjustments priced at the visit's own rate; premium flagged, never computed; never netted.
+4. Each correction lands in exactly one run; reads are scoped to each agency's licence.
+5. Five mutants (4 engine, 1 handler) each turn their arm red. No product code changed.
+6. Trust-lock (SAIRNlaw) not extended: its limit is a different shape. No live run.
+DECISION-NEEDED (Michael): was "trust-lock" meant as a separate SAIRNlaw item?
+NEXT: cc Tier A on 040ac5a95 and 38b2b5069; live run of the new shapes if authorised.
+CHANGED: api/b48-sen-straight-time-floor-coverage.test.js, 3 docs.
+EVIDENCE-path: SAIRN-handoff-hank-b48.md, SAIRN-report-hank-b48.txt
+UNVERIFIED: the O/P shapes on the deployed pay run (engine and handler driven locally only).
