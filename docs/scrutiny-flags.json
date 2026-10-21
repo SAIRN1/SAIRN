@@ -11797,6 +11797,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b37-accounting-revoke-scope.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ed1b6a1d39ec107e2f5e176ea5ce9228ec11eb52",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b37-routed-arms.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ed1b6a1d39ec107e2f5e176ea5ce9228ec11eb52",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/greeting.test.js",
    "class": "test file",
    "level": "CHANGE",
