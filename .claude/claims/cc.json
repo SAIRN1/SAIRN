@@ -4472,6 +4472,21 @@
         "SAIRN-report-cc-b34.txt",
         "docs/tier-a-reviews.json"
       ]
+    },
+    {
+      "id": "cc-1792597336",
+      "session": "cc",
+      "subject": "cc",
+      "task": "b35: read-only Tier A review of cody 15:12:12Z (b35) and scp-licence-only red provenance; ledger discharge write waits on fourth's hold  FILES: SAIRN-handoff-cc-b35.md SAIRN-report-cc-b35.txt SAIRN-digest-cc-b35.txt NOT-api NOT-html NOT-sql NOT-tests",
+      "claimed_at": "2026-10-21T15:42:16Z",
+      "claimed_at_epoch": 1792597336.6828442,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-cc-b35.txt",
+        "SAIRN-handoff-cc-b35.md",
+        "SAIRN-report-cc-b35.txt"
+      ]
     }
   ],
   "refusals": [
@@ -4755,6 +4770,36 @@
       "other_claimed_at": "2026-10-21T12:07:26Z",
       "shared_files": [
         "docs/defect-density-register.json"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-21T15:41:41Z",
+      "my_subject": "cc",
+      "my_task": "b35: Tier A review cody 2026-10-21T15:12:12Z b35 roofing 503s + accounting revoke; scp-licence-only red provenance  FILES: docs/tier-a-reviews.json SAIRN-handoff-cc-b35.md SAIRN-report-cc-b35.txt SAIRN-digest-cc-b35.txt NOT-api NOT-html NOT-sql NOT-tests",
+      "other_session": "fourth",
+      "other_subject": "fourth",
+      "other_task": "b47: sairnbiz Z8 display (run lines, pay date, CSV, 516.2(a)(4)/(a)(5)) Tier A row; push; deliverables.  FILES: sairnbiz.html docs/tier-a-reviews.json SAIRN-handoff-fourth-b47.md SAIRN-report-fourth-b47.txt SAIRN-digest-fourth-b47.txt NOT-stonedesk-html NOT-api NOT-tools NOT-tests",
+      "other_claimed_at": "2026-10-21T15:37:37Z",
+      "shared_files": [
+        "docs/tier-a-reviews.json"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-21T15:41:51Z",
+      "my_subject": "cc",
+      "my_task": "b35: Tier A review cody 2026-10-21T15:12:12Z b35 roofing 503s + accounting revoke; scp-licence-only red provenance  FILES: docs/tier-a-reviews.json SAIRN-handoff-cc-b35.md SAIRN-report-cc-b35.txt SAIRN-digest-cc-b35.txt NOT-api NOT-html NOT-sql NOT-tests",
+      "other_session": "fourth",
+      "other_subject": "fourth",
+      "other_task": "b47: sairnbiz Z8 display (run lines, pay date, CSV, 516.2(a)(4)/(a)(5)) Tier A row; push; deliverables.  FILES: sairnbiz.html docs/tier-a-reviews.json SAIRN-handoff-fourth-b47.md SAIRN-report-fourth-b47.txt SAIRN-digest-fourth-b47.txt NOT-stonedesk-html NOT-api NOT-tools NOT-tests",
+      "other_claimed_at": "2026-10-21T15:37:37Z",
+      "shared_files": [
+        "docs/tier-a-reviews.json"
       ],
       "source": "status-registry",
       "why": "same declared FILES",
