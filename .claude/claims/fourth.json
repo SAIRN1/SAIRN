@@ -4541,8 +4541,8 @@
       "task": "b48: dental DEA keying (api/_lib/dental-credentials.js), server gfeMissing snapshot read (api/_lib/dental-gfe.js), Field Map lock kept on installer/date change + real-click lock test.  FILES: api/_lib/dental-credentials.js api/_lib/dental-gfe.js stonedesk.html sairndental.html api/b48-dental-dea-gfe.test.js docs/tier-a-reviews.json docs/sairn-path-manifest.json SAIRN-handoff-fourth-b48.md SAIRN-report-fourth-b48.txt SAIRN-digest-fourth-b48.txt",
       "claimed_at": "2026-10-21T16:31:21Z",
       "claimed_at_epoch": 1792600281.9492326,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T16:50:04Z",
       "files": [
         "SAIRN-digest-fourth-b48.txt",
         "SAIRN-handoff-fourth-b48.md",
