@@ -8325,6 +8325,32 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-10-21T17:13:48Z",
+      "opened_at_sha": "ce083705a9b7f87f52e3a20c2536431ca3f58632",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 3,
+      "resources": [
+        "alf_clients",
+        "employees",
+        "rf_jobs",
+        "sd_quote_requests",
+        "sen_clients"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/b38-deleted-row-platform.test.js"
+      ],
+      "what": "cc b38: api/sd-data.js pre-gate -- a DELETED employee row is now refused 403 CREDENTIAL_INACTIVE on EVERY registered resource (expected app = OWNER_BY_RESOURCE; shared/routes follow the caller's app_id like memory), Michael's platform-wide decision. Was: 323 registered resources answered 200 and read data for a deleted employee's token. api/b38-deleted-row-platform.test.js 1184/1184 (old code 330 red); full api suite before/after: only api/_lib/routes.test.js changed (stale blanket-[] mock, one line fixed). REVIEWER, try to break: (1) any real flow whose valid token has no row in its own app's *_employee_auth table -- every bootstrap was read as inserting before minting, sf-auth and sv-auth included; (2) a shared/routes resource where trusting body.app_id lets a deleted row through or refuses a live one; (3) an app whose auth table keys on something other than employee_id; (4) the cross-app X arms -- a wrong-app token must still get the branch's answer, not CREDENTIAL_INACTIVE.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-10-21T17:13:48Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
