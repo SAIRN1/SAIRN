@@ -4,7 +4,7 @@
 this clone's deny list. No application code changed. Written before the report, nothing half-finished.
 
 ## 1. PUSHED STATE
-This batch commits only these three documents, rebased onto `c71917d62` (re-derive the tip after the push).
+This batch commits only these three documents, rebased onto `812476c50` (re-derive the tip after the push).
 **NOT FORCED.** `.claude/settings.local.json` is unchanged this batch (still 8 deny / 1213 allow).
 
 ## 2. CLAIMS HELD

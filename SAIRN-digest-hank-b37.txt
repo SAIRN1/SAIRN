@@ -1,6 +1,6 @@
 HANK b37 DIGEST -- 2026-10-21 -- verbatim deny-list command; native probe of this clone's deny list
 CONTEXT 7.4% of 1,000,000 -- 74,445 tokens, measured.
-STATUS: docs only, NOT FORCED; rebased onto c71917d62 (re-derive the tip). No code or settings change.
+STATUS: docs only, NOT FORCED; rebased onto 812476c50 (re-derive the tip). No code or settings change.
 1. Verbatim -Command form: report item 1 (from the b36 transcript). Each clone changes -Path only.
 2. Probe: hover2 REFUSED (Write+Edit) as required. hover ALSO REFUSED -- dispatch expected success.
    Positive control passed; no probe file landed. Cause: the b36 list denies both clones.

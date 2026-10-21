@@ -18,5 +18,5 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& 'C:\Users\marsh\fi
    expecting refusal -- with a positive control on an allowed path, so a refusal proves the rule, not a
    broken tool.
 
-4. PUSH: docs only (handoff, report, digest), rebased onto c71917d62, not forced; no code or settings change.
+4. PUSH: docs only (handoff, report, digest), rebased onto 812476c50, not forced; no code or settings change.
    Handoff: SAIRN-handoff-hank-b37.md.
