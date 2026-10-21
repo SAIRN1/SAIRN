@@ -73,6 +73,29 @@ console.log('2. the current sidebar item is marked for a screen reader');
   check('C3. the initial markup marks Dashboard current', /id="sb-dashboard" aria-current="page"/.test(html));
 }
 
+console.log('2b. J1 (b51): nav() moves focus to the new panel\'s heading');
+{
+  const src = grab('function nav(id){');
+  const focused = [];
+  const mkTitle = (name) => Object.assign(El('t-' + name, 'ptitle'), { textContent: name, focus() { focused.push(name); } });
+  const titles = { billing: mkTitle('Billing') };
+  const panels = {}, sbs = {};
+  ['billing', 'untitled'].forEach((id) => {
+    sbs['sb-' + id] = El('sb-' + id, 'sb');
+    panels['panel-' + id] = Object.assign(El('panel-' + id, 'panel'), { querySelector: (s) => (s === '.ptitle' ? titles[id] || null : null) });
+  });
+  const live = El('nav-announce');
+  const ctx = { closeNav() {}, $: (id) => sbs[id] || panels[id] || (id === 'nav-announce' ? live : null),
+    document: { querySelectorAll: (sel) => (sel === '.sb' ? Object.values(sbs) : sel === '.panel' ? Object.values(panels) : []) } };
+  vm.createContext(ctx); vm.runInContext(src, ctx);
+  try { ctx.nav('billing'); } catch (e) { /* renderers not stubbed; focus happens first */ }
+  check('J1. focus lands on the panel heading', focused.join() === 'Billing', JSON.stringify(focused));
+  check('J2. the heading is made programmatically focusable (tabindex=-1), not added to the Tab order', titles.billing.attrs.tabindex === '-1', JSON.stringify(titles.billing.attrs));
+  check('J3. the live region is NOT also filled, so the name is not spoken twice', live.textContent === '', JSON.stringify(live.textContent));
+  try { ctx.nav('untitled'); } catch (e) {}
+  check('J4. a panel with no title still announces through the live region (fallback)', /untitled panel/.test(live.textContent), JSON.stringify(live.textContent));
+}
+
 console.log('3. every vendor quantity box is named for its product');
 {
   const row = grab("'<td><input type=\"number\" min=\"0\" value=\"'+(cart[p.id]||0)+'\" id=\"vqty-'", '\n');

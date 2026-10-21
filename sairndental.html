@@ -2034,8 +2034,15 @@ function nav(id){
   // are added or renamed -- all 23 panels carry one.
   // Cleared first: assigning the SAME textContent is not a mutation, and a
   // re-nav to the panel already shown would otherwise announce nothing.
+  // b51 J1 (Michael's decision: focus-to-heading, not a skip link) -- CONCEPT:
+  // nav() moves focus to the new panel's heading, so a screen reader reads it
+  // and the next Tab enters the panel instead of the rest of the sidebar. The
+  // live announcement above stays only as the fallback for a panel with no
+  // title; filling it as well would speak the panel name twice.
   var live=$('nav-announce'),pt=p&&p.querySelector('.ptitle');
-  if(live){live.textContent='';if(pt)live.textContent=pt.textContent+' panel';}
+  if(live)live.textContent='';
+  if(pt){pt.setAttribute('tabindex','-1');try{pt.focus();}catch(e){}}
+  else if(live&&p)live.textContent=(id||'')+' panel';
   if(id==='dashboard')rDash();
   if(id==='patients')rPatients();
   if(id==='icap')rIcap();
