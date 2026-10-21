@@ -1075,6 +1075,17 @@
         "SAIRN-handoff-H1-b74.md",
         "SAIRN-report-H1-b74.txt"
       ]
+    },
+    {
+      "id": "hover-1792585056",
+      "session": "hover",
+      "subject": "hover",
+      "task": "H1 b75: find why the b74 install landed 0 of 11 and land the 11 files, fix hover_context_measure cache_creation term (#1649), separate Groq org for H1 then resume the a0504cd8 cross-vendor review, attempt Node 22 + Stryker install, push FILES: .claude/skills/sairn-hover-auditor/",
+      "claimed_at": "2026-10-21T12:17:36Z",
+      "claimed_at_epoch": 1792585056.3727849,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
