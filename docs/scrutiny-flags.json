@@ -1530,6 +1530,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/app_session_isolation.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "1ddf3cba5e3dbd012980e032a852f407823d4a29",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairndental_write_failure_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "1ddf3cba5e3dbd012980e032a852f407823d4a29",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/b21-bridge-unknown-action.test.js",
    "class": "test file",
    "level": "CHANGE",
