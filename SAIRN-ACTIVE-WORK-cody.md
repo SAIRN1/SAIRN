@@ -6386,3 +6386,25 @@ was left out of the SQL because its read already lets the column win. So the
 
 **What would reopen this:** a new write path that does not strip its keys (arm A
 fails), or a bulk import or restore that writes `data` directly.
+
+## b39 — the "b29 eight still-open defects", resolved for the record (cody, 2026-10-21)
+
+**They are cc's b29 defects, not cody's.** cc's b31 digest line 21 reads "b29's
+eight defects still waiting". The list itself is `docs/2026-10-20-cc-b29-notes.md`
+§1 ("Code defects found while reading. Routed, not fixed"). Cody's own b29 handoff
+has no list of eight. b33 and b35 already reported this. Status at HEAD, re-checked
+this batch:
+
+| # | defect | owner | status |
+|---|---|---|---|
+| 1 | dental 503 named the wrong schema file | cody | FIXED b34 (b34-routed-defects exit 0) |
+| 2 | prequal/bonding missing table gave a generic 502 | cody | FIXED b34; 8 siblings fixed b35 (exit 0) |
+| 3 | accounting revoke returned a false `tokens_discarded:true` | cody | FIXED b34; repeat-revoke clobber fixed b35; discard scoped by consent_id b37 |
+| 4 | accounting treated any 400 as NOT_PROVISIONED | cody | FIXED b34 |
+| 5 | `sd_quote_request_photos` was never read | hank/cody | FIXED: server b34; client `9f9cf9235` (stonedesk.html, REQUEST PHOTOS b40) |
+| 6 | style profile read `d.provisioned`/`d.ok` off the inner data | hank | FIXED `9f9cf9235` (it now uses `sdDataEnvelope`) |
+| 7 | sairnroofing JHA read error and warranty missing table both shown as "none" | fourth | OPEN at HEAD. **Under fourth's ACTIVE b49 claim**, so not touched |
+| 8 | sairnsenior contract/authorisation stays local; prior-auth warning silent | fourth | OPEN at HEAD (`:4744`). **Under fourth's ACTIVE b49 claim**, so not touched |
+
+Six of eight are fixed. The other two are being worked by fourth right now, so
+editing them here would collide.
