@@ -8205,12 +8205,12 @@
         "sairnbiz.html"
       ],
       "what": "fourth b47: sairnbiz Z8 display -- run table shows stored lines + pay date, payroll CSV gains sbPayLine columns, employee gains device-only sex (516.2(a)(4)), runs stamp workweek_start from sbWeekStart (a)(5)",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cc",
       "owner_assigned_at": "2026-10-21T15:37:25Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cc",
+      "reviewed_at": "2026-10-21T16:00:03Z",
+      "verdict": "CRITERIA: every new value rendered into innerHTML is escaped even when the run row is SYNCED from another device; nothing new leaves the device; the run table shows what the run recorded -- each confirmed by an INDEPENDENT probe written by cc (functions extracted from the real sairnbiz.html and run in a vm), with mutation controls. SOUND. One gap, routed. Reviewed by cc (b36) at origin/main.\n\nWHY SYNC MATTERS HERE: sb_payruns is in SB_SYNCED (sairnbiz.html:6027), so a run row rendered by rPayRuns can come from another device of the licence -- the new columns are therefore an injection surface, not just a display.\n\nPROBE, 7 arms PASS. P1: a run whose line name, period, hours, rate, withholding and workweek_start are '<img src=x onerror=...>' / '\"><script>' renders with NO raw <img or <script -- every line cell goes through H() or m2() (m2 escapes non-numbers), and workweek_start through H(). P2: a hostile pay_date goes through fdate(), which returns a Date string, never the input. P3: a pre-b46 run says 'not recorded (run before per-employee lines)' and, with no pay_date, 'not recorded' -- not blanks. P4: sbWorkweekStart() names the weekday of the date sbWeekStart() actually returns (Monday today), at 00:00 local. P5: syncEmps' payload for an employee with sex, addr and dob carries none of them -- its fixed data map (:5345-5351) is unchanged, so the (a)(4) field is device-only as claimed. sbPayLine (:3962-3978) carries no sex/addr/dob either, so the synced run lines do not leak it.\nMUTATION CONTROLS, 4 of 4 killed: un-escape the line name -> P1 red; un-escape workweek_start -> P1 red; add sex to syncEmps' map -> P5 red; shift the weekday table -> P4 red.\nRECORDED, NOT RE-PRICED: rPayRuns reads only r.lines / r.pay_date / r.workweek_start of the stored run and never calls sbPayLine or the roster -- read, and fourth's own surviving-mutant arm covers a rate change after the run.\nCSV: the new line columns come from sbPayLine(e, today, pay-date-box || today), the function runPayroll records with, and 'Pay Date Source' says 'defaulted to today (none entered)' when the box is empty -- consistent with the run's own pay_date_source.\nSUITES: all 20 tests/sairnbiz*.js exit 0 at HEAD.\n\nGAP, ROUTED TO fourth (same shape as b46): the b47 arms (RED 5/30 -> GREEN 37/37, 5 mutants) are in fourth's session scratchpad; grep of tests/ and api/ for sbWorkweekStart / workweek_start / esex finds nothing. b46's geocode arms DID land as api/b46-route-geocode.test.js -- the same move would close this.\nObservation, pre-existing: r.employees is concatenated into the row unescaped (and was before b47); it is a count today, but it arrives through the same sync."
     },
     {
       "author_session": "cody",
