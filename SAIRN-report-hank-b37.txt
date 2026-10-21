@@ -1,0 +1,22 @@
+HANK b37 REPORT -- 2026-10-21 -- verbatim deny-list command; deny list probed natively
+
+1. VERBATIM -Command FORM (copied from the b36 transcript tool call; each clone changes -Path only):
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& 'C:\Users\marsh\fix-deny.ps1' -Path 'C:\Users\marsh\Documents\SAIRN-hank\.claude\settings.local.json' -Entries 'Edit(//C:/Users/marsh/Documents/SAIRN-hover/**)','Write(//C:/Users/marsh/Documents/SAIRN-hover/**)','Edit(//C:/Users/marsh/Documents/SAIRN-hover2/**)','Write(//C:/Users/marsh/Documents/SAIRN-hover2/**)','Edit(~/Documents/SAIRN-hover/**)','Write(~/Documents/SAIRN-hover/**)','Edit(~/Documents/SAIRN-hover2/**)','Write(~/Documents/SAIRN-hover2/**)'"
+
+   Success prints "Done: <path> now has N deny entries." No Done line = it did not run.
+
+2. PROBE: SAIRN-hover2 REFUSED for both Write and Edit -- as required. SAIRN-hover ALSO REFUSED for both --
+   the dispatch said it must succeed. All four: "File is in a directory that is denied by your permission
+   settings." Positive control (Write to scratchpad) succeeded; no probe file landed in either clone.
+   Hover is refused because the b36 list as dispatched denies both clones, and CLAUDE.md forbids build agents
+   writing into SAIRN-hover. Not changed. DECISION (Michael): if hover must be writable, remove the four
+   SAIRN-hover/** entries from the command before sending it to cc, cody, fourth, H1.
+   Also: these rules cover native Edit/Write only; a Bash shell write into either clone is not blocked.
+
+3. METHODOLOGY: probe the rule through the real tool it governs -- native Write and Edit on a target path,
+   expecting refusal -- with a positive control on an allowed path, so a refusal proves the rule, not a
+   broken tool.
+
+4. PUSH: docs only (handoff, report, digest), rebased onto c71917d62, not forced; no code or settings change.
+   Handoff: SAIRN-handoff-hank-b37.md.

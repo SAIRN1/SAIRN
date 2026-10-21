@@ -1,0 +1,13 @@
+HANK b37 DIGEST -- 2026-10-21 -- verbatim deny-list command; native probe of this clone's deny list
+CONTEXT 7.4% of 1,000,000 -- 74,445 tokens, measured.
+STATUS: docs only, NOT FORCED; rebased onto c71917d62 (re-derive the tip). No code or settings change.
+1. Verbatim -Command form: report item 1 (from the b36 transcript). Each clone changes -Path only.
+2. Probe: hover2 REFUSED (Write+Edit) as required. hover ALSO REFUSED -- dispatch expected success.
+   Positive control passed; no probe file landed. Cause: the b36 list denies both clones.
+3. Methodology: probe via the governed tool itself, expect refusal, with a positive control.
+DECISION-NEEDED (Michael): should SAIRN-hover be writable? If yes, drop its 4 entries before sending item 1.
+DECISION-NEEDED (Michael): Bash shell writes are not covered by Edit/Write deny rules.
+NEXT: handoff sec.4, items A, G, H, B, C, D.
+CHANGED: these three docs only.
+EVIDENCE-path: SAIRN-handoff-hank-b37.md
+UNVERIFIED: the other four clones' deny lists; Bash-write coverage (not probed by writing, by design).
