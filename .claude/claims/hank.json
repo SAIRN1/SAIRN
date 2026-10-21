@@ -4428,6 +4428,17 @@
         "docs/sairn-path-manifest.json",
         "tools/audit_event_type_check.py"
       ]
+    },
+    {
+      "id": "hank-1792594729",
+      "session": "hank",
+      "subject": "hank",
+      "task": "b38 bash deny for hover clones",
+      "claimed_at": "2026-10-21T14:58:49Z",
+      "claimed_at_epoch": 1792594729.0237448,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
