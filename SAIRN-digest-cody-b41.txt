@@ -1,5 +1,6 @@
 DIGEST -- cody b41, 2026-10-21. Three items: 1 answered, 2 NOT DONE (no variant is denied; my fix was denied), 3 deliverables only.
 STATUS: NO CODE CHANGED. NO LIVE WRITES. NO SQL. settings.local.json is UNCHANGED (gitignored; my write was denied).
+CHANGED: SAIRN-handoff-cody-b41.md, SAIRN-report-cody-b41.txt, SAIRN-digest-cody-b41.txt (deliverables only).
 ITEM 1 -- ROOT CAUSE: none of the 5 were "already present". They were stored as ONE joined entry, 'Bash(*SAIRN-hover*),Bash(*sairn-hover2*),...'.
   The b40 command used powershell -File, which passes the comma list as one string (my error in b40). Reproduced: -File count=1, -Command count=5.
 ITEM 2 -- PROBED: 8 read-only test -d probes, all 5 variants against both hover clones: ALL RAN, NONE DENIED. The joined entry is in effect inert.
