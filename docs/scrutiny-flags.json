@@ -3082,6 +3082,30 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b35-accounting-revoke-repeat.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "43c32bf6cd33a79952787ca7ac982a5a8348c7b1",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b35-missing-table-writes.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "43c32bf6cd33a79952787ca7ac982a5a8348c7b1",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-customer-soft-delete.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "43c32bf6cd33a79952787ca7ac982a5a8348c7b1",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/b19-iolta-reconcile-carveout.test.js",
    "class": "test file",
    "level": "CHANGE",
