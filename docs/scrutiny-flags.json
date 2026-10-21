@@ -12062,6 +12062,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/app_session_isolation.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "eb473e55e43683168525e4c30d8c2d4b221e7d8f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairndental_write_failure_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "eb473e55e43683168525e4c30d8c2d4b221e7d8f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": ".claude/settings.json",
    "class": "CI / hook configuration",
    "level": "WEAKENING",
