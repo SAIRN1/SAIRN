@@ -31,6 +31,12 @@ file rather than being run by an agent.*
 | B | snapshot re-export (b35 G) | Michael, per `SAIRN-handoff-hank-b35.md` §4 |
 | D | untracked `conflict_excerpt.txt` etc. | not mine; not touched |
 
+**Incident, mine, repaired:** retrying a raced push I ran `git stash -- docs/scrutiny-flags.json` on a clean file
+(stashed nothing) and then `git stash pop`, which applied an OLDER stash — `b10-settings-park` — and rewrote
+`.claude/settings.json` (+20/−155). Not committed, not pushed. Repaired: the diff saved to the scratchpad, the
+file restored to HEAD, and the dropped stash commit `3a6d455fd` put back with `git stash store` (now
+`stash@{0}`). Lesson: never `pop` after a `stash` whose output was suppressed — check it created an entry.
+
 ## 4. OPEN, AND THE EXACT NEXT STEP
 | # | open | next step |
 |---|---|---|

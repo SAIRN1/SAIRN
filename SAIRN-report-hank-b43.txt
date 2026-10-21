@@ -13,4 +13,9 @@ HANK b43 REPORT -- 2026-10-21
 2. CARRIED ITEMS (b38 sec.4): H2, H3, C, B are Michael's (other clones' local settings, a file in his home
    dir, Cloud Console, the snapshot re-export); D is not mine. None actionable from this clone.
 
-3. PUSH: the sql file and these three docs, not forced; landing confirmed against origin/main after fetch.
+3. PUSH: the sql file and these three docs, not forced. Two pushes lost a remote race; rebased; e6181884f
+   landed, confirmed by merge-base after fetch. This follow-up commit records item 4.
+
+4. INCIDENT (mine, repaired, never committed): a `git stash` of an unchanged file created no entry and the
+   following `git stash pop` applied the older stash b10-settings-park, rewriting .claude/settings.json
+   (+20/-155). Diff saved to scratchpad; file restored to HEAD; dropped stash 3a6d455fd re-stored as stash@{0}.
