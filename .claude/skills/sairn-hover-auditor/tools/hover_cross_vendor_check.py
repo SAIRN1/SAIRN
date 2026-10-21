@@ -525,15 +525,108 @@ JUDGE_FINDING_TOOL = {
 }
 
 
-def ask_groq(diff_text, api_key, http_post=None):
+# ── CONTEXT AROUND THE CHANGE, b82 ────────────────────────────────────────
+# b74, b80 and b81 measured 0 true findings in 11 and the false positives were
+# one class: a variable or function the hunk USES that the diff cannot show
+# DECLARED (consentId, r, sdDataEnvelope, fetch). The reviewer is now also shown
+# the unchanged code above each change, from the enclosing function's opening
+# line down to the first changed line, labelled as NOT under review. It is sent
+# AFTER the diff and only fills the budget the diff leaves: the diff is never
+# what gets trimmed. A finding that cites a context line is still dropped by
+# validate_findings, which checks every citation against the diff's added lines.
+CONTEXT_MAX_TOKENS = 1500
+CONTEXT_MAX_LINES = 60
+CONTEXT_HEADER = ('=== CONTEXT: unchanged code from the same file, for scope only. '
+                  'It is NOT under review. Cite only lines of the diff above. ===')
+CONTEXT_PROMPT_ADDENDUM = (
+    " After the diff you may be given a CONTEXT section: unchanged code from the "
+    "same file, NOT under review. Use it only to check whether a name the diff "
+    "uses is declared in scope before you report it as undefined, and never "
+    "report a finding about a context line.")
+_FUNC_START = re.compile(
+    r'\bfunction\b|=>\s*\{?\s*$|^\s*(?:async\s+)?[\w$]+\s*\([^)]*\)\s*\{\s*$|^\s*def\s')
+
+
+def _indent(line):
+    return len(line) - len(line.lstrip())
+
+
+def enclosing_context(after_text, added_linenos, max_lines=CONTEXT_MAX_LINES):
+    """Text for the CONTEXT section: for each run of changed lines, the lines of
+    the file BEFORE the run, from the outermost enclosing function's opening line
+    (found by indentation, scanning back at most 400 lines) down to the line
+    before the run. Over max_lines the function's signature lines are kept, an
+    omission marker follows and then the lines nearest the change; with no
+    enclosing function it is just the last max_lines lines. Runs inside one
+    function are merged so no line is sent twice. '' for nothing to send."""
+    NL = chr(10)
+    lines = (after_text or '').split(NL)
+    added = sorted(n for n in (added_linenos or ()) if 1 <= n <= len(lines))
+    if not added:
+        return ''
+    runs, start = [], added[0]
+    for prev, cur in zip(added, added[1:]):
+        if cur - prev > 3:
+            runs.append((start, prev))
+            start = cur
+    runs.append((start, added[-1]))
+    blocks, covered_to = [], 0
+    for first, last in runs:
+        first_text = lines[first - 1]
+        ind = _indent(first_text) if first_text.strip() else 10 ** 6
+        ancestors, i = [], first - 2
+        floor = max(0, first - 1 - 400)
+        while i >= floor:
+            ln = lines[i]
+            if ln.strip() and _indent(ln) < ind and _FUNC_START.search(ln):
+                ancestors.append(i)
+                ind = _indent(ln)
+            i -= 1
+        outer = ancestors[-1] if ancestors else None
+        lo = first - 1 - max_lines if outer is None else max(outer, first - 1 - max_lines)
+        lo = max(lo, 0, covered_to)
+        head = [a for a in reversed(ancestors) if a < lo][:3]
+        if lo >= first - 1 and not head:
+            continue
+        out = ['--- lines %d-%d ---' % (lo + 1, first - 1)]
+        for a in head:
+            out.append('%d: %s' % (a + 1, lines[a]))
+        if head:
+            out.append('... (lines omitted) ...')
+        out.extend('%d: %s' % (k + 1, lines[k]) for k in range(lo, first - 1))
+        blocks.append(NL.join(out))
+        covered_to = last
+    return NL.join(blocks)
+
+
+def fit_context(context, budget_tokens):
+    """The context trimmed to at most budget_tokens (estimate_tokens), cut on a
+    line boundary, '' for no budget. The diff is never what gets trimmed."""
+    if not context or budget_tokens <= 0:
+        return ''
+    if estimate_tokens(context) <= budget_tokens:
+        return context
+    NL = chr(10)
+    kept = []
+    for ln in context.split(NL):
+        if estimate_tokens(NL.join(kept + [ln])) > budget_tokens:
+            break
+        kept.append(ln)
+    return NL.join(kept) if len(kept) > 1 else ''
+
+
+def ask_groq(diff_text, api_key, http_post=None, context=None):
     """http_post(url, headers, body_bytes) -> (status, response_dict) is
     injectable for the selftest. Returns (findings_list, real_total_tokens).
     Raises CouldNotTell on any failure -- auth, rate limit, network, or a
-    response with no forced tool call."""
+    response with no forced tool call. `context` (b82) is the CONTEXT section
+    from enclosing_context(); with none the request is exactly what it was."""
+    system = SYSTEM_PROMPT + (CONTEXT_PROMPT_ADDENDUM if context else '')
+    user = diff_text + ((chr(10) * 2 + CONTEXT_HEADER + chr(10) + context) if context else '')
     body = json.dumps({
         'model': MODEL,
-        'messages': [{'role': 'system', 'content': SYSTEM_PROMPT},
-                     {'role': 'user', 'content': diff_text}],
+        'messages': [{'role': 'system', 'content': system},
+                     {'role': 'user', 'content': user}],
         'tools': [REPORT_FINDINGS_TOOL],
         'tool_choice': {'type': 'function', 'function': {'name': 'report_findings'}},
         'max_tokens': MAX_OUTPUT_TOKENS,
@@ -1498,6 +1591,67 @@ def run_fixtures():
        '(no regression to refuse-instead-of-wait)', ok_w4 is True and 0 < sum(sl4) <= 65.0 + 1.0)
     for dd in (d1, d2, d3, d4):
         shutil.rmtree(dd, ignore_errors=True)
+
+    # b82, item 1: the reviewer is shown the unchanged code around each change.
+    # The five b80/b81 false positives each named a variable or function the hunk
+    # uses and the diff could not show declared (consentId, r, sdDataEnvelope, fetch).
+    def _try(fn, *a, **k):
+        try:
+            return fn(*a, **k)
+        except Exception as e:  # noqa: BLE001 -- a fixture reports, never crashes the run
+            return 'EXC:' + type(e).__name__
+    NL = chr(10)
+    src1 = NL.join([
+        'const a = 1;',
+        'function other() { return 2; }',
+        'async function handler(req) {',
+        '  const consentId = String(req.id).trim();',
+        '  const r = {};',
+        '  if (!consentId) return;',
+        '  await use(consentId);',
+        '}'])
+    c1 = _try(lambda: enclosing_context(src1, {7}))
+    ck('E1 the enclosing function from its opening line down to the first changed line is sent, so a '
+       'declaration above the change is visible, and a sibling function is NOT',
+       isinstance(c1, str) and 'async function handler' in c1 and 'const consentId' in c1
+       and 'function other' not in c1 and 'await use' not in c1)
+    big = NL.join(['async function huge(x) {'] + ['  const v%d = %d;' % (i, i) for i in range(200)] + ['  use(v190);', '}'])
+    c2 = _try(lambda: enclosing_context(big, {202}, max_lines=20))
+    ck('E2 a huge function keeps its SIGNATURE and the lines nearest the change, with an omission marker, '
+       'capped to max_lines', isinstance(c2, str) and 'async function huge' in c2 and 'omitted' in c2
+       and 'const v199' in c2 and 'const v5 ' not in c2 and c2.count(NL) <= 26)
+    flat = NL.join(['var x%d = %d;' % (i, i) for i in range(1, 80)])
+    c3 = _try(lambda: enclosing_context(flat, {60}, max_lines=30))
+    ck('E3 with NO enclosing function a fixed window of the lines before the change is sent',
+       isinstance(c3, str) and 'var x59 ' in c3 and 'var x31 ' in c3 and 'var x20 ' not in c3)
+    src4 = NL.join(['function f() {', '  const k = 1;', '  a(k);', '  b(k);', '  c(k);', '  d(k);', '}'])
+    c4 = _try(lambda: enclosing_context(src4, {3, 6}))
+    ck('E4 two changes in one function are merged into ONE block: no line is sent twice',
+       isinstance(c4, str) and c4.count('const k = 1;') == 1)
+    ck('E5 the context is trimmed to the budget it is given and is empty for a budget of zero; the DIFF is never '
+       'what gets trimmed', _try(lambda: fit_context(c1, 5)) != c1 and _try(lambda: fit_context(c1, 0)) == ''
+       and _try(lambda: fit_context(c1, 10000)) == c1)
+    ck('E6 an empty file or no changed line gives no context rather than an error',
+       _try(lambda: enclosing_context('', {1})) == '' and _try(lambda: enclosing_context(src1, set())) == '')
+    sent = {}
+
+    def cap_post(url, headers, body):
+        sent['req'] = json.loads(body.decode('utf-8'))
+        return 200, {'usage': {'total_tokens': 50},
+                     'choices': [{'finish_reason': 'tool_calls', 'message': {'tool_calls': [{'function': {
+                         'name': 'report_findings', 'arguments': json.dumps({'findings': []})}}]}}]}
+    _try(lambda: ask_groq('DIFF-TEXT', 'k', http_post=cap_post, context='CTX-TEXT'))
+    msgs = (sent.get('req') or {}).get('messages') or [{}, {}]
+    ck('E7 ask_groq puts the context AFTER the diff in the user message and tells the model, in the system '
+       'message, that it is not under review; with no context the request is exactly what it was',
+       'DIFF-TEXT' in msgs[1].get('content', '') and 'CTX-TEXT' in msgs[1].get('content', '')
+       and msgs[1]['content'].index('DIFF-TEXT') < msgs[1]['content'].index('CTX-TEXT')
+       and 'NOT under review' in msgs[0].get('content', ''))
+    sent.clear()
+    ask_groq('DIFF-TEXT', 'k', http_post=cap_post)
+    msgs0 = (sent.get('req') or {}).get('messages') or [{}, {}]
+    ck('E8 CONTROL: with no context the system prompt and the user message are byte-identical to before',
+       msgs0[0].get('content') == SYSTEM_PROMPT and msgs0[1].get('content') == 'DIFF-TEXT')
 
     def fake_http_post_clean(url, headers, body):
         req = json.loads(body.decode('utf-8'))
