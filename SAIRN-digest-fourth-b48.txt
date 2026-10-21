@@ -1,0 +1,22 @@
+SAIRN DIGEST -- fourth b48 -- 2026-10-21
+CONTEXT 31.7% of 1,000,000 -- 316,865 tokens, measured.
+STATUS: all landed on origin/main (tip f4e8222d7 before deliverables), live; no force, no skip.
+DECISION-NEEDED: none.
+READ: SAIRN-handoff-fourth-b48.md (whole state). Detail: SAIRN-report-fourth-b48.txt.
+SQL: none this batch.
+CHANGED:
+  b14228a45 dental: DEA keyed per registration number; server GFE check reads the printed copy; export uses gfeSnapshot
+  013d368cd Field Map: lock follows the stop across installer/date change; unlock clears everywhere
+  c02d1efbd register (2 defects); f4e8222d7 overrides + regenerated docs
+1 geocode after the key fix: LIVE 9/9 (2 located, ZERO_RESULTS named, Static Maps 200).
+2 b45 status: OT done (ece9de35b); dental 7/9 done b45, last 2 done now; Field Map
+  lock/confirm/wording done b45 (41f825dbb), its 2 gaps done now.
+3 dental: RED 6/11 -> GREEN 11/11, 5/5 mutants; LIVE 6/6 refusal check, nothing stored.
+4 Field Map: real-click driver RED 6/12 -> GREEN 12/12, 2/2 mutants.
+EVIDENCE-path: api/b48-dental-dea-gfe.test.js; scratchpad drive_lock.py, live_gfe.py, live_geo.py (paths in handoff).
+NEXT, in order:
+  a pre-existing reds (same at HEAD): sairndental_ledger_export(+mc), sairndental_rollup_panel
+  b cc: Tier A review of Z8 display (dbac30771)
+  c review fourth's assigned_overrides (10 entries)
+UNVERIFIED: DEA with two live registrations; Field Map lock on a real tenant; Chromium only.
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\fd66c7b5-98f7-4e46-ac2a-b0383cde9210.jsonl

@@ -1,0 +1,44 @@
+SAIRN REPORT -- fourth b48 -- 2026-10-21
+
+RESULT: all landed and live; no force, no gate skip. Handoff:
+SAIRN-handoff-fourth-b48.md.
+
+1 GEOCODE RE-CHECK (after Michael's key fix): live 9/9 against real Google
+  -- 1600 Amphitheatre and 350 Fifth located, the nonsense address a named
+  ZERO_RESULTS, located 2/3, only the two fixes cached; Static Maps 200.
+
+2 B45 STATUS (was not in the b47 report): sairnbiz OT done in b45 (Z7,
+  ece9de35b, live 9/9). Dental: 7 of the 9 audit defects done in b45
+  (b5eef18d5); the 2 server-side ones were open -- done now (3). Field Map
+  lock / manual confirm / 0-saving wording done in b45 (41f825dbb, 33/33);
+  its 2 leftover gaps were open -- done now (4).
+
+3 DENTAL, 2 SERVER DEFECTS                                     b14228a45
+  CONCEPT (DEA): a DEA registration is per registration number (21 CFR
+  1301.12(a)), so latestByKey keys DEA rows by provider + normalised number;
+  a second registration no longer retires the first.
+  CONCEPT (GFE): an Issued estimate prints its frozen name/DOB, so the
+  server's 149.610(c)(1) check reads that copy AS WELL AS the server-side
+  patient record; the app export reads gfeSnapshot() too.
+  api/b48-dental-dea-gfe.test.js RED 6/11 -> GREEN 11/11, 5/5 mutants.
+  Export RED 3/4 -> GREEN 4/4. dental-gfe 14/14, credentials 66/66,
+  endpoint 21/21. LIVE 6/6: real login DNT-PINNACLE-2026; Issued with a
+  blank printed DOB -> 400 GFE_INCOMPLETE naming the DOB; control refused
+  for (c)(1)(ii) only; nothing stored.
+
+4 FIELD MAP, 2 GAPS                                            013d368cd
+  CONCEPT: a lock belongs to the STOP, not the person|day record it was set
+  on -- looked up across every record, cleared everywhere on unlock.
+  Real Playwright mouse click on the rendered My Day card (not generated
+  HTML): RED 6/12 -> GREEN 12/12, 2/2 mutants; installer change and date
+  change both keep the lock; unlock from the new day clears every record.
+  b45 route 33/33 behavioural; b46 geocode 38/38. Live page = origin bytes.
+
+5 METHODOLOGY: concept line stated before each fix; in commits and code.
+6 PUSH: c02d1efbd register records, f4e8222d7 overrides (4 api/ paths) +
+  regenerated docs; landed on origin/main, pages byte-identical live.
+
+PRE-EXISTING REDS (same at HEAD, not this change): sairndental_ledger_export
+(+_mutation_control), sairndental_rollup_panel.
+UNPROVEN: DEA keying against a live tenant with two registrations;
+Field Map lock on a real StoneDesk tenant; Chromium only.
