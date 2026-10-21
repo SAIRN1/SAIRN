@@ -82,7 +82,9 @@ header{height:52px;background:var(--pd);display:flex;align-items:center;padding:
 .wrap{display:flex;flex:1;overflow:hidden;}
 nav{width:214px;background:#fff;border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0;padding:10px 0;}
 .nsec{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:14px 18px 6px;}
-.nitem{display:flex;align-items:center;gap:9px;padding:9px 18px;cursor:pointer;font-size:13px;color:var(--text);border-left:3px solid transparent;}
+/* b52 a11y: .nitem is a <button> now (it was a mouse-only div), so the button defaults are reset here. */
+.nitem{display:flex;align-items:center;gap:9px;padding:9px 18px;cursor:pointer;font:inherit;font-size:13px;color:var(--text);border:0;border-left:3px solid transparent;background:none;width:100%;text-align:left;}
+.nitem:focus-visible{outline:2px solid var(--p);outline-offset:-2px;}
 .nitem:hover{background:var(--pt);}
 .nitem.on{background:var(--pt);border-left-color:var(--p);font-weight:600;color:var(--pd);}
 main{flex:1;overflow-y:auto;padding:22px 26px;}
@@ -154,7 +156,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     </div>
     <div class="glogo">SAIRNfreedom</div>
     <div class="gsub">Veterans and fraternal post operations</div>
-    <input class="ginp" id="lic" placeholder="Licence key" autocomplete="off">
+    <input class="ginp" id="lic" aria-label="Licence key" placeholder="Licence key" autocomplete="off" onkeydown="if(event.key==='Enter')sfUnlock()">
     <button class="gbtn" onclick="sfUnlock()">Open Post</button>
     <div class="gerr" id="licerr"></div>
   </div>
@@ -175,8 +177,8 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div class="glogo">SAIRNfreedom</div>
     <div class="gsub" id="pin-sub">Sign in to your post</div>
     <div id="pstep-login">
-      <input class="ginp" id="l-eid" placeholder="Employee ID" autocomplete="off">
-      <input class="ginp" id="l-pin" type="password" placeholder="PIN" autocomplete="off">
+      <input class="ginp" id="l-eid" aria-label="Employee ID" placeholder="Employee ID" autocomplete="off">
+      <input class="ginp" id="l-pin" type="password" aria-label="PIN" placeholder="PIN" autocomplete="off" onkeydown="if(event.key==='Enter')sfLogin()">
       <button class="gbtn" onclick="sfLogin()">Sign in</button>
       <div class="gsub" style="margin-top:14px;font-size:12px">
         First officer for this post?
@@ -229,42 +231,42 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   <div class="wrap">
     <nav>
       <div class="nsec">Phase 1 &mdash; Foundation</div>
-      <div class="nitem on" id="nav-dashboard" onclick="sfNav('dashboard')">Dashboard</div>
-      <div class="nitem" id="nav-post" onclick="sfNav('post')">Post Profile</div>
-      <div class="nitem" id="nav-officers" onclick="sfNav('officers')">Officers</div>
+      <button type="button" class="nitem on" id="nav-dashboard" aria-current="page" onclick="sfNav('dashboard')">Dashboard</button>
+      <button type="button" class="nitem" id="nav-post" onclick="sfNav('post')">Post Profile</button>
+      <button type="button" class="nitem" id="nav-officers" onclick="sfNav('officers')">Officers</button>
       <!-- Shown only to a provisioning capability. COSMETIC: the server
            refuses anybody else regardless -- this just stops offering a
            tab that would always 403. -->
-      <div class="nitem" id="nav-access" onclick="sfNav('access')" style="display:none">Access</div>
-      <div class="nitem" id="nav-members" onclick="sfNav('members')">Members</div>
-      <div class="nitem" id="nav-dues" onclick="sfNav('dues')">Dues &amp; Fees</div>
-      <div class="nitem" id="nav-waivers" onclick="sfNav('waivers')">Waivers</div>
+      <button type="button" class="nitem" id="nav-access" onclick="sfNav('access')" style="display:none">Access</button>
+      <button type="button" class="nitem" id="nav-members" onclick="sfNav('members')">Members</button>
+      <button type="button" class="nitem" id="nav-dues" onclick="sfNav('dues')">Dues &amp; Fees</button>
+      <button type="button" class="nitem" id="nav-waivers" onclick="sfNav('waivers')">Waivers</button>
       <div class="nsec">Phase 2 &mdash; Canteen &amp; events</div>
-      <div class="nitem" id="nav-canteen" onclick="sfNav('canteen')">Canteen POS</div>
-      <div class="nitem" id="nav-closeout" onclick="sfNav('closeout')">Shift Close-out</div>
-      <div class="nitem" id="nav-events" onclick="sfNav('events')">Events Calendar</div>
-      <div class="nitem" id="nav-hall" onclick="sfNav('hall')">Hall Rental</div>
-      <div class="nitem" id="nav-vendors" onclick="sfNav('vendors')">Vendors &amp; Pricing</div>
+      <button type="button" class="nitem" id="nav-canteen" onclick="sfNav('canteen')">Canteen POS</button>
+      <button type="button" class="nitem" id="nav-closeout" onclick="sfNav('closeout')">Shift Close-out</button>
+      <button type="button" class="nitem" id="nav-events" onclick="sfNav('events')">Events Calendar</button>
+      <button type="button" class="nitem" id="nav-hall" onclick="sfNav('hall')">Hall Rental</button>
+      <button type="button" class="nitem" id="nav-vendors" onclick="sfNav('vendors')">Vendors &amp; Pricing</button>
       <div class="nsec">Phase 3 &mdash; Gaming compliance</div>
-      <div class="nitem" id="nav-sessions" onclick="sfNav('sessions')">Sessions &amp; Calendar</div>
-      <div class="nitem" id="nav-accounts" onclick="sfNav('accounts')">Bingo Accounts</div>
-      <div class="nitem" id="nav-operators" onclick="sfNav('operators')">Operators</div>
-      <div class="nitem" id="nav-trustees" onclick="sfNav('trustees')">Trustee Audit</div>
+      <button type="button" class="nitem" id="nav-sessions" onclick="sfNav('sessions')">Sessions &amp; Calendar</button>
+      <button type="button" class="nitem" id="nav-accounts" onclick="sfNav('accounts')">Bingo Accounts</button>
+      <button type="button" class="nitem" id="nav-operators" onclick="sfNav('operators')">Operators</button>
+      <button type="button" class="nitem" id="nav-trustees" onclick="sfNav('trustees')">Trustee Audit</button>
       <div class="nsec">Phase 4 &mdash; Disbursement &amp; outreach</div>
-      <div class="nitem" id="nav-disbursements" onclick="sfNav('disbursements')">Disbursements</div>
-      <div class="nitem" id="nav-donations" onclick="sfNav('donations')">Donations &amp; Donors</div>
-      <div class="nitem" id="nav-service" onclick="sfNav('service')">Service Hours</div>
-      <div class="nitem" id="nav-outreach" onclick="sfNav('outreach')">Community Outreach</div>
+      <button type="button" class="nitem" id="nav-disbursements" onclick="sfNav('disbursements')">Disbursements</button>
+      <button type="button" class="nitem" id="nav-donations" onclick="sfNav('donations')">Donations &amp; Donors</button>
+      <button type="button" class="nitem" id="nav-service" onclick="sfNav('service')">Service Hours</button>
+      <button type="button" class="nitem" id="nav-outreach" onclick="sfNav('outreach')">Community Outreach</button>
       <div class="nsec">Phase 5 &mdash; Members &amp; operations</div>
-      <div class="nitem" id="nav-onboarding" onclick="sfNav('onboarding')">New-member Onboarding</div>
-      <div class="nitem" id="nav-paperwork" onclick="sfNav('paperwork')">Volunteer Paperwork</div>
-      <div class="nitem" id="nav-youth" onclick="sfNav('youth')">Youth Programs</div>
-      <div class="nitem" id="nav-services" onclick="sfNav('services')">Veteran Services</div>
-      <div class="nitem" id="nav-ceremonial" onclick="sfNav('ceremonial')">Ceremonial Duties</div>
-      <div class="nitem" id="nav-vehicles" onclick="sfNav('vehicles')">Vehicles</div>
-      <div class="nitem" id="nav-newsletter" onclick="sfNav('newsletter')">Monthly Newsletter</div>
+      <button type="button" class="nitem" id="nav-onboarding" onclick="sfNav('onboarding')">New-member Onboarding</button>
+      <button type="button" class="nitem" id="nav-paperwork" onclick="sfNav('paperwork')">Volunteer Paperwork</button>
+      <button type="button" class="nitem" id="nav-youth" onclick="sfNav('youth')">Youth Programs</button>
+      <button type="button" class="nitem" id="nav-services" onclick="sfNav('services')">Veteran Services</button>
+      <button type="button" class="nitem" id="nav-ceremonial" onclick="sfNav('ceremonial')">Ceremonial Duties</button>
+      <button type="button" class="nitem" id="nav-vehicles" onclick="sfNav('vehicles')">Vehicles</button>
+      <button type="button" class="nitem" id="nav-newsletter" onclick="sfNav('newsletter')">Monthly Newsletter</button>
       <div class="nsec">Phase 6 &mdash; District rollup</div>
-      <div class="nitem" id="nav-district" onclick="sfNav('district')">District Rollup</div>
+      <button type="button" class="nitem" id="nav-district" onclick="sfNav('district')">District Rollup</button>
     </nav>
 
     <main>
@@ -812,7 +814,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         </div>
 
         <div class="card"><h3>Import reports from posts</h3>
-          <div><input type="file" accept="application/json,.json" id="ds-import" multiple onchange="sfImportReports()"></div>
+          <div><input type="file" accept="application/json,.json" id="ds-import" aria-label="Import post reports (JSON files)" multiple onchange="sfImportReports()"></div>
           <div id="ds-importout" style="margin-top:12px"></div>
           <div class="note">Each file's signature is verified before anything is shown. A
           report that fails verification is <strong>rejected, not shown with a warning</strong>
@@ -2882,13 +2884,25 @@ function sfLock(){
 }
 
 /* ---- NAV --------------------------------------------------------------- */
+/* b52 a11y -- CONCEPT: a visible label labels the control that follows it.
+   168 fields were written <label>Text</label><input id=...> with no for=, so a
+   screen reader announced them unnamed. Tied once at load over the real markup. */
+(function(){var ls=document.querySelectorAll('label:not([for])');for(var i=0;i<ls.length;i++){var l=ls[i],c=l.nextElementSibling;
+  if(c&&/^(INPUT|SELECT|TEXTAREA)$/.test(c.tagName)&&c.id&&!l.querySelector('input,select,textarea'))l.htmlFor=c.id;}})();
+/* b52 a11y -- CONCEPT: each panel's visible .ptitle IS its heading (level 2). */
+(function(){var ts=document.querySelectorAll('.panel .ptitle');for(var i=0;i<ts.length;i++){ts[i].setAttribute('role','heading');ts[i].setAttribute('aria-level','2');}})();
 function sfNav(id){
   var panels=document.querySelectorAll('.panel');
   for(var i=0;i<panels.length;i++) panels[i].classList.remove('on');
   var p=$('panel-'+id); if(p) p.classList.add('on');
+  /* b52 a11y -- CONCEPT: the current item carries aria-current="page", and focus
+     moves to the new panel's heading (J1, Michael's sairndental decision) so a
+     screen reader hears the panel change and the next Tab enters it. */
   var items=document.querySelectorAll('.nitem');
-  for(var j=0;j<items.length;j++) items[j].classList.remove('on');
-  var n=$('nav-'+id); if(n) n.classList.add('on');
+  for(var j=0;j<items.length;j++){ items[j].classList.remove('on'); items[j].removeAttribute('aria-current'); }
+  var n=$('nav-'+id); if(n){ n.classList.add('on'); n.setAttribute('aria-current','page'); }
+  // A panel with no .ptitle (Access) falls back to its first heading, so focus still lands on a heading.
+  var pt=p&&(p.querySelector('.ptitle')||p.querySelector('h1,h2,h3')); if(pt){ pt.setAttribute('tabindex','-1'); try{ pt.focus(); }catch(e){} }
   if(id==='access') sfRenderAccess();
   /* SPEC 1d, IMPLEMENTED RATHER THAN JUST RECORDED: animated app-wide, STATIC
      on onboarding -- "the one place a new member is being asked to concentrate
