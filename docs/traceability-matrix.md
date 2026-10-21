@@ -997,6 +997,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/sairnfreedom_tax_entity_facts.js`
 - `tests/sairnlaw_citation_rule_probe.py`
 - `tests/sairnlaw_trust_clearance.js`
+- `tests/sairnlegacy_a11y_pass.js`
 - `tests/sairnlegacy_declinability.js`
 - `tests/sairnlegacy_reservation_reverify_probe.js`
 - `tests/sairnmechanical_site_asset_export.js`

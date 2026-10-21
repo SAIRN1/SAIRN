@@ -37200,6 +37200,56 @@
       "recurrence_open": "Any posture-disclosure suite goes red silently on a deliberate scope change; nothing ties a SD_SESSION_GATED edit to its disclosure suites."
     },
     {
+      "commit": "b294925c448b",
+      "date": "2026-10-21",
+      "subject": "fix(sairnlegacy b51): accessibility pass -- KPI caption contrast, labels tied to controls, named GPL prices, keyboard AI chips, panel headings, aria-current, focus to heading on nav",
+      "files": [
+        "sairnlegacy.html",
+        "tests/sairnlegacy_a11y_pass.js"
+      ],
+      "lines_added": 136,
+      "lines_removed": 21,
+      "app": "sairnlegacy",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "fourth b51 accessibility pass on the live demo login (LEG-PINNACLE-2026), writes blocked. Before: 88 axe nodes (color-contrast x70, label x12, select-name x6), 0/27 headings, no aria-current, nav silent, 4 span-onclick chips. After: 0 axe nodes, 27/27 headings, aria-current, focus to heading on nav 27/27, chips are buttons. tests/sairnlegacy_a11y_pass.js 19 arms, 7 mutants killed.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "axe-core 4.10.2 + Playwright keyboard walk, driven by scratchpad b51 a11y_dental.py (A11Y_APP=sairnlegacy; not in repo)",
+      "found_by_session": null,
+      "injection": {
+        "commit": "c2c470f16bf9",
+        "date": "2026-08-07",
+        "subject": "feat: SAIRNlegacy Phase 1 scaffold -- funeral home operations, ground-up build",
+        "lag_days": 75
+      },
+      "citation_note": "No coding rule covers this class: meaning conveyed only visually, and caption colours chosen from status tokens meant for icons. Proposed: an axe + keyboard pass per app before launch, and text colours checked against 4.5:1 rather than taken from status tokens.",
+      "contributing_factors": [
+        {
+          "factor": "Caption text used status tokens (--ok #22C55E, --danger #EF4444) chosen for icons, below 4.5:1 at 11px.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": ".kt uses #15803D / #B91C1C."
+        },
+        {
+          "factor": "Visible labels were not associated with their controls; generated price inputs had no name.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "for= on 10 labels; aria-label per GPL service."
+        },
+        {
+          "factor": "No accessibility pass had been run on the app before launch.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Scripted live pass plus repo suite."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. Not verified with NVDA itself. Modals not opened. Other launch-wave apps not passed."
+    },
+    {
       "commit": "c0187ce13a43",
       "date": "2026-10-21",
       "subject": "fix(hover b77): hover_vendor_sample records every completed vendor call into its RateGate (#1658)",
