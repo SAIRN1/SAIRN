@@ -4503,6 +4503,21 @@
         "tools/sairn_status_line.py"
       ],
       "released_at": "2026-10-21T16:11:30Z"
+    },
+    {
+      "id": "cc-1792600471",
+      "session": "cc",
+      "subject": "cc",
+      "task": "b37: read-only Tier A review of cody 15:48:45Z (b36 sd-data pre-gate); ledger discharge write waits on or is declared to fourth's hold  FILES: SAIRN-handoff-cc-b37.md SAIRN-report-cc-b37.txt SAIRN-digest-cc-b37.txt NOT-api NOT-html NOT-sql NOT-tests",
+      "claimed_at": "2026-10-21T16:34:31Z",
+      "claimed_at_epoch": 1792600471.3492224,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-cc-b37.txt",
+        "SAIRN-handoff-cc-b37.md",
+        "SAIRN-report-cc-b37.txt"
+      ]
     }
   ],
   "refusals": [
@@ -4832,6 +4847,21 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "same file or resource: status-line",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-21T16:34:06Z",
+      "my_subject": "cc",
+      "my_task": "b37: Tier A review cody 2026-10-21T15:48:45Z b36 sd-data pre-gate  FILES: docs/tier-a-reviews.json SAIRN-handoff-cc-b37.md SAIRN-report-cc-b37.txt SAIRN-digest-cc-b37.txt NOT-api NOT-html NOT-sql NOT-tests",
+      "other_session": "fourth",
+      "other_subject": "fourth",
+      "other_task": "b48: dental DEA keying (api/_lib/dental-credentials.js), server gfeMissing snapshot read (api/_lib/dental-gfe.js), Field Map lock kept on installer/date change + real-click lock test.  FILES: api/_lib/dental-credentials.js api/_lib/dental-gfe.js stonedesk.html sairndental.html api/b48-dental-dea-gfe.test.js docs/tier-a-reviews.json docs/sairn-path-manifest.json SAIRN-handoff-fourth-b48.md SAIRN-report-fourth-b48.txt SAIRN-digest-fourth-b48.txt",
+      "other_claimed_at": "2026-10-21T16:31:21Z",
+      "shared_files": [
+        "docs/tier-a-reviews.json"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
