@@ -97,5 +97,15 @@ console.log('3. KPI captions meet 4.5:1 and the AI chips are buttons');
   check('Q1. all four AI prompt chips are <button type="button">', chips.length === 4 && chips.every((c) => /^<button type="button"/.test(c)), chips.join(' | '));
 }
 
+console.log('4. (b52, from the real NVDA run) sidebar emoji icons are hidden from the reader');
+{
+  const line = grab("document.querySelectorAll('.sb .sico').forEach(", '\n');
+  const icons = Array.from({ length: (html.match(/class="sico"/g) || []).length }, (_, i) => El('i' + i, 'sico'));
+  const ctx = { document: { querySelectorAll: (s) => (s === '.sb .sico' ? icons : []) } };
+  vm.createContext(ctx); vm.runInContext(line, ctx);
+  check('E1. every sidebar .sico gets aria-hidden="true" (NVDA read "bar chart Dashboard")',
+    icons.length >= 23 && icons.every((x) => x.attrs['aria-hidden'] === 'true'), icons.length);
+}
+
 console.log('\n' + (fail ? 'FAILED' : 'ok') + '  sairnlegacy a11y pass: ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

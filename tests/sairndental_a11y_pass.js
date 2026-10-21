@@ -129,5 +129,15 @@ console.log('5. the insurance-card drop zone is a keyboard button');
   check('K2. Enter and Space open the file picker; other keys do not', fired.length === 2, JSON.stringify(fired));
 }
 
+console.log('6. (b52, from the real NVDA run) sidebar emoji icons are hidden from the reader');
+{
+  const line = grab("document.querySelectorAll('.sb .sico').forEach(", '\n');
+  const icons = Array.from({ length: (html.match(/class="sico"/g) || []).length }, (_, i) => El('i' + i, 'sico'));
+  const ctx = { document: { querySelectorAll: (s) => (s === '.sb .sico' ? icons : []) } };
+  vm.createContext(ctx); vm.runInContext(line, ctx);
+  check('E1. every sidebar .sico gets aria-hidden="true" (NVDA read "bar chart Dashboard")',
+    icons.length >= 23 && icons.every((x) => x.attrs['aria-hidden'] === 'true'), icons.length);
+}
+
 console.log('\n' + (fail ? 'FAILED' : 'ok') + '  sairndental a11y pass: ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

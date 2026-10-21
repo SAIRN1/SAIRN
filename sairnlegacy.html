@@ -2003,6 +2003,10 @@ function closeNav(){
 // exposed as one (level 2), once, over the real titles -- a screen reader's
 // heading navigation previously found none in any of the 27 panels.
 document.querySelectorAll('.panel .ptitle').forEach(function(t){t.setAttribute('role','heading');t.setAttribute('aria-level','2');});
+// b52 -- CONCEPT (found by the real NVDA run): the sidebar's emoji icon is
+// decoration, so it is hidden from the reader -- NVDA read each item as
+// "bar chart Dashboard", the glyph's name before the item's.
+document.querySelectorAll('.sb .sico').forEach(function(s){s.setAttribute('aria-hidden','true');});
 function nav(id){
   closeNav();
   document.querySelectorAll('.modal.on').forEach(function(m){m.classList.remove('on');});
