@@ -1137,8 +1137,8 @@
       "task": "hover-auditor pre-push scope check merge-base fix and stryker wrapper",
       "claimed_at": "2026-10-21T17:59:50Z",
       "claimed_at_epoch": 1792605590.9833703,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T18:17:00Z",
       "files": null
     }
   ],
