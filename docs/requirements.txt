@@ -1,0 +1,21 @@
+# docs/requirements.txt -- the third-party Python packages the scripts under
+# docs/ import.
+#
+# CONCEPT (cc b42, same logic as tools/requirements.txt): a dependency nobody
+# declares is one Dependabot cannot see.
+#
+# DERIVED, not remembered: an AST walk of every tracked .py file outside tools/
+# (668 files, 2026-10-21) for top-level imports that are neither standard
+# library nor a module in this repo. Under docs/ it finds exactly two packages.
+# A new third-party import belongs here on the same day.
+#
+# Each floor is the lowest version with NO OSV record (2026-10-21, probed per
+# version). Installed here: PyYAML 6.0.3 and markdown-it-py 4.2.0, both OSV 0.
+
+# docs/skill-backups/skill-creator/scripts/quick_validate.py
+# (5.3.1 -> 2 OSV records, 5.4 -> 0)
+PyYAML>=5.4
+
+# docs/2026-10-19-cc-b18-github-render-confirmation.py (imported lazily)
+# (2.1.0 -> 4 OSV records incl. GHSA-jrwr-5x3p-hvc3 / GHSA-vrjv-mxr7-vjf8, 2.2.0 -> 0)
+markdown-it-py>=2.2.0

@@ -1,0 +1,15 @@
+# tests/requirements.txt -- the third-party Python packages tests/ imports.
+#
+# CONCEPT (cc b42, same logic as tools/requirements.txt): a dependency nobody
+# declares is one Dependabot cannot see.
+#
+# DERIVED, not remembered: an AST walk of every tracked .py file outside tools/
+# (668 files, 2026-10-21) for top-level imports that are neither standard
+# library nor a module in this repo. Under tests/ it finds exactly one.
+# A new third-party import belongs here on the same day.
+#
+# The floor is the lowest version with NO OSV record (2026-10-21, probed
+# per version: 5.3.1 -> 2 records, 5.4 -> 0). Installed here: 6.0.3, OSV 0.
+
+# tests/run_cron_liveness_probe.py (imported inside the probe, not at module top)
+PyYAML>=5.4
