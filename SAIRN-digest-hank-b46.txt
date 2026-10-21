@@ -1,0 +1,14 @@
+HANK b46 DIGEST -- 2026-10-21 -- leg_settings audit write built; live owner read/write verified
+CONTEXT 53.3% of 1,000,000 -- 533,497 tokens, measured.
+STATUS: da7c0fc6d on origin/main, NOT FORCED. No Tier A obligation (gate: no Tier A resource).
+1. Each saved change writes one audit row: owner, time, field before -> after.
+2. Refused or no-op writes log nothing; a failed log write keeps the save, answers audited:false.
+3. Existing CHECK refuses 'settings_changed': sql/sairnlegacy_audit_log_settings_event.sql adds it, NOT RUN.
+4. Test 32/0 incl. a mutant that stubs the audit write; leg suites green.
+5. Live on LEG-PINNACLE-2026: owner write 200 (grants live, no 503), read-back matches, original restored.
+6. Live audited:false, as expected until the SQL runs.
+DECISION-NEEDED (Michael): run sql/sairnlegacy_audit_log_settings_event.sql.
+NEXT: cc Tier A on 38b2b5069 (b45); fourth owner UI.
+CHANGED: api/sd-data.js, api/b45-leg-settings-owner-write.test.js, sql/sairnlegacy_audit_log_settings_event.sql.
+EVIDENCE-path: SAIRN-handoff-hank-b46.md, SAIRN-report-hank-b46.txt
+UNVERIFIED: audited:true live (needs the SQL run first).

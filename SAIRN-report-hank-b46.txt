@@ -1,0 +1,23 @@
+HANK b46 REPORT -- 2026-10-21
+
+1. leg_settings AUDIT WRITE -- BUILT, PUSHED (da7c0fc6d). Logging live only after one SQL file runs.
+   Concept: every settings change that is actually SAVED writes one row to sairnlegacy_audit_log naming the owner,
+   the time and each changed field's before -> after; a failed log write never undoes the save but the answer
+   says audited:false; a refused or no-op write logs nothing (audited:null).
+   event_type 'settings_changed', detail {resource, first_save, changed:{field:{from,to}}}.
+   The existing migration's CHECK does not admit it -> sql/sairnlegacy_audit_log_settings_event.sql (NOT RUN).
+   tools/audit_event_type_check.py correctly reports settings_changed as rejected by the live CHECK until then.
+   api/b45-leg-settings-owner-write.test.js 32/0 (A1-A6 + mutant M3); b22 23/0, b29 21/0, overlap 36/0, matrix 37/0.
+   No Tier A obligation: the gate answered that the change names no Tier A resource.
+
+2. LIVE OWNER READ/WRITE -- VERIFIED on demo licence LEG-PINNACLE-2026 (published demo owner; PIN never printed).
+     login 200 owner | read 200 saved true, through_the_home, grants_supported true
+     write direct_to_family + one grant -> 200 ok (no 503: grants SQL live), audited false (CHECK not yet run)
+     read back -> direct_to_family, the grant, updated_by sairn-demo-owner
+     restore -> 200; read -> through_the_home, {} -- matches the original
+   The first loop attempt hit the pre-b46 deploy and wrote+restored the same way. The row exists afterwards with
+   the original values.
+
+3. PUSH: da7c0fc6d on origin/main, first attempt, not forced; deliverables commit follows.
+
+4. OPEN: Michael runs sql/sairnlegacy_audit_log_settings_event.sql; cc Tier A on 38b2b5069; fourth owner UI.
