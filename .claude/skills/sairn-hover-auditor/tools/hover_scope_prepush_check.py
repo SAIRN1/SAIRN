@@ -74,6 +74,25 @@ def is_allowed(path, prefixes):
     return False
 
 
+EMPTY_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
+
+
+def _diff_range(git_range):
+    # A..B is a two-dot TREE diff: when the remote tip A is ahead of the
+    # pusher's base, A's own files show up as changed and get blamed on the
+    # pusher (#1655). A...B diffs merge-base(A, B)..B, i.e. only the commits
+    # actually being pushed. A merge-base that cannot be computed makes git
+    # diff fail, which changed_files() turns into CouldNotRun (fail closed).
+    # The empty-tree sentinel (first push of a ref) is a tree, not a commit,
+    # so it has no merge-base and keeps the two-dot form.
+    if '...' in git_range or '..' not in git_range:
+        return git_range
+    left, right = git_range.split('..', 1)
+    if left == EMPTY_TREE:
+        return git_range
+    return '%s...%s' % (left, right)
+
+
 def _git_diff(git_range, cwd):
     # stdin=DEVNULL on EVERY subprocess this module spawns, on purpose: this
     # script runs inside a git pre-push hook, which is itself fed ref lines
@@ -84,7 +103,7 @@ def _git_diff(git_range, cwd):
     # broke the real downstream hover_auditor_scope_gate.py's own stdin
     # read, "supplied NO ref lines on stdin", purely by being in the
     # process tree. DEVNULL makes that class of interference impossible.
-    return subprocess.run(['git', 'diff', '--name-only', git_range],
+    return subprocess.run(['git', 'diff', '--name-only', _diff_range(git_range)],
                            capture_output=True, text=True, cwd=cwd,
                            stdin=subprocess.DEVNULL)
 
@@ -195,6 +214,82 @@ def run_fixtures():
     except CouldNotRun:
         raised2 = True
     c('a manifest missing allowed_prefixes entirely also raises, not an empty list', raised2, True)
+
+    # REAL TWO-CLONE HISTORY (#1655, b79). A bare origin; clone X pushes a
+    # commit touching an out-of-manifest file; clone Y, which has not pulled
+    # it, holds one in-manifest commit and pushes. The hook's range is
+    # origin_tip..Y_head. Under a two-dot TREE diff the remote's file shows up
+    # as changed (Y lacks it), so the pusher is blamed for X's file.
+    def g(cwd, *args):
+        env = dict(os.environ, GIT_AUTHOR_NAME='t', GIT_AUTHOR_EMAIL='t@t',
+                   GIT_COMMITTER_NAME='t', GIT_COMMITTER_EMAIL='t@t')
+        r = subprocess.run(['git', '-c', 'core.hooksPath=' + os.devnull] + list(args),
+                           capture_output=True, text=True, cwd=cwd, env=env,
+                           stdin=subprocess.DEVNULL)
+        if r.returncode != 0:
+            raise RuntimeError('fixture git %s failed: %s' % (args, r.stderr.strip()))
+        return r.stdout.strip()
+
+    def put(cwd, rel, body):
+        full = os.path.join(cwd, rel)
+        os.makedirs(os.path.dirname(full), exist_ok=True)
+        with open(full, 'w', encoding='utf-8') as fh:
+            fh.write(body)
+        g(cwd, 'add', rel)
+
+    base = tempfile.mkdtemp()
+    origin = os.path.join(base, 'origin.git')
+    xdir = os.path.join(base, 'x')
+    ydir = os.path.join(base, 'y')
+    man = os.path.join(base, 'manifest.json')
+    with open(man, 'w', encoding='utf-8') as fh:
+        json.dump({'allowed_prefixes': ['hover/']}, fh)
+    g(base, 'init', '-q', '--bare', '-b', 'main', origin)
+    g(base, 'clone', '-q', origin, xdir)
+    put(xdir, 'hover/seed.txt', 'seed')
+    g(xdir, 'commit', '-q', '-m', 'seed')
+    g(xdir, 'push', '-q', 'origin', 'HEAD:main')
+    g(base, 'clone', '-q', origin, ydir)
+    put(xdir, 'api/remote-only.js', 'x')
+    g(xdir, 'commit', '-q', '-m', 'remote moves ahead, out of manifest')
+    g(xdir, 'push', '-q', 'origin', 'HEAD:main')
+    put(ydir, 'hover/mine.txt', 'mine')
+    g(ydir, 'commit', '-q', '-m', 'in-manifest')
+    # Y has NOT fetched X's commit; the hook gets the real remote tip as remote_sha.
+    tip = g(xdir, 'rev-parse', 'HEAD')
+    g(ydir, 'fetch', '-q', 'origin')
+    yhead = g(ydir, 'rev-parse', 'HEAD')
+    files, viol = check('%s..%s' % (tip, yhead), man, cwd=ydir)
+    c('stale pusher: remote-only file is NOT blamed on the pusher (merge-base diff)', viol, [])
+    c('stale pusher: only the pusher own commit is listed', files, ['hover/mine.txt'])
+
+    # CONTROL: a push that really adds an out-of-manifest file is still rejected.
+    put(ydir, 'api/mine-bad.js', 'bad')
+    g(ydir, 'commit', '-q', '-m', 'really out of manifest')
+    yhead2 = g(ydir, 'rev-parse', 'HEAD')
+    _, viol2 = check('%s..%s' % (tip, yhead2), man, cwd=ydir)
+    c('control: a pushed out-of-manifest file is still rejected', viol2, ['api/mine-bad.js'])
+
+    # CONTROL: first push of a ref (empty-tree left side) still lists everything.
+    empty = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
+    files3, viol3 = check('%s..%s' % (empty, yhead2), man, cwd=ydir)
+    c('control: first push (empty-tree sentinel) still lists every file in the pushed tree',
+      (sorted(files3), sorted(viol3)),
+      (['api/mine-bad.js', 'hover/mine.txt', 'hover/seed.txt'], ['api/mine-bad.js']))
+
+    # CONTROL: an unrelated-history range has no merge-base -> COULD NOT RUN, never a pass.
+    g(base, 'init', '-q', '-b', 'main', os.path.join(base, 'z'))
+    zdir = os.path.join(base, 'z')
+    put(zdir, 'hover/z.txt', 'z')
+    g(zdir, 'commit', '-q', '-m', 'unrelated')
+    g(zdir, 'fetch', '-q', ydir, 'HEAD')
+    zhead = g(zdir, 'rev-parse', 'HEAD')
+    raised3 = False
+    try:
+        check('%s..%s' % (yhead2, zhead), man, cwd=zdir)
+    except CouldNotRun:
+        raised3 = True
+    c('control: no merge-base fails closed (CouldNotRun), not an empty pass', raised3, True)
 
     print('%s' % ('ALL OK' if ok else 'SOME FAILED'))
     return ok
