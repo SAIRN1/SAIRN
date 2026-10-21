@@ -1738,6 +1738,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b36-projection-runtime-differential.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "'F4. a key missing from the read -> fails B, not skipped');"
+    }
+   ],
+   "sha": "243855818f8154fd1f5f7a7e15da41af7e1b6a15",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b36-sd-customers-deleted-row.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "243855818f8154fd1f5f7a7e15da41af7e1b6a15",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/b33-route-map.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -4023,6 +4044,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b36-projection-runtime-differential.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "'F4. a key missing from the read -> fails B, not skipped');"
+    }
+   ],
+   "sha": "54189ada7e1f2da284bff969b89063ab40a98256",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b36-sd-customers-deleted-row.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "54189ada7e1f2da284bff969b89063ab40a98256",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/bridge-unknown-action.test.js",
    "class": "test file",
    "level": "WEAKENING",
@@ -4509,6 +4551,27 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "64a1e5e899c0178fb8db16fffd74c8cff0e82e84",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b36-projection-runtime-differential.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "'F4. a key missing from the read -> fails B, not skipped');"
+    }
+   ],
+   "sha": "64afd76208e6dbf8a36e227b133923520a6b93fb",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b36-sd-customers-deleted-row.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "64afd76208e6dbf8a36e227b133923520a6b93fb",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -12784,6 +12847,27 @@
     }
    ],
    "sha": "fcd8b188d966cf5dc230a4aeb63a3c3e58d1b896",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b36-projection-runtime-differential.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "'F4. a key missing from the read -> fails B, not skipped');"
+    }
+   ],
+   "sha": "fd11e9593e8ef13175a5ff53cfcc930520b5a475",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b36-sd-customers-deleted-row.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "fd11e9593e8ef13175a5ff53cfcc930520b5a475",
    "criteria_version": "2026-10-06.1"
   },
   {
