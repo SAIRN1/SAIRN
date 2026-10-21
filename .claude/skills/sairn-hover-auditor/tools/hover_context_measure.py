@@ -12,13 +12,32 @@ everyone else's second-opinion tooling to (see SKILL.md, Spec 3).
 WHAT IS ACTUALLY MEASURED, NAMED PRECISELY RATHER THAN IMPLIED. Each
 written assistant-turn entry in a session's own .jsonl transcript carries
 a real `message.usage` object from the API response: `input_tokens` (new,
-uncached tokens sent this turn) and `cache_read_input_tokens` (tokens
-served from prompt cache -- still real context occupying the window, just
-billed differently). Their SUM is the real total context size the model
-was holding for that turn -- not an estimate, the API's own reported
+uncached tokens sent this turn), `cache_read_input_tokens` (tokens served
+from prompt cache -- still real context occupying the window, just billed
+differently) and `cache_creation_input_tokens` (tokens WRITTEN to the cache
+this turn -- they were sent in the prompt too, so they occupy the window
+exactly like the other two). Their SUM is the real total context size the
+model was holding for that turn -- not an estimate, the API's own reported
 figure, read back from disk rather than guessed. This is the exact fix
 the b66 dispatch asked for: "report that real figure in your digest's
 CONTEXT line going forward instead of self-estimate/UNKNOWN."
+
+B75 CORRECTION (#1649), AS-FOUND FIRST. Until b75 this tool summed only the
+first two terms and its docstring said "their SUM" about those two. A
+prompt-cache expiry (an overnight gap past the 1h TTL) turns almost the
+whole prompt into cache CREATION on the next turn, so the figure collapsed:
+on session ea4273e1's turn at 2026-10-21T12:01:56Z the usage block was
+{input_tokens: 2, cache_creation_input_tokens: 751945,
+cache_read_input_tokens: 30218} and this tool printed 30,220 tokens = 3.0%
+for a context of 782,165 tokens = 78.2% (Michael read 81% off the session
+status line, which sums all three terms). A measured all-clear that was not
+one -- the worst direction for a wrap-up gate to be wrong in.
+Every fixture passed throughout (26/26) because none of them held a usage
+block with the field in it, and C2 asserted the defective formula by name
+("sums BOTH fields"): the fixtures were written from the same picture of
+the usage block as the code. The fixtures below now include the three
+verbatim usage blocks around that expiry (R-series) and a control showing
+the two-term formula is what they discriminate against.
 
 WHY THE *LAST* ASSISTANT TURN, AND THE HONEST STALENESS THIS IMPLIES. The
 transcript is written turn-by-turn as the session progresses; the entry
@@ -277,10 +296,14 @@ def window_for(model, observed_max, declared=None):
 
 
 def context_figure(usage):
-    """The real total: new tokens this turn + tokens served from cache.
-    Both are real context the model held; splitting them is a billing
-    distinction, not a context-size one."""
-    return int(usage.get('input_tokens') or 0) + int(usage.get('cache_read_input_tokens') or 0)
+    """The real total: new tokens this turn + tokens served from cache +
+    tokens written to cache this turn. All three are real context the model
+    held; splitting them is a billing distinction, not a context-size one.
+    Omitting cache_creation_input_tokens (the pre-b75 form, #1649) reads
+    ~3% for a ~78% context on the first turn after a cache expiry."""
+    return (int(usage.get('input_tokens') or 0)
+            + int(usage.get('cache_read_input_tokens') or 0)
+            + int(usage.get('cache_creation_input_tokens') or 0))
 
 
 def pick_session_file(project_dir, session_id=None):
@@ -329,11 +352,13 @@ def cmd_measure(argv):
 
     sid = os.path.splitext(os.path.basename(path))[0]
     figure = context_figure(usage)
-    print('CONTEXT: %d tokens (input_tokens=%d + cache_read_input_tokens=%d), '
+    print('CONTEXT: %d tokens (input_tokens=%d + cache_read_input_tokens=%d '
+          '+ cache_creation_input_tokens=%d), '
           'measured from the last completed assistant turn (#%d of this '
           'transcript, not necessarily this instant) in session %s (%s)'
           % (figure, int(usage.get('input_tokens') or 0),
              int(usage.get('cache_read_input_tokens') or 0),
+             int(usage.get('cache_creation_input_tokens') or 0),
              turn_count, sid, path))
 
     # ── THE RED-FLAG GATE, mechanical since b68 (was prose at 70%) ────────
@@ -404,6 +429,24 @@ def _selftest():
     non_assistant_line = json.dumps({'type': 'mode', 'mode': 'default'})
     malformed_line = '{not valid json'
 
+    # The token-count fields of three REAL usage blocks from session
+    # ea4273e1-020c-45dd-81bd-177029f7e953 (H1 b74), copied from its transcript
+    # rather than built from this tool's own picture of the shape -- that
+    # picture is what hid #1649. A = last turn before the overnight gap
+    # (2026-10-20T13:28:49Z), B = the first turn after it, cache rebuilt
+    # (2026-10-21T12:01:56Z), C = the turn after the rebuild (12:03:01Z).
+    REAL_A = {'input_tokens': 2, 'cache_creation_input_tokens': 795,
+              'cache_read_input_tokens': 779618}
+    REAL_B = {'input_tokens': 2, 'cache_creation_input_tokens': 751945,
+              'cache_read_input_tokens': 30218}
+    REAL_C = {'input_tokens': 2, 'cache_creation_input_tokens': 2889,
+              'cache_read_input_tokens': 782163}
+
+    def two_term(u):
+        """The PRE-b75 formula, kept here only as the control the R-series
+        discriminates against -- never used for a real reading."""
+        return int(u.get('input_tokens') or 0) + int(u.get('cache_read_input_tokens') or 0)
+
     total += 1
     usage, count, err = last_assistant_usage([good_line, second_line])
     if err is None and context_figure(usage) == 2007 and count == 2:
@@ -429,11 +472,45 @@ def _selftest():
        'COULD_NOT_RUN, never a silent 0',
        last_assistant_usage([non_assistant_line, malformed_line])[0] is None)
 
-    ck('C2 context_figure sums BOTH fields, not just one',
+    ck('C2 context_figure sums ALL THREE terms (input + cache_read + '
+       'cache_creation), not a subset -- this arm used to read "sums BOTH '
+       'fields" and asserted the pre-b75 defect by name',
+       context_figure({'input_tokens': 3, 'cache_read_input_tokens': 4,
+                       'cache_creation_input_tokens': 5}) == 12)
+
+    ck('C2b a block with no cache_creation key still sums the other two '
+       '(the key is absent on turns that wrote nothing)',
        context_figure({'input_tokens': 3, 'cache_read_input_tokens': 4}) == 7)
 
     ck('C3 missing fields default to 0 rather than raising',
        context_figure({}) == 0)
+
+    # ── R-series, b75 (#1649): the REAL blocks around a cache expiry ───────
+    ck('R1 the first turn after a cache expiry (REAL_B: 2 new + 751,945 '
+       'created + 30,218 read) reads 782,165 tokens = 78.2%, not 30,220 = 3.0%',
+       context_figure(REAL_B) == 782165)
+    ck('R2 CONTROL: the pre-b75 two-term formula reads 30,220 on REAL_B -- '
+       'the exact false all-clear -- so R1 can only pass with the third term',
+       two_term(REAL_B) == 30220 and context_figure(REAL_B) != two_term(REAL_B))
+    ck('R3 the third term does not disturb the turns either side of the '
+       'expiry: REAL_A 780,415 and REAL_C 785,054 (creation is small there)',
+       context_figure(REAL_A) == 780415 and context_figure(REAL_C) == 785054)
+
+    expiry_small = json.dumps({'type': 'assistant',
+                                'message': {'role': 'assistant',
+                                            'usage': {'input_tokens': 2,
+                                                      'cache_read_input_tokens': 100000}}})
+    expiry_big = json.dumps({'type': 'assistant',
+                              'message': {'role': 'assistant',
+                                          'usage': {'input_tokens': 2,
+                                                    'cache_creation_input_tokens': 250000,
+                                                    'cache_read_input_tokens': 30000}}})
+    ck('R4 observed_max_prompt counts a prompt that is mostly cache CREATION '
+       '(280,002, not the 100,002 the two-term formula sees), so the window '
+       'inference does not fall back to 200k for a session that already held '
+       '280k',
+       observed_max_prompt([expiry_small, expiry_big]) == 280002
+       and window_for('claude-sonnet-5-5', 280002)[0] == 1000000)
 
     import tempfile
     tmp = tempfile.mkdtemp(prefix='hover_context_measure_fx_')
@@ -539,6 +616,47 @@ def _selftest():
         ck('T12 a session with no declared-window marker line returns None '
            'with a reason, so the caller falls back to the inference rather '
            'than to a guess', declared_missing is None and dwhy)
+
+        # ── R5/R6: the REAL transition through the REAL entry point. R1-R4
+        # call context_figure directly, which is the bad state reached
+        # "directly"; these write a transcript whose last turn is the
+        # post-expiry one and read it back through cmd_measure, the way a
+        # real session arrives at that state (Standing Rule 3, 2026-09-28).
+        import contextlib
+        import io
+
+        def run_measure(turn_usages, sid):
+            with open(os.path.join(tmp, sid + '.jsonl'), 'w', encoding='utf-8') as fh:
+                for u in turn_usages:
+                    fh.write(json.dumps({'type': 'assistant',
+                                         'message': {'role': 'assistant',
+                                                     'model': 'claude-sonnet-5-5',
+                                                     'usage': u}}) + '\n')
+            global PROJECT_DIR
+            saved_dir = PROJECT_DIR
+            PROJECT_DIR = tmp
+            buf = io.StringIO()
+            try:
+                with contextlib.redirect_stdout(buf):
+                    rc = cmd_measure(['--session', sid])
+            finally:
+                PROJECT_DIR = saved_dir
+            return rc, buf.getvalue()
+
+        rc5, out5 = run_measure([REAL_A, REAL_B], 'selftest-r5-expiry')
+        ck('R5 a transcript whose LAST turn is the post-expiry one (REAL_A '
+           'then REAL_B) reports 782165 tokens = 78.2%, shows the creation '
+           'term in the printed breakdown, and is under the 85% line',
+           rc5 == EXIT_OK and 'CONTEXT: 782165 tokens' in out5
+           and 'cache_creation_input_tokens=751945' in out5 and '78.2%' in out5)
+
+        rc6, out6 = run_measure([REAL_A, dict(REAL_B, cache_creation_input_tokens=880000)],
+                                'selftest-r6-expiry-redflag')
+        ck('R6 the same transition with a 880,000-token rebuild is 91.0% and '
+           'RED-FLAGS (exit 1) -- under the two-term formula it read 3.0% and '
+           'passed',
+           rc6 == EXIT_RED_FLAG and 'RED FLAG' in out6 and '91.0%' in out6
+           and two_term(dict(REAL_B, cache_creation_input_tokens=880000)) == 30220)
     finally:
         import shutil
         shutil.rmtree(tmp, ignore_errors=True)
