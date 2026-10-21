@@ -1170,8 +1170,8 @@
       "task": "hover-auditor b82 vendor enclosing function context and recheck of carried items",
       "claimed_at": "2026-10-21T19:45:12Z",
       "claimed_at_epoch": 1792611912.2987552,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T20:12:00Z",
       "files": null
     }
   ],
