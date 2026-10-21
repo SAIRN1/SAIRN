@@ -8161,6 +8161,34 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-21T15:12:12Z",
+      "opened_at_sha": "43c32bf6cd33a79952787ca7ac982a5a8348c7b1",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 4,
+      "resources": [
+        "rf_job_hazard_assessments",
+        "rf_job_warranties",
+        "rf_roof_sections",
+        "rf_safety_equipment",
+        "rf_warranty_tiers",
+        "sub_assignments",
+        "subcontractors"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/b35-missing-table-writes.test.js"
+      ],
+      "what": "cody b35: (1) eight sairnroofing write branches (subcontractors, sub_assignments, rf_safety_equipment, rf_job_hazard_assessments, rf_buildings, rf_roof_sections, rf_warranty_tiers, rf_job_warranties) now classify a 404/400 by body via notProvisioned -- missing table 503 NOT_PROVISIONED, 23xxx 400 ROW_REFUSED -- instead of a generic 502; response shape only, no new data path. (2) accounting.js revoke: consent PATCH guarded by revoked_on=is.null, zero rows re-read to NO_CONSENT / already_revoked / 502 REVOKE_UNCONFIRMED. Reviewer point: confirm no caller relied on the 502 shape, and that a repeat revoke reaching the token discard is intended.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-21T15:12:12Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

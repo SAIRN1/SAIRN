@@ -18,6 +18,7 @@
   },
 
   "_the_first_two_override_entries_and_why_they_are_FILES_and_not_a_prefix": "hank b23, 2026-10-20. THE FIRST ENTRIES THIS KEY HAS EVER CARRIED, and they are two exact filenames rather than 'tools/' on purpose: an override that opened the whole directory would be the split switched off for one population under a nicer name. (1) tools/law_trust_lock_live_probe.py is a NEW file, assigned by Michael in the b23 dispatch -- 'Live-prove ... the trust-lock hard-lock ... against the deployed URL' -- and a live probe has no other home on this platform; every one of the nine existing ones is in tools/. It collides with nothing cc holds. (2) tools/tooling_inventory.py is EXISTING and cc's, and it is here because the pre-commit gate commit_tool_entry_check REFUSES a new tools/*.py with no PURPOSES entry, so adding the probe and leaving that file alone are mutually exclusive -- the edit is one dictionary entry describing what the probe CATCHES and touches none of the four tools/ files cc's b26 claim names. BOTH ARE DECLARED HERE RATHER THAN SKIPPED WITH SAIRN_SKIP=path-scope, because a declaration somebody can read is the whole point of this key and a skip would have left no record that the area was entered deliberately. REMOVE BOTH once cc has reviewed them; an override nobody prunes becomes an allowlist.",
+  "_assigned_overrides_why_cody_b35_REPLACES_b34": "REPLACED FOR b35 2026-10-21 (the b34 list is replaced, not extended). Dropped because b35 does not edit them: api/_resources/stonedesk.js, api/_resources/index.js, api/b34-accounting-revoke.test.js, api/b34-routed-defects.test.js, api/sd-data-quote-request-soft-delete.test.js, docs/b33-sweep/pair_by_resource.py. KEPT: api/sd-data.js (eight sibling writes routed through notProvisioned, b34 handoff s4.3), api/accounting.js (a repeat revoke no longer rewrites revoked_on/revoked_by, b34 handoff s4.4). NEW, each a single file: the two b35 tests, and api/sd-data-customer-soft-delete.test.js (red at HEAD since 2026-09-26; stale fixture, assigned by Michael as b35 item 3). No wildcard, no prefix.",
   "_assigned_overrides_why_cody_b34_REPLACES_b33": "REPLACED FOR b34 2026-10-21 (the b33 list is replaced, not extended). Dropped because b34 does not edit them: api/sd-sub-data.js, api/b33-projection-order-sweep.test.js, docs/b33-sweep/projection_order_scan.py, docs/b33-sweep/strip_cross.py. KEPT: api/sd-data.js (dental per-resource schema message, prequal/bonding missing-table classification, the request_photos read verb). NEW, each a single file: api/accounting.js (the unchecked revoke PATCH and 400-as-NOT_PROVISIONED, cc's b29 defects 3 and 4), api/_resources/stonedesk.js and api/_resources/index.js (declaring and classifying request_photos), api/sd-data-quote-request-soft-delete.test.js (its pinned verb list is the FULL list on purpose), the two new b34 tests, and docs/b33-sweep/pair_by_resource.py. No wildcard, no prefix.",
   "_assigned_overrides_why_cody_b33_REPLACES_b32": "REPLACED FOR b33 2026-10-20 (the b32 list is replaced, not extended). api/b32-rf-jobs-projection.test.js is DROPPED: b33 does not edit it. api/sd-data.js stays (the alf_payer_rules, alf_compliance_rules and bld_draws projections). TWO ARE NEW, each a single file: api/sd-sub-data.js (flattenProgressPhoto, one function) and the NEW api/b33-projection-order-sweep.test.js that proves the four live sites. Two more, each a single file, are the sweep's scanner and its strip-list cross-check under docs/b33-sweep/ (docs/ is fourth's; the handoff cites these paths). No wildcard, no prefix.",
   "_assigned_overrides_why_cody_b32_REPLACES_b31": "REPLACED FOR b32 2026-10-20 (the b31 list is replaced, not extended). Six of b31's eight paths are DROPPED because b32 does not edit them (b30-cap-per-action.test.js, extra-actions.test.js, sairncode.js, sairnsenior.js, push_retry.py). TWO REMAIN, each a single file: api/sd-data.js (the two rf_jobs Object.assign projections, fourth's b37 review section 7.1) and the NEW api/b32-rf-jobs-projection.test.js that proves them. No wildcard, no prefix.",
@@ -44,12 +45,9 @@
     "cody": [
       "api/sd-data.js",
       "api/accounting.js",
-      "api/_resources/stonedesk.js",
-      "api/_resources/index.js",
-      "api/b34-accounting-revoke.test.js",
-      "api/b34-routed-defects.test.js",
-      "api/sd-data-quote-request-soft-delete.test.js",
-      "docs/b33-sweep/pair_by_resource.py"
+      "api/b35-missing-table-writes.test.js",
+      "api/b35-accounting-revoke-repeat.test.js",
+      "api/sd-data-customer-soft-delete.test.js"
     ],
     "fourth": [
       "tests/sairnbiz_ot_threshold_coalesce.js",
