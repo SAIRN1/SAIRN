@@ -8408,6 +8408,30 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-21T19:13:45Z",
+      "opened_at_sha": "38b2b5069598f41542b65c0e6a98e31cf05969fc",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 5,
+      "resources": [
+        "leg_cremations",
+        "leg_dispatches",
+        "leg_invoices"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/b45-leg-settings-owner-write.test.js"
+      ],
+      "what": "hank b45 (38b2b5069): leg_settings -- the SAIRNlegacy owner's F2/F3 write path (table sairnlegacy_settings). Owner-only read/write branch in api/sd-data.js; values validated so a stored setting is exactly what legRoles.decide() enforces (billing enum, apprentice lists against LEG_ROLE_MATRIX with no overlap and countersign only on countersign-required resources, livery_grants per employee only for liveryGrantable() resources under the merged billing). REVIEWER: attack (1) whether owner-only is right or director should also set F2/F3, (2) the refusal-not-narrowing choice for a stored row written before this, (3) partial-write merge semantics, (4) the absent audit-log write. Test api/b45-leg-settings-owner-write.test.js 25/0 with two mutants.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-21T19:13:45Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
