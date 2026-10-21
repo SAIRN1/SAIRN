@@ -36594,6 +36594,51 @@
       "recurrence_open": "RESOURCE NAMES ARE STILL READ AS TEXT: resource_names() parses the `resources: [...]` array from the source, so a registry whose resources are built in a shape that parser does not know is a SHAPE_ERROR (loud), not a node read. Converting that half was out of this change's scope."
     },
     {
+      "commit": "17e03b61b525",
+      "date": "2026-10-21",
+      "subject": "fix(hover scope pre-push, #1655): diff against the merge-base, not the two trees",
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools/hover_scope_prepush_check.py"
+      ],
+      "lines_added": 96,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": ".claude/skills/sairn-hover-auditor/tools/hover_scope_prepush_check.py _git_diff ran `git diff --name-only remote_sha..local_sha`, a two-dot TREE diff, so when origin had moved ahead of the pusher the remote's own files appeared as changed and were blamed on the pusher (\"3 of 14 outside the manifest\"). The check failed closed and harmlessly, but a legitimate push was refused and a gate cycle burned (hover b75, logged #1655). Fixed: diff remote_sha...local_sha (merge-base to head); the empty-tree first-push sentinel keeps the two-dot form; a range with no merge-base is COULD NOT RUN. Fixture on a real bare-origin two-clone history failed on the old code and passes now, plus controls (a really out-of-manifest push still rejected, first push lists every file, unrelated history fails closed).",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "4721797c6690",
+        "date": "2026-10-19",
+        "subject": "feat(hover): clone-local pre-push scope manifest check, h1 b65",
+        "lag_days": 2
+      },
+      "citation_note": "1.11 is cited for the fix's contract, not for a fail-open: the defect was a false REJECTION. The fix keeps the fail-closed direction: a range whose merge-base cannot be computed is COULD NOT RUN (exit 2), never an empty pass.",
+      "contributing_factors": [
+        {
+          "factor": "The range was passed to git diff as a two-dot tree comparison, which is only correct when the remote tip is an ancestor of the pushed head.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "_diff_range() turns remote..local into remote...local for every range whose left side is a commit."
+        },
+        {
+          "factor": "All seven fixtures were pure functions; none drove git, so the stale-pusher shape (the one that occurs with five sessions pushing to one branch) was never represented.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Fixtures on a real bare origin with two clones: stale pusher, really-out-of-manifest control, first-push control, no-merge-base control."
+        }
+      ],
+      "recurrence_open": "THE HOOK'S RANGE IS STILL BUILT FROM THE REMOTE SHA THE PUSH REPORTS: a remote tip this clone has not fetched is still resolved by one fetch-and-retry, and a force-push that rewrites history shows every commit since the merge-base, which is correct but large. Rebase onto origin/main before pushing remains cheaper than relying on either."
+    },
+    {
       "commit": "1b8ac96fac7b",
       "date": "2026-10-21",
       "subject": "fix(cc b38): a deleted employee row is refused on every registered resource, not only sd_customers",
@@ -36688,51 +36733,6 @@
         }
       ],
       "recurrence_open": "NOT CLOSED. The same (x.ok&&x.data)||{} idiom may exist on other rfDataRaw reads in sairnroofing.html and was not swept."
-    },
-    {
-      "commit": "17e03b61b525",
-      "date": "2026-10-21",
-      "subject": "fix(hover scope pre-push, #1655): diff against the merge-base, not the two trees",
-      "files": [
-        ".claude/skills/sairn-hover-auditor/tools/hover_scope_prepush_check.py"
-      ],
-      "lines_added": 96,
-      "lines_removed": 1,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "low",
-      "detection_method": "hover-audit",
-      "summary": ".claude/skills/sairn-hover-auditor/tools/hover_scope_prepush_check.py _git_diff ran `git diff --name-only remote_sha..local_sha`, a two-dot TREE diff, so when origin had moved ahead of the pusher the remote's own files appeared as changed and were blamed on the pusher (\"3 of 14 outside the manifest\"). The check failed closed and harmlessly, but a legitimate push was refused and a gate cycle burned (hover b75, logged #1655). Fixed: diff remote_sha...local_sha (merge-base to head); the empty-tree first-push sentinel keeps the two-dot form; a range with no merge-base is COULD NOT RUN. Fixture on a real bare-origin two-clone history failed on the old code and passes now, plus controls (a really out-of-manifest push still rejected, first push lists every file, unrelated history fails closed).",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover",
-      "injection": {
-        "commit": "4721797c6690",
-        "date": "2026-10-19",
-        "subject": "feat(hover): clone-local pre-push scope manifest check, h1 b65",
-        "lag_days": 2
-      },
-      "citation_note": "1.11 is cited for the fix's contract, not for a fail-open: the defect was a false REJECTION. The fix keeps the fail-closed direction: a range whose merge-base cannot be computed is COULD NOT RUN (exit 2), never an empty pass.",
-      "contributing_factors": [
-        {
-          "factor": "The range was passed to git diff as a two-dot tree comparison, which is only correct when the remote tip is an ancestor of the pushed head.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "_diff_range() turns remote..local into remote...local for every range whose left side is a commit."
-        },
-        {
-          "factor": "All seven fixtures were pure functions; none drove git, so the stale-pusher shape (the one that occurs with five sessions pushing to one branch) was never represented.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Fixtures on a real bare origin with two clones: stale pusher, really-out-of-manifest control, first-push control, no-merge-base control."
-        }
-      ],
-      "recurrence_open": "THE HOOK'S RANGE IS STILL BUILT FROM THE REMOTE SHA THE PUSH REPORTS: a remote tip this clone has not fetched is still resolved by one fetch-and-retry, and a force-push that rewrites history shows every commit since the merge-base, which is correct but large. Rebase onto origin/main before pushing remains cheaper than relying on either."
     },
     {
       "commit": "95e31d3b780e",
@@ -37096,6 +37096,57 @@
         }
       ],
       "recurrence_open": "The gate still estimates the provider's limit instead of reading it, and nothing enumerates the vendor-calling paths: a path added later that calls the vendor without a writer is caught only if someone adds it to these fixtures. Same family as #1647 (no visibility of the daily budget) at the per-minute scale."
+    },
+    {
+      "commit": "2fe89f267317",
+      "date": "2026-10-21",
+      "subject": "fix(stonedesk): request-photo barriers checked end to end, keyboard close, and arms that kill cc's b38 mutants",
+      "files": [
+        "api/b40-stonedesk-style-profile-request-photos.test.js",
+        "api/stonedesk-public.js",
+        "stonedesk.html"
+      ],
+      "lines_added": 213,
+      "lines_removed": 9,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "StoneDesk quote-request photos had ONE effective barrier, not two: api/stonedesk-public.js checked only the data-URL prefix, so 'data:image/png;base64,AAAA\" onerror=...' could be stored and the staff overlay's pcHtml escaping was all that stopped it; the b40 suite held neither barrier (cc b38: three mutants survived 11/11) and the overlay had no keyboard close. The intake and the overlay now require the whole value to be a base64 jpeg/png/webp data URL, escaping is kept, the overlay is a focusable dialog closed by Escape, and api/b40-stonedesk-style-profile-request-photos.test.js drives each barrier with the other removed plus five mutants (27/0; 16/11 on the pre-b44 source).",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "95bf15199b87",
+        "date": "2026-09-04",
+        "subject": "feat(stonedesk): the intake form exists -- built on the public surface that already did",
+        "lag_days": 47
+      },
+      "citation_note": "No numbered rule requires a stored value to be validated by its full shape rather than a prefix; the defence-in-depth intent was stated in the b40 comment, not in a standing rule.",
+      "contributing_factors": [
+        {
+          "factor": "The intake validated the prefix of a data URL, not its whole value, so markup could follow a valid prefix and be stored.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Whole-value regex at intake and at render (PC_PHOTO_RX)."
+        },
+        {
+          "factor": "The b40 hostile sample (javascript:) failed both barriers at once, so no arm could tell which barrier held; three mutants survived.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Arms drive each barrier with the other removed; section M applies the mutants and requires red."
+        },
+        {
+          "factor": "The overlay was built as a click-only layer with no dialog semantics or keyboard path.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "role=dialog, aria-modal, focus in, Escape/click close, focus returned to the opener."
+        }
+      ],
+      "recurrence_open": "Other photo-bearing public intakes (e.g. SAIRNdental public-book) may also check only a prefix; not swept this batch."
     },
     {
       "commit": "d94a2e3d1bf3",

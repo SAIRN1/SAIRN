@@ -8386,6 +8386,28 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-21T18:16:26Z",
+      "opened_at_sha": "2fe89f267317e107471b4969abb4182a57125bdb",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 2,
+      "resources": [
+        "sd_quote_requests"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/b40-stonedesk-style-profile-request-photos.test.js"
+      ],
+      "what": "hank b44 (2fe89f267): request-photo barriers -- api/stonedesk-public.js intake now requires the WHOLE photo value to match ^data:image/(jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$ (was prefix-only); stonedesk.html pcShowRequestPhotos applies the same regex and keeps pcHtml on src/alt, plus dialog semantics and Escape close. REVIEWER: attack (1) whether any legitimate client upload (FileReader data URLs, mobile capture) produces a value the stricter intake now refuses, (2) regex cost on a 1.4M-char value, (3) the test's compiled-from-source intake harness (C8/M5) as evidence. Test 27/0, pre-b44 16/11.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-21T18:16:26Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
