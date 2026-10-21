@@ -4287,8 +4287,8 @@
       "task": "b35 sd-data missing-table writes, accounting revoke guard, customer-soft-delete test",
       "claimed_at": "2026-10-21T14:59:13Z",
       "claimed_at_epoch": 1792594753.4360201,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T15:19:02Z",
       "files": null
     }
   ],
