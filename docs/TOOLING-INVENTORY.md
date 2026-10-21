@@ -21,11 +21,11 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**363 files in `tools/`.** By what actually invokes them:
+**364 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
-| **BLOCKING** | 25 | reachable from something that can refuse a push or a tool call |
+| **BLOCKING** | 26 | reachable from something that can refuse a push or a tool call |
 | **REPORT-ONLY** | 81 | runs automatically on every push, never blocks |
 | **ADVISORY** | 5 | session-start or prompt hooks, informational |
 | **DECIDED** | 79 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
@@ -39,7 +39,7 @@ By what they are, independent of wiring:
 | Kind | Count |
 |---|---:|
 | ADVISORY | 4 |
-| CHECKER | 246 |
+| CHECKER | 247 |
 | GATE | 1 |
 | GENERATOR | 23 |
 | GUARD | 2 |
@@ -150,7 +150,7 @@ outside world. Unwired is the right state for them and is not a finding.
 
 ---
 
-## BLOCKING (25)
+## BLOCKING (26)
 
 Two entry points, and they are not the same one. `.claude/settings.json`
 PreToolUse fires on a Claude Code **tool call**; `.githooks/pre-push` fires on
@@ -164,6 +164,7 @@ around it. The second exists because the first missed exactly that on
 | `conflict_marker_preflight_hook.py` | CHECKER | A CONFLICT RESOLUTION THAT LEAVES NO MARKERS -- reported at the one moment it is cheap to undo. It is a SHIM and the shim is the point: tools/conflict_marker_preflight.py costs 7.10 SECONDS over 2,670 paths (measured 2026-09-28), a PreToolUse hook fires on EVERY Bash call, and .githooks/pre-commit already records in its own words that a hook costing real time on every commit is one somebody eventually turns off. This does four filesystem stats against .git/ and returns -- 0.18s on the no-op path, measured -- and runs the full pre-flight ONLY while a rebase, merge, cherry-pick or revert is in progress. THE EARLY EXIT COULD NOT GO INSIDE THE TOOL: that file is named in another active claim, so the guard lives beside it rather than reaching into a file another session holds. IT WARNS AND NEVER DENIES, deliberately -- a mid-rebase state is a NORMAL state and git status, git diff and git add of a resolved file are all legitimate there, so denying Bash during a rebase makes the tool that helps you finish one unusable inside it, which is the path to the hook being disabled and check C lost entirely. THE PRE-FLIGHT EXIT 1 AND EXIT 2 ARE PRINTED WITH DIFFERENT TEXT AND NEVER FOLDED TOGETHER (PR 1.11). A missing pre-flight during an operation is NAMED rather than silently skipped. Held by tests/run_conflict_preflight_hook_probe.py, 22 arms, including a CONTROL that the three outcomes produce DIFFERENT text -- which replaced a check(..., True) that could not fail | `run_conflict_preflight_hook_probe.py` |
 | `context_verify.py` | CHECKER | an agent whose SELF-REPORTED context figure is wrong, stale or absent while its real window is filling -- measured instead from the agent's own Claude Code transcript, so it cannot be fooled by what any agent says about itself. Takes the LAST ASSISTANT TURN's whole prompt (input_tokens + cache_read_input_tokens + cache_creation_input_tokens) over the smallest published window for that turn's model that the measured prompt actually fits in. All three token fields are counted because `input_tokens` ALONE IS TWO on every live build agent -- a figure built on it reports 0.0% over a 650,000-token prompt. The window is evidence-driven rather than assumed: the transcript carries no window field and the 1M and 200k variants record the same model string, so a prompt that fits no tabled window is COULD NOT TELL rather than a percentage over 100. SCOPED TO THE FOUR BUILD AGENTS -- hover/hover2 are excluded by the separation boundary, asserted by a fixture so a later edit has to argue with it. A missing folder, an empty folder or a transcript with no assistant turn yet is a could-not-tell with a reason, never 0%. It CANNOT tell a current session from a stopped one: the figure is the newest transcript's last turn and the age is printed beside it for exactly that reason. | &mdash; |
 | `control_char_check.py` | CHECKER | a raw C0 control byte in any tracked text file -- an escape sequence typed as its literal character | `check11_probe.py`, `refspec_and_override_probe.py`, `run_control_char_probe.py`, `run_invisible_in_pattern_probe.py`, `run_retry_policy_probe.py` |
+| `dependency_integrity_check.py` | CHECKER | an INSTALLED dependency that is not the one the manifests declare, or is not the one that loads: a locked npm package missing or at a different version than package-lock.json (exact), package.json out of sync with the lock root, a node_modules ABOVE the clone that Node would walk to (the 2026-10-21 home-directory firebase-admin 12.7.0 that three clones tested against), a direct dependency resolving outside <clone>/node_modules, and for tools/ tests/ docs/ requirements.txt a package missing, below its >= floor, off an == pin, duplicated on sys.path, or imported from a different distribution. --paths scopes it to the manifests a push depends on; it is push-gate CHECK 5f (gate dependency-integrity) and fails CLOSED -- exit 2 COULD NOT RUN is never a pass. | &mdash; |
 | `employee_auth_guard_check.py` | CHECKER | a SQL file writing credential rows with no recoverability guard (gate check 2) | `check2_and_check5_probe.py`, `guard_block_shape_control.py`, `missing_checker_probe.py` |
 | `exit_status_attributable.py` | CHECKER | whether the exit status a command returns is attributable to a SINGLE NAMED PROGRAM, or whether it belongs to the last element of a pipeline or an and/or chain. Built 2026-10-05 after the SAME READING ERROR TWICE IN TWO DAYS: a tool piped into tail inside an and-chain gave exit 2 and I wrote "md_table_check.py EXITS 2 COULD NOT RUN" into the standing open-work index and a commit message -- that tool exits 0 and has no code path returning 2 at all; and a no-op push printed a refusal-shaped gate message which I read as a refusal of MY push when rev-list answered 0 0 and there was nothing to send. THE HAZARDOUS HALF IS DECIDABLE FROM THE COMMAND TEXT and needs no intent inference: a pipeline or an and/or chain returns ONE status and it is not the status of the program you named. Splits on RAW TEXT rather than shlex tokens, because shlex splits on whitespace only so a;b arrives as one token -- the same reason git_push_master_guard.py splits on text. Skips leading VAR=value assignments, so SAIRN_SEED_GATE=off git push is attributed to git. NAMES the owning element and says why a text filter exits 0 for "I ran" while saying nothing about the program before it. DELIBERATELY REPORT-ONLY AND A LIST TO READ: piping into tail to keep output short is correct and usual, the hazard is only in ATTRIBUTING the status, and a gate here would be cleared by dropping the pipe and making output unreadable. CANNOT see the second half of the second error -- that a NO-OP push produces a refusal-shaped message -- because nothing in the command text says whether there is anything to push; that half is named and NOT claimed. Fails closed at exit 2 on a command it cannot tokenise. Control: --selftest drives both directions and includes the TWO REAL COMMANDS verbatim in shape, plus three attributable controls so it is not simply reporting everything as hazardous. | `run_scrutiny_flag_probe.py` |
 | `external_file_index_check.py` | CHECKER | a tool, script or handoff sitting in a DECLARED external directory that is neither git-tracked nor named in docs/external-files-index.json -- i.e. work no other session can find | `run_external_file_index_probe.py` |
@@ -643,9 +644,9 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      363   git ls-files tools/
+  tools on disk                      364   git ls-files tools/
   hook entries                        19   docs\hooks-disabled-2026-10-13.json (RECORDED wiring -- this clone's live hooks are the committed disarm, and the record is read rather than the zero being believed)
-  push-gate invocations               19   tools\sairn_push_gate_hook.py
+  push-gate invocations               20   tools\sairn_push_gate_hook.py
   report-only registry                78   report_only_checks.REGISTRY
   tools invoked by tests/            239   tests/**/*.py, *.js
   recorded NOT-promoted decisions     88   report_only_checks.NOT_PROMOTED
