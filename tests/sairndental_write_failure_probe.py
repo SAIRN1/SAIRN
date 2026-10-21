@@ -42,9 +42,12 @@ MUTATIONS = [
     ("1. dntLastErrText shows the raw browser exception again",
      "  return (e&&e.status)?e.message:'';",
      "  return e?e.message:'';"),
+    # RE-ANCHORED 2026-10-21 (Cody b43): cc919c308 gave the credential board a
+    # byte-identical copy of the old tail, so it read ANCHOR-2 and probed
+    # nothing. The `dntLastErr[resource]=` head is sdnData's alone.
     ("2. sdnData stops recording which failures a server answered",
-     "message:(d&&d.error&&d.error.message)||'',status:r.status};",
-     "message:(d&&d.error&&d.error.message)||''};"),
+     "dntLastErr[resource]={code:(d&&d.error&&d.error.code)||('HTTP_'+r.status),message:(d&&d.error&&d.error.message)||'',status:r.status};",
+     "dntLastErr[resource]={code:(d&&d.error&&d.error.code)||('HTTP_'+r.status),message:(d&&d.error&&d.error.message)||''};"),
     ("3. every failure is treated as a refusal",
      "  return !!(e&&e.status&&e.status<500);",
      "  return true;"),

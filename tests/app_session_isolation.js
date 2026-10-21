@@ -293,6 +293,10 @@ const POSTURE = {
   // written because the column could only see 401.
   shared:          { gate: 'SOME', auth: true,  why: 'CORRECTED 2026-09-25. 5 of 7 gate -- slabs, profile, memory, employees and employee_profile all answer 403 FORBIDDEN naming a required session; render_usage and shared_knowledge are licence-only by design. The old row called the five "not plain read/write resources", which was the 401-only measurement explaining away what it could not see. `shared` is still not an app -- the session these bind to belongs to the CALLING app, which is what SD_GATE_APP resolves' },
   sairncash:       { gate: 'NONE', auth: false, why: 'registers no resources on this endpoint at all' },
+  // ADDED 2026-10-21 (Cody b43). `routes` joined APP_NAMES on 2026-10-19
+  // (fourth b34, api/_resources/routes.js) and nobody wrote its row, so this
+  // suite was red at HEAD on a measurement that was right.
+  routes:          { gate: 'ALL',  auth: true,  why: 'RECORDED 2026-10-21 (Cody b43). 2 of 2 gate -- rt_routes and rt_stops answer 403 FORBIDDEN without a session on every verb (api/sd-data.js, the SHARED ROUTING PRIMITIVE branch). Not an app, like `shared`: a pseudo-owner no licence carries, and the session it requires is the CALLING app\'s, resolved from payload app_id. Tier A on confidentiality (docs/CRITICALITY-TIERS.md, `routes`)' },
 };
 
 // The four SAIRNlaw resources phase 2 will move. Named rather than left out,
