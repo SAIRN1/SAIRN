@@ -36832,6 +36832,56 @@
       "recurrence_open": "Other photo-bearing public intakes (e.g. SAIRNdental public-book) may also check only a prefix; not swept this batch."
     },
     {
+      "commit": "4dcd23a26fe8",
+      "date": "2026-10-21",
+      "subject": "fix(sairnfreedom b52): SAIRNveterans accessibility pass -- keyboard sidebar, labelled fields, Enter to sign in, headings, aria-current, focus to heading on nav",
+      "files": [
+        "sairnfreedom.html",
+        "tests/sairnfreedom_a11y_pass.js"
+      ],
+      "lines_added": 152,
+      "lines_removed": 35,
+      "app": "sairnfreedom",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "fourth b52 pass on the live demo login (SF-PINNACLE-2026). Before: 0/28 sidebar items keyboard-reachable, 168 axe nodes (label x106, select-name x62), Enter did nothing on licence or PIN, no aria-current, nav silent. After: 28/28 buttons, 0 axe nodes, focus on a heading 28/28, Enter submits. tests/sairnfreedom_a11y_pass.js 10 arms, 8 mutants killed.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "axe-core 4.10.2 + Playwright keyboard walk, driven by scratchpad b52 a11y_dental.py (A11Y_APP=sairnfreedom; not in repo)",
+      "found_by_session": null,
+      "injection": {
+        "commit": "d5adddf5b3d9",
+        "date": "2026-08-31",
+        "subject": "feat(sairnfreedom): Phase 1 foundation -- entity, capabilities, roster, three money types and waivers as records",
+        "lag_days": 51
+      },
+      "citation_note": "No coding rule covers this class: navigation built from div onclick, and labels written without for=. Proposed: an axe + keyboard pass per app before launch.",
+      "contributing_factors": [
+        {
+          "factor": "The sidebar was built from div elements with onclick, which are not focusable.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "28 items converted to button type=button with CSS reset."
+        },
+        {
+          "factor": "Every form label was written without for=, so no field had an accessible name.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Labels tied to the following control at load."
+        },
+        {
+          "factor": "No keyboard or screen-reader pass had been run before launch.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Scripted live pass plus repo suite."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. Not verified with NVDA itself. Modals not opened. Fields rendered later by script are not covered by the load-time label pass."
+    },
+    {
       "commit": "5e38373c6579",
       "date": "2026-10-21",
       "subject": "fix(sairnroofing b49): a failed or unprovisioned JHA / job-warranty read is said on screen, never rendered as 'none' (cody b35 defect 7)",
@@ -36882,54 +36932,54 @@
       "recurrence_open": "NOT CLOSED. The same (x.ok&&x.data)||{} idiom may exist on other rfDataRaw reads in sairnroofing.html and was not swept."
     },
     {
-      "commit": "4dcd23a26fe8",
+      "commit": "6d0ef69de245",
       "date": "2026-10-21",
-      "subject": "fix(sairnfreedom b52): SAIRNveterans accessibility pass -- keyboard sidebar, labelled fields, Enter to sign in, headings, aria-current, focus to heading on nav",
+      "subject": "fix(stonedesk b53): accessibility pass -- labels tied, allowlisted mouse-only controls made keyboard buttons, sidebar icons hidden, aria-current, focus to heading on nav",
       "files": [
-        "sairnfreedom.html",
-        "tests/sairnfreedom_a11y_pass.js"
+        "stonedesk.html",
+        "tests/stonedesk_a11y_pass.js"
       ],
       "lines_added": 152,
-      "lines_removed": 35,
-      "app": "sairnfreedom",
+      "lines_removed": 2,
+      "app": "stonedesk",
       "layer": "product",
       "severity": "high",
       "detection_method": "static-checker",
-      "summary": "fourth b52 pass on the live demo login (SF-PINNACLE-2026). Before: 0/28 sidebar items keyboard-reachable, 168 axe nodes (label x106, select-name x62), Enter did nothing on licence or PIN, no aria-current, nav silent. After: 28/28 buttons, 0 axe nodes, focus on a heading 28/28, Enter submits. tests/sairnfreedom_a11y_pass.js 10 arms, 8 mutants killed.",
+      "summary": "fourth b53 pass on the live demo login (SD-AUDIT-2026), writes blocked. Before: 53 mouse-only, label x86 + select-name x101, no aria-current. After: 6 mouse-only (cards with reachable inner controls), label x44 + select-name x79, aria-current, focus on a heading 60/67. Suite 12 arms, 9 mutants killed.",
       "rules": [],
       "citation_confidence": "not-citable",
       "injection_phase": "design",
       "phase_confidence": "inferred",
-      "found_by_tool": "axe-core 4.10.2 + Playwright keyboard walk, driven by scratchpad b52 a11y_dental.py (A11Y_APP=sairnfreedom; not in repo)",
+      "found_by_tool": "axe-core 4.10.2 + Playwright keyboard walk, driven by scratchpad b53 a11y_dental.py (A11Y_APP=stonedesk; not in repo)",
       "found_by_session": null,
       "injection": {
-        "commit": "d5adddf5b3d9",
-        "date": "2026-08-31",
-        "subject": "feat(sairnfreedom): Phase 1 foundation -- entity, capabilities, roster, three money types and waivers as records",
-        "lag_days": 51
+        "commit": "57db94fbf375",
+        "date": "2026-06-22",
+        "subject": "Fix JavaScript syntax errors in stonedesk.html - 94/106 scripts passing Node syntax check",
+        "lag_days": 121
       },
-      "citation_note": "No coding rule covers this class: navigation built from div onclick, and labels written without for=. Proposed: an axe + keyboard pass per app before launch.",
+      "citation_note": "No coding rule covers this class: controls built from div/span onclick and labels without for=. Proposed: an axe + keyboard pass per app before launch.",
       "contributing_factors": [
         {
-          "factor": "The sidebar was built from div elements with onclick, which are not focusable.",
+          "factor": "Action chips, tier pickers and template links were div/span with onclick.",
           "kind": "technical",
           "action_status": "done",
-          "action": "28 items converted to button type=button with CSS reset."
+          "action": "Allowlisted handlers upgraded to keyboard buttons at load and after nav."
         },
         {
-          "factor": "Every form label was written without for=, so no field had an accessible name.",
+          "factor": "Labels sat beside controls without for=.",
           "kind": "technical",
           "action_status": "done",
-          "action": "Labels tied to the following control at load."
+          "action": "Tied at load and after nav."
         },
         {
-          "factor": "No keyboard or screen-reader pass had been run before launch.",
+          "factor": "No keyboard or screen-reader pass had been run on StoneDesk.",
           "kind": "detection",
           "action_status": "done",
           "action": "Scripted live pass plus repo suite."
         }
       ],
-      "recurrence_open": "NOT CLOSED. Not verified with NVDA itself. Modals not opened. Fields rendered later by script are not covered by the load-time label pass."
+      "recurrence_open": "NOT CLOSED. color-contrast x73, select-name x79 (no visible label to tie), label x44, 7 panels with no heading -- filed for wording/design decisions. Not heard under NVDA."
     },
     {
       "commit": "95e31d3b780e",

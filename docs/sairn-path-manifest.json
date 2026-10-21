@@ -80,7 +80,8 @@
       "tests/sairnsenior_referral_hours.js",
       "tests/sairndental_a11y_pass.js",
       "tests/sairnlegacy_a11y_pass.js",
-      "tests/sairnfreedom_a11y_pass.js"
+      "tests/sairnfreedom_a11y_pass.js",
+      "tests/stonedesk_a11y_pass.js"
     ]
   },
 
