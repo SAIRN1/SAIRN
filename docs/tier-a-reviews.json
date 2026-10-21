@@ -8299,6 +8299,32 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-21T17:07:10Z",
+      "opened_at_sha": "ed1b6a1d39ec107e2f5e176ea5ce9228ec11eb52",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 6,
+      "resources": [
+        "bld_draws",
+        "dnt_referrals",
+        "dnt_vendor_orders",
+        "sd_quote_requests"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/b37-routed-arms.test.js",
+        "api/sd-data.js"
+      ],
+      "what": "cody b37 test-only: api/b37-routed-arms.test.js P1-P2 adds a two-tenant arm for sd_quote_requests/request_photos (no code change to that resource). Reviewer point: the arm fails when the licence filter is removed (worktree ablation, P1+P2 red).",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-21T17:07:10Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
