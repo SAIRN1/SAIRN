@@ -4592,8 +4592,8 @@
       "task": "b42: platform-wide AST walk for undeclared third-party imports outside tools/ (api tests docs packages scripts), manifests with OSV-verified floors; pypdf interpreter check  FILES: SAIRN-handoff-cc-b42.md SAIRN-report-cc-b42.txt SAIRN-digest-cc-b42.txt docs/sairn-path-manifest.json",
       "claimed_at": "2026-10-21T18:31:07Z",
       "claimed_at_epoch": 1792607467.8699625,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T18:40:27Z",
       "files": [
         "SAIRN-digest-cc-b42.txt",
         "SAIRN-handoff-cc-b42.md",
