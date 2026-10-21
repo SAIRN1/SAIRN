@@ -8371,6 +8371,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/app_session_isolation.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a1dafa4e0dfc5805bd01db043ae4812fbeb6d443",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairndental_write_failure_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a1dafa4e0dfc5805bd01db043ae4812fbeb6d443",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/sql-run-order-agreement.test.js",
    "class": "test file",
    "level": "CHANGE",
