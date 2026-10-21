@@ -19,8 +19,10 @@ is the FRACTION of the window that is gone, because the ceiling differs by
 model -- this session is Opus 5 with a 1M window and the ordinary one is 200K,
 and `840,000 tokens` reads as a catastrophe in one and as 84% in the other.
 
-Red at 70%, on Michael's instruction. One threshold, not a gradient: a status
-line with four colours is a thing you stop reading.
+Red at 85% for every IDENTIFIED agent -- builders and auditors alike, the
+wrap-up rule they run on -- and at 70% for a clone nobody can identify (b33).
+One threshold per line, not a gradient: a status line with four colours is a
+thing you stop reading.
 
 ── THE NUMBER IS MEASURED, AND WHEN IT CANNOT BE IT SAYS SO ────────────────
 There is no "context used" field in the status-line payload. What exists is
@@ -52,7 +54,7 @@ import sys
 TOOLS = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, TOOLS)
 
-CRITERIA_VERSION = '2026-10-19.1'
+CRITERIA_VERSION = '2026-10-21.1'
 
 # ── THE RED THRESHOLD IS PER POPULATION, NOT PER PLATFORM (b24) ────────────
 # Michael's b8 decision was one threshold at 70 for everybody, and his b24
@@ -67,13 +69,25 @@ CRITERIA_VERSION = '2026-10-19.1'
 # hover2's threshold at the same time, which the instruction forbids. The
 # auditors set their own context policy in their own tooling; it is not
 # cc's to touch and this change does not touch it.
-RED_AT_DEFAULT = 70          # Michael's threshold, batch b8. UNCHANGED.
-RED_AT_BUILD = 80            # Michael's threshold for the build agents, b24.
+# ── b33: THE RED FIRED 15 POINTS BEFORE THE RULE IT EXISTS TO WARN ABOUT ──
+# Every agent runs on an 85% REAL-context wrap-up (Michael, standing rule from
+# cc b29 on; the auditors run the same 85%). This line went red at 80 for the
+# builders and at 70 for hover/hover2 -- 145,050 tokens early on a 967K
+# window, driven by hover2 (seq 1095). That is a bug against an already-made
+# decision, not a new value, and the fixtures below now lock the builder
+# number to tools/builder_context_watch.py's THRESHOLD so the two places that
+# state the rule cannot drift apart again. The b24 note above is superseded
+# for the auditors: 85 is the policy they run on, and this file is the only
+# place their status-line threshold can be set (USER-level statusLine).
+RED_AT_DEFAULT = 70          # an UNIDENTIFIED clone: the earlier warning.
+RED_AT_BUILD = 85            # the build agents' wrap-up rule (b29), was 80.
+RED_AT_AUDITOR = 85          # hover/hover2's wrap-up rule, was 70 (b33).
 
 # The four BUILD agents, and the same tuple the rest of this platform uses.
 # hover/hover2 are deliberately absent: they are a different population with
 # a different threshold, decided by them.
 BUILD_AGENTS = ('hank', 'cc', 'cody', 'fourth')
+AUDITOR_AGENTS = ('hover', 'hover2')
 
 
 def red_at(agent):
@@ -90,7 +104,11 @@ def red_at(agent):
     EARLIER. Raising the bar for a session nobody can name is the direction
     that costs a batch.
     """
-    return RED_AT_BUILD if agent in BUILD_AGENTS else RED_AT_DEFAULT
+    if agent in BUILD_AGENTS:
+        return RED_AT_BUILD
+    if agent in AUDITOR_AGENTS:
+        return RED_AT_AUDITOR
+    return RED_AT_DEFAULT
 BIG_WINDOW = 1000000         # Opus 5 / any explicit [1m]
 SONNET_WINDOW = 967000       # Sonnet 5's REAL window -- not 200K and not 1M
 TAIL_BYTES = 262144          # first look: the last 256KB of the transcript
@@ -393,23 +411,31 @@ def run_fixtures():
               'ctx ??%' in render(pay(p, model='claude-haiku-4-5-20251001')),
               True)
 
-        # ── THE PER-POPULATION RED THRESHOLD (b24 item 4) ──────────────────
-        # THE ARM: a build agent goes red at 80, not at 70.
+        # ── THE PER-POPULATION RED THRESHOLD (b24, corrected b33) ──────────
+        # THE ARM: every IDENTIFIED agent goes red at 85, the wrap-up rule.
         for a in BUILD_AGENTS:
-            check('%s is a BUILD agent and goes red at 80' % a,
-                  red_at(a), 80)
-        # THE NEGATIVE CONTROL. Without this the arm above would pass on a
-        # change that simply raised the number for everybody, which is the
-        # edit the instruction forbids.
-        for a in ('hover', 'hover2'):
-            check('%s is NOT a build agent and its threshold is UNCHANGED at '
-                  '70 -- the auditors set their own context policy and this '
-                  'change does not reach it' % a, red_at(a), 70)
+            check('%s is a BUILD agent and goes red at 85' % a, red_at(a), 85)
+        for a in AUDITOR_AGENTS:
+            check('%s is an AUDITOR and goes red at 85 -- not 70, which fired '
+                  '145,050 tokens before the rule (hover2 seq 1095)' % a,
+                  red_at(a), 85)
         check('an UNIDENTIFIED clone keeps the EARLIER warning, not the later '
               'one -- an unprovisioned clone or a worktree must not inherit '
               'the higher bar', red_at(''), 70)
         check('...and neither does a name that merely looks like one',
               red_at('cc-probe'), 70)
+        # THE DRIFT LOCK. The 85 is stated in two places: here, and as the
+        # wrap-up watcher's THRESHOLD. b29 checked the watcher and never this
+        # file, which is how the line sat at 80 for four batches. If either
+        # moves alone, this arm goes red. COULD NOT RUN is not a pass.
+        try:
+            import builder_context_watch as _bcw
+            _wt = float(_bcw.THRESHOLD)
+        except Exception as _e:                                  # noqa: BLE001
+            _wt = 'could-not-run: %s' % _e
+        check('RED_AT_BUILD equals tools/builder_context_watch.py THRESHOLD '
+              '-- the status line and the wrap-up watcher state ONE rule',
+              _wt, float(RED_AT_BUILD))
 
         # THE BOUNDARY, BOTH SIDES, DRIVEN THROUGH render() ON A PROVISIONED
         # CLONE. The arms above are the pure function; this is the one that
@@ -441,29 +467,33 @@ def run_fixtures():
                 d['workspace'] = {'current_dir': clone}
                 d['cwd'] = clone
                 return d
-            p75 = transcript('t_b24_75.jsonl', [usage(750000)])
-            p80 = transcript('t_b24_80.jsonl', [usage(800000)])
-            line75 = render(payc(p75))
-            line80 = render(payc(p80))
-            check('75% on a BUILD agent is NOT red any more -- this is the '
-                  'change, and it is the arm that fails on the pre-b24 code',
-                  ('ctx 75%' in line75, RED in line75), (True, False))
-            check('...and 80% IS red, so the boundary moved rather than being '
-                  'removed', ('ctx 80%' in line80, RED in line80),
-                  (True, True))
-            check('...and the agent is named from its MARKER, not its folder',
-                  line75.startswith('cc'), True)
-            # THE ABLATION: the same 75% under a NON-build identity is still
-            # red, which is what shows the threshold is keyed on population
-            # and not simply raised.
-            io.open(os.path.join(clone, '.git', 'sairn-session'), 'w',
-                    encoding='utf-8', newline='\n').write('hover\n')
-            line75h = render(payc(p75))
-            check('ABLATION ON THE IDENTITY ALONE: the identical 75%% under '
-                  '`hover` is STILL RED. Same transcript, same model, same '
-                  'window -- only the population differs, so the threshold '
-                  'cannot have been raised platform-wide',
-                  RED in line75h, True)
+
+            def as_agent(name):
+                io.open(os.path.join(clone, '.git', 'sairn-session'), 'w',
+                        encoding='utf-8', newline='\n').write(name + '\n')
+            p75 = transcript('t_b33_75.jsonl', [usage(750000)])
+            p84 = transcript('t_b33_84.jsonl', [usage(840000)])
+            p85 = transcript('t_b33_85.jsonl', [usage(850000)])
+            for who in ('cc', 'hover2'):
+                as_agent(who)
+                l84, l85 = render(payc(p84)), render(payc(p85))
+                check('%s: 84%% is NOT red -- the arm that fails on the pre-b33 '
+                      'code (red at 80 for builders, 70 for auditors)' % who,
+                      ('ctx 84%' in l84, RED in l84), (True, False))
+                check('%s: ...and 85%% IS red, so the boundary moved rather '
+                      'than being removed' % who,
+                      ('ctx 85%' in l85, RED in l85), (True, True))
+                check('%s: ...and the agent is named from its MARKER, not its '
+                      'folder' % who, l84.startswith(who), True)
+            # THE ABLATION: the identical 75% under an UNIDENTIFIED name is
+            # still red, which shows the threshold is keyed on identity and
+            # was not simply raised for everybody.
+            as_agent('probe-nobody')
+            l75u = render(payc(p75))
+            check('ABLATION ON THE IDENTITY ALONE: the identical 75%% under an '
+                  'UNIDENTIFIED name is STILL RED. Same transcript, model and '
+                  'window -- only the identity differs',
+                  RED in l75u, True)
 
         # THE COULD-NOT-TELL PATH RENDERS A LINE RATHER THAN NOTHING.
         line = render(pay(os.path.join(tmp, 'gone.jsonl')), colour=False)
