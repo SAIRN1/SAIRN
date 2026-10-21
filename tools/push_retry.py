@@ -1076,11 +1076,15 @@ def cmd_loop(attempts):
         # THE WHOLE TEXT IS KEPT (cody b47). The excerpt below is 14 lines plus
         # 8 remedy lines, and b46's two stops lost the one line that said what
         # happened. Overwritten per attempt; best-effort, never fatal.
+        # Only into a directory that IS a git dir (it has HEAD): the selftest's
+        # stubbed git answers rev-parse with '', which resolved to the repo
+        # ROOT and left an untracked file there on the first run.
         try:
-            _lp = os.path.join(git_dir() or os.path.join(REPO, '.git'),
-                               'push_retry_last_refusal.txt')
-            io.open(_lp, 'w', encoding='utf-8', newline='\n').write(blob + '\n')
-            print('    full text (%d lines): %s' % (len(lines), _lp))
+            _gd = git_dir()
+            if _gd and os.path.isfile(os.path.join(_gd, 'HEAD')):
+                _lp = os.path.join(_gd, 'push_retry_last_refusal.txt')
+                io.open(_lp, 'w', encoding='utf-8', newline='\n').write(blob + '\n')
+                print('    full text (%d lines): %s' % (len(lines), _lp))
         except Exception:                                       # noqa: BLE001
             pass
         if not lines:
