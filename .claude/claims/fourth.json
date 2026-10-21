@@ -4594,6 +4594,26 @@
         "sairndental.html",
         "tests/sairndental_a11y_pass.js"
       ]
+    },
+    {
+      "id": "fourth-1792608542",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "b51: real NVDA run on sairndental, J1 focus-to-heading on nav, a11y pass on sairnlegacy.  FILES: sairndental.html sairnlegacy.html tests/sairndental_a11y_pass.js tests/sairnlegacy_a11y_pass.js docs/sairn-path-manifest.json SAIRN-handoff-fourth-b51.md SAIRN-report-fourth-b51.txt SAIRN-digest-fourth-b51.txt NOT-api",
+      "claimed_at": "2026-10-21T18:49:02Z",
+      "claimed_at_epoch": 1792608542.557117,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b51.txt",
+        "SAIRN-handoff-fourth-b51.md",
+        "SAIRN-report-fourth-b51.txt",
+        "docs/sairn-path-manifest.json",
+        "sairndental.html",
+        "sairnlegacy.html",
+        "tests/sairndental_a11y_pass.js",
+        "tests/sairnlegacy_a11y_pass.js"
+      ]
     }
   ],
   "refusals": [
