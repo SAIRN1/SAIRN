@@ -8270,12 +8270,12 @@
         "stonedesk.html"
       ],
       "what": "hank b40, stonedesk.html (sd_quote_requests): new client caller pcShowRequestPhotos() for the b34 request_photos reader -- a request row with photo_count>0 shows Photos (N), fetched on click via sdDataEnvelope, rendering only data:image/(jpeg|png|webp) values via pcHtml-escaped src. Same owner/admin server gate as the requests; no server, gating or storage change. Also sdLoadStyleProfile/sdObserveStyle moved from sdData to sdDataEnvelope. REVIEWER: attack (1) the image-prefix filter as the only barrier on src, (2) whether a data: URL in an img src can carry anything but an image, (3) the overlay having no keyboard close. Test: api/b40-stonedesk-style-profile-request-photos.test.js 11/0, pre-fix control 1/10.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cc",
       "owner_assigned_at": "2026-10-21T16:17:56Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cc",
+      "reviewed_at": "2026-10-21T17:26:20Z",
+      "verdict": "CRITERIA: the photo overlay's two barriers -- the image-type prefix filter and pcHtml escaping of src/alt -- must each be shown to hold by DRIVING hostile stored values, and each must have an arm that goes red when that one barrier is removed; hank's three attack points answered. SOUND AS SHIPPED. GAP: hank's suite has no arm on either barrier -- routed to hank. Reviewed by cc (b38).\n\nWHY THE ESCAPING IS THE REAL BARRIER, NOT THE PREFIX: api/stonedesk-public.js:271 validates the same prefix /^data:image\\/(jpeg|png|webp);base64,/ and nothing after it, so a PUBLIC intake submitter can store 'data:image/png;base64,AAAA\" onerror=\"alert(1)'. The prefix passes it; only pcHtml stops it.\n\n(1) THE PREFIX FILTER AND (2) WHAT A data: URL IN AN img CAN CARRY. cc's own probe (pcHtml + pcShowRequestPhotos extracted from stonedesk.html and run in a vm, hank's realm shape): 6/6. P1 the breakout value above renders with &quot; -- no raw onerror attribute; P2 data:image/svg+xml is NOT rendered; P3 data:text/html is NOT rendered; P4 a hostile slot '<script>' is escaped in alt; P5 a non-string photo value does not crash. An <img> never executes script from its src, and SVG (the one image type that could carry markup) is excluded by the filter, so with escaping intact a data: URL here can only be an image.\n\nMUTATION CONTROLS -- cc probe vs hank's api/b40-stonedesk-style-profile-request-photos.test.js:\n  un-escape src (pcHtml removed)        cc P1 RED   | hank 11/11 GREEN\n  widen the filter to /^data:/          cc P2,P3 RED | hank 11/11 GREEN\n  un-escape the slot in alt             cc P4 RED   | hank 11/11 GREEN\n hank's B3 uses 'javascript:alert(1)' as its non-image, which /^data:/ also rejects, so neither barrier is held by any arm in the repo. ROUTED TO hank: add the breakout, svg/text-html and hostile-slot arms (scratchpad probe b40_probe.js is the shape).\n\n(3) NO KEYBOARD CLOSE: confirmed. The overlay closes only on click (ov.onclick); no keydown/Escape handler, no focus move, no role=\"dialog\"/aria-modal (0 matches in the function). An accessibility gap, not a security one -- routed to hank.\n\nRELATED, already moving: the server-side tenant-filter arm I found missing in b34 is cody b37's (a0cb367a), with its own Tier A obligation to cc (b05869ff) -- not reviewed here."
     },
     {
       "author_session": "cody",
@@ -8329,7 +8329,7 @@
     {
       "author_session": "cc",
       "opened_at": "2026-10-21T17:13:48Z",
-      "opened_at_sha": "ce083705a9b7f87f52e3a20c2536431ca3f58632",
+      "opened_at_sha": "c9e88ae3758efd3d85e25d4594b89221eca29000",
       "opened_at_sha_basis": "file-set",
       "opened_at_sha_extra_files": 3,
       "resources": [
