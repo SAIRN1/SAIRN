@@ -1094,8 +1094,8 @@
       "task": "b76: cross-vendor Groq review of a0504cd8 + the 3 chunks #1645 left unreviewed; log the H1/H2 pool-refill disagreement; platform read-only FILES: .claude/claims/hover.json -- direct write per PR 4.3: check BLOCKED on hover2 b80 (shared phrase 'cross vendor'), judged lexical, task not reworded",
       "claimed_at": "2026-10-21T15:46:57Z",
       "claimed_at_epoch": 1792597617.8700814,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T15:57:23Z",
       "files": [
         ".claude/claims/hover.json"
       ],
