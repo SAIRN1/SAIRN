@@ -9647,6 +9647,23 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "errors='replace', timeout=300, cwd=repo,"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "\"in the clone: npm ci --ignore-scripts --no-audit --no-fund. For a SHADOW,\","
+    }
+   ],
+   "sha": "b16a5629481cc99205b07f5a9f45b1b7a1d6cd2f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_tier_a_review_gate_probe.py",
    "class": "test file",
    "level": "WEAKENING",
