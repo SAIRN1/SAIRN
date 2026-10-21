@@ -4555,6 +4555,28 @@
         "sairndental.html",
         "stonedesk.html"
       ]
+    },
+    {
+      "id": "fourth-1792602463",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "b49: sairndental reds (ledger_export +mc, rollup_panel), Z8 display tests into repo, cody defects 7 (sairnroofing JHA/warranty reads) and 8 (sairnsenior contract/auth save), assigned_overrides review.  FILES: sairndental.html sairnroofing.html sairnsenior.html tests/sairndental_ledger_export.js tests/sairndental_ledger_export_mutation_control.js tests/sairndental_rollup_panel.js tests/sairnbiz_z8_display.js SAIRN-handoff-fourth-b49.md SAIRN-report-fourth-b49.txt SAIRN-digest-fourth-b49.txt NOT-api NOT-stonedesk-html NOT-docs-sairn-path-manifest-json",
+      "claimed_at": "2026-10-21T17:07:43Z",
+      "claimed_at_epoch": 1792602463.7920156,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b49.txt",
+        "SAIRN-handoff-fourth-b49.md",
+        "SAIRN-report-fourth-b49.txt",
+        "sairndental.html",
+        "sairnroofing.html",
+        "sairnsenior.html",
+        "tests/sairnbiz_z8_display.js",
+        "tests/sairndental_ledger_export.js",
+        "tests/sairndental_ledger_export_mutation_control.js",
+        "tests/sairndental_rollup_panel.js"
+      ]
     }
   ],
   "refusals": [
@@ -4859,6 +4881,21 @@
       "other_claimed_at": "2026-10-21T15:13:41Z",
       "shared_files": [
         "docs/tier-a-reviews.json"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-21T17:07:27Z",
+      "my_subject": "fourth",
+      "my_task": "b49: sairndental reds (ledger_export +mc, rollup_panel), Z8 display tests into repo, cody defects 7 (sairnroofing JHA/warranty reads) and 8 (sairnsenior contract/auth save), assigned_overrides review.  FILES: sairndental.html sairnroofing.html sairnsenior.html tests/sairndental_ledger_export.js tests/sairndental_ledger_export_mutation_control.js tests/sairndental_rollup_panel.js tests/sairnbiz_z8_display.js docs/sairn-path-manifest.json SAIRN-handoff-fourth-b49.md SAIRN-report-fourth-b49.txt SAIRN-digest-fourth-b49.txt NOT-api NOT-stonedesk-html",
+      "other_session": "cc",
+      "other_subject": "cc",
+      "other_task": "b38: platform-wide deleted-employee-row refusal in the sd-data pre-gate (RESOURCE_NAMES_BY_APP as expected app), runtime arms; Tier A review hank 2026-10-21T16:17:56Z  FILES: api/sd-data.js api/b38-deleted-row-platform.test.js docs/tier-a-reviews.json docs/sairn-path-manifest.json SAIRN-handoff-cc-b38.md SAIRN-report-cc-b38.txt SAIRN-digest-cc-b38.txt NOT-html NOT-sql",
+      "other_claimed_at": "2026-10-21T17:02:17Z",
+      "shared_files": [
+        "docs/sairn-path-manifest.json"
       ],
       "source": "status-registry",
       "why": "same declared FILES",
