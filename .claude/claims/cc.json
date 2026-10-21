@@ -4480,8 +4480,8 @@
       "task": "b35: read-only Tier A review of cody 15:12:12Z (b35) and scp-licence-only red provenance; ledger discharge write waits on fourth's hold  FILES: SAIRN-handoff-cc-b35.md SAIRN-report-cc-b35.txt SAIRN-digest-cc-b35.txt NOT-api NOT-html NOT-sql NOT-tests",
       "claimed_at": "2026-10-21T15:42:16Z",
       "claimed_at_epoch": 1792597336.6828442,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T15:52:50Z",
       "files": [
         "SAIRN-digest-cc-b35.txt",
         "SAIRN-handoff-cc-b35.md",
