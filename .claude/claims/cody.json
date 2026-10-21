@@ -4320,8 +4320,8 @@
       "task": "b38 sairnfreedom_auth_review_probe stale anchor",
       "claimed_at": "2026-10-21T17:30:02Z",
       "claimed_at_epoch": 1792603802.380392,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-21T17:37:50Z",
       "files": null
     }
   ],
