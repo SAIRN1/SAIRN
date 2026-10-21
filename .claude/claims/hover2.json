@@ -922,6 +922,17 @@
       "status": "released",
       "released_at": "2026-10-21T16:08:57Z",
       "files": null
+    },
+    {
+      "id": "hover2-1792600171",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "hover2 b81, audit role, writes only to its own hover-audit-log and tools-hover2: Michael installed Stryker outside Claude Code; confirm the install, run stryker_feed.py selftest and probe, and make the first real Stryker run on a known-answer scratch fixture so the report parser meets a real report; no platform file touched, no vendor call",
+      "claimed_at": "2026-10-21T16:29:31Z",
+      "claimed_at_epoch": 1792600171.1111305,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
