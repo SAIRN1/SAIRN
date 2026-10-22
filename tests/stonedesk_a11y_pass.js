@@ -127,6 +127,37 @@ console.log('3. b54: contrast of the shipped colours');
   check('C3. the quote-history status colours all reach 4.5:1 on white', hexes.length === 3 && hexes.every((c) => ratio(c, '#ffffff') >= 4.5), colors2);
 }
 
+console.log('3a. b56: emoji in headings hidden from the reader; 24px targets');
+{
+  const mk = (txt) => {
+    const h = El('H2'); const t = { nodeValue: txt }; t.parentNode = { closest: () => null, replaceChild: (frag) => { h.out = frag.kids; } };
+    h.texts = [t]; return h;
+  };
+  const robot = mk('\u{1F916} StoneDesk AI Assistant'), arrow = mk('Expenses → SAIRNbiz'), warn = mk('⚠️ Market Signals');
+  const heads = [robot, arrow, warn];
+  const ctx = { getComputedStyle: () => ({ display: 'block' }),
+    document: { readyState: 'complete', addEventListener() {}, getElementById: () => null, querySelector: () => null,
+      createElement: (t) => El(t.toUpperCase()), createTextNode: (v) => ({ text: v }),
+      createDocumentFragment: () => ({ kids: [], appendChild(x) { this.kids.push(x); } }),
+      createTreeWalker: (h) => { let i = -1; return { get currentNode() { return h.texts[i]; }, nextNode() { i++; return i < h.texts.length; } }; },
+      querySelectorAll: (q) => (q === 'h1,h2,h3,[role=heading]' ? heads : []) } };
+  vm.createContext(ctx);
+  vm.runInContext(passSrc.replace(/\nif \(document\.readyState[\s\S]*$/, ''), ctx);
+  let threw = null; try { ctx.sdA11yPass(ctx.document); } catch (e) { threw = e.message; }
+  const shape = (h) => (h.out || []).map((k) => (k.tagName ? 'HIDDEN:' + k.textContent + ':' + k.attrs['aria-hidden'] : 'TEXT:' + k.text));
+  check('E1. the emoji in "🤖 StoneDesk AI Assistant" is wrapped aria-hidden; the words stay readable',
+    JSON.stringify(shape(robot)) === JSON.stringify(['HIDDEN:\u{1F916}:true', 'TEXT: StoneDesk AI Assistant']), threw || JSON.stringify(shape(robot)));
+  check('E2. a variation selector stays with its emoji (⚠️ hidden whole)', JSON.stringify(shape(warn)) === JSON.stringify(['HIDDEN:⚠️:true', 'TEXT: Market Signals']), JSON.stringify(shape(warn)));
+  check('E3. an arrow is a word, not an emoji -- left alone', !arrow.out, JSON.stringify(shape(arrow)));
+  robot.out = null; robot.texts = [{ nodeValue: '\u{1F916} again', parentNode: robot.texts[0].parentNode }];
+  ctx.sdA11yPass(ctx.document);
+  check('E4. a heading already done is not re-wrapped on the next pass', !robot.out);
+  // nest-cut-label surfaced only after its neighbours grew (axe measures spacing too) -- the same class, fixed with them
+  const ids = ['nest-slab-w', 'nest-slab-h', 'nest-cut-w', 'nest-cut-h', 'fq-client', 'nest-cut-label'];
+  const small = ids.filter((id) => !new RegExp('id="' + id + '" style="min-height:24px"').test(html));
+  check('T1. the six undersized inputs carry a 24px minimum height (WCAG 2.5.8)', small.length === 0, small.join(' '));
+}
+
 console.log('3b. b55: the missing-dom-fix stub fields carry real labels');
 {
   const stubs = [...html.matchAll(/data-auto-container="missing-dom-fix"><label([^>]*)>([^<]*)<\/label><input type="text" id="([^"]+)"/g)];

@@ -11062,17 +11062,17 @@ window.sdSafetyPrint=function(){
           <!-- Slab setup -->
           <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
             <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:12px">&#129298; Slab Dimensions</div>
-            <div class="fg"><label>Width (inches)</label><input type="number" id="nest-slab-w" value="126" oninput="nestingUpdateSlab()"></div>
-            <div class="fg"><label>Height (inches)</label><input type="number" id="nest-slab-h" value="63" oninput="nestingUpdateSlab()"></div>
+            <div class="fg"><label>Width (inches)</label><input type="number" id="nest-slab-w" style="min-height:24px" value="126" oninput="nestingUpdateSlab()"></div>
+            <div class="fg"><label>Height (inches)</label><input type="number" id="nest-slab-h" style="min-height:24px" value="63" oninput="nestingUpdateSlab()"></div>
             <div class="fg"><label>Material / Color</label><input id="nest-slab-mat" placeholder="e.g. Calacatta Quartz"></div>
             <div class="fg"><label>Cost per Sq Ft ($)</label><input type="number" id="nest-cost-sqft" value="18" step="0.50" oninput="nestingUpdateKPIs()"></div>
           </div>
           <!-- Add cutout -->
           <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
             <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:12px">+ Add Cutout / Job Piece</div>
-            <div class="fg"><label>Label / Customer</label><input id="nest-cut-label" placeholder="e.g. Smith Kitchen — Island"></div>
-            <div class="fg"><label>Width (inches)</label><input type="number" id="nest-cut-w" placeholder="48"></div>
-            <div class="fg"><label>Height (inches)</label><input type="number" id="nest-cut-h" placeholder="26"></div>
+            <div class="fg"><label>Label / Customer</label><input id="nest-cut-label" style="min-height:24px" placeholder="e.g. Smith Kitchen — Island"></div>
+            <div class="fg"><label>Width (inches)</label><input type="number" id="nest-cut-w" style="min-height:24px" placeholder="48"></div>
+            <div class="fg"><label>Height (inches)</label><input type="number" id="nest-cut-h" style="min-height:24px" placeholder="26"></div>
             <div class="fg"><label>Kerf / Gap (inches)</label><input type="number" id="nest-cut-kerf" value="0.125" step="0.0625"></div>
             <button class="q-btn primary" onclick="nestingAddCutout()" style="width:100%;margin-top:4px">Add to Slab</button>
           </div>
@@ -31501,7 +31501,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <div class="fq-chip" data-trade="shower-walls" onclick="selTrade(this)">Shower Walls</div>
 <div class="fq-chip" data-trade="custom-stone-work" onclick="selTrade(this)">Custom Stone Work</div></div>
     <div class="fg"><label class="fl">Client Name</label>
-      <input class="fi" id="fq-client" placeholder="Client name / address"></div>
+      <input class="fi" id="fq-client" style="min-height:24px" placeholder="Client name / address"></div>
     <button class="btn bp" onclick="fqStep(2)">Next: Photo Sketch →</button>
   </div>
   <!-- Step 2: Photo -->
@@ -41065,6 +41065,8 @@ var SD_A11Y_NAMES = {
   'adm-autosave': 'Auto-save', 'adm-notif': 'Notifications', 'adm-demo': 'Demo Mode', 'adm-logo': 'Print Header Logo',
   'integ-filter-cat': 'Filter by category', 'integ-filter-status': 'Filter by status', 'integ-cat': 'Category', 'integ-status': 'Status'
 };
+var SD_A11Y_EMOJI = /[\u{1F000}-\u{1FAFF}\u{2300}-\u{23FF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]/u;
+var SD_A11Y_EMOJI_RUN = /((?:[\u{1F000}-\u{1FAFF}\u{2300}-\u{23FF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{1F3FB}-\u{1F3FF}]|️|‍)+)/u;
 var SD_A11Y_BUTTON_HANDLER = /^(shAsk|emailToggleChecklist|setTier|selTrade|showPanel|sdCommsTpl|sdSMSSetTpl|sdIntegQuickAdd|switchDimTab)\(|^document\.getElementById\('[^']+'\)\.click\(\)/;
 function sdA11yPass(root) {
   root = root || document;
@@ -41114,6 +41116,26 @@ function sdA11yPass(root) {
     h.className = 'sd-sr-heading'; h.textContent = name.textContent.trim();
     h.style.cssText = 'position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0';
     p.insertBefore(h, p.firstChild);
+  });
+  // b56 -- CONCEPT: an emoji in a heading is decoration; the words are the
+  // name. NVDA's CLDR table speaks every one of them ("robot StoneDesk AI
+  // Assistant"), so each emoji run inside a heading is wrapped aria-hidden.
+  // Emoji/pictograph blocks only -- letters, arrows and punctuation stay read.
+  root.querySelectorAll('h1,h2,h3,[role=heading]').forEach(function(h) {
+    if (h.getAttribute('data-sd-emoji')) return;
+    h.setAttribute('data-sd-emoji', '1');
+    var texts = [], w = document.createTreeWalker(h, 4 /* NodeFilter.SHOW_TEXT */);
+    while (w.nextNode()) texts.push(w.currentNode);
+    texts.forEach(function(t) {
+      if (!SD_A11Y_EMOJI.test(t.nodeValue) || (t.parentNode.closest && t.parentNode.closest('[aria-hidden="true"]'))) return;
+      var frag = document.createDocumentFragment();
+      t.nodeValue.split(SD_A11Y_EMOJI_RUN).forEach(function(part, i) {
+        if (!part) return;
+        if (i % 2) { var sp = document.createElement('span'); sp.setAttribute('aria-hidden', 'true'); sp.textContent = part; frag.appendChild(sp); }
+        else frag.appendChild(document.createTextNode(part));
+      });
+      t.parentNode.replaceChild(frag, t);
+    });
   });
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function() { sdA11yPass(document); });
