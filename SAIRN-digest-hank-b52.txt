@@ -1,0 +1,17 @@
+HANK b52 DIGEST -- 2026-10-22 -- leg_settings + 4 fail-open sites fixed; fourth review DEFECT; gaps closed
+CONTEXT 43.3% of 1,000,000 -- 433,107 tokens, measured.
+STATUS: 6a3755cac, e157ca8cb, 29739fe14, cd8c64c2d LANDED, NOT FORCED.
+   SAIRN_SKIP=external-files (scoped): the only unindexed file is h1's Drive file.
+1. Tier A fourth 847e89943: DEFECT stonedesk.html:27173 (vendor qty value attr). Routed to fourth.
+2. leg_settings: a partial apprentice object merges onto stored; an unreadable read -> 502. 38/0.
+   For fourth's F3 UI: send [] to clear a list.
+3. Sweep of 63 row-or-null sites, 4 Tier A fixed (29739fe14), b52 suite 9/0:
+   leg_ role gate, family prior, witness x2, law mfa_enroll.
+4. Gaps: b40 mustFail strict; b48 realistic mock + warm instance; app-boundary pins CROSS_APP_NAMES.
+DECISION-NEEDED (Michael): sd-data.js 4946/20236 skip soft-delete checks on an unreadable read
+   by design -- refuse or keep?
+NEXT: fourth D-SD fix; cc Tier A on 6a3755cac+29739fe14 and 76193dc91; cc static detector.
+CHANGED: api/sd-data.js, api/sairncare-witness.js, api/sv-witness.js, api/law-auth.js
+CHANGED (tests): b45, b40, b48, app-boundary, new api/b52-unreadable-is-not-empty.test.js
+EVIDENCE-path: SAIRN-handoff-hank-b52.md, SAIRN-report-hank-b52.txt
+UNVERIFIED: leg_settings merge on the deployed API (no LEG audit licence); W1/W2/A1 are source pins.
