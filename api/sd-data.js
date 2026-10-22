@@ -2511,9 +2511,10 @@ module.exports = async (req, res) => {
       }
       // ── AND THE COUNTERSIGNATURE ITSELF (b18) ──────────────────────────
       // One call, in api/_lib/countersign.js, reached through
-      // api/law-countersign.js's PROFILE. It returns null immediately for a
-      // read and for every resource that is not two-stage, so this line is
-      // inert for the other 69 action-pairs this gate covers.
+      // api/law-countersign.js's PROFILE. The condition below makes this line
+      // inert for the other 69 action-pairs this gate covers; a two-stage
+      // resource the PROFILE does not lock is refused there, not passed
+      // (cody b51).
       if (action !== 'read' && lawRoles.LAW_TRUST_TWO_STAGE[resource] === true) {
         const csLibGate = require('./_lib/countersign');
         const lawCsGate = require('./law-countersign');
@@ -16833,8 +16834,8 @@ module.exports = async (req, res) => {
       // PLACED HERE, not inside the write branch, for the same reason the
       // role gate is here: a check written at one call site and not the other
       // is indistinguishable from no check when read one branch at a time.
-      // It returns null immediately for a read and for every resource that is
-      // not locked.
+      // It runs only for a non-read on a two-stage resource, and refuses one
+      // the PROFILE does not lock rather than passing it (cody b51).
       if (action !== 'read' && lawRoles.LAW_TRUST_TWO_STAGE[resource] === true) {
         const csLib = require('./_lib/countersign');
         const lawCs = require('./law-countersign');

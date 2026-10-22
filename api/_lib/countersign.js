@@ -249,7 +249,21 @@ async function requireCountersignature(profile, ctx) {
   const { resource, payload, licHash, rest, headers, token } = ctx;
   const enc = encodeURIComponent;
   const mode = profile.lockedResources[resource];
-  if (!mode) return null;                               // not a locked resource
+  // ── OFF-PROFILE IS A REFUSAL, NOT A PASS (cody b51, cc b50 review of
+  // d6b37bb1) ──────────────────────────────────────────────────────────────
+  // This returned null here, and null means "signed, proceed". Every caller
+  // (sd-data's law and leg gates, law-attest) asks only after its OWN table
+  // says the resource is locked -- so a resource that table names and this
+  // profile does not is drift between two lists, and the write it guards would
+  // land with no second signature. Only tests stood between that drift and
+  // production. Fail closed (PR 1.11): the caller wanted a lock and there is
+  // none to apply.
+  if (!mode) {
+    return { status: 500, body: { error: { code: 'COUNTERSIGN_LOCK_MISCONFIGURED',
+      message: 'This record needs a second signature, but the ' + profile.app
+             + ' countersignature lock does not cover ' + String(resource)
+             + '. Nothing was written -- contact support.' } } };
+  }
 
   // ── THE MODE SWITCH, WHICH IS THE WHOLE F1/C2 DIFFERENCE ────────────────
   // MODE_PREPARED_ONLY: a caller who may FILE the record files it, exactly as
