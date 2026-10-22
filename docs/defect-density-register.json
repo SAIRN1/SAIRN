@@ -37531,6 +37531,52 @@
       "recurrence_open": "THE OPERATIONAL AND TRACKED COPIES OF FOUR OTHER TOOLS STILL DIVERGE (citation_class_check.py, hover_editor_review.py, hover_completeness_probe.py, hover_cross_vendor_check.py), so #1626 stays open for those; this commit lands only the cold-scan-pool content. The extractor still scans a file for a resources key by regular expression, not a parser, and the fall-back to the old position-relative scan can still return a wrong span for a shape nobody has seen."
     },
     {
+      "commit": "82a797b2363d",
+      "date": "2026-10-22",
+      "subject": "fix(hover coverage ledger): match commit shas by prefix, not exact abbreviation (0 of 191 reported, 160 true)",
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools/hover_coverage_ledger.py"
+      ],
+      "lines_added": 32,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": "hover_coverage_ledger.py reported \"191 review-shaped commits, 0 referenced by this role\" when 160 are cited in check or finding refs. ledger() tested coverage by exact set membership of git log --oneline's abbreviation (9 characters on this repo, and git lengthens it as the repo grows) against the sha tokens typed into refs (7 to 10 characters, mostly 8); any length mismatch was silently counted as uncovered. The tool therefore told every re-verification pass that the whole backlog was untouched, and a pass picking from its UNCOVERED list would have redone work already done while the 31 genuinely untouched commits were buried among 160 covered ones. Found by reading why the ledger said 0 against a log with 512 sha-bearing check, finding and note entries. Fixed: coverage is a prefix match in either direction (tokens are at least 7 hex characters). Fixtures (7, 8 and 10 character refs against a 7-character abbreviation, an 8-character ref against a 9-character one, and a near-miss that must cover nothing) were shown failing on the old code, 3 of 5 arms; selftest 23 ok 3 failed before, 26 ok 0 failed after. On the real repo: 160 covered, 31 uncovered.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "f37d66af2b2d",
+        "date": "2026-09-29",
+        "subject": "feat(hover): land hover's own tooling in the platform repo -- Michael's decision, mirror repo restricted to log/anchors/beacon only",
+        "lag_days": 23
+      },
+      "citation_note": "1.11 is cited because the tool reported a verdict (zero covered) on a comparison that could not hold: two sha lengths were compared for equality and the mismatch was folded into \"not covered\" instead of being reported as \"could not tell\". The ledger's own fixtures used the same abbreviation length on both sides, so they could not see it.",
+      "contributing_factors": [
+        {
+          "factor": "The fixtures built a repo whose log abbreviation and the typed ref were the same string, so the comparison could not fail; the real repo's 9-character abbreviation was never exercised.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Fixtures now use refs of 7, 8 and 10 characters against 7- and 9-character abbreviations, plus a near-miss control."
+        },
+        {
+          "factor": "The ledger prints a covered count of zero without comparing it with anything; a figure of 0 of 191 after months of logged review work was not treated as implausible by the tool or by the previous passes that used the list.",
+          "kind": "technical",
+          "action_status": "declined",
+          "note": "Out of this fix: it is a new check, not a repair of the comparison, and the repair removes the case that exposed the gap.",
+          "action": "No plausibility floor added: a warning when zero commits are covered while the log cites sha-shaped refs is possible but is a separate change from this fix."
+        }
+      ],
+      "recurrence_open": "COVERED STILL MEANS CITED, NOT DRIVEN: the ledger counts a sha named in any check or finding ref, whether it was read or driven (the module's own disclosed limit). A prefix match also accepts any 7-hex-character word that happens to start a commit sha; with 469 distinct tokens against 191 commits that is a negligible but nonzero rate. The ledger did not warn on a zero count, so the same silent failure could recur with a different cause."
+    },
+    {
       "commit": "847e89943d6d",
       "date": "2026-10-22",
       "subject": "fix(stonedesk b54): every select/field named, every panel headed, 56 contrast nodes fixed",
@@ -37677,50 +37723,54 @@
       "recurrence_open": "Same shape may exist in other api/ catch-alls; only sd-agent.js:351 was routed and fixed. The license-gate arms (lines 263-266) still relay store messages by design (coded, user-facing)."
     },
     {
-      "commit": "82a797b2363d",
+      "commit": "d6381d089a7b",
       "date": "2026-10-22",
-      "subject": "fix(hover coverage ledger): match commit shas by prefix, not exact abbreviation (0 of 191 reported, 160 true)",
+      "subject": "fix(stonedesk b55): 17 stub fields get real labels; the doc-scan upload zone is a keyboard button",
       "files": [
-        ".claude/skills/sairn-hover-auditor/tools/hover_coverage_ledger.py"
+        "stonedesk.html",
+        "tests/stonedesk_a11y_pass.js"
       ],
-      "lines_added": 32,
-      "lines_removed": 1,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "low",
-      "detection_method": "hover-audit",
-      "summary": "hover_coverage_ledger.py reported \"191 review-shaped commits, 0 referenced by this role\" when 160 are cited in check or finding refs. ledger() tested coverage by exact set membership of git log --oneline's abbreviation (9 characters on this repo, and git lengthens it as the repo grows) against the sha tokens typed into refs (7 to 10 characters, mostly 8); any length mismatch was silently counted as uncovered. The tool therefore told every re-verification pass that the whole backlog was untouched, and a pass picking from its UNCOVERED list would have redone work already done while the 31 genuinely untouched commits were buried among 160 covered ones. Found by reading why the ledger said 0 against a log with 512 sha-bearing check, finding and note entries. Fixed: coverage is a prefix match in either direction (tokens are at least 7 hex characters). Fixtures (7, 8 and 10 character refs against a 7-character abbreviation, an 8-character ref against a 9-character one, and a near-miss that must cover nothing) were shown failing on the old code, 3 of 5 arms; selftest 23 ok 3 failed before, 26 ok 0 failed after. On the real repo: 160 covered, 31 uncovered.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
+      "lines_added": 41,
+      "lines_removed": 21,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "fourth b55. 17 missing-dom-fix text fields showed their id as label (13 also failed contrast); now labelled from their reading code, for= tied, #666. NVDA re-run on the fixed build (local tree at live URL, writes blocked): 201 steps, 0 refused; all 7 formerly headingless panels now speak a level-2 heading; Tab from the doc-scan heading left the page (zone skipped because its only inner control is a hidden file input), after which NVDA spoke nothing for 4 panels. Fixed; contrast 13 -> 0, mouse-only 6 -> 4. Suite 25 arms, 4/4 mutants killed.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
       "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover",
+      "found_by_tool": "axe-core 4.10.2 + Playwright keyboard trace + a real NVDA 2026.2 run, driven by scratchpad b55 nvda_dental.py / a11y_dental.py / ds55.py (not in repo)",
+      "found_by_session": null,
       "injection": {
-        "commit": "f37d66af2b2d",
-        "date": "2026-09-29",
-        "subject": "feat(hover): land hover's own tooling in the platform repo -- Michael's decision, mirror repo restricted to log/anchors/beacon only",
-        "lag_days": 23
+        "commit": "36315fb99fe7",
+        "date": "2026-07-28",
+        "subject": "Mechanically generate 57 missing DOM containers for reachable-and-broken getElementById targets",
+        "lag_days": 86
       },
-      "citation_note": "1.11 is cited because the tool reported a verdict (zero covered) on a comparison that could not hold: two sha lengths were compared for equality and the mismatch was folded into \"not covered\" instead of being reported as \"could not tell\". The ledger's own fixtures used the same abbreviation length on both sides, so they could not see it.",
+      "citation_note": "No coding rule covers this class: generated stub fields shipped with their element id as visible label text, and a reachability test that counted a display:none control as reachable. Proposed: generated markup carries a human label; reachability is judged by display/hidden, never by offsetParent at load.",
       "contributing_factors": [
         {
-          "factor": "The fixtures built a repo whose log abbreviation and the typed ref were the same string, so the comparison could not fail; the real repo's 9-character abbreviation was never exercised.",
-          "kind": "detection",
+          "factor": "A mechanical generator built 57 DOM containers and used the element id as the label text.",
+          "kind": "technical",
           "action_status": "done",
-          "action": "Fixtures now use refs of 7, 8 and 10 characters against 7- and 9-character abbreviations, plus a near-miss control."
+          "action": "17 labels written from the reading code, tied by for=."
         },
         {
-          "factor": "The ledger prints a covered count of zero without comparing it with anything; a figure of 0 of 191 after months of logged review work was not treated as implausible by the tool or by the previous passes that used the list.",
+          "factor": "The b53 skip rule treated any inner control as reachable, including a display:none file input.",
           "kind": "technical",
-          "action_status": "declined",
-          "note": "Out of this fix: it is a new check, not a repair of the comparison, and the repair removes the case that exposed the gap.",
-          "action": "No plausibility floor added: a warning when zero commits are covered while the log cites sha-shaped refs is possible but is a separate change from this fix."
+          "action_status": "done",
+          "action": "Reachability by display/hidden between control and zone."
+        },
+        {
+          "factor": "A first fix used offsetParent, which is null for everything at load.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Caught by axe nested-interactive before commit; arm B8 and 4 mutants lock it."
         }
       ],
-      "recurrence_open": "COVERED STILL MEANS CITED, NOT DRIVEN: the ledger counts a sha named in any check or finding ref, whether it was read or driven (the module's own disclosed limit). A prefix match also accepts any 7-hex-character word that happens to start a commit sha; with 469 distinct tokens against 191 commits that is a negligible but nonzero rate. The ledger did not warn on a zero count, so the same silent failure could recur with a different cause."
+      "recurrence_open": "NOT CLOSED. ts-search and rf-source-chart are read by no code. target-size x5 (173x19 inputs on field-quote, nesting). Emoji at the start of headings are spoken by name (NVDA CLDR, level none). The fixed doc-scan build is not yet NVDA-heard."
     }
   ],
   "started": "2026-09-09",
