@@ -1,0 +1,24 @@
+DIGEST cc b50
+STATUS: 5 of 5 closed. Landed 9bb0abf3 (D2) and a09a1322 (ledger); origin 0/0. No --force, NO OVERRIDE.
+ITEM 1 (D2): criticality_tier_check fixed. A resources-exporting module with no app: is now a SHAPE_ERROR.
+  A SHAPE_ERROR makes main exit 2 (no crash) and makes the fixer refuse. The arm count is counted (lock 23/23).
+  3 ablations, each red on its own arm. Real-tree output unchanged; dependent probes unchanged.
+ITEM 2 (T1): hank's three discharged.
+  2fe89f26 SOUND-WITH-GAPS. 040ac5a9 SOUND-WITH-GAPS.
+  38b2b506 DEFECT medium-low: a partial apprentice object wipes forbidden (apprentice read leg_cremations DENY->ALLOW), plus a fail-open read at :17047.
+  Ledger commit e569a289 is CLEAN: exactly 5 records changed, verdict fields only; validate passes.
+ITEM 3: cody d6b37bb1 SOUND-WITH-GAPS. The deferral never widens access.
+  Gap: countersign.js:252 returns null off-profile; only tests guard the drift.
+ITEM 4 (methodology): a verdict that names a defect is not one until the reviewer reads the failing line; a subagent report is a lead.
+ITEM 5: pushed, no force, landed 0/0.
+DECISION-NEEDED: none.
+CHANGED: tools/criticality_tier_check.py, docs/tier-a-reviews.json.
+SQL: none.
+EVIDENCE-path: SAIRN-report-cc-b50.txt, SAIRN-handoff-cc-b50.md, docs/tier-a-reviews.json
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\87a27b9f-55e9-45e8-b017-01ed1febac1a.jsonl
+UNVERIFIED: hank's other four b50 verdicts were audited for form, not re-derived (only cc's own one was reproduced).
+ROUTED: hank -- the 38b2b506 defect, 2fe89f26/040ac5a9 gaps, app-boundary rt_ visibility red. cody -- d6b37bb1 lock drift. fourth -- 7 register problems.
+NEXT: cc -- fourth's b49 Tier A obligation (assigned to cc, not in this dispatch).
+CONTEXT 31.6% of 1,000,000 -- 316,421 tokens, measured.
+SHA256 70aeb7c2700e8d08f119eb137852d497c8f122346838c24c30eb5e8718811342
+END-OF-REPORT

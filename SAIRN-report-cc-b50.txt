@@ -1,0 +1,78 @@
+REPORT cc b50
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-22
+RANGE     9bb0abf3 (D2), a09a1322 (ledger), deliverables. Landed eff2f469..a09a1322, 0 0. No --force, NO OVERRIDE.
+
+== 1. D2 -- tools/criticality_tier_check.py (9bb0abf3) ==
+CRITERIA: an unread or ownerless registry is never silent. main exits 2 and the fixer refuses. The arm count is counted, not typed. The real-tree output is unchanged.
+CONCEPT: a registry is what EXPORTS a resources array; app: is a separate question, and a missing answer to it is a SHAPE_ERROR.
+Reproduced first, at HEAD:
+  :320 continue on None;
+  :986 TypeError on a SHAPE_ERROR (also at all_registered |=);
+  :723/:770 fixer skip, printing success;
+  :923 literal 13.
+Fix:
+  the node reader returns res (Array.isArray(m.resources));
+  declared_shape() returns (app, has_resources);
+  main collects unread registries -> SHAPE ERROR lines, NOT RUN for the NOT A RESOURCE arm, exit 2;
+  the fixer refuses every unread registry (with or without a rollup line), and its re-check lists them;
+  registry_property_arms returns (bad, ran).
+Lock 23/23 (6 + 13 + 4 new). The new arms drive main() and cmd_fix_rollup_lists() over a scratch RESOURCES dir; _IN_FIXTURES guards re-entry.
+ABLATION, each red on exactly its own arm:
+  has_resources False      -> D2(1)
+  unread=[]                -> D2(2) main CRASH
+  fixer refusal removed    -> D2(2) fixer
+Real tree: identical except the lock line (rc 1, 7 pre-existing problems).
+Probes:
+  two_axis_tier_parser 0 failures (it was 15 on my first cut; the fixer arm had depended on the real register's stonedesk line; fixed);
+  run_criticality_tier_probe -- the same 8 failing arms before and after;
+  criticality_rollup_list_review_probe -- output identical;
+  checker_denominator exit 0.
+
+== 2. T1 + item 3 -- Tier A discharges (a09a1322) ==
+Reading of T1: hank b50 handoff T1 = cc reviews of 040ac5a95, 38b2b5069, 2fe89f267. Plus the ledger commit e569a289, as the dispatch named it.
+Method: four read-only subagents, with probes and mutants only in the scratchpad. cc re-read every DEFECT and structural-gap line before discharging.
+2fe89f26  SOUND-WITH-GAPS low
+  public.js:275 whole-value anchor; 400 with nothing stored; ReDoS linear (26ms at 4.5M).
+  Teeth: prefix-only or no-$ -> C7/C8/M5; no return -> C8; client -> C1/C3/C7.
+  Gaps: overlay "none stored" text; mustFail any-throw.
+38b2b506  DEFECT medium-low
+  A partial apprentice object resets the omitted lists (:17091). presence_disclosure:false wipes forbidden -> apprentice read leg_cremations DENY->ALLOW.
+  Plus: a fail-open read catch (:17047-49) merges onto defaults.
+  Owner gate, licence binding and validators hold. 7 non-owner roles plus inactive/deleted/cross-app/cross-licence are refused.
+  Teeth: owner check -> S2/S3/A5/M1.
+040ac5a9  SOUND-WITH-GAPS low
+  Real code. O1/O2/O5/O8/P1/P3 recomputed by hand. The 778.115 floor is a valid lower bound. 8 of 9 mutants red.
+  D9 survives: a warm-instance cross-agency cache.
+d6b37bb1  SOUND-WITH-GAPS low
+  Only (apprentice, leg_cremations, write) is deferred; the lock refuses or holds 13 cases; 11 suites exit 0.
+  Gap: countersign.js:252 returns null off-profile, so drift with requiresCountersignature would fail open (only tests guard it).
+Suites (from the reviewers): b40 27/0, b45 32/0, b48-sen 23/0, b48-leg 8/0, b18 59/0, role-matrix 37/0.
+Pre-existing reds, identical at the parents: reservation_lock 35/36, intake_form_public_surface 17/1, exec_msgs_gate 9/4.
+
+== 3. hank's ledger commit e569a289 -- CLEAN ==
+296 -> 296 records, 0 added or removed.
+Exactly 5 changed, open->reviewed, with only reviewed_at/reviewer_session/status/verdict touched.
+On all 5 the reviewer is hank = reviewer_owner, and the author is not the reviewer. --validate passes.
+hank's verdict on cc's 38bbd455 obligation was reproduced in full (= D2).
+
+== 4. METHODOLOGY ==
+A verdict that names a defect is not a verdict until the reviewer has read the failing line themselves; a subagent's report is a lead.
+
+== OPEN ==
+hank: 38b2b506 partial-apprentice reset + :17047 fail-open (refuse a partial object or merge onto stored; 502 on a non-array body).
+cody: d6b37bb1 -- require PROFILE.lockedResources in the deferral.
+hank: 2fe89f26 overlay text, mustFail; 040ac5a9 coverage arms.
+fourth: the 7 register problems.
+cc next: fourth's b49 obligation assigned to cc.
+hank: the app-boundary test is red on rt_routes/rt_stops visibility (seen incidentally).
+
+== TRANSCRIPT ==
+C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\87a27b9f-55e9-45e8-b017-01ed1febac1a.jsonl
+
+== CHANGED ==
+tools/criticality_tier_check.py, docs/tier-a-reviews.json, the deliverables.
+
+SHA256 c618484cb7c73142fda3ef910a8e067cf0f4e7e692dbf076e43594c85cb327b5
+END-OF-REPORT
