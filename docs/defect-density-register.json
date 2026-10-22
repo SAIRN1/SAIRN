@@ -37576,6 +37576,50 @@
       "recurrence_open": "THE OPERATIONAL AND TRACKED COPIES OF FOUR OTHER TOOLS STILL DIVERGE (citation_class_check.py, hover_editor_review.py, hover_completeness_probe.py, hover_cross_vendor_check.py), so #1626 stays open for those; this commit lands only the cold-scan-pool content. The extractor still scans a file for a resources key by regular expression, not a parser, and the fall-back to the old position-relative scan can still return a wrong span for a shape nobody has seen."
     },
     {
+      "commit": "76193dc91825",
+      "date": "2026-10-22",
+      "subject": "fix(sairncare b51): billing reads a MAR only through a live grant, and a granted read that cannot be logged is not served",
+      "files": [
+        "api/b51-mar-billing-assigned.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 239,
+      "lines_removed": 4,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "family_mar's assignment tier had no role check: a billing employee assigned to a resident read that MAR with no grant, expiry or audit row (reproduced live on ALF-AUDIT-2026 before the fix: 200 with family_mar); and a granted read was served when its mar_access_read row failed to write. Fixed: grantee roles refused 403 before the assignment query unless a live grant matched (refusal audited NO_LIVE_GRANT); granted read refused 503 if unlogged. api/b51-mar-billing-assigned.test.js 11/0 with 3 mutants.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "e3858f19aad8",
+        "date": "2026-10-14",
+        "subject": "feat(sairncare): the MAR access grant, and billing out of family_mar by default",
+        "lag_days": 8
+      },
+      "citation_note": "no standing rule names 'a grantee role must not fall through to the assignment tier'",
+      "contributing_factors": [
+        {
+          "factor": "the grant gate was added beside an older assignment tier whose own role check it assumed existed",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "grantee roles are refused before the assignment query unless a live grant matched"
+        },
+        {
+          "factor": "every billing arm in the suite used an UNASSIGNED billing employee, so the assigned case was never driven",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/b51-mar-billing-assigned.test.js N1-N3 drive billing assigned to the resident"
+        }
+      ],
+      "recurrence_open": "other apps with a grant-or-assignment two-tier read have not been swept for the same fall-through"
+    },
+    {
       "commit": "82a797b2363d",
       "date": "2026-10-22",
       "subject": "fix(hover coverage ledger): match commit shas by prefix, not exact abbreviation (0 of 191 reported, 160 true)",
@@ -37678,6 +37722,93 @@
       "recurrence_open": "NOT CLOSED. 43 missing-dom-fix stub fields (36315fb99) show the raw element id as their visible label -- a product decision, not recoloured. target-size x5 (field-quote, nesting). Emoji inside headings are read aloud. The NVDA pass heard the pre-fix live build; the fixed build is axe-verified, not yet NVDA-heard."
     },
     {
+      "commit": "8fed67ba8974",
+      "date": "2026-10-22",
+      "subject": "fix(probe-freshness, cody b51): a bare edit tuple is counted, not dropped (criteria .3)",
+      "files": [
+        "tools/probe_anchor_freshness.py"
+      ],
+      "lines_added": 29,
+      "lines_removed": 6,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "fault-injection",
+      "summary": "tools/probe_anchor_freshness.py dropped an edit passed as a BARE tuple arm(x, (SUBJ, old, new)): walked element by element, it was neither counted nor unresolved, so a probe in that shape vanished from the denominator while reading clean. Found in cody b49 rewriting the adversarial-corpus probe (skipped 1->0 while ok stayed 645). Criteria .3 counts it; fixtures both ways; ablation new 648 vs old 645.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/probe_anchor_freshness.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The tuple walk dates from the tool's first version; not traced to a single commit."
+      },
+      "citation_note": "An edit the checker could not read was silently absent rather than reported as unresolved.",
+      "contributing_factors": [
+        {
+          "factor": "The arg walk assumed edits arrive in a list or tuple OF tuples and never considered a single bare tuple.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A bare 3/4-tuple with a name or path first and a string second is read as one edit."
+        },
+        {
+          "factor": "No fixture exercised the bare shape, so the drop could not show in the selftest.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Fixtures i, j, k in both directions."
+        }
+      ],
+      "recurrence_open": "Anchors built by concatenation, an f-string or a variable stay invisible (stated in BLIND_SPOTS); other container shapes for an edit were not surveyed."
+    },
+    {
+      "commit": "904e0f83c978",
+      "date": "2026-10-22",
+      "subject": "fix(countersign, cody b51): an off-profile resource is refused, not passed as signed (cc b50 review of d6b37bb1)",
+      "files": [
+        "api/_lib/countersign.js",
+        "api/b51-countersign-lock-drift.test.js",
+        "api/sd-data.js",
+        "docs/sairn-path-manifest.json"
+      ],
+      "lines_added": 256,
+      "lines_removed": 7,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "api/_lib/countersign.js requireCountersignature returned null (= signed, proceed) for a resource its PROFILE did not lock. All four callers ask only after their own table says the resource is locked, so drift between e.g. legRoles.requiresCountersignature and legCs.PROFILE.lockedResources would file a cremation authorisation or trust disbursement with no second signature; only tests guarded the drift (cc b50 review of d6b37bb1). Now 500 COUNTERSIGN_LOCK_MISCONFIGURED before any fetch. api/b51-countersign-lock-drift.test.js 5/5 incl. an ablation that files the record under the old line.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The null-for-unlocked line predates the leg and law-attest callers; which commit first made a caller depend on a SEPARATE lock list was not traced."
+      },
+      "citation_note": "Could-not-apply-the-lock was folded into the same null that means verified.",
+      "contributing_factors": [
+        {
+          "factor": "The library treated an off-profile resource as a non-locked one, a reasonable default for a caller that does not pre-filter, but every real caller does pre-filter with its own list.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Off-profile returns a refusal; the caller wanted a lock and there is none."
+        },
+        {
+          "factor": "The two lists (role module and PROFILE) were kept in agreement only by tests, nothing at runtime.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Runtime refusal plus R1/R2 arms that make the drift real by swapping the PROFILE."
+        }
+      ],
+      "recurrence_open": "The two lock lists still exist and can still drift; drift is now a loud 500 on the first write rather than a silent unsigned filing. sv-witness and sairncare-witness keep their own single lock table and are not affected."
+    },
+    {
       "commit": "a7c848c83680",
       "date": "2026-10-22",
       "subject": "fix(stonedesk b55): 17 stub fields get real labels; the doc-scan upload zone is a keyboard button",
@@ -37726,50 +37857,6 @@
         }
       ],
       "recurrence_open": "NOT CLOSED. ts-search and rf-source-chart are read by no code. target-size x5 (173x19 inputs on field-quote, nesting). Emoji at the start of headings are spoken by name (NVDA CLDR, level none). The fixed doc-scan build is not yet NVDA-heard."
-    },
-    {
-      "commit": "76193dc91825",
-      "date": "2026-10-22",
-      "subject": "fix(sairncare b51): billing reads a MAR only through a live grant, and a granted read that cannot be logged is not served",
-      "files": [
-        "api/b51-mar-billing-assigned.test.js",
-        "api/sd-data.js"
-      ],
-      "lines_added": 239,
-      "lines_removed": 4,
-      "app": "sairncare",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "summary": "family_mar's assignment tier had no role check: a billing employee assigned to a resident read that MAR with no grant, expiry or audit row (reproduced live on ALF-AUDIT-2026 before the fix: 200 with family_mar); and a granted read was served when its mar_access_read row failed to write. Fixed: grantee roles refused 403 before the assignment query unless a live grant matched (refusal audited NO_LIVE_GRANT); granted read refused 503 if unlogged. api/b51-mar-billing-assigned.test.js 11/0 with 3 mutants.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "e3858f19aad8",
-        "date": "2026-10-14",
-        "subject": "feat(sairncare): the MAR access grant, and billing out of family_mar by default",
-        "lag_days": 8
-      },
-      "citation_note": "no standing rule names 'a grantee role must not fall through to the assignment tier'",
-      "contributing_factors": [
-        {
-          "factor": "the grant gate was added beside an older assignment tier whose own role check it assumed existed",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "grantee roles are refused before the assignment query unless a live grant matched"
-        },
-        {
-          "factor": "every billing arm in the suite used an UNASSIGNED billing employee, so the assigned case was never driven",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "api/b51-mar-billing-assigned.test.js N1-N3 drive billing assigned to the resident"
-        }
-      ],
-      "recurrence_open": "other apps with a grant-or-assignment two-tier read have not been swept for the same fall-through"
     },
     {
       "commit": "c53c75c1bc0e",
