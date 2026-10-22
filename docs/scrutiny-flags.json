@@ -5557,6 +5557,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_hover_separation_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6d801c8a8831ac70fa44687c4910ef8e291df4a8",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/sd-data-leg-role-matrix.test.js",
    "class": "test file",
    "level": "CHANGE",
