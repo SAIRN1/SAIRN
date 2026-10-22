@@ -37587,6 +37587,51 @@
       "recurrence_open": "NOT CLOSED. 43 missing-dom-fix stub fields (36315fb99) show the raw element id as their visible label -- a product decision, not recoloured. target-size x5 (field-quote, nesting). Emoji inside headings are read aloud. The NVDA pass heard the pre-fix live build; the fixed build is axe-verified, not yet NVDA-heard."
     },
     {
+      "commit": "ee3354263fc1",
+      "date": "2026-10-22",
+      "subject": "fix(tests, cody b49): the adversarial-corpus probe was red since 2026-09-26 and its anchors were never counted",
+      "files": [
+        "tests/run_adversarial_prompt_corpus_probe.py"
+      ],
+      "lines_added": 33,
+      "lines_removed": 13,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "tests/run_adversarial_prompt_corpus_probe.py was RED from 2026-09-26 to b49 and nothing said so: 34d1ff0ed widened UNTRUSTED_WORDS and fenced three more sites, arm 8's sabotage anchor vanished and arms 4/10 asserted stale counts. Its anchors were never counted -- subject computed from REPO, anchors positional -- so probe_anchor_freshness listed them as skipped and CHECK 5e printed nothing for skipped. Re-derived (anchor, floor, lock-refuses), anchors made countable (ok 645->648, skipped 1->0); 5e now names skipped rows.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/probe_anchor_freshness.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "34d1ff0edabe",
+        "date": "2026-09-26",
+        "subject": "fix(prompt-fence): the per-app field list this tool asked for twice -- and a widening it refused in one run",
+        "lag_days": 26
+      },
+      "citation_note": "A skipped probe was folded into silence: neither denied nor printed, so a check that could not run looked like one that passed.",
+      "contributing_factors": [
+        {
+          "factor": "The probe declared its subject as a computed path and its anchors positionally, a shape the freshness tool cannot resolve, so it was skipped rather than counted.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Module-level literal SUBJECT and [(SUBJECT, old, new)] edits; freshness counts all three."
+        },
+        {
+          "factor": "CHECK 5e consumed the vanished/ambiguous/miscounted/unreadable lists and ignored skipped, so an uncountable probe was invisible at push time.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "5e reports each skipped row, denied when the push touches the probe (a402e6b45)."
+        }
+      ],
+      "recurrence_open": "probe_anchor_freshness silently ignores an edit passed as a BARE tuple argument (neither counted nor skipped) -- found in b49, routed to cc, not fixed here."
+    },
+    {
       "commit": "c53c75c1bc0e",
       "date": "2026-10-22",
       "subject": "fix(sd-agent, cody b48): the last catch no longer relays err.message (hover H1 #1684)",
