@@ -37723,7 +37723,7 @@
       "recurrence_open": "Same shape may exist in other api/ catch-alls; only sd-agent.js:351 was routed and fixed. The license-gate arms (lines 263-266) still relay store messages by design (coded, user-facing)."
     },
     {
-      "commit": "d6381d089a7b",
+      "commit": "a7c848c83680",
       "date": "2026-10-22",
       "subject": "fix(stonedesk b55): 17 stub fields get real labels; the doc-scan upload zone is a keyboard button",
       "files": [
