@@ -37531,6 +37531,50 @@
       "recurrence_open": "probe_anchor_freshness silently ignores an edit passed as a BARE tuple argument (neither counted nor skipped) -- found in b49, routed to cc, not fixed here."
     },
     {
+      "commit": "29739fe14a36",
+      "date": "2026-10-22",
+      "subject": "fix(platform b52): an unreadable answer is never \"no row\" -- four more Tier A sites of the leg_settings fail-open shape",
+      "files": [
+        "api/b52-unreadable-is-not-empty.test.js",
+        "api/law-auth.js",
+        "api/sairncare-witness.js",
+        "api/sd-data.js",
+        "api/sv-witness.js"
+      ],
+      "lines_added": 209,
+      "lines_removed": 8,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "Row-or-null fail-open at four Tier A sites: the leg_ role gate allowed an apprentice a forbidden record type on an unreadable (or HTTP-500) settings read; the alf family-contact write re-stamped MAR consent provenance on a non-list prior read; both witness endpoints dropped the two-person rule on a non-list policy read; law-auth mfa_enroll read a non-list/inactive lookup as not-enrolled and switched 2FA off. Fixed fail-closed; api/b52-unreadable-is-not-empty.test.js 9/0, mutants M1-M3.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "four sites across sd-data.js, two witness endpoints and law-auth.js, each written separately"
+      },
+      "citation_note": "PR 1.11 shape; no register rule id",
+      "contributing_factors": [
+        {
+          "factor": "(Array.isArray(rows) && rows[0]) || null folds an unreadable answer into no-row, and each site then took its permissive branch",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Array check before [0] at the four Tier A OPEN sites; refusal or could-not-tell"
+        },
+        {
+          "factor": "no detector for the shape; found only by a manual sweep of 63 sites",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "route a static check to cc (tools/)"
+        }
+      ],
+      "recurrence_open": "4946/20236 soft-delete skip, 3000/3983, dnt-bi.js:450, audit-checkpoint.js:339, ~18 *-auth bootstrap checks are not fixed"
+    },
+    {
       "commit": "59c3e0208efe",
       "date": "2026-10-22",
       "subject": "fix(hover cold scan pool, #741 / #1626): land the sairncode resource_app_map fix that existed only in the operational copy",
@@ -38043,6 +38087,50 @@
         }
       ],
       "recurrence_open": "NOT CLOSED. Not driven against the live API (it would leave leg_cremations and token residue). Cremation records already saved locally before b56 and refused by the server are still on those devices. Other locked resources, if added to an F3 list, have no UI either."
+    },
+    {
+      "commit": "6a3755cac8f7",
+      "date": "2026-10-22",
+      "subject": "fix(sairnlegacy b52): leg_settings -- a partial apprentice object merges onto the stored policy, and an unreadable settings read is refused",
+      "files": [
+        "api/b45-leg-settings-owner-write.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 86,
+      "lines_removed": 6,
+      "app": "sairnlegacy",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "leg_settings: a partial apprentice object reset omitted keys, so {presence_disclosure:false} wiped the forbidden list and an apprentice's access to a forbidden record type went DENY -> ALLOW (cc b50 review of 38b2b506); and an unparsable/non-list settings read made the write merge onto defaults (wiping policy and livery grants). Fixed: merge onto stored; 502 on unreadable. b45 suite 38/0, mutants M4-M6.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "38b2b5069598",
+        "date": "2026-10-21",
+        "subject": "feat(sairnlegacy): leg_settings -- the owner's F2/F3 write path (cody b40 routing)",
+        "lag_days": 1
+      },
+      "citation_note": "no standing rule names 'a partial update merges onto stored, never onto defaults'",
+      "contributing_factors": [
+        {
+          "factor": "omitted apprentice keys defaulted to [] instead of the stored value",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "omitted keys keep their stored values; the cross-list rule runs on the merged lists"
+        },
+        {
+          "factor": "an OK read with a non-list body was read as no row, so the write merged onto defaults",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "502 UNREADABLE_SETTINGS on read and write"
+        }
+      ],
+      "recurrence_open": "the same row-or-null shape at other sites is swept in fcc9194cc; 4946/20236 need a decision"
     }
   ],
   "started": "2026-09-09",

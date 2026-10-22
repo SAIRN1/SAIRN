@@ -8550,6 +8550,35 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-22T16:08:23Z",
+      "opened_at_sha": "29739fe14a36d063d8e78d03c29eb36982274c33",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 4,
+      "resources": [
+        "alf_clients",
+        "alf_family_contacts",
+        "leg_cremations",
+        "leg_invoices",
+        "rt_routes",
+        "rt_stops"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/_resources/app-boundary.test.js",
+        "api/b45-leg-settings-owner-write.test.js",
+        "api/b52-unreadable-is-not-empty.test.js"
+      ],
+      "what": "hank b52 (6a3755cac + 29739fe14): (1) leg_settings write -- a partial apprentice object MERGES onto the stored policy (Michael's b52 decision; fourth's F3 UI notified), the cross-list rule runs on the merged lists, and an unreadable settings read is 502. (2) The same row-or-null fail-open closed at four more Tier A sites: the leg_ role gate (unreadable or HTTP-500 settings read -> 502, was the wide default for an apprentice), the alf_family_contacts write's prior read (-> 502, was a first-save re-stamping consent provenance), sairncare-witness.js and sv-witness.js policy reads (non-list -> could-not-tell 503), law-auth.js loadEmployee (non-list throws; mfa_enroll refuses a token with no active row). REVIEWER: attack (a) whether refusing the WHOLE leg_ gate on an HTTP-500 settings read is too wide (every leg_ resource, every role, while the settings table is unhealthy) versus refusing only roles whose answer depends on the settings; (b) the merge semantics -- can an owner still CLEAR a list (send [] explicitly)?; (c) the four sites the sweep left OPEN and routed (sd-data 4946/20236 deliberate soft-delete skip, 3000/3983, dnt-bi.js:450, audit-checkpoint.js:339).",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-22T16:08:23Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
