@@ -1,0 +1,23 @@
+SAIRN DIGEST -- fourth b55 -- 2026-10-22
+CONTEXT 26.5% of 1,000,000 -- 264,746 tokens, measured.
+STATUS: 17 stub fields labelled; NVDA re-run clean (0 refused); it found the doc-scan zone unreachable -- fixed; live (a7c848c83).
+DECISION-NEEDED: go-ahead to fix (a) emoji spoken in headings via aria-hidden, (b) target-size x5 via min-height 24px.
+READ: SAIRN-handoff-fourth-b55.md (whole state). Detail: SAIRN-report-fourth-b55.txt.
+SQL: none this batch.
+CHANGED:
+  a7c848c83 stonedesk: 17 missing-dom-fix fields labelled from their reading code (for=, 4.5:1); the other 26 containers
+            are outputs, with nothing to label; the doc-scan upload zone is a keyboard button (reachability by display/hidden,
+            not offsetParent); contrast 13->0, mouse-only 6->4; 25 arms, 4/4 new mutants killed
+  c7f32c14c/5bb90f6db/09c05ab69 register record + re-seat, scrutiny rows
+1 NVDA (fixed build): 201 steps, 0 refused; the 7 formerly headingless panels speak headings; Tab from the doc-scan
+  heading left the page, then 4 panels were silent -> root cause fixed in a7c848c83, not yet re-heard
+2 target-size x5 VERIFIED real: 173x19 px inputs (fq-client, nest-slab-w/h, nest-cut-w/h)
+3 emoji in headings VERIFIED spoken: NVDA en/cldr.dic level none, CLDR on by default ("robot StoneDesk AI Assistant")
+EVIDENCE-path: tests/stonedesk_a11y_pass.js; scratchpad nvda_sd55.json, a11y_sd55_live.json, ts55.py, ds55.py.
+NEXT, in order:
+  a decision above, then the aria-hidden emoji wrap + min-height fix
+  b NVDA re-run to hear the doc-scan fix (one click)
+  c Michael: `! npm ci --ignore-scripts --no-audit --no-fund` in SAIRN-fourth (from b54, still denied)
+UNVERIFIED: NVDA on the doc-scan fix; emoji speech heard by ear (verified from NVDA data only).
+PRIVACY: scratchpad nvda_sd55.log holds speech from other windows -- do not share.
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\fd66c7b5-98f7-4e46-ac2a-b0383cde9210.jsonl

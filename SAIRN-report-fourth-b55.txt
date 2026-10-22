@@ -1,0 +1,48 @@
+SAIRN REPORT -- fourth b55 -- 2026-10-22
+
+RESULT: stub fields labelled; NVDA re-run on the fixed build clean (0
+refused) and it found one real defect, now fixed; target-size and
+emoji-in-headings both verified real. Landed and live (a7c848c83), no force,
+no skip. Handoff: SAIRN-handoff-fourth-b55.md.
+
+1 STUB LABELS                                                  a7c848c83
+  CONCEPT: a field's label is the name its own reading code gives the value
+  (e.g. remakeSave: reason, assignedTo, startTime), tied by for=, at 4.5:1.
+  Of the 43 missing-dom-fix containers, 17 are text fields that showed their
+  raw id. They are now labelled: Job, Photo category, Filter by status,
+  Remake reason, Assigned to, Start time, Priority, Square feet, Address,
+  Visit date, Reserved slab ID, Filter by type, Search timesheets,
+  Square feet, Edge linear feet, Material cost ($), Referral source chart.
+  The other 26 are output containers, with nothing to label.
+  ts-search and rf-source-chart are read by no code (filed).
+
+2 NVDA RE-RUN on the fixed build (local tree at the live URL, writes blocked)
+  201 steps captured, 0 refused. All 7 formerly headingless panels now say
+  "<name>, heading, level 2". 'current page' is spoken on Enter.
+  FOUND: Tab from the doc-scan heading left the page. NVDA then spoke
+  nothing for 4 panels.
+  CAUSE: the b53 rule skipped the upload zone because it contains a
+  display:none file input.
+  FIX: reachability is judged by display:none/[hidden], not offsetParent.
+  (My first attempt used offsetParent, which is null at load; axe caught
+  nested-interactive x4 before commit.)
+  Live after: contrast 13 -> 0; mouse-only 6 -> 4 (integrations cards,
+  deliberate); select-name 0, label 0, headingless 0.
+  One Windows widget utterance ("AlphaSignal") came through with toasts off.
+  NOT yet heard by NVDA: the doc-scan fix itself.
+
+3 TARGET-SIZE x5: verified real. #fq-client, #nest-slab-w/-h, #nest-cut-w/-h
+  each measure 173x19 px (axe: "should be at least 24px by 24px").
+  Not fixed (verify-only item).
+
+4 EMOJI IN HEADINGS: verified spoken. NVDA's en/cldr.dic maps each heading
+  emoji at level none (always spoken); nvda.ini leaves CLDR on, which is the
+  default. So NVDA says "robot StoneDesk AI Assistant, heading, level 2".
+  Verified from NVDA data and config, not by listening. Not fixed.
+
+5 PUSH: landed through 09c05ab69 (HEAD = origin/main). Live bytes = origin
+  at 14:53Z. The live re-pass matches the local one.
+  Tests: 25 arms; 4/4 new mutants killed. Of 25 stonedesk suites, only
+  exec_msgs_gate is red, the same as at HEAD.
+
+STILL OPEN from b54: npm ci not run (permission denied).
