@@ -37722,7 +37722,7 @@
       "recurrence_open": "NOT CLOSED. 43 missing-dom-fix stub fields (36315fb99) show the raw element id as their visible label -- a product decision, not recoloured. target-size x5 (field-quote, nesting). Emoji inside headings are read aloud. The NVDA pass heard the pre-fix live build; the fixed build is axe-verified, not yet NVDA-heard."
     },
     {
-      "commit": "af8001f01b64",
+      "commit": "796ca2be5747",
       "date": "2026-10-22",
       "subject": "fix(probe-freshness, cody b51): a bare edit tuple is counted, not dropped (criteria .3)",
       "files": [
@@ -37764,7 +37764,7 @@
       "recurrence_open": "Anchors built by concatenation, an f-string or a variable stay invisible (stated in BLIND_SPOTS); other container shapes for an edit were not surveyed."
     },
     {
-      "commit": "47be12409516",
+      "commit": "42e3b68e889a",
       "date": "2026-10-22",
       "subject": "fix(countersign, cody b51): an off-profile resource is refused, not passed as signed (cc b50 review of d6b37bb1)",
       "files": [
