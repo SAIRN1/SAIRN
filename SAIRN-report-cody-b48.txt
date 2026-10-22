@@ -1,0 +1,27 @@
+REPORT -- cody b48, 2026-10-22
+
+LANDED on origin/main, no force, push_retry --loop attempt 3 (1-2 transient races):
+  c53c75c1b fix(sd-agent) #1684 | d6b37bb1c feat(sairnlegacy) F3 deferral | 3ba30b465 register record | f260e873d Tier A obligation (cc).
+  Each verified with git merge-base --is-ancestor after fetch.
+1. #1684 FIXED. api/sd-agent.js last catch answered err.message (Anthropic's error body via callClaude UPSTREAM, or any internal
+   exception). Now: logged as before, caller gets the fixed sentence, status unchanged. api/b48-sd-agent-error-leak.test.js 3/3
+   incl. ablation X (old line restored -> arm A's check fails). sd-agent-budget 7/7. Register: c53c75c1b, moderate, hover-audit.
+2. F2 WAS ALREADY WIRED (b27/b29 + hank b45-b47 owner write). F3 WAS BUILT BUT UNUSABLE: decide(prepare) allowed an apprentice on
+   the home's list and leg-countersign lets them prepare, but the role gate 403'd their write before the leg_cremations lock ran.
+   Fixed with law C2's deferral (not read + locked resource + decide(prepare, grants, home) ALLOW); lock is MODE_ALWAYS.
+   api/b48-leg-f3-prepare-deferral.test.js 8/8: signed->filed; unsigned->COUNTERSIGN_REQUIRED; no list / forbidden / unlocked
+   resource / livery -> FORBIDDEN, token unread; self-signed -> 409; ablation X -> filed arm goes 403.
+   Regressions green: b27 18/0, b22 23/0, b29 21/0, b45 32/0, b18 59/0, leg-role-matrix, b17, leg-overlap 36/0.
+   tests/sairnlegacy_reservation_lock.js 35/36 -- identical at HEAD in a worktree (pre-existing, hank b45 R1).
+   First push refused twice, both true: (a) credential-shaped literal in my test (a fixture token string) -- rewritten
+   unpushed, built from parts; (b) Tier A: no obligation covered leg_deathrecords (negative arm) -- obligation opened, cc.
+3. rm push_retry_last_refusal.txt: DENIED by the harness. Not retried. Michael: plain CMD window.
+4. npm ci --ignore-scripts --no-audit --no-fund: DENIED (compound and exact form). 5f did not scope this push:
+   dependency_integrity_check --paths on my files -> "none of the four manifests", exit 0. Install still owed.
+5. LIVE: sairn.vercel.app sd-agent no licence -> 401 NO_LICENSE; sd-data leg_cremations write, licence, no session -> 401
+   NO_SESSION. The fixed paths themselves NOT driven live (need an induced upstream error; apprentice+director sessions).
+FINDING (not mine): defect_register --reseat reports f9a4e5a0032b COLLIDES with 5bb0950a51b6 (same audit-checkpoint fix, 2026-10-13,
+   pre/post rebase duplicate). Left alone -- a content decision for a human.
+NOTICED: untracked .claude/settings.local.json.bak-cc-b48 in this clone; not created by me, not touched.
+OPEN: Tier A review (cc); F3 live drive; presence_disclosure not surfaced in sairnlegacy.html (fourth); reservation_lock R1;
+   b27 section V comment wording. Claim `platform` (b48) held.

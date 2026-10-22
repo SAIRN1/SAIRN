@@ -1,0 +1,17 @@
+DIGEST -- cody b48, 2026-10-22. Six items: 1, 2, 5 DONE; 3, 4 DENIED by the harness (Michael).
+STATUS: API CODE (sd-agent.js, sd-data.js) + 2 tests. NO SQL. NO LIVE WRITES. Deployed by push.
+CHANGED: api/sd-agent.js, api/sd-data.js, api/b48-sd-agent-error-leak.test.js, api/b48-leg-f3-prepare-deferral.test.js, path manifest, register, tier-a-reviews.
+LANDED: c53c75c1b (#1684), d6b37bb1c (F3), 3ba30b465 (register), f260e873d (Tier A obligation) on origin/main, no force.
+ITEM 1 -- #1684 FIXED: sd-agent's last catch no longer relays err.message (Anthropic body / internal exception). 3/3 + ablation.
+ITEM 2 -- F2 already wired (b27/b29, hank b45-47). F3 was BUILT BUT UNUSABLE: the role gate 403'd an F3-listed apprentice's
+  leg_cremations write before the countersignature lock ran. Now deferred exactly as law C2 (not read + locked + decide(prepare)
+  ALLOW); lock is MODE_ALWAYS. 8/8 incl. 5 negative arms + ablation. Leg regressions green.
+ITEM 3 -- rm DENIED. Michael: delete C:\Users\marsh\Documents\SAIRN-cody\push_retry_last_refusal.txt from plain CMD.
+ITEM 4 -- npm ci DENIED. Michael: ! npm ci --ignore-scripts --no-audit --no-fund in SAIRN-cody. 5f did not scope this push (measured).
+DECISION-NEEDED: cc -- Tier A review of d6b37bb1c (assigned). Human -- register COLLISION f9a4e5a0032b vs 5bb0950a51b6 (not mine).
+UNVERIFIED: both fixed paths not driven live (endpoints live+gated: 401 NO_LICENSE / 401 NO_SESSION).
+PRE-EXISTING: tests/sairnlegacy_reservation_lock.js 35/36, identical at HEAD (hank b45 R1).
+NOTICED: untracked .claude/settings.local.json.bak-cc-b48 in this clone, not mine.
+NEXT: release platform claim; F3 live drive needs apprentice+director sessions; presence_disclosure UI -> fourth.
+EVIDENCE-path: SAIRN-handoff-cody-b48.md, SAIRN-report-cody-b48.txt
+CONTEXT 22.1% of 1,000,000 -- 221,413 tokens, measured.
