@@ -37486,7 +37486,7 @@
       "recurrence_open": "NOT CLOSED. Not verified with NVDA itself. Modals not opened. Other launch-wave apps not passed."
     },
     {
-      "commit": "76b475f588b5",
+      "commit": "847e89943d6d",
       "date": "2026-10-22",
       "subject": "fix(stonedesk b54): every select/field named, every panel headed, 56 contrast nodes fixed",
       "files": [
