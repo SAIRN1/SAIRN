@@ -1184,6 +1184,17 @@
       "status": "released",
       "released_at": "2026-10-22T14:36:01Z",
       "files": null
+    },
+    {
+      "id": "hover-1792684274",
+      "session": "hover",
+      "subject": "hover",
+      "task": "hover b84: reconcile 4 divergent tool pairs (#1626), #1613/#1614 row-text path pointer for cody, coverage ledger 26 left, mirror push 80 restore drill, compaction trace vs idleCompaction false",
+      "claimed_at": "2026-10-22T15:51:14Z",
+      "claimed_at_epoch": 1792684274.3446424,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
