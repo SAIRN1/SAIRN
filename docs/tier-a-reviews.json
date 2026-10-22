@@ -8504,6 +8504,30 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-22T15:13:41Z",
+      "opened_at_sha": "76193dc91825d6d94a9e796f541aeef0de0be97d",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 1,
+      "resources": [
+        "alf_clients",
+        "alf_family_contacts",
+        "alf_mar"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/b51-mar-billing-assigned.test.js"
+      ],
+      "what": "hank b51 (76193dc91): api/sd-data.js family_mar -- a grantee role (billing) is refused 403 before the assignment-tier query unless a live grant matched (refusal audited mar_access_grant_refused, reason NO_LIVE_GRANT), and a granted read is refused 503 AUDIT_UNAVAILABLE when its mar_access_read row fails to write. Reproduced live before the fix on ALF-AUDIT-2026 (billing assigned to zz-b51-resident, no grant -> 200 with family_mar). REVIEWER: attack (1) whether any OTHER SAIRNcare read of alf_mar or MAR-derived data (derive_charges, alf_mar read, exports) still admits billing through assignment; (2) the 503-on-unlogged choice -- can writeAuditLog return false on a write that did land, refusing a legitimate read; (3) whether N6 (caregiver control) proves the gate is scoped to grantee roles or only that the message differs.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-22T15:13:41Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

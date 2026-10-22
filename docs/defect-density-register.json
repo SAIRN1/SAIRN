@@ -37486,6 +37486,51 @@
       "recurrence_open": "NOT CLOSED. Not verified with NVDA itself. Modals not opened. Other launch-wave apps not passed."
     },
     {
+      "commit": "05e92c1548f7",
+      "date": "2026-10-22",
+      "subject": "fix(tests, cody b49): the adversarial-corpus probe was red since 2026-09-26 and its anchors were never counted",
+      "files": [
+        "tests/run_adversarial_prompt_corpus_probe.py"
+      ],
+      "lines_added": 33,
+      "lines_removed": 13,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "tests/run_adversarial_prompt_corpus_probe.py was RED from 2026-09-26 to b49 and nothing said so: 34d1ff0ed widened UNTRUSTED_WORDS and fenced three more sites, arm 8's sabotage anchor vanished and arms 4/10 asserted stale counts. Its anchors were never counted -- subject computed from REPO, anchors positional -- so probe_anchor_freshness listed them as skipped and CHECK 5e printed nothing for skipped. Re-derived (anchor, floor, lock-refuses), anchors made countable (ok 645->648, skipped 1->0); 5e now names skipped rows.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/probe_anchor_freshness.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "34d1ff0edabe",
+        "date": "2026-09-26",
+        "subject": "fix(prompt-fence): the per-app field list this tool asked for twice -- and a widening it refused in one run",
+        "lag_days": 26
+      },
+      "citation_note": "A skipped probe was folded into silence: neither denied nor printed, so a check that could not run looked like one that passed.",
+      "contributing_factors": [
+        {
+          "factor": "The probe declared its subject as a computed path and its anchors positionally, a shape the freshness tool cannot resolve, so it was skipped rather than counted.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Module-level literal SUBJECT and [(SUBJECT, old, new)] edits; freshness counts all three."
+        },
+        {
+          "factor": "CHECK 5e consumed the vanished/ambiguous/miscounted/unreadable lists and ignored skipped, so an uncountable probe was invisible at push time.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "5e reports each skipped row, denied when the push touches the probe (a402e6b45)."
+        }
+      ],
+      "recurrence_open": "probe_anchor_freshness silently ignores an edit passed as a BARE tuple argument (neither counted nor skipped) -- found in b49, routed to cc, not fixed here."
+    },
+    {
       "commit": "59c3e0208efe",
       "date": "2026-10-22",
       "subject": "fix(hover cold scan pool, #741 / #1626): land the sairncode resource_app_map fix that existed only in the operational copy",
@@ -37633,96 +37678,6 @@
       "recurrence_open": "NOT CLOSED. 43 missing-dom-fix stub fields (36315fb99) show the raw element id as their visible label -- a product decision, not recoloured. target-size x5 (field-quote, nesting). Emoji inside headings are read aloud. The NVDA pass heard the pre-fix live build; the fixed build is axe-verified, not yet NVDA-heard."
     },
     {
-      "commit": "05e92c1548f7",
-      "date": "2026-10-22",
-      "subject": "fix(tests, cody b49): the adversarial-corpus probe was red since 2026-09-26 and its anchors were never counted",
-      "files": [
-        "tests/run_adversarial_prompt_corpus_probe.py"
-      ],
-      "lines_added": 33,
-      "lines_removed": 13,
-      "app": "tooling",
-      "layer": "test",
-      "severity": "moderate",
-      "detection_method": "static-checker",
-      "summary": "tests/run_adversarial_prompt_corpus_probe.py was RED from 2026-09-26 to b49 and nothing said so: 34d1ff0ed widened UNTRUSTED_WORDS and fenced three more sites, arm 8's sabotage anchor vanished and arms 4/10 asserted stale counts. Its anchors were never counted -- subject computed from REPO, anchors positional -- so probe_anchor_freshness listed them as skipped and CHECK 5e printed nothing for skipped. Re-derived (anchor, floor, lock-refuses), anchors made countable (ok 645->648, skipped 1->0); 5e now names skipped rows.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": "tools/probe_anchor_freshness.py",
-      "found_by_session": null,
-      "injection": {
-        "commit": "34d1ff0edabe",
-        "date": "2026-09-26",
-        "subject": "fix(prompt-fence): the per-app field list this tool asked for twice -- and a widening it refused in one run",
-        "lag_days": 26
-      },
-      "citation_note": "A skipped probe was folded into silence: neither denied nor printed, so a check that could not run looked like one that passed.",
-      "contributing_factors": [
-        {
-          "factor": "The probe declared its subject as a computed path and its anchors positionally, a shape the freshness tool cannot resolve, so it was skipped rather than counted.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Module-level literal SUBJECT and [(SUBJECT, old, new)] edits; freshness counts all three."
-        },
-        {
-          "factor": "CHECK 5e consumed the vanished/ambiguous/miscounted/unreadable lists and ignored skipped, so an uncountable probe was invisible at push time.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "5e reports each skipped row, denied when the push touches the probe (a402e6b45)."
-        }
-      ],
-      "recurrence_open": "probe_anchor_freshness silently ignores an edit passed as a BARE tuple argument (neither counted nor skipped) -- found in b49, routed to cc, not fixed here."
-    },
-    {
-      "commit": "c53c75c1bc0e",
-      "date": "2026-10-22",
-      "subject": "fix(sd-agent, cody b48): the last catch no longer relays err.message (hover H1 #1684)",
-      "files": [
-        "api/b48-sd-agent-error-leak.test.js",
-        "api/sd-agent.js",
-        "docs/sairn-path-manifest.json"
-      ],
-      "lines_added": 133,
-      "lines_removed": 2,
-      "app": "stonedesk",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "hover-audit",
-      "summary": "api/sd-agent.js's last catch answered every unhandled error with err.message: Anthropic's own error text from callClaude's UPSTREAM throw, or any internal exception, went to the caller verbatim (hover H1 #1684). Fixed: logged as before, the caller gets the fixed sentence; status unchanged. api/b48-sd-agent-error-leak.test.js 3/3 with an ablation arm that restores the old line.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover",
-      "injection": {
-        "commit": "286f945f661f",
-        "date": "2026-07-23",
-        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) \u2014 tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
-        "lag_days": 91
-      },
-      "citation_note": "No standing rule in PR or the disciplines names error-detail leakage to the caller; the platform's own fixes for it (b33 route-map C4) are per-endpoint.",
-      "contributing_factors": [
-        {
-          "factor": "The catch-all used err.message as the response text with a generic fallback, so any thrown text reached the caller, including upstream bodies.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The fixed sentence is returned; err is logged server-side only."
-        },
-        {
-          "factor": "The endpoint had no test that drove an upstream refusal and inspected the response body for relayed detail.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "api/b48-sd-agent-error-leak.test.js arms A, B and ablation X."
-        }
-      ],
-      "recurrence_open": "Same shape may exist in other api/ catch-alls; only sd-agent.js:351 was routed and fixed. The license-gate arms (lines 263-266) still relay store messages by design (coded, user-facing)."
-    },
-    {
       "commit": "a7c848c83680",
       "date": "2026-10-22",
       "subject": "fix(stonedesk b55): 17 stub fields get real labels; the doc-scan upload zone is a keyboard button",
@@ -37771,6 +37726,95 @@
         }
       ],
       "recurrence_open": "NOT CLOSED. ts-search and rf-source-chart are read by no code. target-size x5 (173x19 inputs on field-quote, nesting). Emoji at the start of headings are spoken by name (NVDA CLDR, level none). The fixed doc-scan build is not yet NVDA-heard."
+    },
+    {
+      "commit": "76193dc91825",
+      "date": "2026-10-22",
+      "subject": "fix(sairncare b51): billing reads a MAR only through a live grant, and a granted read that cannot be logged is not served",
+      "files": [
+        "api/b51-mar-billing-assigned.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 239,
+      "lines_removed": 4,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "family_mar's assignment tier had no role check: a billing employee assigned to a resident read that MAR with no grant, expiry or audit row (reproduced live on ALF-AUDIT-2026 before the fix: 200 with family_mar); and a granted read was served when its mar_access_read row failed to write. Fixed: grantee roles refused 403 before the assignment query unless a live grant matched (refusal audited NO_LIVE_GRANT); granted read refused 503 if unlogged. api/b51-mar-billing-assigned.test.js 11/0 with 3 mutants.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "e3858f19aad8",
+        "date": "2026-10-14",
+        "subject": "feat(sairncare): the MAR access grant, and billing out of family_mar by default",
+        "lag_days": 8
+      },
+      "citation_note": "no standing rule names 'a grantee role must not fall through to the assignment tier'",
+      "contributing_factors": [
+        {
+          "factor": "the grant gate was added beside an older assignment tier whose own role check it assumed existed",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "grantee roles are refused before the assignment query unless a live grant matched"
+        },
+        {
+          "factor": "every billing arm in the suite used an UNASSIGNED billing employee, so the assigned case was never driven",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/b51-mar-billing-assigned.test.js N1-N3 drive billing assigned to the resident"
+        }
+      ],
+      "recurrence_open": "other apps with a grant-or-assignment two-tier read have not been swept for the same fall-through"
+    },
+    {
+      "commit": "c53c75c1bc0e",
+      "date": "2026-10-22",
+      "subject": "fix(sd-agent, cody b48): the last catch no longer relays err.message (hover H1 #1684)",
+      "files": [
+        "api/b48-sd-agent-error-leak.test.js",
+        "api/sd-agent.js",
+        "docs/sairn-path-manifest.json"
+      ],
+      "lines_added": 133,
+      "lines_removed": 2,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "api/sd-agent.js's last catch answered every unhandled error with err.message: Anthropic's own error text from callClaude's UPSTREAM throw, or any internal exception, went to the caller verbatim (hover H1 #1684). Fixed: logged as before, the caller gets the fixed sentence; status unchanged. api/b48-sd-agent-error-leak.test.js 3/3 with an ablation arm that restores the old line.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "286f945f661f",
+        "date": "2026-07-23",
+        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) \u2014 tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
+        "lag_days": 91
+      },
+      "citation_note": "No standing rule in PR or the disciplines names error-detail leakage to the caller; the platform's own fixes for it (b33 route-map C4) are per-endpoint.",
+      "contributing_factors": [
+        {
+          "factor": "The catch-all used err.message as the response text with a generic fallback, so any thrown text reached the caller, including upstream bodies.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The fixed sentence is returned; err is logged server-side only."
+        },
+        {
+          "factor": "The endpoint had no test that drove an upstream refusal and inspected the response body for relayed detail.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/b48-sd-agent-error-leak.test.js arms A, B and ablation X."
+        }
+      ],
+      "recurrence_open": "Same shape may exist in other api/ catch-alls; only sd-agent.js:351 was routed and fixed. The license-gate arms (lines 263-266) still relay store messages by design (coded, user-facing)."
     }
   ],
   "started": "2026-09-09",
