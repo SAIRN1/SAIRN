@@ -8479,6 +8479,31 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-10-22T14:08:08Z",
+      "opened_at_sha": "76b475f588b57d8507826c0a33fabea2d75d9183",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 1,
+      "resources": [
+        "customers",
+        "invoices",
+        "quotes",
+        "slabs"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "stonedesk.html"
+      ],
+      "what": "fourth b54 (76b475f58): StoneDesk accessibility only -- aria-label names on unlabeled selects/fields (incl. customers/slabs filter selects), a clipped h2 on headingless panels, darker text colours (--brand2 token #0F8742->#0B7A3B, status colours). No data path, query, write or role logic changed; reviewer to confirm sdA11yPass touches only attributes/styles and that no customers/slabs read or write moved.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-10-22T14:08:08Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
