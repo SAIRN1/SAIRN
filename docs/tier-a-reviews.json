@@ -8402,12 +8402,12 @@
         "api/b40-stonedesk-style-profile-request-photos.test.js"
       ],
       "what": "hank b44 (2fe89f267): request-photo barriers -- api/stonedesk-public.js intake now requires the WHOLE photo value to match ^data:image/(jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$ (was prefix-only); stonedesk.html pcShowRequestPhotos applies the same regex and keeps pcHtml on src/alt, plus dialog semantics and Escape close. REVIEWER: attack (1) whether any legitimate client upload (FileReader data URLs, mobile capture) produces a value the stricter intake now refuses, (2) regex cost on a 1.4M-char value, (3) the test's compiled-from-source intake harness (C8/M5) as evidence. Test 27/0, pre-b44 16/11.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cc",
       "owner_assigned_at": "2026-10-21T18:16:26Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cc",
+      "reviewed_at": "2026-10-22T14:46:58Z",
+      "verdict": "cc b50 REVIEW of 2fe89f26 (hank b44). CRITERIA: the obligation's claims hold at HEAD, every refusal path fails closed, tests have teeth both ways. SOUND-WITH-GAPS (low). api/stonedesk-public.js:275 anchors the whole photo value (no m flag) before any write; a refusal is 400 INVALID_PHOTO with nothing stored, and the outer catch returns 502. Rejected: a trailing or embedded newline, params, case, svg, quote/</&, URL-safe base64. Linear on 4.5M chars (26ms). The only client (canvas toDataURL jpeg) still passes. Teeth: prefix-only or no $ turns C7/C8/M5 red; dropping the return turns C8 red; client prefix-only turns C1/C3/C7 red. Suites at HEAD: b40 27/0, public 18, b28 23/0. Gaps: the overlay says \"none stored\" when every stored photo is filtered (stonedesk.html:44479); mustFail counts any throw as red. Pre-existing: intake_form_public_surface 17/1 at the parent too."
     },
     {
       "author_session": "hank",
@@ -8426,12 +8426,12 @@
         "api/b45-leg-settings-owner-write.test.js"
       ],
       "what": "hank b45 (38b2b5069): leg_settings -- the SAIRNlegacy owner's F2/F3 write path (table sairnlegacy_settings). Owner-only read/write branch in api/sd-data.js; values validated so a stored setting is exactly what legRoles.decide() enforces (billing enum, apprentice lists against LEG_ROLE_MATRIX with no overlap and countersign only on countersign-required resources, livery_grants per employee only for liveryGrantable() resources under the merged billing). REVIEWER: attack (1) whether owner-only is right or director should also set F2/F3, (2) the refusal-not-narrowing choice for a stored row written before this, (3) partial-write merge semantics, (4) the absent audit-log write. Test api/b45-leg-settings-owner-write.test.js 25/0 with two mutants.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cc",
       "owner_assigned_at": "2026-10-21T19:13:45Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cc",
+      "reviewed_at": "2026-10-22T14:46:58Z",
+      "verdict": "cc b50 REVIEW of 38b2b506 (hank b45, leg_settings). CRITERIA: claims hold at HEAD, fail closed, tests both ways with teeth. DEFECT (medium-low) plus gaps. Owner gate (sd-data.js:17017), licence binding (server licHash, unique key) and validators hold. All 7 non-owner roles, deactivated, deleted, cross-app and cross-licence are refused with nothing stored. Teeth: owner check off turns S2/S3/A5/M1 red. DEFECT, re-read by cc at :17085-17113: a partial apprentice object resets what it omits. {apprentice:{presence_disclosure:false}} wipes the stored forbidden list (undefined -> []), so apprentice read of leg_cremations goes DENY -> ALLOW. That contradicts the branch's own rule (:17066, refuse rather than narrow). Fix: require all three keys, or merge onto stored. GAP: when the read is ok but its body is unparsable or not an array, row=null (:17047-17049), and the write merges onto defaults and wipes grants. It should 502. Tests 32/0 never drive an inactive credential. Routed to hank."
     },
     {
       "author_session": "hank",
@@ -8450,12 +8450,12 @@
         "api/b48-sen-straight-time-floor-coverage.test.js"
       ],
       "what": "hank b48 (040ac5a95): TEST-ONLY -- api/b48-sen-straight-time-floor-coverage.test.js drives the SAIRNsenior straight-time floor on overtime/multi-rate weeks, multiple closed periods, two agencies and a reopened period, with five mutants. No product code changed. REVIEWER: attack (1) whether O1's 'adjust at the visit's own rate, flag premium' is the right floor for a 42h multi-rate week, (2) whether the G arms' fetch mock (serves only licence-scoped reads) proves scoping or just assumes it, (3) the fixtures' week boundaries.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cc",
       "owner_assigned_at": "2026-10-21T20:07:08Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cc",
+      "reviewed_at": "2026-10-22T14:46:59Z",
+      "verdict": "cc b50 REVIEW of 040ac5a9 (hank b48, test-only). CRITERIA: the arms drive real production code, expected values are derived independently, the arms have teeth, and the claimed coverage is reached. SOUND-WITH-GAPS (low). Drives the real sen-payroll.js computePayroll and the sd-data.js payroll branch (:8604); 23/0, exit 0. Hand-recomputed O1/O2/O5/O8/P1/P3 match. The own-rate floor is a valid lower bound (29 CFR 778.115: true O1 about 3194c; the engine pays 2200 and flags the premium). Teeth: 8 injected defects (first-period-only, floor dropped, period-start rate, flag never set, corrected clock, reopen ignored, unscoped closings, 1.5x delta) all go red. Gaps: sd-data is recompiled per agency, so a warm-instance cross-agency cache leak survives (D9); the unscoped-read mock returns [] where the real store returns all rows; reopen is tested only outside the run; no workweek straddles a closed/open boundary; O7 is not multi-rate."
     },
     {
       "author_session": "cody",
@@ -8473,12 +8473,12 @@
         "api/b48-leg-f3-prepare-deferral.test.js"
       ],
       "what": "cody b48: api/sd-data.js SAIRNlegacy role gate now DEFERS an apprentice's non-read on a countersign-locked resource (leg_cremations) to the MODE_ALWAYS countersignature lock when decide(prepare, grants, home) ALLOWs -- F3's prepare route, law C2's shape. leg_deathrecords appears only as a negative-control arm in api/b48-leg-f3-prepare-deferral.test.js (unlocked resource stays 403). Review: that the three deferral conditions cannot widen anything the lock does not then refuse.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cc",
       "owner_assigned_at": "2026-10-22T13:48:26Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cc",
+      "reviewed_at": "2026-10-22T14:46:59Z",
+      "verdict": "cc b50 REVIEW of d6b37bb1 (cody b48, F3 deferral). CRITERIA: deferring a role-gate refusal never widens access; other roles and resources are unchanged; fail closed; teeth. SOUND-WITH-GAPS (low). The deferral (sd-data.js:17349) skips the 403 only for (apprentice, leg_cremations, write) when it is on the home's F3 list; the envelope 400s delete and prepare. The MODE_ALWAYS lock refused unsigned, self-signed, apprentice-signed, demoted, expired, spent and mismatched tokens, and failed closed on table and settings errors. 11 suites exit 0; reservation_lock 35/36 is identical at the parent. Teeth: widening or ablating it turns b48 D1-D7 and role-matrix L1-L6 red. GAP (re-read by cc): requireCountersignature returns null for a resource missing from PROFILE.lockedResources (countersign.js:252), so drift between that and legRoles.requiresCountersignature would let a deferred write land unsigned. Guarded only by tests b18 E4 and b22 A1. Fix: the deferral also requires lockedResources[resource]. The requiresCountersignature condition is redundant (its mutant survives)."
     },
     {
       "author_session": "fourth",
