@@ -4688,6 +4688,17 @@
       "status": "released",
       "released_at": "2026-10-22T14:02:26Z",
       "files": null
+    },
+    {
+      "id": "cc-1792678283",
+      "session": "cc",
+      "subject": "cc",
+      "task": "b49 deny verify, npm ci, dependabot triage, fix-deny utf8",
+      "claimed_at": "2026-10-22T14:11:23Z",
+      "claimed_at_epoch": 1792678283.9572315,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
