@@ -4707,8 +4707,8 @@
       "task": "b50 tier-a reviews T1 d6b37bb1, D2 criticality_tier_check",
       "claimed_at": "2026-10-22T14:24:56Z",
       "claimed_at_epoch": 1792679096.0576591,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-22T14:50:45Z",
       "files": null
     }
   ],
