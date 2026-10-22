@@ -4018,6 +4018,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "for s in _pj.get('skipped', [])]"
+    }
+   ],
+   "sha": "4eab9b3da30828697e4d5409796a1b11f07aecb9",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sd_data_write_attribution_three_apps.js",
    "class": "test file",
    "level": "CHANGE",
@@ -12861,6 +12874,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "edbaa8583af5214faa415beb87ae21c5762be285",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_adversarial_prompt_corpus_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ee3354263fc1b4e22dce76c62c2b26b2eb599aa8",
    "criteria_version": "2026-10-06.1"
   },
   {

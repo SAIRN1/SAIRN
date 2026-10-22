@@ -37587,7 +37587,7 @@
       "recurrence_open": "NOT CLOSED. 43 missing-dom-fix stub fields (36315fb99) show the raw element id as their visible label -- a product decision, not recoloured. target-size x5 (field-quote, nesting). Emoji inside headings are read aloud. The NVDA pass heard the pre-fix live build; the fixed build is axe-verified, not yet NVDA-heard."
     },
     {
-      "commit": "ee3354263fc1",
+      "commit": "05e92c1548f7",
       "date": "2026-10-22",
       "subject": "fix(tests, cody b49): the adversarial-corpus probe was red since 2026-09-26 and its anchors were never counted",
       "files": [
