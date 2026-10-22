@@ -4718,8 +4718,8 @@
       "task": "b51 register problems detail, fourth b49 tier-a review",
       "claimed_at": "2026-10-22T15:13:13Z",
       "claimed_at_epoch": 1792681993.9779615,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-22T15:25:00Z",
       "files": null
     }
   ],
