@@ -139,7 +139,7 @@ if ('caches' in window) {
   --card:#FFFFFF;
   --a:#1B3A6B;
   --a2:#2a5298;
-  --brand2:#0F8742;
+  --brand2:#0B7A3B; /* b54: was #0F8742 -- 4.28:1 on --bg, under the 4.5:1 text minimum */
   --grad:linear-gradient(135deg,var(--a),#2a5298);
   --ar:rgba(201,112,8,0.1);
   --ab:rgba(201,112,8,0.35);
@@ -984,7 +984,7 @@ textarea#userInput::placeholder{color:var(--muted)}
 .note-box{
   background:rgba(232,133,10,0.06);border-left:2px solid var(--a);
   padding:8px 12px;border-radius:0 6px 6px 0;
-  font-size:11px;color:rgba(232,133,10,.7);margin-bottom:12px;
+  font-size:11px;color:#9A5B05;margin-bottom:12px;
 }
 
 /* range bar */
@@ -1179,13 +1179,13 @@ textarea#userInput::placeholder{color:var(--muted)}
   font-family:'Cormorant Garamond',serif;
   font-size:28px;font-weight:600;letter-spacing:.05em;
 }
-.est-hdr .est-tag{font-size:11px;opacity:.5;letter-spacing:.18em;text-transform:uppercase;margin-top:4px}
+.est-hdr .est-tag{font-size:11px;opacity:.75;letter-spacing:.18em;text-transform:uppercase;margin-top:4px}
 .est-hdr .est-meta{margin-top:20px;font-size:12px;opacity:.6;display:flex;gap:24px;flex-wrap:wrap}
 .est-body{padding:36px 40px;font-family:'DM Sans',sans-serif}
 .est-sec{margin-bottom:28px}
 .est-sec h3{
   font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:500;
-  letter-spacing:.12em;text-transform:uppercase;color:#888;
+  letter-spacing:.12em;text-transform:uppercase;color:#666;
   margin-bottom:14px;padding-bottom:8px;
   border-bottom:1px solid rgba(0,0,0,0.08);
 }
@@ -1193,16 +1193,16 @@ textarea#userInput::placeholder{color:var(--muted)}
 .prod-item:last-child{border:none}
 .prod-dot{width:6px;height:6px;border-radius:50%;background:#E8850A;flex-shrink:0;margin-top:6px}
 .prod-name{font-size:14px;font-weight:600;color:#111}
-.prod-desc{font-size:12px;color:#777;margin-top:2px}
+.prod-desc{font-size:12px;color:#666;margin-top:2px}
 .est-inv{background:var(--a);color:#fff;padding:28px 40px;text-align:center}
 .est-inv .inv-label{font-size:11px;letter-spacing:.15em;text-transform:uppercase;opacity:.55;margin-bottom:10px}
 .est-inv .inv-amount{
   font-family:'Cormorant Garamond',serif;font-size:56px;
   font-weight:700;line-height:1;
 }
-.est-inv .inv-note{font-size:11px;opacity:.4;margin-top:10px;letter-spacing:.05em}
+.est-inv .inv-note{font-size:11px;opacity:.75;margin-top:10px;letter-spacing:.05em}
 .est-footer{
-  padding:20px 40px;font-size:11px;color:#aaa;
+  padding:20px 40px;font-size:11px;color:#767676;
   display:flex;justify-content:space-between;
   border-top:1px solid rgba(0,0,0,0.06);
 }
@@ -1359,7 +1359,7 @@ textarea#userInput::placeholder{color:var(--muted)}
 .urgency-banner{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:8px;margin-bottom:14px;font-size:13px;font-weight:600}
 .urgency-banner.red{background:rgba(220,38,38,0.1);border:1.5px solid #dc2626;color:#dc2626}
 .urgency-banner.yellow{background:rgba(234,179,8,0.1);border:1.5px solid #ca8a04;color:#ca8a04}
-.urgency-banner.green{background:rgba(22,163,74,0.1);border:1.5px solid #16a34a;color:#16a34a}
+.urgency-banner.green{background:rgba(22,163,74,0.1);border:1.5px solid #16a34a;color:#166534}
 .urgency-icon{font-size:16px}
 /* Item-level urgency */
 .item-urgency{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:700}
@@ -1845,7 +1845,7 @@ body.is-exec .exec-only-block{display:block}
 .sh-quick-questions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .sh-quick-q{font-size:12px;color:#5CFF9D;background:rgba(92,255,157,0.1);border:1px solid rgba(92,255,157,0.25);padding:6px 14px;border-radius:999px;cursor:pointer;transition:background .15s;white-space:nowrap}
 .sh-quick-q:hover{background:rgba(92,255,157,0.2)}
-.sh-section-title{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#64748b;margin-bottom:16px}
+.sh-section-title{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#475569;margin-bottom:16px}
 .sh-org-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-bottom:32px}
 .sh-org-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:20px;cursor:pointer;transition:box-shadow .15s,border-color .15s;text-decoration:none;display:block}
 .sh-org-card:hover{box-shadow:0 4px 20px rgba(0,0,0,0.09);border-color:#bbf7d0}
@@ -5796,7 +5796,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
               <button class="draw-btn" style="width:100%;text-align:left" onclick="dcAttachDrainboard('both')">Both</button>
               <button class="draw-btn" style="width:100%;text-align:left;background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.3);color:#F87171" onclick="dcRemoveDrainboardsForActiveSink()">Remove</button>
             </div>
-            <button class="draw-btn" style="background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.3);color:#F87171" onclick="clearDCCutouts()">Clear Cutouts</button>
+            <button class="draw-btn" style="background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.3);color:#B91C1C" onclick="clearDCCutouts()">Clear Cutouts</button>
             <span style="font-size:10px;color:var(--muted);margin-left:4px">Pick a type, click the spot · drag any marker to fine-tune</span>
           </div>
           <div class="draw-toolbar" id="dc-sinkshape-picker" style="margin-top:6px;display:none">
@@ -5825,7 +5825,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
             <button class="draw-btn draw-seam-btn" id="dc-seam-standard" onclick="setDCSeamMode(!dcSeamMode,'standard')">▭ Standard</button>
             <button class="draw-btn draw-seam-btn" id="dc-seam-euro" onclick="setDCSeamMode(!dcSeamMode,'euro')">▭ Euro Seam</button>
             <button class="draw-btn draw-seam-btn" id="dc-seam-offset" onclick="setDCSeamMode(!dcSeamMode,'offset')">▭ Offset Seam</button>
-            <button class="draw-btn" style="background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.3);color:#F87171" onclick="clearDCSeams()">Clear Seams</button>
+            <button class="draw-btn" style="background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.3);color:#B91C1C" onclick="clearDCSeams()">Clear Seams</button>
             <span style="font-size:10px;color:var(--muted);margin-left:4px">Pick a type, click one spot on the drawing — a full seam auto-extends edge-to-edge through that point. Drag instead for a custom length. Drag a placed seam to move it.</span>
           </div>
 
@@ -6171,7 +6171,7 @@ function sdCsvCell(v){var s=v==null?'':String(v);if(/^[=+\-@\t\r]/.test(s)&&!(s!
     document.getElementById('hist-avg').textContent=total?'$'+Math.round(val/total).toLocaleString():'$0';
     var counts={Approved:0,Pending:0,Declined:0,Expired:0};
     d.forEach(function(x){var s=x.status||'Pending';if(counts[s]!==undefined)counts[s]++;});
-    var colors2={Approved:'var(--brand2)',Pending:'#f59e0b',Declined:'#ef4444',Expired:'#9ca3af'};
+    var colors2={Approved:'var(--brand2)',Pending:'#b45309',Declined:'#dc2626',Expired:'#6b7280'};
     document.getElementById('hist-breakdown').innerHTML=Object.keys(counts).map(function(s){
       var pct=total?Math.round(counts[s]/total*100):0;
       return '<div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span style="color:var(--text)">'+s+'</span><span style="font-weight:700;color:'+colors2[s]+'">'+counts[s]+' ('+pct+'%)</span></div>'
@@ -6798,7 +6798,7 @@ function sdCsvCell(v){var s=v==null?'':String(v);if(/^[=+\-@\t\r]/.test(s)&&!(s!
   <div style="font-weight:700;margin-bottom:4px;color:var(--text)">📐 Pricing Formula Backtest</div>
   <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Upload a CSV of real past jobs (project_type, material, run_a_in, run_b_in, run_c_in, island_in, edge_val, sinks, actual_total) to check the quote formula's accuracy against what those jobs actually closed at.</div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-    <input type="file" accept=".csv" style="font-size:13px" onchange="loadCSV(this)">
+    <input type="file" accept=".csv" aria-label="Past jobs CSV for the pricing backtest" style="font-size:13px" onchange="loadCSV(this)">
     <button class="q-btn" onclick="loadSampleStressData()">Load Sample Data</button>
   </div>
   <div id="stress-results" style="display:none">
@@ -7145,9 +7145,9 @@ function sdCsvCell(v){var s=v==null?'':String(v);if(/^[=+\-@\t\r]/.test(s)&&!(s!
     <div class="client-container">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <div style="font-size:13px;color:var(--muted)">
-          ← <a href="#" onclick="showPanel('quote');return false" style="color:var(--a)">Back to quote</a>
+          ← <a href="#" onclick="showPanel('quote');return false" style="color:#93B4E6">Back to quote</a>
         </div>
-        <button class="q-btn" onclick="printEstimate()">🖨️ Print / PDF</button>
+        <button class="q-btn" onclick="printEstimate()" style="color:#C9D3E0">🖨️ Print / PDF</button>
       </div>
       <div class="estimate-page" id="estimate-page">
         <div class="est-hdr">
@@ -11051,9 +11051,9 @@ window.sdSafetyPrint=function(){
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px">
         <div class="kpi"><div class="kpi-val" id="nest-kpi-slab">0</div><div class="kpi-label">Slab Sq Ft</div></div>
         <div class="kpi"><div class="kpi-val" style="color:var(--brand2)" id="nest-kpi-used">0</div><div class="kpi-label">Used Sq Ft</div></div>
-        <div class="kpi"><div class="kpi-val" style="color:#ca8a04" id="nest-kpi-waste">0</div><div class="kpi-label">Waste Sq Ft</div></div>
-        <div class="kpi"><div class="kpi-val" style="color:#16a34a" id="nest-kpi-yield">0%</div><div class="kpi-label">Yield %</div></div>
-        <div class="kpi"><div class="kpi-val" style="color:#dc2626" id="nest-kpi-cost">$0</div><div class="kpi-label">Waste Cost</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:#a16207" id="nest-kpi-waste">0</div><div class="kpi-label">Waste Sq Ft</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:#15803d" id="nest-kpi-yield">0%</div><div class="kpi-label">Yield %</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:#b91c1c" id="nest-kpi-cost">$0</div><div class="kpi-label">Waste Cost</div></div>
       </div>
 
       <div style="display:grid;grid-template-columns:300px 1fr;gap:20px;flex-wrap:wrap">
@@ -11460,9 +11460,9 @@ window.sdSafetyPrint=function(){
       <!-- Financial KPIs -->
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px">
         <div class="kpi"><div class="kpi-val" style="color:var(--brand2);font-size:16px" id="fin-kpi-revenue">$0</div><div class="kpi-label">Total Quoted Revenue</div></div>
-        <div class="kpi"><div class="kpi-val" style="color:#ca8a04;font-size:16px" id="fin-kpi-material">$0</div><div class="kpi-label">Est. Material Cost</div></div>
-        <div class="kpi"><div class="kpi-val" style="color:#16a34a;font-size:16px" id="fin-kpi-margin">0%</div><div class="kpi-label">Est. Gross Margin</div></div>
-        <div class="kpi"><div class="kpi-val" style="color:#dc2626;font-size:16px" id="fin-kpi-tariff">$0</div><div class="kpi-label">Tariff Impact/Mo</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:#a16207;font-size:16px" id="fin-kpi-material">$0</div><div class="kpi-label">Est. Material Cost</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:#15803d;font-size:16px" id="fin-kpi-margin">0%</div><div class="kpi-label">Est. Gross Margin</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:#b91c1c;font-size:16px" id="fin-kpi-tariff">$0</div><div class="kpi-label">Tariff Impact/Mo</div></div>
         <div class="kpi"><div class="kpi-val" id="fin-kpi-jobs">0</div><div class="kpi-label">Jobs in Pipeline</div></div>
       </div>
 
@@ -16280,6 +16280,7 @@ function buildEdgeAssignmentArea() {
     lbl.style.cssText = 'font-size:11px;color:var(--muted);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
     lbl.textContent = edgeName;
     const sel = document.createElement('select');
+    sel.setAttribute('aria-label', edgeName + ' edge finish'); // b54: the row's visible edge name, read with the control
     sel.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:5px;padding:4px 6px;color:var(--text);font-size:10px;font-family:Outfit,sans-serif;outline:none;flex-shrink:0';
     const types = ['polished','wall','cabinet','appliance','waterfall','splash'];
     types.forEach((t) => {
@@ -19032,7 +19033,7 @@ function printDrawCutSheet() {
     <div class="upzone" onclick="document.getElementById('doc-scan-file').click()" style="cursor:pointer">
       <div style="font-size:36px;margin-bottom:10px">📄</div>
       <div style="font-size:14px;font-weight:600;color:#374151">Tap to photograph any document</div>
-      <div style="font-size:12px;color:#9CA3AF;margin-top:4px">
+      <div style="font-size:12px;color:#4B5563;margin-top:4px">
         Invoice · Contract · EOB · DEA Log · Blueprint · Permit · Any paper document
       </div>
       <input type="file" id="doc-scan-file" accept="image/*,application/pdf"
@@ -19105,7 +19106,7 @@ function printDrawCutSheet() {
       <span style="font-size:11px;color:#6B7280">Saved locally · queued on the Bridge · not yet readable by SAIRNbiz</span>
     </div>
     <div id="cr-history-tbody">
-      <div style="text-align:center;padding:28px;color:#9CA3AF">
+      <div style="text-align:center;padding:28px;color:#4B5563">
         <div style="font-size:32px;margin-bottom:8px">💸</div>
         <div style="font-weight:700;margin-bottom:4px">No expenses logged yet</div>
         <div style="font-size:12px">Log your first expense above — it goes straight to SAIRNbiz</div>
@@ -19574,11 +19575,11 @@ function printDrawCutSheet() {
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px">
     <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:24px">
-      <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#F59E0B;margin-bottom:16px">&#9888;&#65039; Market Signals</div>
+      <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#B45309;margin-bottom:16px">&#9888;&#65039; Market Signals</div>
       <div id="mi-signals"><div style="color:#94a3b8;font-size:13px;font-style:italic">Refresh to load signals&hellip;</div></div>
     </div>
     <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:24px">
-      <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#0D9488;margin-bottom:16px">&#127758; Stone Industry Context</div>
+      <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#0F766E;margin-bottom:16px">&#127758; Stone Industry Context</div>
       <div>
         <div class="mi-context-row"><span class="mi-ctx-label">New Construction Demand</span><span id="mi-ctx-newconst" class="mi-ctx-badge moderate">--</span></div>
         <div class="mi-context-row"><span class="mi-ctx-label">Remodel Demand</span><span id="mi-ctx-remodel" class="mi-ctx-badge strong">--</span></div>
@@ -20548,7 +20549,7 @@ function crSendToBridge() {
 function crRenderExpenses(arr) {
   var el = document.getElementById('cr-history-tbody'); if(!el) return;
   if(!arr || !arr.length) {
-    el.innerHTML = '<div style="text-align:center;padding:28px;color:#9CA3AF"><div style="font-size:32px;margin-bottom:8px">💸</div><div style="font-weight:700;margin-bottom:4px">No expenses logged yet</div><div style="font-size:12px">Log your first expense above</div></div>';
+    el.innerHTML = '<div style="text-align:center;padding:28px;color:#4B5563"><div style="font-size:32px;margin-bottom:8px">💸</div><div style="font-weight:700;margin-bottom:4px">No expenses logged yet</div><div style="font-size:12px">Log your first expense above</div></div>';
     return;
   }
   var catLabels = {supplies:'Shop Supplies',materials:'Materials',labor:'Labor',equipment:'Equipment',overhead:'Overhead',other:'Other'};
@@ -21777,9 +21778,9 @@ var _currentTone = localStorage.getItem(TONE_KEY) || 'detailed';
 var st = document.createElement('style');
 st.textContent =
   '#sairn-tone-bar{display:flex;gap:6px;align-items:center;padding:6px 16px;border-top:1px solid rgba(255,255,255,0.06);flex-wrap:wrap}' +
-  '.stb-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:rgba(240,240,255,0.3);margin-right:4px}' +
-  '.stb-chip{display:flex;align-items:center;gap:5px;padding:4px 11px;border-radius:100px;border:1px solid rgba(255,255,255,0.1);background:transparent;font-size:11px;font-weight:600;color:rgba(240,240,255,0.5);cursor:pointer;font-family:Outfit,sans-serif;transition:all .15s}' +
-  '.stb-chip:hover{border-color:rgba(255,255,255,0.2);color:rgba(240,240,255,0.8)}' +
+  '.stb-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-right:4px}' +
+  '.stb-chip{display:flex;align-items:center;gap:5px;padding:4px 11px;border-radius:100px;border:1px solid rgba(255,255,255,0.1);background:transparent;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;font-family:Outfit,sans-serif;transition:all .15s}' +
+  '.stb-chip:hover{border-color:rgba(255,255,255,0.2);color:var(--text)}' +
   '.stb-chip.active{border-color:' + APP_COLOR + ';background:rgba(255,255,255,0.04);color:' + APP_COLOR + '}' +
   '#sairn-tone-tooltip{position:fixed;bottom:120px;left:50%;transform:translateX(-50%);background:#0A0A20;border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 16px;font-size:12px;color:rgba(240,240,255,0.7);max-width:320px;text-align:center;z-index:900;display:none;line-height:1.6}';
 document.head.appendChild(st);
@@ -27169,7 +27170,7 @@ function renderVendor(){
         '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+p.cat+' &middot; '+p.sku+'</div></div>'+
       '<span style="font-size:14px;font-weight:800;color:var(--a)">$' + p.price.toFixed(2)+'</span>'+
       '<button onclick="vendorCompare(\'' + escAttrJs(p.id) + '\',\'' + escAttrJs(_activeVendor) + '\')" style="padding:5px 10px;background:#F0FEF6;color:#15803D;border:1px solid #BBF7D0;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">&#129504; Compare</button>'+
-      '<input type="number" class="qty-input" id="vpqty-'+escHtml(p.id)+'" value="'+escHtml(cartQty)+'" min="0" onchange="cartUpdate(\'' + escAttrJs(_activeVendor) + '\',\'' + escAttrJs(p.id) + '\',this.value)">'+
+      '<input type="number" class="qty-input" id="vpqty-'+escHtml(p.id)+'" aria-label="Quantity of '+escHtml(p.name)+'" value=""'+escHtml(cartQty)+'" min="0" onchange="cartUpdate(\'' + escAttrJs(_activeVendor) + '\',\'' + escAttrJs(p.id) + '\',this.value)">'+
       '<button onclick="cartAdd(\'' + escAttrJs(_activeVendor) + '\',\'' + escAttrJs(p.id) + '\',1)" style="padding:5px 10px;background:var(--a);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">Add</button>'+
     '</div>';
   }).join('');
@@ -28022,7 +28023,7 @@ function safetyUpdateKPIs() {
   if(!sdSafetyData.ecp.owner) score -= 20;
   if(inspDue) score -= Math.min(15, inspDue*5);
   score = Math.max(0, Math.min(100, score));
-  var scoreColor = score>=80?'#16a34a':score>=60?'#ca8a04':'#dc2626';
+  var scoreColor = score>=80?'#15803d':score>=60?'#a16207':'#b91c1c';
   function s(id,v,color){var el=document.getElementById(id);if(el){el.textContent=v;if(color)el.style.color=color;}}
   s('safe-kpi-trained',trained.length);
   s('safe-kpi-overdue',overdue.length,'#dc2626');
@@ -32168,7 +32169,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px">
   <div class="kpi"><div class="kpi-val" id="ts-week-hrs">0</div><div class="kpi-label">Hours This Week</div></div>
   <div class="kpi"><div class="kpi-val" id="ts-payroll" style="color:var(--brand2)">$0</div><div class="kpi-label">Est. Payroll</div></div>
-  <div class="kpi"><div class="kpi-val" id="ts-ot" style="color:#f59e0b">0</div><div class="kpi-label">OT Hours</div></div>
+  <div class="kpi"><div class="kpi-val" id="ts-ot" style="color:#b45309">0</div><div class="kpi-label">OT Hours</div></div>
   <div class="kpi"><div class="kpi-val" id="ts-employees">0</div><div class="kpi-label">Employees Logged</div></div>
   <div class="kpi"><div class="kpi-val" id="ts-efficiency">0%</div><div class="kpi-label">Labor Efficiency</div></div>
 </div>
@@ -35281,12 +35282,12 @@ document.addEventListener('DOMContentLoaded', function() {
 })();
 </script>
 <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-      <span style="font-size:11px;padding:3px 10px;background:rgba(22,163,74,0.1);color:#16a34a;border-radius:100px;font-weight:700">&#10003; Submit new jobs</span>
-      <span style="font-size:11px;padding:3px 10px;background:rgba(22,163,74,0.1);color:#16a34a;border-radius:100px;font-weight:700">&#10003; Check job status</span>
-      <span style="font-size:11px;padding:3px 10px;background:rgba(22,163,74,0.1);color:#16a34a;border-radius:100px;font-weight:700">&#10003; Approve quotes</span>
-      <span style="font-size:11px;padding:3px 10px;background:rgba(22,163,74,0.1);color:#16a34a;border-radius:100px;font-weight:700">&#10003; Download invoices</span>
-      <span style="font-size:11px;padding:3px 10px;background:rgba(220,38,38,0.1);color:#dc2626;border-radius:100px;font-weight:700">&#10007; Cannot see pricing formulas</span>
-      <span style="font-size:11px;padding:3px 10px;background:rgba(220,38,38,0.1);color:#dc2626;border-radius:100px;font-weight:700">&#10007; Cannot see other customers</span>
+      <span style="font-size:11px;padding:3px 10px;background:rgba(22,163,74,0.1);color:#166534;border-radius:100px;font-weight:700">&#10003; Submit new jobs</span>
+      <span style="font-size:11px;padding:3px 10px;background:rgba(22,163,74,0.1);color:#166534;border-radius:100px;font-weight:700">&#10003; Check job status</span>
+      <span style="font-size:11px;padding:3px 10px;background:rgba(22,163,74,0.1);color:#166534;border-radius:100px;font-weight:700">&#10003; Approve quotes</span>
+      <span style="font-size:11px;padding:3px 10px;background:rgba(22,163,74,0.1);color:#166534;border-radius:100px;font-weight:700">&#10003; Download invoices</span>
+      <span style="font-size:11px;padding:3px 10px;background:rgba(220,38,38,0.1);color:#b91c1c;border-radius:100px;font-weight:700">&#10007; Cannot see pricing formulas</span>
+      <span style="font-size:11px;padding:3px 10px;background:rgba(220,38,38,0.1);color:#b91c1c;border-radius:100px;font-weight:700">&#10007; Cannot see other customers</span>
     </div>
 </div>
 
@@ -36672,7 +36673,7 @@ document.addEventListener('DOMContentLoaded', function() {
             '<div><div style="font-weight:700;font-size:13px;color:var(--text)">'+escHtml(s.name)+'</div>' +
             '<div style="font-size:11px;color:var(--muted)">'+escHtml(s.trade||'')+(s.phone?' &bull; '+escHtml(s.phone):'')+' &bull; ID: '+escHtml(s.sub_id)+'</div></div>' +
             '<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">' + subxCompliancePill(s) +
-            '<span style="background:'+(s.active!==false?'#dcfce7':'#f3f4f6')+';color:'+(s.active!==false?'#166534':'#6b7280')+';padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700">'+(s.active!==false?'ACTIVE':'INACTIVE')+'</span></div>' +
+            '<span style="background:'+(s.active!==false?'#dcfce7':'#f3f4f6')+';color:'+(s.active!==false?'#166534':'#4b5563')+';padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700">'+(s.active!==false?'ACTIVE':'INACTIVE')+'</span></div>' +
           '</div>' +
           subxComplianceLine(s) +
           '<div style="display:flex;gap:6px;margin-top:8px">' +
@@ -36921,7 +36922,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <div id="bid-col-qual"></div>
       </div>
       <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px">
-        <div style="font-weight:700;color:#f59e0b;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #f59e0b">Proposal Sent</div>
+        <div style="font-weight:700;color:#b45309;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #f59e0b">Proposal Sent</div>
         <div id="bid-col-prop"></div>
       </div>
       <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px">
@@ -37759,7 +37760,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var det=d.filter(function(x){return x.score<=6;}).length;
     var nps=d.length?Math.round((prom-det)/d.length*100):0;
     document.getElementById('nps-score').textContent=(nps>=0?'+':'')+nps;
-    document.getElementById('nps-score').style.color=nps>=50?'var(--brand2)':nps>=0?'#f59e0b':'#dc2626';
+    document.getElementById('nps-score').style.color=nps>=50?'var(--brand2)':nps>=0?'#b45309':'#b91c1c';
     document.getElementById('nps-promoters').textContent=prom;
     document.getElementById('nps-passives').textContent=pass;
     document.getElementById('nps-detractors').textContent=det;
@@ -37771,7 +37772,7 @@ document.addEventListener('DOMContentLoaded', function() {
       +'<div style="background:#dc2626;width:'+Math.round(det/total*100)+'%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700">'+det+'</div>'
       +'</div>'
       +'<div style="display:flex;gap:16px;font-size:12px">'
-      +'<span style="color:var(--brand2)">■ Promoters</span><span style="color:#f59e0b">■ Passives</span><span style="color:#dc2626">■ Detractors</span></div>';
+      +'<span style="color:var(--brand2)">■ Promoters</span><span style="color:#b45309">■ Passives</span><span style="color:#b91c1c">■ Detractors</span></div>';
     document.getElementById('nps-list').innerHTML=d.slice().reverse().map(function(x){
       var col=x.score>=9?'var(--brand2)':x.score>=7?'#f59e0b':'#dc2626';
       return '<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)">'
@@ -38045,7 +38046,7 @@ document.addEventListener('DOMContentLoaded', function() {
           <span>Q2 Estimated Tax (Federal)</span><span style="font-weight:700;color:#dc2626">Jun 17</span>
         </div>
         <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
-          <span>State Sales Tax (Monthly)</span><span style="font-weight:700;color:#f59e0b">Jun 20</span>
+          <span>State Sales Tax (Monthly)</span><span style="font-weight:700;color:#b45309">Jun 20</span>
         </div>
         <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
           <span>Q3 Estimated Tax</span><span style="color:var(--muted)">Sep 16</span>
@@ -41033,12 +41034,48 @@ document.addEventListener('click', function(e) {
 //  * the sidebar's emoji icon is decoration and is hidden from the reader
 //    (NVDA read sairndental's as "bar chart Dashboard", b52).
 // Run at load and again after each sbNav(), because panels render late.
+// b54 -- CONCEPT: a control with NO visible label still says what it chooses.
+// Each name below is written from the control's own id and options (a filter
+// says "Filter by ..."), or copies the visible words beside it (Admin toggles,
+// the NPS score). Applied only where the control has no name already, so a real
+// <label> always wins. 79 selects and 44 fields were announced unnamed.
+var SD_A11Y_NAMES = {
+  'draw-sink': 'Sink cutout', 'draw-cooktop': 'Cooktop cutout', 'draw-plumbing': 'Plumbing fixtures',
+  'int-project-type': 'Project type', 'int-material': 'Material', 'int-budget': 'Budget', 'int-timeline': 'Timeline', 'int-source': 'Lead source',
+  'crm-stage': 'Pipeline stage', 'crm-source': 'Lead source', 'crm-assignee': 'Assigned to',
+  'cust-filter': 'Filter by stage', 'cust-sort': 'Sort order',
+  'sched-filter': 'Filter by stage', 'sched-urgency': 'Filter by urgency', 'sched-crew-filter': 'Filter by crew',
+  'hist-filter': 'Filter by status', 'hist-sort': 'Sort order', 'hist-status-sel': 'Quote to update', 'hist-new-status': 'New status',
+  'fm-date-select': 'Date', 'fm-person-select': 'Crew member', 'mfst-time': 'Time', 'mfst-crew': 'Filter by crew', 'mfst-crew-sel': 'Crew',
+  'rm-cause': 'Remake cause', 'dmg-type': 'Damage type', 'dmg-fault': 'Fault', 'waste-type': 'Waste type',
+  'slabs-status-filter': 'Filter by status', 'rem-status-filter': 'Filter by status', 'inv-cat-filter': 'Filter by category', 'vend-type-filter': 'Filter by vendor type',
+  'po-exp': 'Expected delivery date', 'recv-cond': 'Condition received', 'yard-filter': 'Filter by status', 'yard-status': 'Slab status',
+  'comms-type-filter': 'Filter by type', 'comms-type': 'Message type', 'sms-tpl': 'Quick template', 'photos-type-filter': 'Filter by category',
+  'rev-source-filter': 'Filter by source', 'rev-star-filter': 'Filter by stars', 'rev-channel': 'Send by', 'nps-score-inp': 'Score (0-10)', 'ref-status': 'Referral status',
+  'emp-start': 'Start date', 'sd-brand-primary': 'Primary brand color', 'sd-brand-primary-hex': 'Primary brand color, hex',
+  'sd-brand-secondary': 'Secondary brand color', 'sd-brand-secondary-hex': 'Secondary brand color, hex',
+  'emp-dept-filter': 'Filter by department', 'emp-dept': 'Department', 'emp-login-role': 'Login role', 'emp-prof-exp': 'Experience level', 'emp-prof-style': 'Response style',
+  'ts-week-filter': 'Week', 'ts-emp-filter': 'Filter by employee', 'train-date': 'Training date', 'train-emp': 'Employee', 'train-type': 'Training type',
+  'subx-job-sub': 'Subcontractor', 'bull-cat': 'Category', 'eq-status': 'Equipment status', 'inv2-status-filter': 'Filter by status',
+  'ap-due-date': 'Due date', 'jc-stat': 'Job status', 'tax-state': 'State', 'vein-stone': 'Stone', 'vein-style': 'Match style',
+  'seam-mat': 'Material', 'seam-loc': 'Layout', 'sint-brand': 'Brand', 'sint-finish': 'Finish', 'con-tier': 'Contractor tier',
+  'bid-close-date': 'Close date', 'bid-stage': 'Bid stage',
+  'tm-filter-status': 'Filter by status', 'tm-filter-device': 'Filter by device', 'tm-filter-type': 'Filter by job type',
+  'it-user': 'User', 'it-category': 'Category', 'it-priority': 'Priority',
+  'adm-autosave': 'Auto-save', 'adm-notif': 'Notifications', 'adm-demo': 'Demo Mode', 'adm-logo': 'Print Header Logo',
+  'integ-filter-cat': 'Filter by category', 'integ-filter-status': 'Filter by status', 'integ-cat': 'Category', 'integ-status': 'Status'
+};
 var SD_A11Y_BUTTON_HANDLER = /^(shAsk|emailToggleChecklist|setTier|selTrade|showPanel|sdCommsTpl|sdSMSSetTpl|sdIntegQuickAdd|switchDimTab)\(|^document\.getElementById\('[^']+'\)\.click\(\)/;
 function sdA11yPass(root) {
   root = root || document;
   root.querySelectorAll('label:not([for])').forEach(function(l) {
     var c = l.nextElementSibling;
     if (c && /^(INPUT|SELECT|TEXTAREA)$/.test(c.tagName) && c.id && !l.querySelector('input,select,textarea')) l.htmlFor = c.id;
+  });
+  Object.keys(SD_A11Y_NAMES).forEach(function(id) {
+    var c = document.getElementById(id);
+    if (!c || c.getAttribute('aria-label') || c.getAttribute('aria-labelledby') || (c.labels && c.labels.length)) return;
+    c.setAttribute('aria-label', SD_A11Y_NAMES[id]);
   });
   root.querySelectorAll('[onclick]').forEach(function(el) {
     if (/^(BUTTON|A|INPUT|SELECT|TEXTAREA|SUMMARY|LABEL)$/.test(el.tagName) || el.getAttribute('data-sd-kbd')) return;
@@ -41053,6 +41090,22 @@ function sdA11yPass(root) {
     el.addEventListener('keydown', function(e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); } });
   });
   root.querySelectorAll('.sb-btn .sb-icon').forEach(function(s) { s.setAttribute('aria-hidden', 'true'); });
+  // b54 -- CONCEPT: every panel has a heading, and its words are ones the user
+  // can already see. A page's visible title (.ptitle) IS its heading; a panel
+  // with no title at all gets a visually hidden h2 carrying its own sidebar name
+  // (7 of 67 had none, so focus-to-heading had nowhere to land).
+  root.querySelectorAll('.ptitle:not([role])').forEach(function(t) { t.setAttribute('role', 'heading'); t.setAttribute('aria-level', '2'); });
+  var panels = [].slice.call(root.querySelectorAll('.panel[id^="panel-"],.page[id^="page-"]'));
+  if (root.id && /^(panel|page)-/.test(root.id)) panels.push(root);
+  panels.forEach(function(p) {
+    if (p.querySelector('h1,h2,h3,[role=heading]')) return;
+    var name = document.querySelector('#sb-' + p.id.replace(/^(panel|page)-/, '') + ' .sb-text');
+    if (!name || !name.textContent.trim()) return;
+    var h = document.createElement('h2');
+    h.className = 'sd-sr-heading'; h.textContent = name.textContent.trim();
+    h.style.cssText = 'position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0';
+    p.insertBefore(h, p.firstChild);
+  });
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function() { sdA11yPass(document); });
 else sdA11yPass(document);
@@ -42622,7 +42675,7 @@ function sintSetMat(key,btn){
   if(info)info.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'+
     '<div><div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:4px">TOOLING</div><div style="font-size:12px;line-height:1.6">'+m.tooling+'</div></div>'+
     '<div><div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:4px">EDGE PROFILES</div><div style="font-size:12px;line-height:1.6">'+m.edge+'</div></div>'+
-    '<div><div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:4px">LABOR MULTIPLIER</div><div style="font-size:13px;font-weight:800;color:#dc2626">+'+Math.round((m.mult-1)*100)+'% vs granite</div></div>'+
+    '<div><div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:4px">LABOR MULTIPLIER</div><div style="font-size:13px;font-weight:800;color:#b91c1c">+'+Math.round((m.mult-1)*100)+'% vs granite</div></div>'+
     '<div><div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:4px">MARKET PRICE</div><div style="font-size:13px;font-weight:800;color:var(--a)">'+m.range+'</div></div>'+
     '</div>';
   var sl=document.getElementById('sint-safety-list');
@@ -42717,9 +42770,9 @@ function saAddRun(){saRuns.push({name:'Run '+(saRuns.length+1),length:0,depth:25
 function saRenderRuns(){
   var c=document.getElementById('sa-runs-container');if(!c)return;
   c.innerHTML=saRuns.map(function(r,i){return '<div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:6px">'+
-    '<input value="'+escHtml(r.name)+'" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);outline:none" onchange="saRuns['+i+'].name=this.value">'+
-    '<input type="number" value="'+r.length+'" placeholder="Length in" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);outline:none" onchange="saRuns['+i+'].length=parseFloat(this.value)||0">'+
-    '<input type="number" value="'+escHtml(r.depth)+'" placeholder="Depth in" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);outline:none" onchange="saRuns['+i+'].depth=parseFloat(this.value)||0">'+
+    '<input value="'+escHtml(r.name)+'" aria-label="Run name" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);outline:none" onchange="saRuns['+i+'].name=this.value">'+
+    '<input type="number" value="'+r.length+'" placeholder="Length in" aria-label="Length in inches" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);outline:none" onchange="saRuns['+i+'].length=parseFloat(this.value)||0">'+
+    '<input type="number" value="'+escHtml(r.depth)+'" placeholder="Depth in" aria-label="Depth in inches" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);outline:none" onchange="saRuns['+i+'].depth=parseFloat(this.value)||0">'+
     '<button onclick="saRuns.splice('+i+',1);saRenderRuns()" style="padding:4px 7px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:4px;cursor:pointer;font-size:11px">x</button>'+
   '</div>';}).join('');
 }
@@ -43008,7 +43061,7 @@ function itaRender(){
     '<div style="display:grid;grid-template-columns:1.5fr 1fr 1fr auto;padding:8px 14px;background:var(--surface-2);font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase"><span>Name</span><span>Role</span><span>Added</span><span></span></div>'+
     users.map(function(u){return '<div style="display:grid;grid-template-columns:1.5fr 1fr 1fr auto;align-items:center;padding:10px 14px;border-top:1px solid var(--border);font-size:13px">'+
       '<span style="font-weight:600">'+escHtml(u.name)+'</span><span style="text-transform:capitalize">'+u.role+'</span><span style="color:var(--muted);font-size:11px">'+new Date(u.added).toLocaleDateString()+'</span>'+
-      '<button onclick="itaDeleteUser(\''+escAttrJs(u.name)+'\')" style="padding:3px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;cursor:pointer;font-size:11px">Remove</button>'+
+      '<button onclick="itaDeleteUser(\''+escAttrJs(u.name)+'\')" style="padding:3px 8px;background:rgba(220,38,38,0.1);color:#b91c1c;border:none;border-radius:5px;cursor:pointer;font-size:11px">Remove</button>'+
     '</div>';}).join('')+'</div>':'<div style="color:var(--muted);padding:12px">No additional users.</div>';
   // Storage calc
   var total=0;for(var i=0;i<localStorage.length;i++){try{var k=localStorage.key(i);total+=(localStorage.getItem(k)||'').length*2;}catch(e){}}
@@ -43278,7 +43331,7 @@ function taxRender(){
   var tr=document.getElementById('tax-total-row');
   if(tr&&taxEntries.length)tr.innerHTML='<span>Total Taxable: <strong>'+sdFmt(taxEntries.reduce(function(s,e){return s+e.taxable;},0))+'</strong></span><span>Total Tax Owed: <strong style="color:#dc2626">'+sdFmt(totalTax)+'</strong></span>';
   var qEl=document.getElementById('tax-quarterly');
-  if(qEl){var qLabels=['Q1 (Jan-Mar)','Q2 (Apr-Jun)','Q3 (Jul-Sep)','Q4 (Oct-Dec)'];var qDue=['Apr 15','Jun 15','Sep 15','Jan 15'];var qEst=Math.max(0,profit*0.28/4);qEl.innerHTML=qLabels.map(function(q,i){return '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center"><div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:4px">'+q+'</div><div style="font-size:18px;font-weight:800;color:#ca8a04">'+sdFmt(qEst)+'</div><div style="font-size:11px;color:var(--muted);margin-top:3px">Due '+qDue[i]+'</div></div>';}).join('');}
+  if(qEl){var qLabels=['Q1 (Jan-Mar)','Q2 (Apr-Jun)','Q3 (Jul-Sep)','Q4 (Oct-Dec)'];var qDue=['Apr 15','Jun 15','Sep 15','Jan 15'];var qEst=Math.max(0,profit*0.28/4);qEl.innerHTML=qLabels.map(function(q,i){return '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center"><div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:4px">'+q+'</div><div style="font-size:18px;font-weight:800;color:#a16207">'+sdFmt(qEst)+'</div><div style="font-size:11px;color:var(--muted);margin-top:3px">Due '+qDue[i]+'</div></div>';}).join('');}
 }
 function taxExport(){
   var invs=sd_invoices||[];

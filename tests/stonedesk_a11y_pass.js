@@ -47,7 +47,7 @@ function El(tag, opts) {
   return el;
 }
 
-const passSrc = grab('var SD_A11Y_BUTTON_HANDLER', '\nfunction sdA11yPass(root) {').replace(/\nfunction sdA11yPass\(root\) \{$/, '')
+const passSrc = grab('var SD_A11Y_NAMES = {','\nfunction sdA11yPass(root) {').replace(/\nfunction sdA11yPass\(root\) \{$/, '')
   + '\n' + grab('function sdA11yPass(root) {');
 
 console.log('1. sdA11yPass: labels, keyboard buttons, decorative icons');
@@ -61,7 +61,7 @@ console.log('1. sdA11yPass: labels, keyboard buttons, decorative icons');
   const realBtn = El('BUTTON', { attrs: { onclick: "setTier('retail',this)" } });
   const icons = [El('SPAN'), El('SPAN')];
   const ctx = { getComputedStyle: () => ({ display: 'block' }),
-    document: { readyState: 'complete', addEventListener() {},
+    document: { readyState: 'complete', addEventListener() {}, getElementById: () => null, querySelector: () => null,
       querySelectorAll: (s) => (s === 'label:not([for])' ? labels : s === '[onclick]' ? [chip, fileZone, backdrop, card, realBtn] : s === '.sb-btn .sb-icon' ? icons : []) } };
   ctx.document.querySelectorAll.bind(ctx.document);
   vm.createContext(ctx);
@@ -80,7 +80,51 @@ console.log('1. sdA11yPass: labels, keyboard buttons, decorative icons');
   check('I1. sidebar icons are hidden from the reader', icons.every((i) => i.attrs['aria-hidden'] === 'true'));
 }
 
-console.log('2. sbNav: current item and focus to the heading');
+console.log('2. b54: written names, a heading for every panel');
+{
+  // names: an unnamed control gets its written name; a labelled or aria-labelled one keeps its own
+  const sel = El('SELECT', { id: 'int-budget' }); sel.labels = [];
+  const labelled = El('SELECT', { id: 'crm-stage' }); labelled.labels = [{}];
+  const own = El('SELECT', { id: 'tax-state', attrs: { 'aria-label': 'Ship-to state' } }); own.labels = [];
+  const byId = { 'int-budget': sel, 'crm-stage': labelled, 'tax-state': own };
+  // headings: a .ptitle becomes a level-2 heading; a panel with none gets a hidden h2 named from its sidebar item
+  const ptitle = El('DIV');
+  const kids = [];
+  const bare = El('DIV', { id: 'panel-quote' }); bare.firstChild = null; bare.insertBefore = (h) => kids.push(h); bare.querySelector = () => null;
+  const titled = El('DIV', { id: 'panel-crm' }); titled.insertBefore = () => { throw new Error('inserted into a panel that has a heading'); }; titled.querySelector = () => ({});
+  const nameless = El('DIV', { id: 'panel-zzz' }); nameless.insertBefore = () => { throw new Error('inserted with no sidebar name'); }; nameless.querySelector = () => null;
+  const ctx = { getComputedStyle: () => ({ display: 'block' }),
+    document: { readyState: 'complete', addEventListener() {}, getElementById: (id) => byId[id] || null,
+      // crm HAS a sidebar name, so only its own heading keeps the hidden h2 out
+      querySelector: (q) => (q === '#sb-quote .sb-text' ? { textContent: ' Quote Builder ' } : q === '#sb-crm .sb-text' ? { textContent: 'Lead Pipeline' } : null),
+      createElement: (t) => El(t.toUpperCase()),
+      querySelectorAll: (q) => (q === '.ptitle:not([role])' ? [ptitle] : q.indexOf('.panel[id') === 0 ? [bare, titled, nameless] : []) } };
+  vm.createContext(ctx);
+  vm.runInContext(passSrc.replace(/\nif \(document\.readyState[\s\S]*$/, ''), ctx);
+  let threw = null; try { ctx.sdA11yPass(ctx.document); } catch (e) { threw = e.message; }
+  check('W1. an unnamed control gets its written name', sel.attrs['aria-label'] === 'Budget', JSON.stringify(sel.attrs));
+  check('W2. a control with a real <label> or its own aria-label keeps it', !('aria-label' in labelled.attrs) && own.attrs['aria-label'] === 'Ship-to state');
+  check('W3. every written name is non-empty text', Object.keys(ctx.SD_A11Y_NAMES).length > 0 && Object.values(ctx.SD_A11Y_NAMES).every((v) => typeof v === 'string' && v.trim() !== ''));
+  check('H1. a page title (.ptitle) is a level-2 heading', ptitle.attrs.role === 'heading' && ptitle.attrs['aria-level'] === '2');
+  check('H2. a panel with no heading gets an h2 with its sidebar name', kids.length === 1 && kids[0].tagName === 'H2' && kids[0].textContent === 'Quote Builder', threw || JSON.stringify(kids.map((k) => k.textContent)));
+  check('H3. ...hidden visually (clipped), so the layout does not change', !!kids[0] && /clip:rect\(0,0,0,0\)/.test(kids[0].style.cssText || ''));
+  check('H4. a panel that has a heading, or has no sidebar name, is left alone', threw === null, threw);
+}
+
+console.log('3. b54: contrast of the shipped colours');
+{
+  const lum = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((x) => (x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4)).reduce((a, x, i) => a + x * [0.2126, 0.7152, 0.0722][i], 0);
+  const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+  const tok = (n) => { const m = html.match(new RegExp('\\n\\s*--' + n + ':(#[0-9A-Fa-f]{6})')); return m && m[1]; };
+  const brand2 = tok('brand2'), bg = tok('bg');
+  check('C1. --brand2 text on --bg reaches 4.5:1', !!(brand2 && bg) && ratio(brand2, bg) >= 4.5, brand2 + ' on ' + bg + (brand2 && bg ? ' = ' + ratio(brand2, bg).toFixed(2) : ''));
+  check('C2. white text on a --brand2 fill reaches 4.5:1', !!brand2 && ratio('#ffffff', brand2) >= 4.5);
+  const colors2 = (html.match(/var colors2=\{[^}]*\}/) || [''])[0];
+  const hexes = colors2.match(/#[0-9a-fA-F]{6}/g) || [];
+  check('C3. the quote-history status colours all reach 4.5:1 on white', hexes.length === 3 && hexes.every((c) => ratio(c, '#ffffff') >= 4.5), colors2);
+}
+
+console.log('4. sbNav: current item and focus to the heading');
 {
   const src = grab('function sbNav(id) {');
   const focused = [];
