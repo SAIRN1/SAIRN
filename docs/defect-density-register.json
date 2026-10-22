@@ -37576,6 +37576,52 @@
       "recurrence_open": "THE OPERATIONAL AND TRACKED COPIES OF FOUR OTHER TOOLS STILL DIVERGE (citation_class_check.py, hover_editor_review.py, hover_completeness_probe.py, hover_cross_vendor_check.py), so #1626 stays open for those; this commit lands only the cold-scan-pool content. The extractor still scans a file for a resources key by regular expression, not a parser, and the fall-back to the old position-relative scan can still return a wrong span for a shape nobody has seen."
     },
     {
+      "commit": "758865e44eed",
+      "date": "2026-10-22",
+      "subject": "fix(hover citation_class_check, #1626): merge the operational classifier and the tracked abbreviation fix into one tool",
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools/citation_class_check.py"
+      ],
+      "lines_added": 662,
+      "lines_removed": 29,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": "The tracked citation_class_check.py (342 lines) was the 2026-09-29 landing plus the 2026-10-19 abbreviation-safe sentence split, while the operational copy under hover-audit-log/ (880 lines, 2026-09-30) held 661 lines of classifier work that never reached git: BLOB-PINNED, QUOTED-CLAIM, NEAR-MISS and the TS-DERIVED classes, best_line_at, a detail mode and their fixtures. The abbreviation fix, in turn, existed only in the tracked copy. Neither copy was the whole tool, and every run from the tracked directory classified citations with the poorer classifier (on the 11 log entries that carry an abbreviation and a path:line citation, 6 get a different verdict from the merged tool, for example seq 1558 UNVERIFIABLE-NO-SHA against TS-DERIVED-WRONG on both of its citations). Found by the #1626 comparison, which b82 flagged and b83 narrowed to four pairs. Fixed by a merge, not a copy in either direction: the operational file as base, the tracked abbreviation block (_ABBREV_TAILS, _ends_with_abbreviation, split_sentences) ported in, classify() calling split_sentences, and the tracked file's two-file regression fixtures and two unit fixtures ported. Before the port the regression fixture failed on the operational code (a NameError on split_sentences after the St. Louis arm failed); after, selftest 36 ok 0 failed (operational alone 32, tracked alone 11). Merged and operational agree on all 71 sampled log entries (206 citations); tracked and merged differ on 6 of the 11 abbreviation-bearing ones. Both directories now hold byte-identical copies.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "f37d66af2b2d",
+        "date": "2026-09-29",
+        "subject": "feat(hover): land hover's own tooling in the platform repo -- Michael's decision, mirror repo restricted to log/anchors/beacon only",
+        "lag_days": 23
+      },
+      "citation_note": "1.11 is cited because a tool that reports a class for every citation reported one from a poorer classifier without saying which version produced it: two copies of one tool disagreed silently, and neither the copy nor its output carried anything that said it was the older of the two.",
+      "contributing_factors": [
+        {
+          "factor": "The landing commit (f37d66af2) copied the operational tools into git on 2026-09-29 and the operational copy kept being edited the next day; nothing compared the two directories, so the 2026-09-30 classifier and the 2026-10-19 fix each lived in only one place.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Merged; all 62 .py pairs are now byte-identical or LF-only different, checked this batch."
+        },
+        {
+          "factor": "No check reports when a hover tool exists in both directories with different content, so the divergence was found by hand in b71, b82 and b83.",
+          "kind": "detection",
+          "action_status": "declined",
+          "action": "None taken in this fix.",
+          "note": "A standing pair-comparison check is a new tool, not a repair of this divergence; it is listed as NEXT in the b84 digest for a decision."
+        }
+      ],
+      "recurrence_open": "NOTHING STOPS THE TWO DIRECTORIES FROM DIVERGING AGAIN: the operational directory is still where some tools are run from and edited, and no check compares it with the tracked directory. The merged tool's verdicts were compared with the operational tool on 71 sampled entries, not on all 1,399 citations (a full three-version run was started and not finished). The abbreviation list is still a short fixed list."
+    },
+    {
       "commit": "76193dc91825",
       "date": "2026-10-22",
       "subject": "fix(sairncare b51): billing reads a MAR only through a live grant, and a granted read that cannot be logged is not served",
