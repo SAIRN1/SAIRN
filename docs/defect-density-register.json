@@ -37486,6 +37486,62 @@
       "recurrence_open": "NOT CLOSED. Not verified with NVDA itself. Modals not opened. Other launch-wave apps not passed."
     },
     {
+      "commit": "76b475f588b5",
+      "date": "2026-10-22",
+      "subject": "fix(stonedesk b54): every select/field named, every panel headed, 56 contrast nodes fixed",
+      "files": [
+        "stonedesk.html",
+        "tests/stonedesk_a11y_pass.js"
+      ],
+      "lines_added": 149,
+      "lines_removed": 52,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "fourth b54, the b53 pass's filed remainder. Live login SD-AUDIT-2026, writes blocked, this tree at the live URL. select-name 79 -> 0, label 44 -> 0, color-contrast 73 -> 13 (all 13 are labels of the missing-dom-fix stub fields, filed), panels with no heading 7 -> 0. Real NVDA run on live StoneDesk before the fix: 67/67 panels heard, 201 steps, 0 refused; heading spoken on Enter 59/67 (the 7 headingless + 1 cross-window utterance). Suite 22 arms, 8/8 new mutants killed.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "axe-core 4.10.2 + Playwright keyboard walk + a real NVDA 2026.2 run, driven by scratchpad b54 a11y_dental.py / nvda_dental.py (A11Y_APP=stonedesk; not in repo)",
+      "found_by_session": null,
+      "injection": {
+        "commit": "57db94fbf375",
+        "date": "2026-06-22",
+        "subject": "Fix JavaScript syntax errors in stonedesk.html - 94/106 scripts passing Node syntax check",
+        "lag_days": 122
+      },
+      "citation_note": "No coding rule covers this class: a select or field rendered with no visible label, a panel with no heading, and inline text colours never checked against their background. Proposed: an axe + keyboard pass per app before launch.",
+      "contributing_factors": [
+        {
+          "factor": "Selects and fields were built with the option text or placeholder as their only visible cue.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Written names per control (SD_A11Y_NAMES) applied only where no name exists; dynamic rows name themselves."
+        },
+        {
+          "factor": "Seven panels opened straight into toolbars with no title.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": ".ptitle is a heading; a panel with none gets a clipped h2 with its sidebar name."
+        },
+        {
+          "factor": "Inline status colours (amber, green, red 500/600) and a brand token were chosen for hue, never measured on their backgrounds.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Each darkened to the next shade of its hue reaching 4.5:1; suite measures --brand2 and the history colours."
+        },
+        {
+          "factor": "No screen-reader pass had heard StoneDesk.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Real NVDA run, toasts off for the run, 67/67 heard."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. 43 missing-dom-fix stub fields (36315fb99) show the raw element id as their visible label -- a product decision, not recoloured. target-size x5 (field-quote, nesting). Emoji inside headings are read aloud. The NVDA pass heard the pre-fix live build; the fixed build is axe-verified, not yet NVDA-heard."
+    },
+    {
       "commit": "c53c75c1bc0e",
       "date": "2026-10-22",
       "subject": "fix(sd-agent, cody b48): the last catch no longer relays err.message (hover H1 #1684)",
