@@ -8456,6 +8456,29 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-22T13:48:26Z",
+      "opened_at_sha": "363fde869ea0f0c3e35a2b0f04ee5b1eb72b94a8",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 3,
+      "resources": [
+        "leg_cremations",
+        "leg_deathrecords"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/b48-leg-f3-prepare-deferral.test.js"
+      ],
+      "what": "cody b48: api/sd-data.js SAIRNlegacy role gate now DEFERS an apprentice's non-read on a countersign-locked resource (leg_cremations) to the MODE_ALWAYS countersignature lock when decide(prepare, grants, home) ALLOWs -- F3's prepare route, law C2's shape. leg_deathrecords appears only as a negative-control arm in api/b48-leg-f3-prepare-deferral.test.js (unlocked resource stays 403). Review: that the three deferral conditions cannot widen anything the lock does not then refuse.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-22T13:48:26Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
