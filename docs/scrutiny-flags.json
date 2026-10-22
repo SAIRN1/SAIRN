@@ -1639,6 +1639,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b51-countersign-lock-drift.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "1e471c7ab6f92e1746778419471aa4c591472bce",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/_lib/routes.test.js",
    "class": "test file",
    "level": "WEAKENING",
