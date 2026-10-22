@@ -1181,8 +1181,8 @@
       "task": "hover b83: review #1626 cold_scan_pool 111-line diff and commit into tracked tools if legitimate; carried-items status; coverage backlog sweep; compaction_trace report",
       "claimed_at": "2026-10-22T14:09:25Z",
       "claimed_at_epoch": 1792678165.1288068,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-22T14:36:01Z",
       "files": null
     }
   ],
