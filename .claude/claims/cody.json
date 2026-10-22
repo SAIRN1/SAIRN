@@ -4401,6 +4401,26 @@
         "tests/run_adversarial_prompt_corpus_probe.py",
         "tools/sairn_push_gate_hook.py"
       ]
+    },
+    {
+      "id": "cody-1792684175",
+      "session": "cody",
+      "subject": "platform",
+      "task": "b51 countersign off-profile fail-closed, probe_anchor_freshness bare tuple, fail-open sweep  FILES: api/_lib/countersign.js api/sd-data.js api/b51-countersign-lock-drift.test.js tools/probe_anchor_freshness.py docs/sairn-path-manifest.json SAIRN-handoff-cody-b51.md SAIRN-report-cody-b51.txt SAIRN-digest-cody-b51.txt",
+      "claimed_at": "2026-10-22T15:49:35Z",
+      "claimed_at_epoch": 1792684175.5188904,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-cody-b51.txt",
+        "SAIRN-handoff-cody-b51.md",
+        "SAIRN-report-cody-b51.txt",
+        "api/_lib/countersign.js",
+        "api/b51-countersign-lock-drift.test.js",
+        "api/sd-data.js",
+        "docs/sairn-path-manifest.json",
+        "tools/probe_anchor_freshness.py"
+      ]
     }
   ],
   "refusals": [
