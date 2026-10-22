@@ -4623,8 +4623,8 @@
       "task": "b53 sd-data soft-delete check fail closed on unreadable read",
       "claimed_at": "2026-10-22T21:01:08Z",
       "claimed_at_epoch": 1792702868.2012167,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-22T21:20:51Z",
       "files": null
     }
   ],
