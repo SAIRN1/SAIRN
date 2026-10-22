@@ -4724,8 +4724,8 @@
       "task": "emoji target-size nvda",
       "claimed_at": "2026-10-22T15:24:29Z",
       "claimed_at_epoch": 1792682669.9525614,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-22T16:31:55Z",
       "files": null
     },
     {
