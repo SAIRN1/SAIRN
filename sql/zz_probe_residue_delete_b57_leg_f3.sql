@@ -71,7 +71,7 @@ begin
    where license_hash = lh and active = true and role = any (array['owner']);
   if rows > 0 and prov = 0 then
     raise exception
-      'ABORTED: would leave % credential row(s) and ZERO active owners. '
+      'ABORTED: would leave % credential row(s) and ZERO active provisioners (owner). '
       'Delete EVERY row for this licence, or leave at least one active owner.', rows;
   end if;
   raise notice 'Guard passed: % row(s), % active owner(s).', rows, prov;

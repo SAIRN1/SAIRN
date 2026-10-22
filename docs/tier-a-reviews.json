@@ -8602,6 +8602,29 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-10-22T21:18:41Z",
+      "opened_at_sha": "75eb3be8382e8f77ef181b14fdb214028ef8f5b4",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 0,
+      "resources": [
+        "slabs"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "stonedesk.html",
+        "tests/stonedesk_a11y_pass.js"
+      ],
+      "what": "fourth b57 (a7a8bb27a): StoneDesk accessibility names only -- SD_A11Y_NAMES gains 14 modal/sub-view control names (incl. slabs-location-filter) and the slab-bind select template gets an aria-label. No data path, query, write or role logic changed; reviewer to confirm only aria-label attributes moved.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-10-22T21:18:41Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
