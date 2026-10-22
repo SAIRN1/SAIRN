@@ -4390,8 +4390,8 @@
       "task": "b49 live F3 apprentice director countersign drive, adversarial corpus probe anchors, 5e skipped rows  FILES: tests/run_adversarial_prompt_corpus_probe.py tools/sairn_push_gate_hook.py docs/sairn-path-manifest.json docs/live-residue/2026-10-22-cody-b49-leg-f3-live.json SAIRN-handoff-cody-b49.md SAIRN-report-cody-b49.txt SAIRN-digest-cody-b49.txt",
       "claimed_at": "2026-10-22T14:24:10Z",
       "claimed_at_epoch": 1792679050.1256099,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-22T15:13:06Z",
       "files": [
         "SAIRN-digest-cody-b49.txt",
         "SAIRN-handoff-cody-b49.md",
