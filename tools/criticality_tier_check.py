@@ -243,13 +243,31 @@ class RegistryLoadError(Exception):
 _NODE_READ = (
     "const p=process.argv[1];"
     "try{const m=require(p);const a=m&&m.app;"
-    "process.stdout.write(JSON.stringify({ok:true,app:(typeof a==='string')?a:null}));}"
+    "process.stdout.write(JSON.stringify({ok:true,app:(typeof a==='string')?a:null,"
+    "res:!!(m&&Array.isArray(m.resources))}));}"
     "catch(e){process.stdout.write(JSON.stringify({ok:false,"
     "err:String((e&&e.message)||e).slice(0,200)}));}")
 
 
 def declared_app(path):
-    """The app name a resource module DECLARES about itself, or None.
+    """The app name a resource module DECLARES about itself, or None."""
+    return declared_shape(path)[0]
+
+
+def declared_shape(path):
+    """(declared app or None, whether module.exports carries a resources array).
+
+    ── A MISSING app: ON A REGISTRY IS REPORTED, NOT SKIPPED (cc b50, D2) ────
+    hank b50 REVIEW of 38bbd4551: `if decl is None: continue` made a registry
+    that omits or mistypes `app:` INVISIBLE. A scratch tree with a new
+    sairnnew.js carrying resources and no app: left PROBLEMS at 7 and named
+    the file nowhere. Whether a module is a registry is now answered by what
+    it EXPORTS, which is a `resources` array. A missing or mistyped `app:` is
+    a second, separate question. The merger exports neither, so it is still
+    skipped, and it is skipped because of its exports rather than its name.
+
+    THE ORIGINAL ACCOUNT, kept below, still holds for the merger:
+
 
     ── THE SKIP IS A PROPERTY OF THE MODULE, NOT A NAME IN THIS FILE ────────
     This replaced `if app in ('index', 'shared'): continue`, which was wrong
@@ -296,7 +314,7 @@ def declared_app(path):
                                 % (r.returncode, (r.stderr or '')[:160]))
     if not d.get('ok'):
         raise RegistryLoadError('node could not load it: %s' % d.get('err'))
-    return d.get('app')
+    return d.get('app'), bool(d.get('res'))
 
 
 def apps_with_registries():
@@ -311,13 +329,18 @@ def apps_with_registries():
         # A file that declares no `app:` is not a registry and is skipped
         # because IT says so, not because this line knows its name.
         try:
-            decl = declared_app(os.path.join(RESOURCES, f))
+            decl, has_resources = declared_shape(os.path.join(RESOURCES, f))
         except RegistryLoadError as e:
             out[app] = SHAPE_ERROR(
                 'could not be read as a module, so whether it is a registry is '
                 'UNKNOWN -- not skipped: %s' % e)
             continue
         if decl is None:
+            if has_resources:
+                out[app] = SHAPE_ERROR(
+                    'exports a resources array but declares no string app:, '
+                    'so it is a registry with no owner. It is reported, not '
+                    'skipped.')
             continue
         if decl != app:
             # A DISAGREEMENT IS REPORTED, NEVER RESOLVED BY PREFERENCE. The
@@ -716,6 +739,14 @@ def fix_rollup_lists(rollup, rows, reg):
     idx = _rollup_line_indices(lines)
     by_name = {r[0]: r for r in rows}
     applied, refusals = [], []
+    # REFUSED, NOT SKIPPED (cc b50, D2). A bare `continue` let the fixer print
+    # success over a registry it never read. It covers EVERY unread registry,
+    # with or without a rollup line, because which line it belongs to is part
+    # of what could not be read.
+    for app in sorted(reg):
+        if isinstance(reg[app], SHAPE_ERROR):
+            refusals.append((app, None, 'SHAPE ERROR, registry not read: %s'
+                                        % reg[app]))
     for app in sorted(set(rollup) & set(reg)):
         if 'NOT YET RE-TIERED' in rollup[app]['status']:
             continue
@@ -762,7 +793,8 @@ def cmd_fix_rollup_lists():
     rollup, rows = parse()
     reg = apps_with_registries()
     by_name = {r[0]: r for r in rows}
-    left = []
+    left = ['%s (SHAPE ERROR, not read)' % a for a in sorted(reg)
+            if isinstance(reg[a], SHAPE_ERROR)]
     for app in sorted(set(rollup) & set(reg)):
         if 'NOT YET RE-TIERED' in rollup[app]['status']:
             continue
@@ -912,15 +944,72 @@ def registry_property_arms():
         bad.append('a file whose declared app disagrees with its filename '
                    'must NOT read as agreeing -- that is how a resource gets '
                    'filed under an app that does not own it')
-    return bad
+    ran = len(cases) + 3
+
+    # ── cc b50, D2: THE THREE DEFECTS hank b50 FOUND, DRIVEN END TO END ─────
+    # On a scratch registry directory swapped in for RESOURCES, so main() and
+    # the fixer run over files whose answer is known. Only UNREADABLE modules
+    # are in it, so the fixer has nothing it could insert into the real
+    # register.
+    import contextlib
+    global RESOURCES, _IN_FIXTURES
+    d = tempfile.mkdtemp(prefix='tierd2-')
+    for name, src in (('zznoapp.js', "module.exports = { resources: ['zz_r'] };\n"),
+                      ('stonedesk.js', REGISTRY),
+                      # The merger's dependency exports no resources here. One
+                      # that did would be zznoapp's shape, and so reported.
+                      ('index.js', MERGER), ('dep.js', "module.exports = {};\n")):
+        io.open(os.path.join(d, name), 'w', encoding='utf-8',
+                newline='\n').write(src)
+    saved, saved_flag = RESOURCES, _IN_FIXTURES
+    RESOURCES, _IN_FIXTURES = d, True
+    try:
+        reg = apps_with_registries()
+        ran += 1
+        if not isinstance(reg.get('zznoapp'), SHAPE_ERROR):
+            bad.append('D2(1): a module exporting resources with NO app: must be '
+                       'a SHAPE_ERROR, got %r -- `continue` on None made it '
+                       'invisible' % (reg.get('zznoapp'),))
+        ran += 1
+        if 'index' in reg or 'dep' in reg:
+            bad.append('D2(1) CONTROL: the merger and a plain dependency must '
+                       'still be skipped, got %r' % sorted(reg))
+        ran += 1
+        sink = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(sink):
+                rc = main(['--quiet'])
+        except Exception as e:                                   # noqa: BLE001
+            rc = 'CRASH %s: %s' % (type(e).__name__, e)
+        if rc != 2:
+            bad.append('D2(2): main() over an unreadable registry must exit 2 '
+                       '(COULD NOT RUN), got %r' % (rc,))
+        ran += 1
+        sink = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(sink):
+                rc = cmd_fix_rollup_lists()
+        except Exception as e:                                   # noqa: BLE001
+            rc = 'CRASH %s: %s' % (type(e).__name__, e)
+        if rc == 0 or 'SHAPE ERROR' not in sink.getvalue():
+            bad.append('D2(2): --fix-rollup-list over an unreadable registry '
+                       'must REFUSE and say so, got rc %r' % (rc,))
+    finally:
+        RESOURCES, _IN_FIXTURES = saved, saved_flag
+    return bad, ran
 
 
-# How many arms run_fixtures() actually drives. DERIVED AND RETURNED, never
-# printed from len(FIXTURE_CASES): adding the b24 registry-property arms made
-# that literal say "6/6" while ELEVEN checks ran, which is a count that does
-# not move when the thing it counts does -- the defect class this repo keeps
-# paying for one level up from wherever it appears.
-REGISTRY_PROPERTY_ARMS = 13
+# How many arms run_fixtures() actually drives is COUNTED AS THEY RUN and
+# returned by registry_property_arms(). It is never a literal. Adding the b24
+# registry-property arms made len(FIXTURE_CASES) say "6/6" while ELEVEN checks
+# ran. The REGISTRY_PROPERTY_ARMS = 13 that replaced it was hand-bumped, and
+# hank b50 found it was hand-bumped (cc b50, D2). A count that does not move
+# when the thing it counts does is the defect class this repo keeps paying
+# for one level up.
+#
+# True while the fixtures drive main() themselves, so main() does not re-enter
+# the lock that called it.
+_IN_FIXTURES = False
 
 
 def run_fixtures():
@@ -930,8 +1019,9 @@ def run_fixtures():
         got = len(cells(src)) if kind == 'cells' else asserts_access_control(src)
         if got != want:
             bad.append('EXPECTED %r, got %r -- %s' % (want, got, why))
-    bad.extend(registry_property_arms())
-    return bad, len(FIXTURE_CASES) + REGISTRY_PROPERTY_ARMS
+    reg_bad, reg_ran = registry_property_arms()
+    bad.extend(reg_bad)
+    return bad, len(FIXTURE_CASES) + reg_ran
 
 
 def main(argv):
@@ -943,7 +1033,7 @@ def main(argv):
     # with a shorter name, and the reader of a clean register is not asking.
     # A failing lock is exit 2, because a tier verdict derived from criteria
     # that cannot classify a hand-built row is not a verdict.
-    _bad, _arms = run_fixtures()
+    _bad, _arms = run_fixtures() if not _IN_FIXTURES else ([], 0)
     if _bad:
         print('CRITERIA LOCK FAILED -- %d of %d fixtures misclassified. NOTHING '
               'REAL WAS JUDGED:' % (len(_bad), _arms))
@@ -978,7 +1068,19 @@ def main(argv):
     for app in sorted(set(rollup) - set(reg)):
         problems.append('GONE         %s has a rollup line and no resource registry.' % app)
 
+    # ── A SHAPE_ERROR IS COULD NOT RUN, PRINTED (cc b50, D2) ────────────────
+    # It used to reach `names - present` below and crash with a TypeError,
+    # which exits 1 with a traceback and looks like an ordinary finding. It is
+    # now named for every registry, whether or not it has a rollup line, and
+    # the run exits 2: a verdict over a smaller table than the real one is not
+    # a verdict.
+    unread = sorted(a for a in reg if isinstance(reg[a], SHAPE_ERROR))
+    for app in unread:
+        problems.append('SHAPE ERROR  %s: %s' % (app, reg[app]))
+
     for app in sorted(set(rollup) & set(reg)):
+        if app in unread:
+            continue
         retiered = 'NOT YET RE-TIERED' not in rollup[app]['status']
         names = reg[app]
         present = {n for n in names if n in by_name}
@@ -1080,12 +1182,21 @@ def main(argv):
                                 'half-tiered app reads as an untiered one.' % (app, n))
 
     all_registered = set()
-    for names in reg.values():
-        all_registered |= names
+    for app, names in reg.items():
+        if app not in unread:
+            all_registered |= names
+    if unread:
+        # A row may belong to the registry that could not be read, so a NOT A
+        # RESOURCE verdict here would be a guess. The arm is skipped, and the
+        # skip is printed rather than passed silently.
+        problems.append('NOT RUN      the NOT A RESOURCE arm: %d registr%s could '
+                        'not be read (%s), so the registered set is incomplete.'
+                        % (len(unread), 'y' if len(unread) == 1 else 'ies',
+                           ', '.join(unread)))
     migrated = 0
     stale_boilerplate = []
     for name, tier, conf, worst, worst_read, ev in rows:
-        if name not in all_registered:
+        if name not in all_registered and not unread:
             problems.append('NOT A RESOURCE  %s has a row and is not registered in any '
                             'api/_resources/*.js. The unit of this table is the registry.'
                             % name)
@@ -1257,6 +1368,11 @@ def main(argv):
             print('NOTE: this says every registered resource in a RE-TIERED app has a '
                   'tier, and that every Tier A carries evidence. It does not say the '
                   'tier is right -- nothing mechanical can.')
+    if unread:
+        if not quiet:
+            print('COULD NOT RUN: %d registr%s could not be read. Exit 2, not 1.'
+                  % (len(unread), 'y' if len(unread) == 1 else 'ies'))
+        return 2
     return 1 if problems else 0
 
 
