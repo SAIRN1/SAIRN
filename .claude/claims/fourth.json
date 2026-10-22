@@ -4713,8 +4713,8 @@
       "task": "stub labels nvda target-size emoji",
       "claimed_at": "2026-10-22T14:27:42Z",
       "claimed_at_epoch": 1792679262.0521262,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-22T14:58:39Z",
       "files": null
     }
   ],
