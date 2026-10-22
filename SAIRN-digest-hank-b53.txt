@@ -1,0 +1,16 @@
+HANK b53 DIGEST -- 2026-10-22 -- soft-delete guards fail closed; "skip on unreadable read" sweep closed
+CONTEXT 48.5% of 1,000,000 -- 484,644 tokens, measured.
+STATUS: 8e617d197 + dbbf43b6d + efde99fea LANDED, NOT FORCED; no override consumed.
+1. sd_customers + SAIRNcode soft-delete guards: unreadable pre-read -> 502, nothing written.
+   404/400 still falls through.
+2. Sweep, 67 guards: OPEN 2 / CLOSED 60 / INTENTIONAL 5. Fixed:
+   write_batch tombstones, dnt_providers link check, dnt-bi token cap, sd-sub-data gate.
+3. Tests: b53 suite 12/0 (4 mutants red; P1-P4 source pins); batch suite 15/15; tombstone 13/0.
+DECISION-NEEDED (Michael): sd-render.js cap fails open on an unparsable 2xx --
+   keep (cost control) or narrow?
+NEXT: cc Tier A on 8e617d197+dbbf43b6d; hank R1 recordFailure lockout PATCH if dispatched.
+CHANGED: api/sd-data.js, api/dnt-bi.js, api/sd-sub-data.js
+CHANGED (tests): new api/b53-soft-delete-guard-fail-closed.test.js; batch + tombstone suites
+EVIDENCE-path: SAIRN-handoff-hank-b53.md, SAIRN-report-hank-b53.txt
+UNVERIFIED: the new refusals on the deployed API (not driven live).
+UNVERIFIED: dnt/dnt-bi/sub arms are source pins.

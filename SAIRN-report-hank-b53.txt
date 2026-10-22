@@ -1,0 +1,20 @@
+HANK b53 REPORT -- 2026-10-22
+
+METHODOLOGY: a guard that cannot read its subject has not checked it. It refuses; only a readable answer (or
+404/400 = not provisioned) lets the protected action proceed.
+
+1. sd-data.js 4946/20236 FIXED (8e617d197).
+   - sd_customers and SAIRNcode soft-delete guards: 4xx/5xx or non-list pre-read -> 502 UNREADABLE_PRIOR,
+     nothing written.
+   - b53 suite driven arms + controls; mutants M1-M4 red. Tombstone-propagation suite re-anchored (13/0).
+
+2. SWEEP: 67 candidate guards (OPEN 2 / CLOSED 60 / INTENTIONAL 5). FIXED dbbf43b6d:
+   - write_batch tombstone pre-read -> 502 (batch arm reversed, 15/15);
+   - dnt_providers one-login check -> 503;
+   - dnt-bi token cap -> 503;
+   - sd-sub-data compliance gate -> 503 except 400/404.
+   Left (documented cost/availability): ai-rate-limit, claude.js licence, sd-render cap (comment narrower than
+   code). Routed: recordFailure() lockout PATCH unchecked in 11 *-auth files.
+
+3. PUSH: 8e617d197, dbbf43b6d, efde99fea LANDED, not forced. No override consumed.
+   Pre-existing red, unregistered: sd-data-law-trusttx-clearance, stonedesk_exec_msgs_gate (identical at origin).
