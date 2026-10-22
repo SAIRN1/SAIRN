@@ -9668,7 +9668,7 @@ function sdInvExport(){
         'No slab carries the code <strong>' + escHtml(String(raw).trim()) + '</strong>. ' +
         'If this is the supplier’s own label, bind it to a slab:' +
         '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">' +
-        '<select id="sd-slab-bind-target" style="flex:1;min-width:200px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);font-size:13px">' +
+        '<select id="sd-slab-bind-target" aria-label="Slab to bind this code to" style="flex:1;min-width:200px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);font-size:13px">' +
         eng().filter(function(x){return dispStatus(x)!=='Cut';}).map(function(x){
           return '<option value="' + escHtml(x.id) + '">' + escHtml(x.id + ' — ' + (x.colorName || x.material || 'Slab')) + '</option>';
         }).join('') +
@@ -41063,7 +41063,12 @@ var SD_A11Y_NAMES = {
   'tm-filter-status': 'Filter by status', 'tm-filter-device': 'Filter by device', 'tm-filter-type': 'Filter by job type',
   'it-user': 'User', 'it-category': 'Category', 'it-priority': 'Priority',
   'adm-autosave': 'Auto-save', 'adm-notif': 'Notifications', 'adm-demo': 'Demo Mode', 'adm-logo': 'Print Header Logo',
-  'integ-filter-cat': 'Filter by category', 'integ-filter-status': 'Filter by status', 'integ-cat': 'Category', 'integ-status': 'Status'
+  'integ-filter-cat': 'Filter by category', 'integ-filter-status': 'Filter by status', 'integ-cat': 'Category', 'integ-status': 'Status',
+  // b57: controls in modals and sub-views the panel pass never rendered (static scan, b56)
+  'intake-link-field': 'Intake link', 'fm-s-type': 'Job type', 'fm-s-date': 'Date', 'fm-s-time': 'Time', 'fm-overview-date': 'Overview date',
+  'fm-pipe-start': 'From date', 'fm-pipe-end': 'To date', 'fm-pipe-person': 'Filter by person', 'fm-pipe-type': 'Filter by type',
+  'slabs-location-filter': 'Filter by location', 'st-type': 'Training type', 'inc-type': 'Incident type', 'inc-osha': 'OSHA reportable',
+  'aiq-tier': 'Pricing tier'
 };
 var SD_A11Y_EMOJI = /[\u{1F000}-\u{1FAFF}\u{2300}-\u{23FF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]/u;
 var SD_A11Y_EMOJI_RUN = /((?:[\u{1F000}-\u{1FAFF}\u{2300}-\u{23FF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{1F3FB}-\u{1F3FF}]|️|‍)+)/u;

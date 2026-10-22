@@ -158,6 +158,18 @@ console.log('3a. b56: emoji in headings hidden from the reader; 24px targets');
   check('T1. the six undersized inputs carry a 24px minimum height (WCAG 2.5.8)', small.length === 0, small.join(' '));
 }
 
+console.log('3c. b57: modal and sub-view controls are named too');
+{
+  const block = (html.match(/var SD_A11Y_NAMES = \{[\s\S]*?\n\};/) || [''])[0];
+  const want = ['intake-link-field', 'fm-s-type', 'fm-s-date', 'fm-s-time', 'fm-overview-date', 'fm-pipe-start', 'fm-pipe-end',
+    'fm-pipe-person', 'fm-pipe-type', 'slabs-location-filter', 'st-type', 'inc-type', 'inc-osha', 'aiq-tier'];
+  const missing = want.filter((id) => !new RegExp("'" + id + "': '[^']+'").test(block));
+  const absent = want.filter((id) => html.indexOf('id="' + id + '"') === -1);
+  check('M1. the 14 static modal/sub-view controls each have a written name', block && missing.length === 0, missing.join(' '));
+  check('M2. ...and every one of those ids exists in the page (no name for a control that is gone)', absent.length === 0, absent.join(' '));
+  check('M3. the slab-bind select, built in a template, names itself', /id="sd-slab-bind-target" aria-label="[^"]+"/.test(html));
+}
+
 console.log('3b. b55: the missing-dom-fix stub fields carry real labels');
 {
   const stubs = [...html.matchAll(/data-auto-container="missing-dom-fix"><label([^>]*)>([^<]*)<\/label><input type="text" id="([^"]+)"/g)];
