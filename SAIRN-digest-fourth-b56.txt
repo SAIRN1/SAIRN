@@ -1,0 +1,23 @@
+SAIRN DIGEST -- fourth b56 -- 2026-10-22
+CONTEXT 37.2% of 1,000,000 -- 372,203 tokens, measured.
+STATUS: emoji-in-headings + 24px targets fixed (StoneDesk axe 0/67 live); NVDA hears doc-scan fix (raw log); F3 countersign UI built; all live.
+DECISION-NEEDED: OK to drive F3 against live LEG-PINNACLE-2026 (leaves a leg_cremations row + spent token, recorded as residue)?
+READ: SAIRN-handoff-fourth-b56.md (whole state). Detail: SAIRN-report-fourth-b56.txt.
+SQL: none this batch.
+CHANGED:
+  69f828f1a stonedesk: heading emoji aria-hidden (50 distinct, 0 left readable); min-height 24px on 6 inputs; 30 arms, 6/6 mutants
+  3c574265f sairnlegacy: F3 UI -- Save stages (prepare), director countersigns by reference, File sends countersign_token;
+            nothing stored locally before filing; 15 arms, 7/7 mutants; stubbed browser click-through clean
+  d9298e868/48e0eb388/..cc7adf813 register records, manifest overrides (2 legacy suites), MASTER-PLAN + matrix regenerated
+1 NVDA RAW LOG (not summary): 66 heading lines, 0 with emoji; 7 formerly headingless heard; after the doc-scan heading
+  "Tap to photograph any document ... button"; ai panel PARTIAL (Edge held the foreground) -- its heading not heard
+2 stub decision: 17/17 labelled; ~18 NON-stub unnamed controls in modals/sub-views found by static scan -- filed
+EVIDENCE-path: tests/stonedesk_a11y_pass.js, tests/sairnlegacy_countersign_ui.js; scratchpad nvda_sd56.json, f3ui_browser.py.
+NEXT, in order:
+  a decision above, then the live F3 drive with residue file
+  b name the ~18 modal controls in SD_A11Y_NAMES
+  c NVDA re-run for the ai heading (one click); emoji outside headings (scope?)
+  d Michael: `! npm ci --ignore-scripts --no-audit --no-fund` (b54, still denied)
+UNVERIFIED: F3 against the live API; ai heading under NVDA.
+PRIVACY: scratchpad nvda_sd56.log holds speech from other windows -- do not share.
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\fd66c7b5-98f7-4e46-ac2a-b0383cde9210.jsonl

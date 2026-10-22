@@ -2895,6 +2895,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairnlegacy_countersign_ui.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "3c574265f986e668fbd1db7e941905ff63cc02b4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlegacy_write_failure_voice.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "3c574265f986e668fbd1db7e941905ff63cc02b4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/b21-bridge-unknown-action.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -5517,6 +5533,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "69e034151645aea90e24cd61e12361624d1f7107",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/stonedesk_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "69f828f1abc65e3e7c1d7ecbb50a46f485788d0f",
    "criteria_version": "2026-10-06.1"
   },
   {

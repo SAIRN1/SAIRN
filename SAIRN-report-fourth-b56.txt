@@ -1,0 +1,47 @@
+SAIRN REPORT -- fourth b56 -- 2026-10-22
+
+RESULT: all items landed and live (16:06Z), no force, no skip.
+Handoff: SAIRN-handoff-fourth-b56.md.
+
+1a EMOJI IN HEADINGS                                           69f828f1a
+   CONCEPT: an emoji in a heading is decoration; the words are the name.
+   Each emoji run inside a heading is wrapped aria-hidden: emoji blocks
+   only, once per heading.
+   A browser walk of all 67 panels hid 50 distinct emoji. 0 emoji were
+   left readable in any heading, and arrows and letters are untouched.
+1b TARGET SIZE                                                 69f828f1a
+   min-height 24px on fq-client, nest-slab-w/h and nest-cut-w/h, plus
+   nest-cut-label. Axe flagged that sixth one only after its neighbours
+   grew.
+   Axe, live, 67 panels: 0 violations of any rule.
+2 NVDA RE-RUN, verified against the RAW log (item 4), not the summary
+   344 Speaking lines; 66 heading utterances, none with an emoji. All 7
+   formerly headingless panels are heard as headings.
+   Doc-scan: the next raw line after its heading is "📄 | Tap to photograph
+   any document | ... | button". The 4 panels after it are heard again.
+   PARTIAL: the ai panel. Edge held the foreground at its first step, so
+   the ai heading was not heard. 8 writes blocked; toasts restored (unset).
+3 F3 COUNTERSIGN UI, sairnlegacy                               3c574265f
+   CONCEPT: a cremation authorisation is filed only with a second named
+   signer: stage (prepare) -> a different director countersigns -> the
+   preparer files the exact record with countersign_token.
+   Nothing is stored locally before filing. Refusals are shown verbatim.
+   There is a read-only open list for signers.
+   Before: saveCremation saved locally, and the server refused the write
+   (COUNTERSIGN_REQUIRED), so the record looked saved.
+   Suite: 15 arms; 7/7 mutants killed. Browser click-through (real login;
+   API and write STUBBED): stage -> check -> SAME_PERSON refusal shown ->
+   file -> row appears; 0 page errors.
+   NOT driven against the live API (that would leave residue).
+5 STUB DECISION SPOT-CHECK: 17/17 labelled (arm S2); the 26 other stubs
+   are outputs. Beyond the stubs: axe finds 0 on rendered panels, but a
+   static scan finds ~18 unnamed controls in modals and sub-views (listed
+   in the handoff). Filed.
+6 PUSH: landed through cc7adf813. Live bytes = origin for both apps at
+   16:06Z. Register records were added and re-seated. Manifest: declared
+   tests/sairnlegacy_countersign_ui.js and _write_failure_voice.js.
+   MASTER-PLAN and traceability matrix regenerated. The push raced other
+   sessions 4 times; it landed on try 5.
+
+OPEN: live F3 drive (needs OK); ~18 unnamed modal controls; emoji outside
+headings; the ai heading not NVDA-heard; npm ci still denied.
