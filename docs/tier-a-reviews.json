@@ -8579,6 +8579,29 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-22T21:16:30Z",
+      "opened_at_sha": "dbbf43b6dbf5087b0b072bff4555f6cd1c7e727f",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 4,
+      "resources": [
+        "customers",
+        "sc_claims"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/b53-soft-delete-guard-fail-closed.test.js"
+      ],
+      "what": "hank b53 (8e617d197 + dbbf43b6d): soft-delete and other guards refuse when their pre-read cannot be read -- sd_customers single and write_batch resurrection guards and SAIRNcode soft-delete-only guard (502 UNREADABLE_PRIOR), dnt_providers one-login check, dnt-bi token cap, sd-sub-data compliance gate (503). 404/400 not-provisioned still falls through everywhere. REVIEWER: attack (a) whether 404/400 fall-through is safe at each site (can PostgREST answer 400 for a reason other than a missing table/column, e.g. a malformed in.() list in write_batch?); (b) whether the batch refusal is all-or-nothing as intended; (c) the five INTENTIONAL fail-opens left in place (ai-rate-limit, claude.js, sd-render) and the unchecked recordFailure() lockout PATCH.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-22T21:16:30Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
