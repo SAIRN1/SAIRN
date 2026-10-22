@@ -2523,6 +2523,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/stonedesk_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "33987def84258d1df71687bb474a69234e574b76",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/_lib/ai-rate-limit-tenant.test.js",
    "class": "test file",
    "level": "WEAKENING",
@@ -4842,6 +4850,22 @@
     }
    ],
    "sha": "6131e5a900b07b35b057f9f3121d7db96bb15fff",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlegacy_countersign_ui.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "62a4550b314a83c38699510f02d321299b63e7bd",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlegacy_write_failure_voice.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "62a4550b314a83c38699510f02d321299b63e7bd",
    "criteria_version": "2026-10-06.1"
   },
   {
