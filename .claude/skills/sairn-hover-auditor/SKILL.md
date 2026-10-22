@@ -3276,6 +3276,41 @@ make itself -- hold findings that need this tag, report them in chat, and
 route the enum fix to a build agent rather than forcing an existing
 mismatched value.
 
+**Every finding states, when it is logged, whether it is BUILDER code or
+AUDIT TOOLING, and is routed by that answer (Michael's ruling, 2026-10-22,
+b85).** Found because #1705 (`tools/hover_auditor_scope_gate.py` diffing a
+push as a two-dot tree diff) and #1698 (`tools/hover_routing_gap_check.py`
+reporting clean over a renamed field) were both routed to build agents in
+b83 and b84 as if they were builder code; they are audit tooling, which by
+the test in the core rule above ("does it get audited by this role, or does
+it audit?") is this role's and hover2's to fix. The question is asked at
+logging time by `hover_log.py --class builder|audit-tool` and is mechanical,
+not remembered: a finding about a non-self target without `--class` is
+refused; `--class audit-tool` aimed at a build agent is refused; `--class
+builder` whose `--source` names audit tooling (the skill directory,
+`tools/hover_*`, `tools-hover2/`, `tests/run_hover_*`) is refused. **Builder
+code** is routed to the owning build agent through the status registry (this
+role's log is private, so the text goes in the note). **Audit tooling** is
+fixed by this role, coordinating with hover2 where the tool is shared. One
+trap, and it is structural: a fix to audit tooling that lives outside this
+skill directory cannot be committed from the hover clone until `ALLOWED` in
+the scope gate names the file, and `ALLOWED` is in the gate file this role
+may not edit for itself. The order is the one the gate already prints: the
+quotable sentence in this file first (this role), the `ALLOWED` entry second
+(a build agent), then the fix (this role). Never a bypass of the gate.
+
+**Audit tooling named for that purpose, 2026-10-22 (b85):**
+`tools/hover_routing_gap_check.py` and its probe
+`tests/run_hover_routing_gap_probe.py` read this role's own log and the
+open-work index to find auditor findings that never reached a build agent's
+queue: they audit, they are not audited by this role, and they sit on the
+"audits, does not get audited" side of the test in the core rule exactly as
+the three files of the enforcement triad named there do. The triad's
+`tools/hover_auditor_scope_gate.py` and `tools/hover_separation_audit.py`
+already have their sentence in the core rule; neither has an `ALLOWED` entry
+yet (only `tools/hover_separation_ci.py` does), which is why #1705 could not
+be fixed from this clone.
+
 ## Auditing this file's own checklist
 
 This file has grown very large in one session, one real precedent at a

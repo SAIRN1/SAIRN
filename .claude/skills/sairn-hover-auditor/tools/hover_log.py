@@ -20,6 +20,7 @@ line this role exists to hold: never build and verify the same thing.
 
     python hover_log.py --add --type check    --target <agent-or-subject> --summary "..."
     python hover_log.py --add --type finding  --target <agent-or-subject> --summary "..." [--severity ...] [--vector ...]
+        (b85: a finding about a non-self target also needs --class builder|audit-tool; audit-tool is never aimed at a build agent)
     python hover_log.py --add --type no-report --target <agent-or-subject> --summary "..."
     python hover_log.py --verify
     python hover_log.py --tail 20
@@ -232,6 +233,70 @@ SEVERITIES = ('critical', 'high', 'moderate', 'low', '')
 # fix is not a fix, and PR SS5 says a status report is a claim until
 # checked. A single "closed" value would launder the first into the second.
 CLOSURE_STATES = ('open', 'routed', 'fixed-unverified', 'fixed-verified')
+
+# ── A FINDING STATES, WHEN IT IS LOGGED, WHOSE CODE IT IS (b85) ──────────────
+# #1705 (the scope gate's two-dot diff) and #1698 (hover_routing_gap_check's
+# vacuous states) are AUDIT TOOLING and were routed to build agents in b83 and
+# b84 as if they were builder code. Michael's ruling, b85: for every future
+# finding state at dispatch time whether it is builder code or audit tooling,
+# and route accordingly. Audit tooling is the auditors' to fix (the skill's own
+# test: "does it get audited by this role, or does it audit?"); builder code is
+# routed to the owning build agent.
+#   builder     routed to a build agent or the platform; --source names its code
+#   audit-tool  the auditors' own: this role (hover), hover2, or a shared hover
+#               tool. Never aimed at a build agent.
+FINDING_CLASSES = ('builder', 'audit-tool')
+AUDITOR_TARGETS = ('self', 'hover', 'hover2', 'h1', 'h2')
+# Paths that ARE audit tooling. A builder-class finding whose --source names one
+# of these is refused: the class would contradict the evidence in the same line.
+AUDIT_TOOL_PREFIXES = (
+    '.claude/skills/sairn-hover-auditor/',
+    'tools/hover_',
+    'tools-hover2/',
+    'tests/run_hover_',
+    'tests/hover_',
+)
+
+
+def finding_class_check(etype, target, fclass, source_raw):
+    """(ok, message, warning). Pure. Applies to --type finding only."""
+    if etype != 'finding':
+        if fclass:
+            return False, '--class only makes sense on --type finding.', ''
+        return True, '', ''
+    if fclass and fclass not in FINDING_CLASSES:
+        return False, '--class must be one of %s; got %r.' % (FINDING_CLASSES, fclass), ''
+    if target == 'self':
+        if fclass == 'builder':
+            return False, ('--class builder with --target self: a finding about this role\'s '
+                           'own tooling is audit-tool by definition. Nothing was appended.'), ''
+        return True, '', ''
+    if not fclass:
+        return False, ('missing --class -- every finding about a non-self target must say whether '
+                       'it is BUILDER code or AUDIT TOOLING (b85 ruling; #1705 and #1698 were '
+                       'misrouted to build agents because the question was never asked). '
+                       'builder = a build agent or platform file; audit-tool = this role, '
+                       'hover2 or a shared hover tool. Nothing was appended.'), ''
+    paths = [x.strip().replace('\\', '/').split(':')[0] for x in (source_raw or '').split(',') if x.strip()]
+    audit_paths = [x for x in paths if x.startswith(AUDIT_TOOL_PREFIXES)]
+    if fclass == 'audit-tool':
+        if target not in AUDITOR_TARGETS:
+            return False, ('--class audit-tool with --target %s: audit tooling is the auditors\' '
+                           'own to fix, never routed to a build agent. Use --target %s (or hover2 '
+                           'for a hover2 tool). Nothing was appended.' % (target, 'self')), ''
+        outside = [x for x in paths if not x.startswith('.claude/skills/sairn-hover-auditor/')]
+        warn = ''
+        if outside:
+            warn = ('NOTE: %s sit outside this role\'s own scope gate (ALLOWED). A fix cannot be '
+                    'committed from the hover clone until the skill carries a quotable sentence '
+                    'naming the file AND a build agent has added the ALLOWED entry (the '
+                    'SEPARATION_CI precedent, 2026-10-08). Do not bypass the gate.' % ', '.join(outside))
+        return True, '', warn
+    if audit_paths:
+        return False, ('--class builder, but --source names audit tooling (%s). The class contradicts '
+                       'the evidence; use --class audit-tool and an auditor target. Nothing was '
+                       'appended.' % ', '.join(audit_paths)), ''
+    return True, '', ''
 
 # THE BACKFILL GOES IN A SIDECAR AND THAT IS NOT A WORKAROUND, IT IS THE
 # ONLY HONEST PLACE FOR IT. The log is hash-chained and append-only --
@@ -996,6 +1061,13 @@ def cmd_add(argv):
     # what they read" -- the write-time re-check happens at the very end,
     # right before the file is opened, which is what actually matters.
     source_raw = opt('--source', required=False, default='')
+    fclass = opt('--class', required=False, default='') or ''
+    _fc_ok, _fc_msg, _fc_warn = finding_class_check(etype, target, fclass, source_raw)
+    if not _fc_ok:
+        print(_fc_msg)
+        return EXIT_COULD_NOT_RUN
+    if _fc_warn:
+        print(_fc_warn)
     # Required for a PLATFORM finding (target != 'self') -- that is the exact
     # shape of the real incident (a finding about platform data, read against
     # a clone that had not pulled a fix). NOT required for target == 'self':
@@ -1336,6 +1408,7 @@ def cmd_add(argv):
         'contradicts_external': contradicts_external,
         'contradicts_external_verified': contradicts_external_verified,
         'closure_state': closure_state,
+        'finding_class': fclass,
         'seq': seq,
         'ts': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
         'type': etype,
@@ -1445,7 +1518,7 @@ def run_staleness_fixtures():
         LOG_PATH = os.path.join(tmpdir, 'test-log.jsonl')
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
-            rc = cmd_add(['--add', '--type', 'finding', '--target', 'hank',
+            rc = cmd_add(['--add', '--type', 'finding', '--target', 'hank', '--class', 'builder',
                           '--summary', 'fixture finding citing a now-stale row',
                           '--source', target_path, '--repo', work_repo])
         out = buf.getvalue()
@@ -1462,7 +1535,7 @@ def run_staleness_fixtures():
         subprocess.run(['git', 'pull', '-q', 'origin', 'main'], cwd=work_repo, check=True)
         buf2 = io.StringIO()
         with contextlib.redirect_stdout(buf2):
-            rc2 = cmd_add(['--add', '--type', 'finding', '--target', 'hank',
+            rc2 = cmd_add(['--add', '--type', 'finding', '--target', 'hank', '--class', 'builder',
                            '--summary', 'fixture finding, now re-read fresh',
                            '--source', target_path, '--repo', work_repo])
         ck('FRESH: after a real pull, the identical --source now logs cleanly',
@@ -1489,7 +1562,7 @@ def run_staleness_fixtures():
         subprocess.run(['git', 'push', '-q', 'origin', 'main'], cwd=work_repo, check=True)
         buf3 = io.StringIO()
         with contextlib.redirect_stdout(buf3):
-            rc3 = cmd_add(['--add', '--type', 'finding', '--target', 'hank',
+            rc3 = cmd_add(['--add', '--type', 'finding', '--target', 'hank', '--class', 'builder',
                            '--summary', 'frobnicate() sits at gatefx.py:99 today.',
                            '--source', gate_path, '--repo', work_repo,
                            '--same-target-reason', 'citation-gate fixture'])
@@ -1501,7 +1574,7 @@ def run_staleness_fixtures():
         ck('CITATION GATE: nothing was appended', len(read_all()) == 1)
         buf4 = io.StringIO()
         with contextlib.redirect_stdout(buf4):
-            rc4 = cmd_add(['--add', '--type', 'finding', '--target', 'hank',
+            rc4 = cmd_add(['--add', '--type', 'finding', '--target', 'hank', '--class', 'builder',
                            '--summary', 'frobnicate() sits at gatefx.py:10 today.',
                            '--source', gate_path, '--repo', work_repo,
                            '--same-target-reason', 'citation-gate fixture'])
@@ -1534,7 +1607,7 @@ def run_staleness_fixtures():
         LOG_PATH = os.path.join(tmpdir, 'test-log-2.jsonl')
         buf3 = io.StringIO()
         with contextlib.redirect_stdout(buf3):
-            rc3 = cmd_add(['--add', '--type', 'finding', '--target', 'hank',
+            rc3 = cmd_add(['--add', '--type', 'finding', '--target', 'hank', '--class', 'builder',
                            '--summary', 'fixture finding against an unreachable origin',
                            '--source', target_path, '--repo', broken_repo])
         out3 = buf3.getvalue()
@@ -1554,7 +1627,7 @@ def run_staleness_fixtures():
         LOG_PATH = os.path.join(tmpdir, 'test-log-3.jsonl')
         buf4 = io.StringIO()
         with contextlib.redirect_stdout(buf4):
-            rc4 = cmd_add(['--add', '--type', 'finding', '--target', 'hank',
+            rc4 = cmd_add(['--add', '--type', 'finding', '--target', 'hank', '--class', 'builder',
                            '--summary', 'a finding with no --source at all'])
         ck('a finding with NO --source is refused before anything runs',
            rc4 == EXIT_COULD_NOT_RUN and 'missing --source' in buf4.getvalue())
@@ -1911,6 +1984,69 @@ def run_rotation_gate_fixtures():
     return fail_count[0] == 0
 
 
+def run_finding_class_fixtures():
+    """The b85 finding-class rule. finding_class_check() is pure; the last two
+    arms go through cmd_add against a throwaway log."""
+    global LOG_PATH
+    import contextlib, io, json, tempfile
+    ok_count = [0]
+    fail_count = [0]
+
+    def ck(name, cond):
+        if cond:
+            ok_count[0] += 1
+            print('  ok   ' + name)
+        else:
+            fail_count[0] += 1
+            print('  FAIL ' + name)
+
+    f = finding_class_check
+    ck('FC1 a non-self finding with NO class is refused and says why',
+       f('finding', 'cc', '', 'api/x.js')[0] is False and 'missing --class' in f('finding', 'cc', '', '')[1])
+    ck('FC2 KNOWN-BAD CONTROL -- #1705 AS IT HAPPENED: an audit tool (tools/hover_auditor_scope_gate.py) '
+       'logged as builder is refused because the source names audit tooling',
+       f('finding', 'cc', 'builder', 'tools/hover_auditor_scope_gate.py')[0] is False)
+    ck('FC3 ...and #1698 the same way (tools/hover_routing_gap_check.py)',
+       f('finding', 'hank', 'builder', 'tools/hover_routing_gap_check.py:41')[0] is False)
+    ck('FC4 an audit-tool finding aimed at a build agent is refused',
+       f('finding', 'cc', 'audit-tool', 'tools/hover_auditor_scope_gate.py')[0] is False)
+    ok5, _m5, w5 = f('finding', 'hover2', 'audit-tool', 'tools/hover_auditor_scope_gate.py')
+    ck('FC5 an audit-tool finding aimed at an auditor is accepted, and a path outside the scope gate '
+       'draws the allowlist note (no bypass offered)',
+       ok5 and 'ALLOWED' in w5 and 'Do not bypass' in w5)
+    ok6, _m6, w6 = f('finding', 'hover2', 'audit-tool', '.claude/skills/sairn-hover-auditor/tools/x.py')
+    ck('FC6 an audit-tool finding inside the skill directory is accepted with no note', ok6 and w6 == '')
+    ck('FC7 CONTROL -- a builder finding on builder code is accepted (the rule is not refuse-everything)',
+       f('finding', 'cc', 'builder', 'api/sd-data.js')[0] is True)
+    ck('FC8 a self finding needs no class, but class builder on self is refused',
+       f('finding', 'self', '', '')[0] is True and f('finding', 'self', 'builder', '')[0] is False)
+    ck('FC9 a check or note may not carry a class; an unknown class is refused',
+       f('check', 'cc', 'builder', '')[0] is False and f('finding', 'cc', 'nope', 'api/x.js')[0] is False
+       and f('note', 'self', '', '')[0] is True)
+    real_log = LOG_PATH
+    tmpdir = tempfile.mkdtemp(prefix='hover_log_class_selftest_')
+    try:
+        LOG_PATH = os.path.join(tmpdir, 'test-log.jsonl')
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = cmd_add(['--add', '--type', 'finding', '--target', 'cc', '--summary', 'no class',
+                          '--source', 'tools/hover_auditor_scope_gate.py'])
+        ck('FC10 through cmd_add: the misrouted finding is refused and NOTHING is appended',
+           rc == EXIT_COULD_NOT_RUN and (not os.path.isfile(LOG_PATH) or open(LOG_PATH, encoding='utf-8').read() == ''))
+        buf2 = io.StringIO()
+        with contextlib.redirect_stdout(buf2):
+            rc2 = cmd_add(['--add', '--type', 'finding', '--target', 'self', '--class', 'audit-tool',
+                           '--summary', 'own tooling defect'])
+        rows = [json.loads(x) for x in open(LOG_PATH, encoding='utf-8').read().splitlines() if x.strip()]
+        ck('FC11 through cmd_add: a self audit-tool finding lands and stamps finding_class',
+           rc2 == EXIT_FINDING_OR_BROKEN and len(rows) == 1 and rows[0].get('finding_class') == 'audit-tool')
+    finally:
+        LOG_PATH = real_log
+    print()
+    print('%d ok, %d failed' % (ok_count[0], fail_count[0]))
+    return fail_count[0] == 0
+
+
 def run_closure_state_fixtures():
     """derive_closure_states() is pure over a list of rows -- no I/O, no
     git, no LOG_PATH. Every arm below is a hand-built row list, and the
@@ -2076,7 +2212,9 @@ def main(argv):
         ok_rotation = run_rotation_gate_fixtures()
         print()
         ok_closure = run_closure_state_fixtures()
-        return (EXIT_CLEAN if (ok_stale and ok_rotation and ok_closure)
+        print()
+        ok_class = run_finding_class_fixtures()
+        return (EXIT_CLEAN if (ok_stale and ok_rotation and ok_closure and ok_class)
                 else EXIT_FINDING_OR_BROKEN)
     # ── THE TWO h1 b32 GUARDS, BEFORE ANY REAL DISPATCH ────────────────────
     # Skipped only for --selftest above, which monkeypatches LOG_PATH itself

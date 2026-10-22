@@ -1,0 +1,122 @@
+--- a/tools/hover_auditor_scope_gate.py
++++ b/tools/hover_auditor_scope_gate.py
+@@ -521,6 +521,32 @@
+             code, out, err = git('log', '--format=', '--name-only', lsha)
+         else:
+             rng = '%s..%s' % (rsha, lsha)
++            if _have_commit(rsha):
++                # THE REMOTE TIP IS A KNOWN OBJECT, BUT MAY NOT BE AN ANCESTOR (b85, #1705).
++                # `rsha..lsha` handed to `git diff` is a TWO-DOT TREE DIFF: the
++                # remote tip's tree against mine. When another session pushed
++                # after my last pull, every file THEY changed differs between
++                # the two trees and was judged as MINE (a push of five in-scope
++                # files was refused for docs/BYPASS-LOG.jsonl, which no commit of
++                # mine touched). The files this push sends are those of the
++                # commits reachable from lsha and not from rsha, i.e. the
++                # diff from the MERGE-BASE. Same defect as #1655 in the
++                # clone-local hover_scope_prepush_check.py, fixed there in b79.
++                # No merge-base is COULD-NOT-READ, never a fall-back to the
++                # tree diff that over-reads.
++                mcode, mout, _me = git('merge-base', rsha, lsha)
++                mb = (mout or '').strip()
++                if mcode != 0 or not mb:
++                    return None, (
++                        'no merge-base between the remote tip %s and %s -- the '
++                        'two histories share no commit, so the range this push '
++                        'sends cannot be built. This is a COULD-NOT-READ, not a '
++                        'finding about the change.' % (rsha[:12], lsha[:12]))
++                if mb != rsha:
++                    notes.append('the remote moved past the last fetch you pushed '
++                                 'from: examining merge-base %s..%s, the commits '
++                                 'this push actually sends' % (mb[:12], lsha[:12]))
++                rng = '%s..%s' % (mb, lsha)
+             if not _have_commit(rsha):
+                 # THE REMOTE MOVED SINCE THIS CLONE'S LAST FETCH -- ordinary
+                 # with five sessions pushing one branch, not an anomaly. The
+@@ -864,6 +890,76 @@
+ CRITERIA_VERSION = '2026-10-16.1'
+ 
+ 
++
++def _outgoing_fixtures():
++    """changed_outgoing() on REAL clones of a REAL bare origin: the b85 (#1705)
++    shape, where another session pushed after this clone's last pull. Returns
++    [(name, got, want)]."""
++    import tempfile
++    out = []
++    base = tempfile.mkdtemp(prefix='scope_gate_fx_')
++    env = dict(os.environ, GIT_AUTHOR_NAME='fx', GIT_AUTHOR_EMAIL='f@x',
++               GIT_COMMITTER_NAME='fx', GIT_COMMITTER_EMAIL='f@x')
++
++    def g(cwd, *a):
++        r = subprocess.run(['git'] + list(a), cwd=cwd, capture_output=True,
++                           text=True, env=env)
++        if r.returncode != 0:
++            raise RuntimeError('git %s: %s' % (' '.join(a), r.stderr.strip()))
++        return r.stdout.strip()
++
++    def put(repo, rel, text):
++        p = os.path.join(repo, rel)
++        os.makedirs(os.path.dirname(p) or repo, exist_ok=True)
++        with open(p, 'w', encoding='utf-8') as f:
++            f.write(text)
++        g(repo, 'add', '-A')
++        g(repo, 'commit', '-q', '-m', 'fx ' + rel)
++        return g(repo, 'rev-parse', 'HEAD')
++
++    bare = os.path.join(base, 'o.git')
++    g(base, 'init', '-q', '--bare', '-b', 'main', bare)
++    a = os.path.join(base, 'a')
++    g(base, 'clone', '-q', bare, a)
++    g(a, 'checkout', '-q', '-b', 'main')
++    seed = put(a, 'seed.txt', 'seed\n')
++    g(a, 'push', '-q', 'origin', 'main')
++    b = os.path.join(base, 'b')
++    g(base, 'clone', '-q', bare, b)
++    other = put(b, 'docs/BYPASS-LOG.jsonl', 'other session\n')
++    g(b, 'push', '-q', 'origin', 'main')
++    mine = put(a, '.claude/skills/sairn-hover-auditor/tools/x.py', 'mine\n')
++    g(a, 'fetch', '-q', 'origin')
++    here = os.getcwd()
++    try:
++        os.chdir(a)
++        line = 'refs/heads/main %s refs/heads/main %s\n' % (mine, other)
++        paths, why = changed_outgoing(line)
++        out.append(('#1705 a remote that moved ahead after my last pull: the OTHER session\'s file is not blamed on me',
++                    paths, ['.claude/skills/sairn-hover-auditor/tools/x.py']))
++        # control: a file I really changed outside the scope is still listed
++        mine2 = put(a, 'README.md', 'mine too\n')
++        paths, why = changed_outgoing('refs/heads/main %s refs/heads/main %s\n' % (mine2, other))
++        out.append(('...and MY OWN out-of-scope file is still listed (the fix does not under-report)',
++                    paths, ['.claude/skills/sairn-hover-auditor/tools/x.py', 'README.md']))
++        # control: ordinary fast-forward, remote tip is my ancestor
++        paths, why = changed_outgoing('refs/heads/main %s refs/heads/main %s\n' % (mine, seed))
++        out.append(('a plain fast-forward (remote tip is my ancestor) reads the same files as before',
++                    paths, ['.claude/skills/sairn-hover-auditor/tools/x.py']))
++        # unrelated history: a known remote tip with no merge-base is COULD-NOT-READ
++        c = os.path.join(base, 'c')
++        os.makedirs(c)
++        g(c, 'init', '-q', '-b', 'main')
++        orphan = put(c, 'c.txt', 'c\n')
++        g(a, 'fetch', '-q', c, 'main')
++        paths, why = changed_outgoing('refs/heads/main %s refs/heads/main %s\n' % (mine2, orphan))
++        out.append(('a known remote tip with NO merge-base is COULD-NOT-READ, never a tree diff that over-reads',
++                    (paths is None, 'merge-base' in (why or '')), (True, True)))
++    finally:
++        os.chdir(here)
++    return out
++
++
+ def selftest():
+     """Criteria for the parts that can be driven WITHOUT a repo, both
+     directions.
+@@ -918,6 +1014,9 @@
+     arm('a full 40-char sha pair parses -- the parser\'s own over-refusal '
+         'control', got, ['b' * 40])
+ 
++    for _n, _got, _want in _outgoing_fixtures():
++        arm(_n, _got, _want)
++
+     print('SCOPE GATE CRITERIA -- version %s' % CRITERIA_VERSION)
+     print('BOTH DIRECTIONS: 3 arms require a REFUSAL, 3 require an ALLOW, and')
+     print('4 require COULD-NOT-TELL on malformed or absent input. A gate that')

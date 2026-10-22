@@ -749,6 +749,24 @@ def _eqa_fixture_control():
     }
 
 
+def check_tool_pairs():
+    """Wraps hover_tools_pair_check.py: is any hover tool different between the
+    external working directory and the tracked tools directory, or present only
+    in the external one. Built b85 after #1626 was found by hand three times
+    (b71, b82, b83) -- hover_external_unindexed_check.py asks only whether a
+    BASENAME is tracked and could not see any of it. Direct import, no
+    subprocess; a directory it cannot read is ran False, never a pass."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    if here not in sys.path:
+        sys.path.insert(0, here)
+    try:
+        import hover_tools_pair_check as tpc
+    except Exception as e:
+        return {'ran': False, 'reason': 'could not import hover_tools_pair_check.py: %s' % e,
+                'FAIL_drift': False, 'drift': [], 'counts': {}}
+    return tpc.report()
+
+
 def build_report(entries, log_path=None):
     """THE ONE PLACE THIS ROLE'S OWN CHECK LIST IS DECIDED. Built 2026-09-17
     after hover_self_health_hook.py was found to have silently drifted from
@@ -780,6 +798,7 @@ def build_report(entries, log_path=None):
         'undirected_sweep': check_undirected_sweep_due(entries),
         'scope_narrowing': check_scope_narrowing(entries),
         'tool_provenance': check_tool_provenance(),
+        'tool_pairs': check_tool_pairs(),
     }
 
     # ── MESSAGE TEXT LIVES HERE, ONCE, NOT ALSO IN THE HOOK ─────────────────
@@ -865,6 +884,18 @@ def build_report(entries, log_path=None):
                         'list, then --record once a real cross-session validation '
                         'has actually happened'
                         % (len(tp.get('never_validated', [])), tp.get('total_tools', 0)))
+
+    tpr = report['tool_pairs']
+    if not tpr.get('ran'):
+        failures.append('TOOL PAIRS: the comparison of hover-audit-log with the tracked tools '
+                        'directory COULD NOT RUN (%s) -- treat as unchecked, not as no drift'
+                        % tpr.get('reason', 'no reason given'))
+    elif tpr.get('FAIL_drift'):
+        failures.append('TOOL PAIRS: %d hover tool(s) differ between hover-audit-log and the '
+                        'tracked tools directory or exist only outside git (%s) -- run python '
+                        'hover_tools_pair_check.py, reconcile BEFORE editing either copy '
+                        '(#1626: copying over can destroy the other side)'
+                        % (len(tpr['drift']), ', '.join(x['name'] for x in tpr['drift'])))
 
     report['failures'] = failures
     report['overall'] = 'FAIL' if failures else 'PASS (bounded -- see DISCLOSED_LIMIT fields)'
