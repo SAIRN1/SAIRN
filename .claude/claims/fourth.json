@@ -4702,8 +4702,8 @@
       "task": "a11y nvda selects contrast headings",
       "claimed_at": "2026-10-22T13:32:26Z",
       "claimed_at_epoch": 1792675946.0319016,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-22T14:21:10Z",
       "files": null
     }
   ],
