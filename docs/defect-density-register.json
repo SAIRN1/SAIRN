@@ -37576,7 +37576,7 @@
       "recurrence_open": "THE OPERATIONAL AND TRACKED COPIES OF FOUR OTHER TOOLS STILL DIVERGE (citation_class_check.py, hover_editor_review.py, hover_completeness_probe.py, hover_cross_vendor_check.py), so #1626 stays open for those; this commit lands only the cold-scan-pool content. The extractor still scans a file for a resources key by regular expression, not a parser, and the fall-back to the old position-relative scan can still return a wrong span for a shape nobody has seen."
     },
     {
-      "commit": "2078fbacd869",
+      "commit": "d854f347ed76",
       "date": "2026-10-22",
       "subject": "fix(hover citation_class_check, #1626): merge the operational classifier and the tracked abbreviation fix into one tool",
       "files": [
