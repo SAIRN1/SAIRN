@@ -1,0 +1,46 @@
+REPORT cc b52
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-22
+RANGE     c300b33e (CLAUDE.md), dcafdbc0 (handoff), this report and digest. No --force, NO OVERRIDE.
+
+== 1. SEN-AUDIT-2026 / KNOWN_AUDIT_KEYS in CLAUDE.md ==
+BEFORE: never added. grep over the project CLAUDE.md and ~/.claude/CLAUDE.md: no match.
+The key has been in tools/audit_licence.py:106 since hank b35 (0ff033a3).
+NOW: added at c300b33e, project CLAUDE.md, Project context section.
+  It names the key, the tuple, the file and 0ff033a3.
+  It points at the tuple rather than copying it (same rule as the script-block count).
+Corrected before commit: my first draft said an unlisted key is refused. audit_licence.py:132-141 shows it proceeds with a NOTE, and the line says that.
+Reading of "your own CLAUDE.md": the clone's project CLAUDE.md, which the path manifest leaves to cc. If the private one was meant, the line moves.
+
+== 2. b28 rt_stops SQL -- exact state ==
+GIT: all three are on origin. cb0d94f5 (b28, 2026-10-20 06:01) for all three; d19d99e9 (b27) is the FK file's earlier version.
+LIVE: read-only pg_constraint on sairn-platform (ejrlrrkvhtllxbbypdjb), measured this batch.
+  rt_stops_license_hash_composite_fk.sql -> RUN
+    rtroutes_id_license_uniq UNIQUE(id, license_hash) is PRESENT.
+    rtstops_license_matches_route FK(route_id, license_hash) -> rt_routes(id, license_hash) ON DELETE CASCADE is PRESENT, convalidated=true.
+    0 mismatched rows (0 routes, 0 stops).
+  rt_routes_drop_saved_sane.sql -> RUN
+    rtroutes_saved_sane is ABSENT; rtroutes_saving_has_a_basis is PRESENT.
+  rt_stops_fk_probe.sql -> NOT DETERMINABLE
+    It is a deliberately raising control that changes nothing. With the FK present it would pass.
+  rt_stops_route_id_fkey (single-column) is still present, as the FK file intends.
+
+== 3. METHODOLOGY ==
+list_migrations on sairn-platform returns [] -- this SQL is run through the editor, so there is no migration row.
+The commit log records LANDING (cb0d94f5, d19d99e9), not running.
+So the evidence for "ran" is the catalog read above, not cc b40's day-old note.
+A "ran" claim about SQL on this platform names the catalog read that shows it.
+
+== OPEN ==
+Michael: (optional) confirm which CLAUDE.md was meant; (optional) run the FK probe once a route exists.
+Carried: fourth register 1-7 + b49 gaps; hank 38b2b506; cody d6b37bb1.
+
+== TRANSCRIPT ==
+C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\87a27b9f-55e9-45e8-b017-01ed1febac1a.jsonl
+
+== CHANGED ==
+CLAUDE.md, the deliverables, the claim file.
+
+SHA256 e949f4a7c262ee25e676958ee6fc01618aeb1fbb5a13c8eba0081fbce76434f1
+END-OF-REPORT

@@ -1,0 +1,21 @@
+DIGEST cc b52
+STATUS: 4 of 4 closed. Landed c300b33e (CLAUDE.md) and dcafdbc0 (handoff); no --force, NO OVERRIDE.
+ITEM 1: the KNOWN_AUDIT_KEYS line was NEVER in CLAUDE.md. It is now added to the project CLAUDE.md as a pointer to the tuple (tools/audit_licence.py:106, hank b35 0ff033a3), not a copy of it.
+  An unlisted audit key proceeds with a NOTE rather than being refused, and the line says so (checked at audit_licence.py:132).
+ITEM 2: all three b28 rt_stops files are on origin (cb0d94f5). Live sairn-platform pg_constraint, read this batch:
+  composite FK: RUN (rtstops_license_matches_route plus rtroutes_id_license_uniq present, validated).
+  drop rtroutes_saved_sane: RUN (absent; rtroutes_saving_has_a_basis present).
+  FK probe: NOT DETERMINABLE (raising control, changes nothing).
+ITEM 3 (methodology): list_migrations is [] and git records landing, not running, so "ran" is evidenced by the catalog read, not by a stale note.
+ITEM 4: pushed, no force, landed 0/0.
+DECISION-NEEDED: none. (Optional: if "your own CLAUDE.md" meant ~/.claude/CLAUDE.md, say so and the line moves.)
+CHANGED: CLAUDE.md.
+SQL: none written. Read-only checks: sql/rt_stops_license_hash_composite_fk.sql, sql/rt_routes_drop_saved_sane.sql, sql/rt_stops_fk_probe.sql.
+EVIDENCE-path: SAIRN-handoff-cc-b52.md, SAIRN-report-cc-b52.txt
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\87a27b9f-55e9-45e8-b017-01ed1febac1a.jsonl
+UNVERIFIED: whether rt_stops_fk_probe.sql was ever run (nothing records it).
+ROUTED: carried -- fourth register 1-7 and b49 gaps; hank 38b2b506; cody d6b37bb1.
+NEXT: nothing owed by cc.
+CONTEXT 37.2% of 1,000,000 -- 371,627 tokens, measured.
+SHA256 fdb91813d51dd70ae252af43e6b67d4f96c65ce47b3f1ef927f455517c45c6b2
+END-OF-REPORT
