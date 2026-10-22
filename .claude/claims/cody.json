@@ -4362,6 +4362,26 @@
         "docs/sairn-path-manifest.json",
         "tools/push_retry.py"
       ]
+    },
+    {
+      "id": "cody-1792676330",
+      "session": "cody",
+      "subject": "platform",
+      "task": "b48 sd-agent err.message leak 1684, leg F3 apprentice countersign deferral in sd-data  FILES: api/sd-agent.js api/sd-data.js api/b48-sd-agent-error-leak.test.js api/b48-leg-f3-prepare-deferral.test.js docs/sairn-path-manifest.json SAIRN-handoff-cody-b48.md SAIRN-report-cody-b48.txt SAIRN-digest-cody-b48.txt",
+      "claimed_at": "2026-10-22T13:38:50Z",
+      "claimed_at_epoch": 1792676330.363406,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-cody-b48.txt",
+        "SAIRN-handoff-cody-b48.md",
+        "SAIRN-report-cody-b48.txt",
+        "api/b48-leg-f3-prepare-deferral.test.js",
+        "api/b48-sd-agent-error-leak.test.js",
+        "api/sd-agent.js",
+        "api/sd-data.js",
+        "docs/sairn-path-manifest.json"
+      ]
     }
   ],
   "refusals": [
