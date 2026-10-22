@@ -4696,8 +4696,8 @@
       "task": "b49 deny verify, npm ci, dependabot triage, fix-deny utf8",
       "claimed_at": "2026-10-22T14:11:23Z",
       "claimed_at_epoch": 1792678283.9572315,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-22T14:20:11Z",
       "files": null
     }
   ],
