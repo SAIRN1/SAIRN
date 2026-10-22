@@ -224,7 +224,11 @@ test('the sd_customers WRITE refuses a soft-deleted row with 409 DELETED', () =>
   assert.ok(i > 0, 'the sd_customers write body moved -- re-anchor this arm');
   assert.strictEqual(SRC.indexOf('const custData =', i + 1), -1,
     'custData is built in two places -- this arm would guard whichever came first');
-  const before = SRC.slice(Math.max(0, i - 2600), i);
+  // hank b53: anchored on the guard's own banner rather than a fixed 2600-char
+  // window, which the b53 fail-closed branch pushed the 409 out of.
+  const g = SRC.lastIndexOf('A WRITE CANNOT RESURRECT A DELETED CUSTOMER', i);
+  assert.ok(g > 0 && i - g < 8000, 'the resurrection guard banner is not directly before custData');
+  const before = SRC.slice(g, i);
   assert.ok(/_deleted_at/.test(before) && /'DELETED'/.test(before)
     && /409/.test(before),
     'the sd_customers write no longer checks the STORED row for _deleted_at '

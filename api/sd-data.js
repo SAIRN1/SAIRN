@@ -4942,9 +4942,23 @@ module.exports = async (req, res) => {
       // effect of writing to it.
       const rcur = await fetch(rest('sd_customers?license_hash=eq.' + enc(licHash) +
         '&customer_id=eq.' + enc(String(payload.id)) + '&select=data&limit=1'), { headers });
+      // A GUARD THAT CANNOT READ ITS SUBJECT HAS NOT CHECKED IT (hank b53,
+      // Michael's b53 decision). A 4xx/5xx answer or a body that is not a
+      // list used to fall through to the upsert -- the resurrection this guard
+      // exists to stop -- so it is now refused with nothing written. 404/400
+      // (table not provisioned) still falls through: the upsert below answers
+      // that as NOT_PROVISIONED, and there is no stored row to resurrect.
+      if (!rcur.ok && rcur.status !== 404 && rcur.status !== 400) {
+        res.status(502).json({ error: { code: 'UNREADABLE_PRIOR', message: 'Whether this customer was deleted could not be checked, so nothing was saved. Try again shortly.' } });
+        return;
+      }
       if (rcur.ok) {
         const rrows = await rcur.json().catch(function () { return null; });
-        const rstored = (Array.isArray(rrows) && rrows[0] && rrows[0].data) || null;
+        if (!Array.isArray(rrows)) {
+          res.status(502).json({ error: { code: 'UNREADABLE_PRIOR', message: 'Whether this customer was deleted could not be checked, so nothing was saved. Try again shortly.' } });
+          return;
+        }
+        const rstored = (rrows[0] && rrows[0].data) || null;
         if (rstored && rstored._deleted_at) {
           res.status(409).json({ error: { code: 'DELETED',
             message: 'That customer record was deleted, so it cannot be edited. '
@@ -4969,6 +4983,8 @@ module.exports = async (req, res) => {
       // connection error" and RETURNS. The write below is never reached. There
       // is no fall-through on that path and there never was.
       //
+      // SUPERSEDED IN PART (hank b53): the first two bullets below now REFUSE
+      // (502 UNREADABLE_PRIOR), except a 404/400 not-provisioned answer.
       // WHAT DOES FALL THROUGH IS NARROWER, and it is the honest version:
       //   * `rcur.ok` false -- PostgREST answered, with a 4xx or 5xx. The
       //     request completed; the answer was a refusal.
@@ -20245,15 +20261,25 @@ module.exports = async (req, res) => {
         // resources a stale device's ordinary save would clear `_deleted_at`
         // and un-delete a claims record. SERVER-WINS by Michael's decision.
         // Guarded only where soft delete exists -- the other 21 resources
-        // hard-delete and have no marker to erase -- and a failed pre-read
-        // falls through rather than refusing, for the reason written at the
-        // sd_customers guard.
+        // hard-delete and have no marker to erase. A pre-read that cannot be
+        // read now REFUSES (hank b53, Michael's b53 decision) -- it used to
+        // fall through, which is the resurrection this guard exists to stop.
+        // 404/400 (not provisioned) still falls through to the upsert's own
+        // NOT_PROVISIONED answer.
         if (scIsSoftDeleteOnly(resource)) {
           const scur = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) +
             '&entry_id=eq.' + enc(String(payload.id)) + '&select=data&limit=1'), { headers });
+          if (!scur.ok && scur.status !== 404 && scur.status !== 400) {
+            res.status(502).json({ error: { code: 'UNREADABLE_PRIOR', message: 'Whether this ' + resource + ' record was deleted could not be checked, so nothing was saved. Try again shortly.' } });
+            return;
+          }
           if (scur.ok) {
             const srows = await scur.json().catch(function () { return null; });
-            const sstored = (Array.isArray(srows) && srows[0] && srows[0].data) || null;
+            if (!Array.isArray(srows)) {
+              res.status(502).json({ error: { code: 'UNREADABLE_PRIOR', message: 'Whether this ' + resource + ' record was deleted could not be checked, so nothing was saved. Try again shortly.' } });
+              return;
+            }
+            const sstored = (srows[0] && srows[0].data) || null;
             if (sstored && sstored._deleted_at) {
               res.status(409).json({ error: { code: 'DELETED',
                 message: 'That ' + resource + ' record was deleted, so it cannot be edited. '
