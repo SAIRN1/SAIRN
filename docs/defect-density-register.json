@@ -36882,56 +36882,6 @@
       "recurrence_open": "NOT CLOSED. Not verified with NVDA itself. Modals not opened. Fields rendered later by script are not covered by the load-time label pass."
     },
     {
-      "commit": "5e38373c6579",
-      "date": "2026-10-21",
-      "subject": "fix(sairnroofing b49): a failed or unprovisioned JHA / job-warranty read is said on screen, never rendered as 'none' (cody b35 defect 7)",
-      "files": [
-        "sairnroofing.html",
-        "tests/sairnroofing_unreadable_reads.js"
-      ],
-      "lines_added": 126,
-      "lines_removed": 2,
-      "app": "sairnroofing",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "cody b35 routed defect 7. rfLoadSafety: (j.ok&&j.data)||{} turned a refused/failed crew_check into \"No hazard assessments recorded.\" rfLoadWarranties: the rf_job_warranties read ignored ok and provisioned, so an absent table printed \"No roofs registered yet.\" Both now name the failure and say it is not the same as none. tests/sairnroofing_unreadable_reads.js RED 3/10 -> GREEN 10/10, 3 mutants killed. Warranty-read injection: f337a2a88.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "b56b6fb6800a",
-        "date": "2026-09-02",
-        "subject": "feat(sairnroofing): [B4] fall-protection equipment and hazard assessments -- a clock and a cross-check, not another incident log",
-        "lag_days": 49
-      },
-      "citation_note": "No coding rule covers this class: (x.ok&&x.data)||{} collapses a failed read into an empty one. Proposed: a read result is rendered only after ok AND provisioned are each checked.",
-      "contributing_factors": [
-        {
-          "factor": "A safe-default idiom (x.ok&&x.data)||{} silently mapped every failure to an empty dataset.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "!ok and provisioned:false are each rendered as what they are."
-        },
-        {
-          "factor": "On a safety and a warranty panel an empty list is read as a negative finding, so the silent default inverted the meaning.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "Messages say explicitly that this is not the same as none."
-        },
-        {
-          "factor": "No arm drove these loaders with a failed or unprovisioned answer.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "vm suite with rfDataRaw stubbed per resource, including real-empty controls."
-        }
-      ],
-      "recurrence_open": "NOT CLOSED. The same (x.ok&&x.data)||{} idiom may exist on other rfDataRaw reads in sairnroofing.html and was not swept."
-    },
-    {
       "commit": "54a8c85678cd",
       "date": "2026-10-21",
       "subject": "fix(stonedesk b53): accessibility pass -- labels tied, allowlisted mouse-only controls made keyboard buttons, sidebar icons hidden, aria-current, focus to heading on nav",
@@ -36980,6 +36930,56 @@
         }
       ],
       "recurrence_open": "NOT CLOSED. color-contrast x73, select-name x79 (no visible label to tie), label x44, 7 panels with no heading -- filed for wording/design decisions. Not heard under NVDA."
+    },
+    {
+      "commit": "5e38373c6579",
+      "date": "2026-10-21",
+      "subject": "fix(sairnroofing b49): a failed or unprovisioned JHA / job-warranty read is said on screen, never rendered as 'none' (cody b35 defect 7)",
+      "files": [
+        "sairnroofing.html",
+        "tests/sairnroofing_unreadable_reads.js"
+      ],
+      "lines_added": 126,
+      "lines_removed": 2,
+      "app": "sairnroofing",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "cody b35 routed defect 7. rfLoadSafety: (j.ok&&j.data)||{} turned a refused/failed crew_check into \"No hazard assessments recorded.\" rfLoadWarranties: the rf_job_warranties read ignored ok and provisioned, so an absent table printed \"No roofs registered yet.\" Both now name the failure and say it is not the same as none. tests/sairnroofing_unreadable_reads.js RED 3/10 -> GREEN 10/10, 3 mutants killed. Warranty-read injection: f337a2a88.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "b56b6fb6800a",
+        "date": "2026-09-02",
+        "subject": "feat(sairnroofing): [B4] fall-protection equipment and hazard assessments -- a clock and a cross-check, not another incident log",
+        "lag_days": 49
+      },
+      "citation_note": "No coding rule covers this class: (x.ok&&x.data)||{} collapses a failed read into an empty one. Proposed: a read result is rendered only after ok AND provisioned are each checked.",
+      "contributing_factors": [
+        {
+          "factor": "A safe-default idiom (x.ok&&x.data)||{} silently mapped every failure to an empty dataset.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "!ok and provisioned:false are each rendered as what they are."
+        },
+        {
+          "factor": "On a safety and a warranty panel an empty list is read as a negative finding, so the silent default inverted the meaning.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Messages say explicitly that this is not the same as none."
+        },
+        {
+          "factor": "No arm drove these loaders with a failed or unprovisioned answer.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "vm suite with rfDataRaw stubbed per resource, including real-empty controls."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. The same (x.ok&&x.data)||{} idiom may exist on other rfDataRaw reads in sairnroofing.html and was not swept."
     },
     {
       "commit": "95e31d3b780e",
@@ -37484,6 +37484,51 @@
         }
       ],
       "recurrence_open": "NOT CLOSED. Not verified with NVDA itself. Modals not opened. Other launch-wave apps not passed."
+    },
+    {
+      "commit": "be202a3749eb",
+      "date": "2026-10-22",
+      "subject": "fix(sd-agent, cody b48): the last catch no longer relays err.message (hover H1 #1684)",
+      "files": [
+        "api/b48-sd-agent-error-leak.test.js",
+        "api/sd-agent.js",
+        "docs/sairn-path-manifest.json"
+      ],
+      "lines_added": 133,
+      "lines_removed": 2,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "api/sd-agent.js's last catch answered every unhandled error with err.message: Anthropic's own error text from callClaude's UPSTREAM throw, or any internal exception, went to the caller verbatim (hover H1 #1684). Fixed: logged as before, the caller gets the fixed sentence; status unchanged. api/b48-sd-agent-error-leak.test.js 3/3 with an ablation arm that restores the old line.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "286f945f661f",
+        "date": "2026-07-23",
+        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) \u2014 tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
+        "lag_days": 91
+      },
+      "citation_note": "No standing rule in PR or the disciplines names error-detail leakage to the caller; the platform's own fixes for it (b33 route-map C4) are per-endpoint.",
+      "contributing_factors": [
+        {
+          "factor": "The catch-all used err.message as the response text with a generic fallback, so any thrown text reached the caller, including upstream bodies.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The fixed sentence is returned; err is logged server-side only."
+        },
+        {
+          "factor": "The endpoint had no test that drove an upstream refusal and inspected the response body for relayed detail.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/b48-sd-agent-error-leak.test.js arms A, B and ablation X."
+        }
+      ],
+      "recurrence_open": "Same shape may exist in other api/ catch-alls; only sd-agent.js:351 was routed and fixed. The license-gate arms (lines 263-266) still relay store messages by design (coded, user-facing)."
     }
   ],
   "started": "2026-09-09",
