@@ -37486,7 +37486,7 @@
       "recurrence_open": "NOT CLOSED. Not verified with NVDA itself. Modals not opened. Other launch-wave apps not passed."
     },
     {
-      "commit": "be202a3749eb",
+      "commit": "c53c75c1bc0e",
       "date": "2026-10-22",
       "subject": "fix(sd-agent, cody b48): the last catch no longer relays err.message (hover H1 #1684)",
       "files": [

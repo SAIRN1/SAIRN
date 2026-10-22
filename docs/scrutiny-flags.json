@@ -701,6 +701,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b48-leg-f3-prepare-deferral.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0ee1e4ff91011f66993908694dc14b8208eafd77",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_sairnbuild_server_wins_sabotage_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -3973,6 +3981,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b48-sd-agent-error-leak.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "delete require.cache[require.resolve('./_lib/ai-rate-limit')];"
+    }
+   ],
+   "sha": "4d43bef437c15e6108c938655df24167519f3d2c",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sairnfreedom_a11y_pass.js",
    "class": "test file",
    "level": "CHANGE",
@@ -6010,6 +6031,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b48-leg-f3-prepare-deferral.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "7bd4845a3a2a763ad36d6b1946d5cebd500b00be",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/b30-cap-per-action.test.js",
    "class": "test file",
    "level": "WEAKENING",
@@ -7039,6 +7068,19 @@
     }
    ],
    "sha": "8b4a2b643edec081b31566f2eaf8357acfa6c252",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b48-sd-agent-error-leak.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "delete require.cache[require.resolve('./_lib/ai-rate-limit')];"
+    }
+   ],
+   "sha": "8c1026378fe66e874a9123e0ba6ddaf8942bd085",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -10389,6 +10431,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b48-sd-agent-error-leak.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "delete require.cache[require.resolve('./_lib/ai-rate-limit')];"
+    }
+   ],
+   "sha": "be202a3749eb322ace5d962ecfb2c280b0648de0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": ".githooks/pre-commit",
    "class": "CI / hook configuration",
    "level": "WEAKENING",
@@ -12519,6 +12574,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "eb53e267371765baa5ab5c9bd49d8b1ac7348ccf",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b48-leg-f3-prepare-deferral.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ebe9e5bc1de997259acd3b1295b9ac40ecfce6a6",
    "criteria_version": "2026-10-06.1"
   },
   {
