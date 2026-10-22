@@ -8380,12 +8380,12 @@
         "tests/sairnsenior_contract_auth_save.js"
       ],
       "what": "fourth b49: sairnsenior refused contract/authorisation withdrawn + named, claim message kept on failed write (sen_payer_contracts, sen_authorizations); sairnroofing JHA/warranty unreadable reads said not 'none' (rf_*); new vm suites over employees (Z8 display) and the roofing/senior loaders",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cc",
       "owner_assigned_at": "2026-10-21T17:47:06Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cc",
+      "reviewed_at": "2026-10-22T15:21:53Z",
+      "verdict": "cc b51 REVIEW of fourth b49 (02cec2f8 senior, 5e38373c roofing, dd3c45f6 biz Z8). CRITERIA: claims hold at HEAD; a refused write never shows as saved; an unreadable read is never 'none'; no XSS; suites drive the real functions with teeth. SOUND-WITH-GAPS. Contract/authorisation refusals are withdrawn and named (sairnsenior.html:4766, 5503); toast uses textContent; rfEsc escapes; the real-function suites go 15/0, 10/0, 19/0; with the fixes removed, senior is RED 5/15 and roofing RED 3/10; checkblocks clean. GAPS:\n- MEDIUM, re-read by cc and pre-existing at the parent: a REFUSED sen_claims write stays local (:4374 push before the await), and readyToBillVisits (:4190) then hides its visit from re-billing;\n- a non-JSON 4xx is kept as 'no answer';\n- 503 SCHEMA_OUTDATED is withdrawn as 'refused';\n- a parent-read failure leaves the JHA/warranty panels stale;\n- 6 mutants survive, and biz R7 can pass vacuously."
     },
     {
       "author_session": "hank",
