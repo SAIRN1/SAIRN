@@ -4727,6 +4727,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "fourth-1792682887",
+      "session": "fourth",
+      "subject": "sairnlegacy",
+      "task": "countersign ui f3",
+      "claimed_at": "2026-10-22T15:28:07Z",
+      "claimed_at_epoch": 1792682887.999372,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
