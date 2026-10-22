@@ -2,7 +2,8 @@ REPORT cc b54
 
 SESSION   cc, Documents\SAIRN-cc, branch main
 DATE      2026-10-22
-RANGE     6e963e6a (handoff), this report and digest. No code change. No --force, NO OVERRIDE. No settings file edited.
+RANGE     6ad148ca (handoff), this report and digest, landed at 6228b28e. No code change. No --force. No settings file edited.
+ONE SCOPED SKIP: SAIRN_SKIP=external-files (gate_skip.py, logged SCOPED, 2 BYPASS-LOG rows 16:18Z and 16:21Z). The gate refused on g:/my drive/sairn-status/h1_countersign_repro.js, an unindexed file H1 wrote; every other gate ran.
 
 == 1. Pre-command check tool in tools/ -- NOT DELIVERED ==
 My first attempt was stopped by a safety control part-way through the response.
@@ -29,7 +30,10 @@ Summary:
 The exact command text is in the transcript, not here. Search b83_h6_drive_cc.js.
 
 == 5. Push ==
-Pushed with no force; landed (0 0 against origin).
+The first push was refused by external-files (H1's unindexed Drive file; not cc's, purpose unknown to cc, index is fourth's docs/).
+Scoped skip granted with that reason. Two remote races; two BYPASS-LOG conflicts, union-resolved and verified marker-free (+2 rows, both cc's).
+Landed 012e7bb3..6228b28e, no force, 0 0.
+ROUTE: H1 -- declare h1_countersign_repro.js in docs/external-files-index.json, or commit it.
 
 == OPEN ==
 Michael: choose the auditor-clone boundary mechanism.
@@ -42,5 +46,5 @@ C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\87a27b9f-55e9-
 == CHANGED ==
 The deliverables only.
 
-SHA256 7c748acd5726fd9d5244e68228db6312e5bed79205cb4c8215d970a02e557817
+SHA256 2582f14aa178732620c668ef2ea8896a9c3875609cd8665d4ca2d9f84cc1266b
 END-OF-REPORT

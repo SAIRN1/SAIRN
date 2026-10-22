@@ -2,8 +2,15 @@
 
 **Status:** the incident record is written, and items 2 and 3 are closed as
 dispatched. **Item 1, the pre-command check tool, is NOT delivered.** No code
-changed, no `--force`, no override. The clone reads 0 0 against origin after
-the push.
+changed, no `--force`, and no settings were edited.
+
+**One scoped skip was used.** `SAIRN_SKIP=external-files` went through
+`tools/gate_skip.py`, is logged SCOPED, and has 2 BYPASS-LOG rows. The
+external-files gate refused because of
+`g:\my drive\sairn-status\h1_countersign_repro.js`, an unindexed file H1
+wrote. cc does not know its purpose and does not own
+`docs/external-files-index.json`. Every other gate ran. The push landed at
+`6228b28e` and the clone reads 0 0 against origin.
 
 | | |
 |---|---|
@@ -83,5 +90,6 @@ check, once one is registered.
 | Item | Owner | Next step |
 |---|---|---|
 | Auditor-clone boundary that does not depend on command text | Michael | Choose OS-level isolation, or a check authored by H1 and registered by Michael. |
+| Declare or commit `h1_countersign_repro.js` (the reason for the external-files skip) | H1 | Add it to `docs/external-files-index.json` with its purpose, or commit it. |
 | Verify the incident record | H1 | Read the transcript at the path above; search `b83_h6_drive_cc.js` and every Bash call naming an auditor path. |
 | Carried | H1 / fourth / hank / cody | #1694 and #1691 closure; register 1-7 and the b49 gaps; `38b2b506`; `d6b37bb1` |
