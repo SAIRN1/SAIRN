@@ -44,7 +44,8 @@ function section(t) { console.log('\n' + t); }
 // 42703 for a select naming the column.
 function makeStore(opts) {
   const s = { row: (opts && opts.row) || null, noGrantsCol: !!(opts && opts.noGrantsCol), writes: [],
-              audits: [], auditStatus: (opts && opts.auditStatus) || 201 };
+              audits: [], auditStatus: (opts && opts.auditStatus) || 201,
+              bodyMode: (opts && opts.bodyMode) || null };
   s.fetch = async function (url, o) {
     const u = String(url);
     if (/sairnlegacy_audit_log/.test(u) && o && o.method === 'POST') {
@@ -66,6 +67,11 @@ function makeStore(opts) {
         const t = JSON.stringify({ code: '42703', message: 'column sairnlegacy_settings.livery_grants does not exist' });
         return { ok: false, status: 400, text: async () => t, json: async () => JSON.parse(t) };
       }
+      // b52: an OK answer whose body is unparsable, or parses to a non-array.
+      if (s.bodyMode === 'unparsable') {
+        return { ok: true, status: 200, json: async () => { throw new SyntaxError('Unexpected token <'); } };
+      }
+      if (s.bodyMode === 'object') return { ok: true, status: 200, json: async () => ({ message: 'not a list' }) };
       return { ok: true, status: 200, json: async () => (s.row ? [s.row] : []) };
     }
     return { ok: true, status: 200, json: async () => [] };
@@ -125,6 +131,37 @@ async function armAuditRow(src) {
     a.detail.changed.livery_billing, Object.keys(a.detail.changed), r.body.audited],
     [HASH, 'emp-owner', 'owner', 'settings_changed', 'leg_settings', true,
      { from: 'through_the_home', to: 'direct_to_family' }, ['livery_billing'], true]);
+}
+// b52 (cc b50 review of 38b2b506): a PARTIAL apprentice object merges onto the
+// STORED policy. It used to reset every omitted key, so this exact payload
+// wiped the forbidden list and an apprentice's leg_invoices access went DENY ->
+// ALLOW.
+const STORED_POLICY = { countersign: ['leg_cremations'], forbidden: ['leg_invoices'], presence_disclosure: true };
+async function armPartialMerge(src) {
+  const s = makeStore({ row: { license_hash: HASH, livery_billing: 'through_the_home', apprentice: STORED_POLICY, livery_grants: {} } });
+  const r = await call(s, 'owner', 'write', { apprentice: { presence_disclosure: false } }, src);
+  assert.strictEqual(r.statusCode, 200, JSON.stringify(r.body));
+  const ap = s.writes[0] && s.writes[0].apprentice;
+  assert.deepStrictEqual([ap.countersign, ap.forbidden, ap.presence_disclosure],
+    [['leg_cremations'], ['leg_invoices'], false], 'omitted keys were not kept: ' + JSON.stringify(ap));
+}
+// ...and the cross-list rule is applied to the MERGED lists, not just the sent ones.
+async function armPartialConflict(src) {
+  const s = makeStore({ row: { license_hash: HASH, livery_billing: 'through_the_home', apprentice: STORED_POLICY, livery_grants: {} } });
+  const r = await call(s, 'owner', 'write', { apprentice: { forbidden: ['leg_cremations'] } }, src);
+  assert.deepStrictEqual([r.statusCode, code(r), s.writes.length], [400, 'INVALID_SETTING', 0],
+    'a forbidden entry colliding with the STORED countersign list was accepted');
+}
+// b52: an OK read whose body cannot be understood is a 502, never "no row".
+async function armUnreadable(src) {
+  for (const mode of ['unparsable', 'object']) {
+    const s = makeStore({ bodyMode: mode, row: { license_hash: HASH, apprentice: STORED_POLICY } });
+    const w = await call(s, 'owner', 'write', { livery_billing: 'direct_to_family' }, src);
+    assert.deepStrictEqual([w.statusCode, code(w), s.writes.length], [502, 'UNREADABLE_SETTINGS', 0],
+      mode + ' write: ' + JSON.stringify(w.body));
+    const rd = await call(s, 'owner', 'read', {}, src);
+    assert.deepStrictEqual([rd.statusCode, code(rd)], [502, 'UNREADABLE_SETTINGS'], mode + ' read: ' + JSON.stringify(rd.body));
+  }
 }
 async function armNeverGrantable(src) {
   const s = makeStore();
@@ -272,6 +309,11 @@ async function armNeverGrantable(src) {
     });
   });
 
+  section('B. b52 -- partial merges onto stored, unreadable body refused');
+  await test('B1. {apprentice:{presence_disclosure:false}} keeps the stored countersign AND forbidden lists', function () { return armPartialMerge(); });
+  await test('B2. a sent forbidden entry that collides with the STORED countersign list is refused, nothing saved', function () { return armPartialConflict(); });
+  await test('B3. an OK read with an unparsable or non-array body -> 502 UNREADABLE_SETTINGS on read and write, nothing saved', function () { return armUnreadable(); });
+
   section('M. MUTANTS on api/sd-data.js -- each must turn its arm red');
   await test('M3. replace the audit write with a stub that claims success -> A1 red', function () {
     return mustFail(armAuditRow, mutate("require('./_lib/audit').writeAuditLog(SUPABASE_URL, SERVICE_KEY, {",
@@ -282,9 +324,15 @@ async function armNeverGrantable(src) {
     if (n !== 1) throw new Error('mutant anchor found ' + n + ' times');
     return SD_SRC.replace(from, to);
   }
+  // b52: only an ASSERTION failure counts as the arm going red. A mutant that
+  // makes the handler throw for an unrelated reason (a bad anchor, a syntax
+  // error) used to count as killed (cc b50's gap on this shape).
   async function mustFail(arm, src, name) {
     let failed = false;
-    try { await arm(src); } catch (e) { failed = true; }
+    try { await arm(src); } catch (e) {
+      if (!(e instanceof assert.AssertionError)) throw new Error(name + ': arm threw a non-assertion error: ' + e.message);
+      failed = true;
+    }
     if (!failed) throw new Error(name + ' survived');
   }
   await test('M1. drop the owner-only check -> S2 red', function () {
@@ -292,6 +340,19 @@ async function armNeverGrantable(src) {
   });
   await test('M2. drop the grantability check -> W3 red', function () {
     return mustFail(armNeverGrantable, mutate('} else if (!legRoles.liveryGrantable(r, billing)) {', '} else if (false) {'), 'no grantability check');
+  });
+
+  await test('M4. omitted keys reset to the default again -> B1 red', function () {
+    return mustFail(armPartialMerge, mutate('forbidden: a0.forbidden === undefined ? stored.forbidden : a0.forbidden,',
+      'forbidden: a0.forbidden === undefined ? [] : a0.forbidden,'), 'reset-on-omit');
+  });
+  await test('M5. drop the unreadable-body refusal -> B3 red', function () {
+    return mustFail(armUnreadable, mutate("if (!Array.isArray(curRows)) {\n        res.status(502).json({ error: { code: 'UNREADABLE_SETTINGS'",
+      "if (false) {\n        res.status(502).json({ error: { code: 'UNREADABLE_SETTINGS'"), 'no unreadable refusal');
+  });
+  await test('M6. cross-list check sees only the SENT lists -> B2 red', function () {
+    return mustFail(armPartialConflict, mutate('const cs = Array.isArray(a.countersign) ? a.countersign : [];',
+      'const cs = Array.isArray(a0.countersign) ? a0.countersign : [];'), 'sent-only cross check');
   });
 
   console.log('\n' + pass + ' passed, ' + fail + ' failed');

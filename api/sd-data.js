@@ -17074,7 +17074,16 @@ module.exports = async (req, res) => {
       }
       const curRows = await cur.json().catch(function () { return null; });
       if (!cur.ok) return upstream(res, curRows);
-      const row = (Array.isArray(curRows) && curRows[0]) || null;
+      // A BODY THAT CANNOT BE UNDERSTOOD IS NOT "NO ROW" (hank b52, cc b50
+      // review of 38b2b506). Read as null, an unparsable or non-array answer
+      // sent the write on to merge onto DEFAULTS -- wiping stored apprentice
+      // policy and livery grants -- and the read on to report defaults as the
+      // home's settings. Refused, with nothing read and nothing saved.
+      if (!Array.isArray(curRows)) {
+        res.status(502).json({ error: { code: 'UNREADABLE_SETTINGS', message: 'The saved settings could not be read back, so nothing was shown or saved. Try again shortly.' } });
+        return;
+      }
+      const row = curRows[0] || null;
       const isPlainObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
       const storedGrants = (row && isPlainObj(row.livery_grants)) ? row.livery_grants : {};
 
@@ -17110,13 +17119,23 @@ module.exports = async (req, res) => {
       let apprentice = { countersign: stored.countersign, forbidden: stored.forbidden,
                          presence_disclosure: stored.presence_disclosure };
       if (has('apprentice')) {
-        const a = p.apprentice;
-        if (!isPlainObj(a)) {
+        const a0 = p.apprentice;
+        if (!isPlainObj(a0)) {
           problems.push('apprentice must be an object with countersign, forbidden and presence_disclosure');
         } else {
+          // A PARTIAL OBJECT MERGES ONTO WHAT IS STORED (hank b52, Michael's
+          // b52 decision). An omitted key keeps its stored value; it used to
+          // become [] / the default, so {presence_disclosure:false} wiped the
+          // forbidden list and an apprentice's leg_cremations read went DENY
+          // -> ALLOW. Only a key that is PRESENT is validated and replaced.
+          const a = {
+            countersign: a0.countersign === undefined ? stored.countersign : a0.countersign,
+            forbidden: a0.forbidden === undefined ? stored.forbidden : a0.forbidden,
+            presence_disclosure: a0.presence_disclosure === undefined
+              ? stored.presence_disclosure : a0.presence_disclosure };
           const lists = { countersign: a.countersign, forbidden: a.forbidden };
           Object.keys(lists).forEach(function (k) {
-            const v = lists[k] === undefined ? [] : lists[k];
+            const v = lists[k];
             if (!Array.isArray(v)) { problems.push('apprentice.' + k + ' must be a list of record types'); return; }
             v.forEach(function (r) {
               if (typeof r !== 'string' || !Object.prototype.hasOwnProperty.call(legRoles.LEG_ROLE_MATRIX, r)) {
