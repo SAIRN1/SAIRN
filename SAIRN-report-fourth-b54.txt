@@ -1,0 +1,54 @@
+SAIRN REPORT -- fourth b54 -- 2026-10-22
+
+RESULT: clean hands-off NVDA pass on StoneDesk (67/67 heard). The StoneDesk
+backlog is fixed and live (847e89943), with no force and no gate skip.
+npm ci was NOT run (permission denied). Handoff: SAIRN-handoff-fourth-b54.md.
+
+1 NVDA, StoneDesk, live build (before the item-2 fix)
+  Setup: Windows toasts were switched off for the run (HKCU
+  NOC_GLOBAL_SETTING_TOASTS_ENABLED) and restored afterwards. The original
+  state was "unset", and it is unset again (reg query confirms). Every
+  non-read /api/ POST was blocked (8 blocked). Keys went over CDP only; no
+  OS input.
+  Result: signed in; 201 steps captured, 0 refused, 0 not attempted;
+  67 panels heard, 0 partial.
+  What NVDA said: "current page" on every Enter. "<title>, heading, level 2"
+  on 59/67. Of the other 8:
+    7 panels have no heading: quote, draw, field-quote, check-register,
+      market, business, doc-scan;
+    sms: NVDA spoke a Command Prompt title from another window, although
+      focus was on the H2.
+  Emoji in headings are read aloud (filed).
+
+2 STONEDESK BACKLOG                                            847e89943
+  CONCEPTS:
+    A control with no visible label gets a written name, from its id and
+    options (filters say "Filter by ..."). It is applied only when the
+    control has no name, so a real <label> always wins. Dynamic rows name
+    themselves.
+    .ptitle is a level-2 heading. A panel with no heading gets a clipped h2
+    carrying its sidebar name.
+    Each failing colour is darkened to the next shade of its own hue that
+    reaches 4.5:1 on its background. --brand2 goes from #0F8742 to #0B7A3B:
+    5.07:1 on --bg, and white text on it is 5.44:1.
+  Live, 67 targets, before -> after:
+    select-name 79 -> 0;  label 44 -> 0;  color-contrast 73 -> 13;
+    headingless panels 7 -> 0;  focus on a heading after nav 60 -> 67/67.
+  All 13 remaining contrast nodes are labels of the 43 "missing-dom-fix"
+  stub fields (36315fb99), whose visible label is the raw element id. Not
+  recoloured: they need a product decision.
+  Tests: tests/stonedesk_a11y_pass.js 12 -> 22 arms; 8/8 new mutants
+  killed. Of 25 stonedesk suites, only exec_msgs_gate is red, the same as
+  at HEAD.
+
+3 npm ci --ignore-scripts --no-audit --no-fund: DENIED by the permission
+  prompt, twice. NOT RUN. Michael: run `! npm ci --ignore-scripts --no-audit --no-fund`.
+
+4 PUSH: landed through cc41f73a9 (HEAD = origin/main).
+  Register record re-seated on 847e89943. Tier A obligation opened, assigned
+  to hank. Live bytes = origin at 14:11Z. Live re-pass = local after-state.
+
+FILED: stub fields x43; target-size x5; emoji read inside headings; NVDA has
+not yet heard the fixed build.
+MY SLIP: one stray command re-ran the sairndental a11y pass against live
+(writes blocked; it only overwrote a scratchpad JSON). No effect on the app.

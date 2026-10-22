@@ -1,0 +1,23 @@
+SAIRN DIGEST -- fourth b54 -- 2026-10-22
+CONTEXT 21.7% of 1,000,000 -- 217,176 tokens, measured.
+STATUS: clean NVDA pass on StoneDesk (67/67 heard, 0 refused); backlog fixed and live (847e89943); npm ci NOT run (permission denied).
+DECISION-NEEDED: 43 "missing-dom-fix" stub fields show raw element ids as visible labels (36315fb99) -- label them or remove them?
+READ: SAIRN-handoff-fourth-b54.md (whole state). Detail: SAIRN-report-fourth-b54.txt.
+SQL: none this batch.
+CHANGED:
+  847e89943 stonedesk: select-name 79->0, label 44->0, contrast 73->13 (all stub labels), headingless panels 7->0,
+            focus on a heading 67/67; --brand2 #0F8742->#0B7A3B; 22 arms, 8/8 new mutants killed
+  b7dd2541d/4d0b8c7c4/cc41f73a9 register record, Tier A obligation (assigned hank), scrutiny rows
+  scratchpad nvda_dental.py: stonedesk mode; toasts off for the run and restored; every non-read /api/ POST blocked
+1 NVDA (live build before the fix): 201 steps, 0 refused; 'current page' on every Enter; heading spoken 59/67 --
+  the 7 headingless panels + 1 utterance from another window
+2 live bytes = origin 14:11Z; the live re-pass matches the local after-state
+EVIDENCE-path: tests/stonedesk_a11y_pass.js; scratchpad nvda_sd54.json, a11y_sd54_*.json (paths in handoff).
+NEXT, in order:
+  a Michael: run `! npm ci --ignore-scripts --no-audit --no-fund` in SAIRN-fourth (CHECK 5f)
+  b stub-field decision (above), then route it
+  c NVDA re-run on the fixed build (one click needed)
+  d hank: Tier A review of 847e89943 (attributes/styles only)
+UNVERIFIED: NVDA on the fixed build; target-size x5; emoji read in headings.
+PRIVACY: scratchpad nvda_sd54.log holds speech from other windows -- do not share.
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\fd66c7b5-98f7-4e46-ac2a-b0383cde9210.jsonl
