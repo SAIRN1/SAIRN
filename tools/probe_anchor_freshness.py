@@ -90,6 +90,12 @@ ARM_CALLS = ('arm', 'mutate', 'sabotage', 'plant')
 #                  rather than to 1, and a disagreement with N is its own
 #                  verdict (COUNT DISAGREES) rather than being folded into
 #                  AMBIGUOUS. Remaining real finding after the change: 1.
+#   3  2026-10-22  an edit passed as a BARE tuple -- arm(x, (SUBJ, old, new))
+#                  -- was walked element by element and dropped: neither
+#                  counted nor unresolved (cody b49, fixed b51). A bare 3- or
+#                  4-tuple whose first element is a name or a path literal and
+#                  whose second is a string is now read as one edit; any other
+#                  bare tuple is still not an edit.
 # Declared 2026-09-29. checker_control_check.py listed this tool under NO
 # DECLARED CONTROL and that was accurate: the 20-arm lock lived INSIDE the
 # tool, so nothing independent ever drove it. A fixture lock proves the
@@ -97,7 +103,7 @@ ARM_CALLS = ('arm', 'mutate', 'sabotage', 'plant')
 # refuses. A checker whose only witness is itself is the shape this family of
 # tools exists to find.
 CONTROLLED_BY = ['tests/run_probe_anchor_freshness_probe.py']
-CRITERIA_VERSION = '2026-09-27.2'
+CRITERIA_VERSION = '2026-10-22.3'
 
 BLIND_SPOTS = [
     'AN ANCHOR THAT STILL MATCHES ONCE MAY STILL BE POINTING AT THE WRONG '
@@ -345,7 +351,16 @@ def anchors_in(tree, names):
             found.append((path, old_node.value, getattr(node, 'lineno', 0), None))
             continue
         for arg in list(node.args) + [kw.value for kw in node.keywords]:
-            for elt in (arg.elts if isinstance(arg, (ast.List, ast.Tuple)) else [arg]):
+            # A BARE edit tuple is one edit, not a list of them (criteria .3).
+            # Walking its elements found no tuple and dropped it in silence.
+            bare = (isinstance(arg, ast.Tuple) and len(arg.elts) in (3, 4)
+                    and (isinstance(arg.elts[0], ast.Name)
+                         or (_path_literal(arg.elts[0]) or '').endswith(
+                             ('.js', '.html', '.py', '.sql', '.json')))
+                    and isinstance(arg.elts[1], ast.Constant)
+                    and isinstance(arg.elts[1].value, str))
+            for elt in ([arg] if bare else
+                        arg.elts if isinstance(arg, (ast.List, ast.Tuple)) else [arg]):
                 if not isinstance(elt, ast.Tuple) or len(elt.elts) < 2:
                     continue
                 subj, old = elt.elts[0], elt.elts[1]
@@ -534,6 +549,13 @@ def selftest():
         "arm('g', [(HTML, 'TWICE', 'y3', 5)])\n"
         # A NON-LITERAL COUNT IS UNRESOLVED, NEVER GUESSED.
         "arm('h', [(HTML, 'ONE_MATCH', 'x2', HOW_MANY)])\n"
+        # CRITERIA .3, IN BOTH DIRECTIONS. `i` is a BARE edit tuple and must be
+        # counted; `j` is a bare edit tuple whose subject cannot be resolved and
+        # must be UNRESOLVED, not dropped; `k` is a bare tuple that is not an
+        # edit at all and must contribute nothing either way.
+        "arm('i', (HTML, 'BARE_ONE', 'x4'))\n"
+        "arm('j', (UNKNOWN2, 'BARE_ANY', 'x5'))\n"
+        "arm('k', ('not', 'an', 'edit'))\n"
     )
     # ── CONVENTION 3, IN BOTH DIRECTIONS ───────────────────────────────────
     # A helper whose signature literally names `old` and `new` IS a mutation
@@ -583,13 +605,14 @@ def selftest():
     # deliberate -- it is what proves the rule comes from the edit rather than
     # from the anchor.
     arm_('every LITERAL anchor is found',
-         got == ['GONE', 'ONE_MATCH', 'TWICE', 'TWICE', 'TWICE'],
+         got == ['BARE_ONE', 'GONE', 'ONE_MATCH', 'TWICE', 'TWICE', 'TWICE'],
          'found %r' % got)
     arm_('a CONCATENATED anchor, an UNRESOLVABLE subject and a NON-LITERAL '
          'count are counted as unresolved, not silently dropped',
-         unresolved == 3,
-         'unresolved was %d, expected 3 (the a+b concatenation, the UNKNOWN '
-         'subject name, and the HOW_MANY variable count)' % unresolved)
+         unresolved == 4,
+         'unresolved was %d, expected 4 (the a+b concatenation, the UNKNOWN '
+         'subject name, the HOW_MANY variable count, and the bare tuple with '
+         'the UNKNOWN2 subject)' % unresolved)
     declared = sorted(e for _p, _a, _l, e in anchors if e is not None)
     arm_('the DECLARED count is read off the 4th element',
          declared == [2, 5],
