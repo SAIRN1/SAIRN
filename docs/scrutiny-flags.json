@@ -3400,6 +3400,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b51-countersign-lock-drift.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "42e3b68e889a316ee8b04fa1fcdd86e8e65c7584",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/b16-evv-pay-agreement.test.js",
    "class": "test file",
    "level": "CHANGE",
