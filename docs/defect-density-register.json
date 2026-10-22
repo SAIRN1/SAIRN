@@ -37486,7 +37486,7 @@
       "recurrence_open": "NOT CLOSED. Not verified with NVDA itself. Modals not opened. Other launch-wave apps not passed."
     },
     {
-      "commit": "e878d849acc8",
+      "commit": "59c3e0208efe",
       "date": "2026-10-22",
       "subject": "fix(hover cold scan pool, #741 / #1626): land the sairncode resource_app_map fix that existed only in the operational copy",
       "files": [
@@ -37632,7 +37632,7 @@
       "recurrence_open": "Same shape may exist in other api/ catch-alls; only sd-agent.js:351 was routed and fixed. The license-gate arms (lines 263-266) still relay store messages by design (coded, user-facing)."
     },
     {
-      "commit": "16b88cec30f5",
+      "commit": "82a797b2363d",
       "date": "2026-10-22",
       "subject": "fix(hover coverage ledger): match commit shas by prefix, not exact abbreviation (0 of 191 reported, 160 true)",
       "files": [
