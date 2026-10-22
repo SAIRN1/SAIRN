@@ -42,7 +42,8 @@ function El(tag, opts) {
     classList: { add() {}, remove() {} },
     setAttribute: (k, v) => { attrs[k] = String(v); }, removeAttribute: (k) => { delete attrs[k]; },
     getAttribute: (k) => (k in attrs ? attrs[k] : null), hasAttribute: (k) => k in attrs,
-    querySelector: (s) => (opts.inner && /button|input|select|textarea/.test(s) ? {} : null),
+    querySelector: (s) => ((opts.inner || opts.hiddenInner) && /button|input|select|textarea/.test(s) ? {} : null),
+    querySelectorAll: (s) => (/button|input|select|textarea/.test(s) ? (opts.inner ? [{ type: 'text', parentElement: null }] : opts.hiddenInner ? [{ type: 'file', _display: 'none', parentElement: null }] : []) : []),
     addEventListener: (t, f) => { listeners[t] = f; }, click() { el.clicked++; }, attrs, listeners };
   return el;
 }
@@ -58,11 +59,12 @@ console.log('1. sdA11yPass: labels, keyboard buttons, decorative icons');
   const fileZone = El('DIV', { attrs: { onclick: "document.getElementById('pf-file').click()" } });
   const backdrop = El('DIV', { attrs: { onclick: 'closeModal()' } });
   const card = El('DIV', { attrs: { onclick: "sdIntegQuickAdd('x')" }, inner: true });
+  const upzone = El('DIV', { attrs: { onclick: "document.getElementById('doc-scan-file').click()" }, hiddenInner: true });
   const realBtn = El('BUTTON', { attrs: { onclick: "setTier('retail',this)" } });
   const icons = [El('SPAN'), El('SPAN')];
-  const ctx = { getComputedStyle: () => ({ display: 'block' }),
+  const ctx = { getComputedStyle: (e) => ({ display: (e && e._display) || 'block' }),
     document: { readyState: 'complete', addEventListener() {}, getElementById: () => null, querySelector: () => null,
-      querySelectorAll: (s) => (s === 'label:not([for])' ? labels : s === '[onclick]' ? [chip, fileZone, backdrop, card, realBtn] : s === '.sb-btn .sb-icon' ? icons : []) } };
+      querySelectorAll: (s) => (s === 'label:not([for])' ? labels : s === '[onclick]' ? [chip, fileZone, backdrop, card, realBtn, upzone] : s === '.sb-btn .sb-icon' ? icons : []) } };
   ctx.document.querySelectorAll.bind(ctx.document);
   vm.createContext(ctx);
   vm.runInContext(passSrc.replace(/\nif \(document\.readyState[\s\S]*$/, ''), ctx);
@@ -75,6 +77,7 @@ console.log('1. sdA11yPass: labels, keyboard buttons, decorative icons');
   check('B3. Enter and Space activate it; other keys do not', chip.clicked === 2, chip.clicked);
   check('B4. a modal backdrop (not allowlisted) is NOT made a tab stop', !('role' in backdrop.attrs) && !('tabindex' in backdrop.attrs));
   check('B5. a card that already contains a control is skipped (no nested-interactive)', !('role' in card.attrs));
+  check('B8. a zone whose only inner control is a HIDDEN file input still becomes a button (doc-scan, b55)', upzone.attrs.role === 'button' && upzone.attrs.tabindex === '0');
   check('B6. a native button is left alone', !('role' in realBtn.attrs));
   check('B7. the new targets get a 24px minimum height (WCAG 2.5.8)', chip.style.minHeight === '24px');
   check('I1. sidebar icons are hidden from the reader', icons.every((i) => i.attrs['aria-hidden'] === 'true'));
@@ -122,6 +125,14 @@ console.log('3. b54: contrast of the shipped colours');
   const colors2 = (html.match(/var colors2=\{[^}]*\}/) || [''])[0];
   const hexes = colors2.match(/#[0-9a-fA-F]{6}/g) || [];
   check('C3. the quote-history status colours all reach 4.5:1 on white', hexes.length === 3 && hexes.every((c) => ratio(c, '#ffffff') >= 4.5), colors2);
+}
+
+console.log('3b. b55: the missing-dom-fix stub fields carry real labels');
+{
+  const stubs = [...html.matchAll(/data-auto-container="missing-dom-fix"><label([^>]*)>([^<]*)<\/label><input type="text" id="([^"]+)"/g)];
+  check('S1. all 17 labelled stub fields are found', stubs.length === 17, stubs.length);
+  const bad = stubs.filter((m) => m[2].trim() === m[3] || !m[2].trim() || m[1].indexOf('for="' + m[3] + '"') === -1);
+  check('S2. none shows its raw element id, and each is tied to its input by for=', stubs.length > 0 && bad.length === 0, bad.map((m) => m[3]).join(' '));
 }
 
 console.log('4. sbNav: current item and focus to the heading');
