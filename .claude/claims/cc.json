@@ -4721,6 +4721,17 @@
       "status": "released",
       "released_at": "2026-10-22T15:25:00Z",
       "files": null
+    },
+    {
+      "id": "cc-1792683943",
+      "session": "cc",
+      "subject": "cc",
+      "task": "b52 CLAUDE.md audit-key line, rt_stops SQL status",
+      "claimed_at": "2026-10-22T15:45:43Z",
+      "claimed_at_epoch": 1792683943.9487178,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
