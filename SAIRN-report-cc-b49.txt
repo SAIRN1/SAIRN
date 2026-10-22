@@ -1,0 +1,62 @@
+REPORT cc b49
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-22
+RANGE     handoff landed 85e77493..53ecf8b1 (one remote-race retry); then this report and digest. No repo code change. No --force, NO OVERRIDE.
+
+== 1+2. Deny lists (hank's 13 as reference: 8 Edit/Write + 5 Bash) ==
+Measured by parsing all four builder settings.local.json files: every one has all 13, and each is valid UTF-8.
+Before this paste:
+  hank, cc, cody had all 13.
+  fourth had the 8 Edit/Write entries; its 5 Bash entries were added by cc in b48 (byte-safe Python).
+Added in b49: NONE.
+SAIRN-hover2 not touched (H2's, per the dispatch).
+
+== 3. npm ci in cc's clone ==
+npm ci --ignore-scripts --no-audit --no-fund: DENIED by the harness (same as b44-b48).
+Already satisfied in b45, when Michael ran it in this clone via '!'.
+Now: dependency_integrity_check CLEAN, exit 0.
+
+== 4. Dependabot #5 (GHSA-86w9-cpqp-85rv, node-forge <=1.4.0 via firebase-admin 12.x) ==
+OWNER: cc. The root package.json/lock are unowned by the manifest; cc did the b44 upgrade.
+Timing:
+  H1 b77 commits 2026-10-21 13:17:11-13:20:58 -04:00.
+  Fix 775ee2da landed 15:12:25 -04:00 the same day.
+  So the push notice H1 saw predates the fix.
+Michael confirmed the alert Fixed on GitHub web against 775ee2da (b47).
+HEAD: no node-forge key in package-lock.json; firebase-admin is 13.10.0 in both the lock and the install.
+This batch's push output: no GitHub vulnerability notice and no 'remote:' lines at all.
+  GitHub prints that notice only while open alerts exist, so this is consistent with 0 open.
+  It is not an API read; the API is unreachable from this harness.
+ROUTE: H1 can close "Dependabot alert 5 (report only)" in its b78/b79 carry list.
+
+== 5. fix-deny.ps1 UTF-8-safe ==
+CRITERIA: any input gets only the requested entries appended; every other key and entry is unchanged; the output is valid UTF-8 with no BOM; invalid input is refused unchanged.
+CONCEPT: .NET file I/O with an explicit UTF-8 encoding, so nothing round-trips through the ANSI code page.
+Change: strict UTF-8 ReadAllText (throws on invalid bytes); WriteAllText with UTF-8 and no BOM; ErrorActionPreference Stop. Append logic unchanged.
+Fixtures (scratchpad\fd\test.py): 16/16.
+  Three inputs: ASCII with \u2500 escapes, raw UTF-8 (hank's), raw UTF-8 with BOM.
+  Each checked for: exit 0, valid UTF-8, no BOM, non-deny identical, deny = old + new, idempotent re-run.
+  A cp1252 file with a raw 0x97 byte is refused and left byte-unchanged.
+ABLATION: the original script on the same fixtures gives 6 FAIL.
+The original is kept at scratchpad\fix-deny.ps1.orig.
+
+== 6. METHODOLOGY ==
+A bulk-edit tool is not verified until it has round-tripped a fixture holding the bytes it can damage, with every entry it did not mean to touch compared to the original.
+fix-deny.ps1 reported the right deny count both times in b48 while rewriting allow entries it was never asked to touch.
+
+== OPEN ==
+H2: its own SAIRN-hover deny (not cc's).
+H1: confirm #1640 on a real commit; close Dependabot 5 in its carry list.
+Michael (optional): re-run npm ci in SAIRN-cc.
+cody: 5e skipped anchors.
+hank/cody/fourth: npm ci once.
+
+== TRANSCRIPT ==
+C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\87a27b9f-55e9-45e8-b017-01ed1febac1a.jsonl
+
+== CHANGED ==
+Repo: the deliverables, docs/scrutiny-flags.json, the claim file. Outside git: C:\Users\marsh\fix-deny.ps1.
+
+SHA256 c993e24df689c6b497988895b367adc8ffcd04654ece8acf994e71ff65bde779
+END-OF-REPORT

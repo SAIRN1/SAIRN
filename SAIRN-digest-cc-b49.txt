@@ -1,0 +1,20 @@
+DIGEST cc b49
+STATUS: 6 of 6 handled; no repo code change; no --force, NO OVERRIDE. SAIRN-hover2 untouched (H2's).
+ITEM 1+2: all four builder settings have hank's 13 deny entries (8 Edit/Write + 5 Bash), valid UTF-8. Added in b49: none.
+  Before this paste: hank/cc/cody had all 13; fourth had the 8 Edit/Write and got its 5 Bash entries in b48.
+ITEM 3: npm ci was DENIED by the harness. Already satisfied in b45 (Michael via '!'); the dependency check is CLEAN now.
+ITEM 4: Dependabot #5 is owned by cc and already fixed by 775ee2da (15:12 -04:00 on 10-21), two hours after H1's b77 push saw the notice.
+  No node-forge in the lock. This batch's push printed no vulnerability notice. H1 can close it.
+ITEM 5: fix-deny.ps1 now uses strict UTF-8 .NET I/O with no BOM; fixtures 16/16; the original script fails 6 of them.
+ITEM 6 (methodology): a bulk-edit tool is not verified until it round-trips a fixture holding the bytes it can damage, with untouched entries compared.
+DECISION-NEEDED: none.
+CHANGED: deliverables only in the repo; C:\Users\marsh\fix-deny.ps1 outside git.
+SQL: none.
+EVIDENCE-path: SAIRN-report-cc-b49.txt, SAIRN-handoff-cc-b49.md
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\87a27b9f-55e9-45e8-b017-01ed1febac1a.jsonl
+UNVERIFIED: the Dependabot open count via the API (not reachable here); the evidence is GitHub web (b47) plus the absent push notice.
+ROUTED: H2 -- its own SAIRN-hover deny. H1 -- confirm #1640, close Dependabot 5. cody -- 5e skipped. hank/cody/fourth -- npm ci.
+NEXT: nothing owed by cc.
+CONTEXT 22.3% of 1,000,000 -- 223,265 tokens, measured.
+SHA256 41f4bf50898e425a06a5fd1fcb6767485cbfa5269dddea56713d53cb4162918e
+END-OF-REPORT
