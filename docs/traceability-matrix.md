@@ -739,15 +739,15 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 778 of 1046 traced, 74.4%.
+For context and not as the headline: 779 of 1047 traced, 74.4%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 778 citations come from
+### Where the 779 citations come from
 
 | source | citations |
 |---|---|
-| `declared` | 344 |
+| `declared` | 345 |
 | `index` | 327 |
 | `declared+index` | 70 |
 | `GUARD_TESTS` | 18 |
@@ -1053,7 +1053,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                1046   tests/**, api/** (both walked)
+  test files on disk                1047   tests/**, api/** (both walked)
   open-work rows citing a test       395   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 37   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                78   report_only_checks.REGISTRY

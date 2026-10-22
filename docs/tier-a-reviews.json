@@ -8528,6 +8528,28 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-22T16:02:10Z",
+      "opened_at_sha": "42186dd4c5945c2d96e2827c0773b15388787f55",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 3,
+      "resources": [
+        "leg_cremations"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/b51-countersign-lock-drift.test.js"
+      ],
+      "what": "cody b51: api/_lib/countersign.js requireCountersignature now REFUSES (500 COUNTERSIGN_LOCK_MISCONFIGURED) a resource its PROFILE does not lock, instead of returning null (= signed, proceed). All four callers (sd-data law gate x2, leg gate, law-attest) call it only after their own table says the resource is locked, so off-profile is list drift and used to file the write unsigned (cc b50 review of d6b37bb1). api/b51-countersign-lock-drift.test.js drives leg_cremations under a drifted PROFILE. Review: no caller relies on null for an unlocked resource; the 500 is unreachable without drift.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-10-22T16:02:10Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
