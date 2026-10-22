@@ -1,0 +1,14 @@
+HANK b50 DIGEST -- 2026-10-22 -- npm ci, 5 Tier A reviews discharged, hover deny already applied
+CONTEXT 14.2% of 1,000,000 -- 142,030 tokens, measured.
+STATUS: ledger + docs only, NOT FORCED. No product code change.
+1. npm ci: not run by the agent (denied); node_modules present after Michael's run; dependency_integrity_check CLEAN.
+2. Tier A: 5 assigned to hank DISCHARGED (cc b46 named none; Michael chose these 5).
+   3 SOUND-WITH-GAPS (cody law/sen, cody sf/bld, cody b28 countersign).
+   DEFECT: alf MAR -- billing assigned to a resident reads the MAR with no grant/audit.
+   DEFECT (low): criticality_tier_check -- missing app: is invisible; SHAPE_ERROR crashes.
+3. fix-deny.ps1: already applied (8 Edit/Write + 5 Bash hover denies).
+DECISION-NEEDED (Michael): authorise hank to fix D1 (billing MAR read via the assignment tier).
+NEXT: hank D1 if dispatched; cc D2; cody G1 test gaps; cc T1 (my 3 commits).
+CHANGED: docs/tier-a-reviews.json, these three docs.
+EVIDENCE-path: SAIRN-handoff-hank-b50.md, SAIRN-report-hank-b50.txt
+UNVERIFIED: D1 on the deployed API (local handler probe only).

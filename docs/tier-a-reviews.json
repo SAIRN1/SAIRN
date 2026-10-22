@@ -6142,12 +6142,12 @@
         "tools/dup_dom_ids_check.py"
       ],
       "what": "api/sd-data-sen-caregiver-read-paths.test.js, b5 item 5. A READ-ONLY TEST FILE. It names sen_settings and sen_visits because the sen_visits/readiness branch -- the SECOND of the two sen_caregivers read paths -- fetches sen_visits, sen_clients, sen_caregivers and sen_settings, so its fixture must seed all four tables or the path is never reached. NO CODE SERVING EITHER RESOURCE IS IN THIS RANGE. The gate reads names rather than call sites, which is the correct direction for a gate to fail, so this is recorded rather than argued away. WHAT A REVIEWER SHOULD CHECK, since the obligation exists either way: (1) confirm by diff that no api/ or sql/ file serving sen_settings or sen_visits is in the range -- the only api/sd-data.js change in this batch is the sairnlaw role gate at two call sites; (2) the arm that matters most is the one asserting the readiness fetch is STILL UNREDACTED -- redacting there would make every visit report a missing state caregiver ID, because checkVisit reads caregiver.state_caregiver_id to decide whether one is on file, so the right boundary for that path is the RESPONSE and the arm exists to stop somebody fixing it the wrong way; (3) the fetch-site COUNT arm is deliberately brittle and says so in its own failure message -- if a third read path is added, add an arm rather than raising the number.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "hank",
       "owner_assigned_at": "2026-10-13T07:38:22Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "hank",
+      "reviewed_at": "2026-10-22T13:46:03Z",
+      "verdict": "hank b50 REVIEW of 3a1ab998c (batch fa6a390ed^..3a1ab998c): SOUND-WITH-GAPS. (1) confirmed: no api/ or sql/ code serving sen_settings/sen_visits in range; the law gate's decide() returns NOT_LAW for non-law_ resources. Suites at HEAD: sen-caregiver-read-paths 19/0, law-role-matrix 29/0, dup_dom_ids_check CLEAN. GAP 1 (EVV readiness): the with/without consumption arm runs as owner only (an HR role), so a JS-side redaction of bgcheck_date/state_caregiver_id for non-HR roles would break scheduler/coordinator readiness with all 19 arms green -- run it for a non-HR role in SEN_READINESS_ROLES. GAP 2: the 'every read path' inventory is one literal-shape regex (test:206); a generic-dict, multi-line or api/_lib fetch of sen_caregivers would not move the count of 2. Routed to cody."
     },
     {
       "author_session": "hank",
@@ -6266,12 +6266,12 @@
         "tests/sf_role_matrix_driven.test.js"
       ],
       "what": "b7 TESTS ONLY, no api/ file edited. Driven role arms over Tier A resources: tests/sf_role_matrix_driven.test.js drives a real signed session for each of the 10 ROLES_BY_APP.sairnfreedom roles over the 27 SD_SESSION_GATED sf_ resources on both verbs -- 540 cells, expectation from api/_lib/sf-roles.js SF_ROLE_MATRIX and observation from the handler, never both from the table -- and names sf_officers write by all 8 non-provisioning roles plus sf_ledger/sf_disbursements/sf_gaming_expenses write by records.write as the two highest-value arms. Each DENY cell also asserts NO row was fetched before the 403, so a leak with a tidy status code fails. The 9 licence-key-only resources are DISCLOSED as 180 NOT-DRIVEN cells and are not counted as passes. tests/bld_draws_role_arms.test.js drives BLD_DRAW_ROLES parsed from api/sd-data.js: pm denied read and write, owner and office allowed (the negative control that makes the pm arms evidence), no session 401, and the unknown-role claim split because signSessionToken refuses to mint an unlisted role at all. WHAT A REVIEWER SHOULD CHECK: that no expectation in either file is transcribed rather than derived, and that the handler is the only observation source. 25 arms and 10 arms, both exit 0.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "hank",
       "owner_assigned_at": "2026-10-13T11:41:45Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "hank",
+      "reviewed_at": "2026-10-22T13:46:04Z",
+      "verdict": "hank b50 REVIEW of 24e88957 (files created db2a47f1f; later b0e1f146b/e73afa1fa read too): SOUND-WITH-GAPS. Expectation from sfRoles.decide / parsed BLD_DRAW_ROLES, observation only from the handler; DENY cells really fetch nothing (probe: 416 DENY touched=false, 376 ALLOW touched=true). Suites: bld_draws_role_arms 10/0, sf_role_matrix_driven 27/0 (792 cells now, 11 roles). GAPS: (a) no ALLOW cell asserts touched>0, so if the storage URL stops naming the resource the leak check passes vacuously; (b) ALLOW cells assert only 'not refused by the role gate' -- a 500/401 regression stays green; (c) 1a/1b assert.throws arms are true by construction; bld 4b counts a by-construction check as a pass; (d) SD_SESSION_GATED end anchor '\n    };' is indentation-dependent. Record's '27 gated / 180 NOT-DRIVEN' is stale (36/36 gated now). Routed to cody."
     },
     {
       "author_session": "cody",
@@ -6289,12 +6289,12 @@
         "tests/mar_billing_grant.test.js"
       ],
       "what": "tests/mar_billing_grant.test.js -- a FAILING-FIRST suite encoding Michael's 2026-10-13 decision that billing never reads the MAR by default, and that for coding work only an office manager may grant billing access to a named resident's MAR, time-limited, expiring on its own, and audit-logged. NO api/ FILE WAS EDITED: this push adds a test file, a docs/known-red-suites.json entry, five b8 documents and two regenerated derived docs. The suite drives the real api/sd-data.js handler with auth, licence and fetch mocked, which is why it reads as touching alf_clients, alf_family_contacts and alf_mar. MEASURED red at a47cdf2d: exit 1, 5 passed 16 failed 4 unproven. WHAT A REVIEWER SHOULD ATTACK: (1) THE CONTROLS, because they are the only arms that pass -- A4/A5 pin billing at 403 on alf_mar read and write (api/sd-data.js:11148 gated :11191 and :11234), A6/A7 pin that nursing and the assigned narrow role still get 200 so a deny-everything fix cannot satisfy the file, and C4 PASSES VACUOUSLY while A1 is red and says so in its own arm text -- check that disclosure is actually in the arm and not only in the routed note. (2) THE FIXTURE, because a reimplementation would pass against the unfixed code: the alf_clients mock answers assigned_employee_id scope queries and the alf_family_contacts mock answers contact_id lookups, and an unmocked read THROWS rather than returning [] because an empty list makes a DENY arm pass for the wrong reason. Decide whether the mock's scope query faithfully reproduces api/sd-data.js:12657-12668. (3) ARM B2 IS A QUESTION I MAY NOT ANSWER: there is no office_manager role in SAIRNcare (api/_lib/auth.js:238), so either the role is added across ROLES_BY_APP, api/alf-auth.js:52 and the role CHECK in both schema files together, or owner is declared to BE the office manager -- docs/2026-10-13-cody-b8-billing-mar-role-vocabulary.md section 5 states both and picks neither. (4) THAT THE SUITE IS OUT OF EVERY GATE: nothing in tools/sairn_push_gate_hook.py reads this path, and the register row is what lets the next session tell this deliberate red from a regression. THE OPEN HOLE IS STILL OPEN AT HEAD and is not fixed by this push: ALF_FAMILY_READ_ROLES = { owner, billing, nursing } (api/sd-data.js:12551) is inherited by family_mar (:12654) and billing is in the BROAD half so assignment scope is skipped (:12656) -- every resident on the licence. ROUTE TO ANY SESSION EXCEPT cody; the api/ half belongs to hank.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "hank",
       "owner_assigned_at": "2026-10-14T10:33:35Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "hank",
+      "reviewed_at": "2026-10-22T13:46:04Z",
+      "verdict": "hank b50 REVIEW of a47cdf2d (+ b2be3d27f, 11ee96680, HEAD): DEFECT -- in the product code the suite covers, not in the suite. Suite now green 28/0, moved to recovered in known-red-suites.json. DEFECT: api/sd-data.js family MAR read -- billing is not in ALF_FAMILY_MAR_ROLES, with no grant it falls to the assignment tier (sd-data.js ~14548-14590), which has NO role check: a billing employee who is a resident's assigned_employee_id reads that resident's MAR with no grant, no expiry and no audit row (read audit fires only if marGrant). Contradicts 'billing never reads the MAR by default'; reproduced by the reviewer's scratch probe against the real handler, code path confirmed by hank. No arm covers billing+assigned+no-grant. GAPS: A2 vacuous (WRITES records non-GET only; checks body.data not family_mar); A3 repeats A1 (GETs not recorded); alfAudit result ignored, so grants/granted reads proceed when the audit write fails; 400 grant refusals unaudited; C1 grantBlock is the whole file; E1 ignores unproven. Fix owner: hank (api/) -- held pending dispatch."
     },
     {
       "author_session": "hank",
@@ -7015,12 +7015,12 @@
         "tools/criticality_tier_check.py"
       ],
       "what": "cc b24: tools/criticality_tier_check.py apps_with_registries() stopped skipping registry files by NAME and now reads a property each module declares -- an `app:` key in its own `module.exports`. THE TIER A RESOURCE IN SCOPE IS shared.js's `employees`, and it was INVISIBLE to the completeness arm while the name list existed: `if app in ('index', 'shared'): continue` was wrong about half its own list, so the arm reported CLEAN over all seven shared resources for as long as they had no row, AND rejected the rows once they were written. Measured before and after: 18 to 19 registries, 394 to 401 resources, 14 to 6 problems, with 8 cleared and 0 introduced computed by differencing the finding SETS rather than subtracting the totals. WHAT A REVIEWER SHOULD ATTACK FIRST, in order. (1) IS AN `app:` KEY IN `module.exports` REALLY THE RIGHT PROPERTY, or should it be an explicit opt-out flag? I chose the former because an explicit flag needs an edit inside api/, which is hank's directory this batch, and because reading a declaration the modules ALREADY make needs no coordination -- but it is an inference from shape rather than a declaration of intent. The arm named A MERGER THAT DECLARED `app:` asserts what would happen if a future merger declares one, so the limit is stated rather than discovered; attack whether that arm is the right place to have left it. (2) THE FILENAME-VERSUS-DECLARED-NAME DISAGREEMENT PATH returns SHAPE_ERROR rather than preferring either answer. Confirm a disagreement cannot be read as an EMPTY registry, because that is the fail-open direction and it is the one that would make a whole app's resources vanish from the completeness arm while reporting clean. (3) THE PRINTED ARM COUNT IS NOW DERIVED, not `len(FIXTURE_CASES)`: the literal said 6/6 while eleven checks ran. Confirm it still moves when an arm is added -- a count that does not move when the thing it counts does is the defect class this repo keeps paying for. (4) THE 6 REMAINING PROBLEMS ARE CLAIMED AS PRE-EXISTING -- four COUNT drifts (sairnlegacy x2, sairnscape x2), one LIST MISSING (sairnlegacy/leg_clergy) and sairnsenior/sen_period_closings having no row, all in docs/CRITICALITY-TIERS.md, which fourth holds. Confirm none of them is caused by the wider scan rather than merely surviving it. (5) tests/run_criticality_tier_probe.py is RED at 8 failed and I claim that is pre-existing, measured by writing origin's own copy of the tool back in a try/finally and driving the probe to an identical 8 with the same arms. Re-derive that if you doubt it; it is the one claim here that would be most convenient for me if it were true.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "hank",
       "owner_assigned_at": "2026-10-19T22:00:15Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "hank",
+      "reviewed_at": "2026-10-22T13:46:05Z",
+      "verdict": "hank b50 REVIEW of 38bbd4551 (landed equivalent of ca1597f, same message and figures; 03f50bd4c and HEAD read too): DEFECT, low severity, no change to today's results. All measured figures reproduced (18->19 registries, 394->401, 14->6, 8 cleared, 0 introduced by set difference). DEFECT 1: a registry that omits or mistypes `app:` is INVISIBLE, not reported -- tools/criticality_tier_check.py:320 `if decl is None: continue`; scratch tree with a new sairnnew.js without app: leaves PROBLEMS 7->7 and names it nowhere. DEFECT 2: a filename/declared-name disagreement yields SHAPE_ERROR that crashes at :986 (TypeError, exit 1 not 2); --fix-rollup-list skips it and prints success (:723/:770); the disagree fixture (:911) never drives main. Claim (3) false: REGISTRY_PROPERTY_ARMS = 13 is a hand-bumped literal (:923). Routed to cc."
     },
     {
       "author_session": "cody",
@@ -7383,12 +7383,12 @@
         "tests/rt_routes_live_probe.py"
       ],
       "what": "b28(cody) -- TWO SECURITY FIXES AND A CAP CHANGE ON SIX TIER A RESOURCES. (1) api/_lib/countersign.js: MODE_PREPARED_ONLY decided whether a caller may move client trust money from the role inside the SIGNED SESSION TOKEN and never asked the database, so an attorney demoted to paralegal kept writing law_trusttx with no countersignature for SESSION_TTL_MS = 12 hours; and the SETTLING STEP re-read active=eq.true and nothing about role, so a struck-off attorney still on the payroll passed it. Fixed with currentStanding(), one roster read, three outcomes, fail-closed on unreadable. 15 arms in api/b28-role-from-token.test.js, reproduction driven at 200 before the fix. (2) api/sd-data.js PAYLOAD_CAP_BY_RESOURCE: the uniform 64KB write cap was RAISED for dnt_appointments (1291059) and rf_claim_photos (1572864) to the numbers those tables' own DB constraints already carry, because public-book.js accepts 1.2MB of patient photos and the staff path then answered 413 on every confirm or decline. 13 arms in api/b28-photo-cap.test.js. WHAT TO TRY TO BREAK: (a) is the roster read on the PREPARED-ONLY path reachable on every write and skipped on every read -- arms R6/M2 count it, but a source scan cannot see a branch I did not think of; (b) does requiring BOTH the token role and the roster role ever LOCK OUT a legitimate caller the old code admitted, beyond the promotion case R3 documents; (c) is api cap <= db constraint true for both entries against the SQL at HEAD and not just against the sql/ file my arm C6 reads; (d) dnt_patients, rf_claim_agreements, rf_invoices and rf_proposals are named only because api/b28-photo-cap.test.js MENTIONS them in its drift arms -- no code serving them changed, and that claim is worth checking against the diff rather than my word; (e) the six uncovered oversized caps pinned by arm C7 -- is the pin the right set.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "hank",
       "owner_assigned_at": "2026-10-20T08:43:13Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "hank",
+      "reviewed_at": "2026-10-22T13:46:05Z",
+      "verdict": "hank b50 REVIEW of 7e43c9dab (landed equivalent of 9a97201; b29 bc5ca0d18 caps read too): SOUND-WITH-GAPS, no security defect. currentStanding fails closed: unreadable roster 503, missing/inactive 403, PREPARED_ONLY bypass needs token AND roster role to be signers, settling step checks role; law_trusttx has no other write path (sd-data.js write branch via the session gate, LAW prelude same call). Caps match sql (1291059 / 1572864); map is Object.create(null). Suites: b28-role-from-token 15/0, b28-photo-cap 23/0. GAPS: demoted attorney with a valid countersignature gets ROLE_REVOKED with a misleading remedy text; dnt_appointments/rf_claim_photos non-photo fields now up to ~1.25MB (only photos bounded); API measures JSON.stringify bytes vs DB jsonb::text; whether the dnt_appointments size migration ran on live is unverified. Routed to cody."
     },
     {
       "author_session": "cody",

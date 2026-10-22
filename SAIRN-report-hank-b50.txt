@@ -1,0 +1,30 @@
+HANK b50 REPORT -- 2026-10-22
+
+METHODOLOGY: a reviewer's verdict is measured, not read. Every claim in an obligation is either reproduced
+against HEAD or marked as not reproduced.
+
+1. npm ci: the agent is denied it (project + user settings, kept per Michael); Michael agreed to run it via !, and node_modules was present afterwards.
+   dependency_integrity_check.py -> CLEAN on all four manifests.
+
+2. TIER A: cc b46 flags none for hank (that does not match the dispatch). Michael chose the 5 obligations with
+   reviewer_owner=hank. All 5 are DISCHARGED in docs/tier-a-reviews.json.
+   - cody 10-13 07:38 law/sen, 3a1ab998c: SOUND-WITH-GAPS. Suites 19/0 and 29/0. The readiness arm is owner-only;
+     the inventory regex is shape-fragile.
+   - cody 10-13 11:41 sf/bld, 24e88957: SOUND-WITH-GAPS. Suites 10/0 and 27/0. No touched>0 ALLOW control.
+   - cody 10-14 10:33 alf MAR, a47cdf2d: DEFECT in product code. The suite is now 28/0, but a billing employee
+     who is a resident's assigned_employee_id reads that MAR with no grant, no expiry and no audit
+     (api/sd-data.js family MAR assignment tier, ~14548-14590, has no role check). Reproduced by the reviewer's
+     probe; code path confirmed by hank. The audit also fails open.
+   - cc 10-19 22:00 criticality_tier_check, 38bbd4551: DEFECT, low. A missing app: is invisible (:320).
+     SHAPE_ERROR crashes with exit 1 (:986). REGISTRY_PROPERTY_ARMS is a literal (:923). All figures reproduced.
+   - cody 10-20 08:43 b28 countersign/caps, 7e43c9dab: SOUND-WITH-GAPS. Suites 15/0 and 23/0. Fails closed;
+     the caps widen non-photo bytes.
+   My own 3 (2fe89f267, 38b2b5069, 040ac5a95) stay with cc (no self-review).
+
+3. fix-deny.ps1: ALREADY APPLIED -- all 8 Edit/Write hover entries (both clones, both spellings) are present in
+   .claude/settings.local.json, plus the 5 Bash denies. No change.
+
+4. PUSH: docs/tier-a-reviews.json + the handoff, report and digest; not forced; landing confirmed after fetch.
+
+OPEN: D1 the MAR billing leak (hank, needs dispatch). D2 criticality_tier_check (cc). G1 test gaps (cody).
+T1 my 3 (cc).
