@@ -17332,8 +17332,29 @@ module.exports = async (req, res) => {
         }
       }
       if (legRoles.decide(resource, legSess.role, action, legGrants, legHome) === legRoles.DENY) {
-        res.status(403).json({ error: { code: 'FORBIDDEN', message: legRoles.denyMessage(legSess.role) } });
-        return;
+        // ── F3's PREPARE ROUTE: THE SAME TWO-STAGE DEFERRAL AS LAW's C2 (b48) ─
+        // decide() has ALLOWED an apprentice `prepare` on a home's countersign
+        // list since b18, and api/leg-countersign.js lets an apprentice prepare
+        // and a director sign -- but the signed record is FILED here, and this
+        // 403 refused the apprentice's write before the countersignature below
+        // was ever checked. So F3 was policy-live and unusable.
+        //
+        // Deferred only when all three hold, each one narrowing:
+        //   * the verb is not 'read'
+        //   * the resource carries the countersignature lock (leg_cremations)
+        //   * `decide(..., PREPARE)` with THIS home's settings says this role
+        //     may prepare it -- an empty or `forbidden` F3 config keeps the 403
+        // The lock below is MODE_ALWAYS, so a deferred write without a valid,
+        // unspent, second-person signature over this exact payload is refused.
+        const legDeferToCountersign =
+          action !== 'read'
+          && legRoles.requiresCountersignature(resource)
+          && legRoles.decide(resource, legSess.role, legRoles.LEG_PREPARE_ACTION,
+                             legGrants, legHome) === legRoles.ALLOW;
+        if (!legDeferToCountersign) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: legRoles.denyMessage(legSess.role) } });
+          return;
+        }
       }
       // ── APPEND-ONLY, AND IT BINDS THE OWNER TOO ────────────────────────
       // Rule 1 of the spec. A chain-of-custody log that can be EDITED is not
@@ -17379,21 +17400,11 @@ module.exports = async (req, res) => {
       // api/leg-countersign.js's PROFILE. There is one implementation of "is
       // this signed" and the endpoint and the write path cannot drift.
       //
-      // ── NO HOME SETTINGS ARE PASSED, AND THAT IS MEASURED, NOT FORGOTTEN
-      // F3's per-home apprentice config (LEG_APPRENTICE_POLICY_DEFAULT in
-      // api/_lib/leg-roles.js) is complete and callable, and NOTHING STORES
-      // IT: there is no leg_settings resource in LEG_RESOURCES and no
-      // SAIRNlegacy settings table anywhere -- checked, not assumed. So the
-      // fifth argument to `decide` is omitted here, which means every
-      // apprentice gets the EMPTY default: read on the regulated band, no
-      // write, no prepare. That is exactly today's behaviour, which is the
-      // correct direction for a missing store to fail in.
-      //
-      // THE CONSEQUENCE, SAID OUT LOUD RATHER THAN LEFT TO BE FOUND: F3's
-      // countersign branch cannot be exercised in production until that
-      // storage exists, and the b18 handoff carries it as an open item with
-      // its next step. What IS live is F1 -- owner and director both hold
-      // `rw` on leg_cremations, so the lock is reached on every real write.
+      // ── F3 REACHES THIS LOCK TOO (b48) ──────────────────────────────────
+      // The home's apprentice config is read above (sairnlegacy_settings,
+      // b27) and an apprentice on its countersign list is deferred past the
+      // role gate to HERE, so this check is what files or refuses their
+      // write. Owner and director reach it on every write as before (F1).
       if (action !== 'read' && legRoles.requiresCountersignature(resource)) {
         const csLib = require('./_lib/countersign');
         const legCs = require('./leg-countersign');
