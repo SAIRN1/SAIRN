@@ -1,0 +1,17 @@
+DIGEST -- cody b49, 2026-10-22. Four items, all DONE.
+STATUS: TEST + GATE CODE, ONE LIVE DRIVE ON THE DEMO LICENCE (writes listed). NO SQL RUN. NO APP CODE.
+CHANGED: tests/run_adversarial_prompt_corpus_probe.py, tools/sairn_push_gate_hook.py (5e), docs/live-residue/2026-10-22-cody-b49-leg-f3-live.json, path manifest, register.
+LANDED: 05e92c154, d6a136606, d14b3b343, 2f6b51efa on origin/main, no force.
+ITEM 1 -- cc b29's eight: ALL CLOSED at HEAD (b34-b37, 9f9cf9235, fourth 5e38373c6/02cec2f84); every guarding suite green today.
+ITEM 2 -- 5e skipped anchors hid a RED probe (adversarial corpus, red since 2026-09-26). Re-derived 12/12; anchors countable
+  (ok 645->648, skipped 0); 5e now DENIES a touched skipped probe, notes the rest. Ablated via real --pre-push. Selftest 56/56.
+ITEM 3 -- LIVE F3 on sairn.vercel.app: apprentice files a director-countersigned leg_cremations record (200); unsigned 403
+  COUNTERSIGN_REQUIRED; no list 403 FORBIDDEN; self-sign 403; reuse 409; settings restored; test creds deactivated.
+  No countersign UI exists in sairnlegacy.html, so API drive, not click-through.
+ITEM 4 -- METHODOLOGY: a skipped list is a silent pass; prove "counted up", not "skipped down". Memory saved.
+DECISION-NEEDED: Michael -- run the residue file's removal SQL (1 test cremation, 1 token, 2 creds). Michael -- disciplines #40?
+ROUTED: cc -- probe_anchor_freshness ignores bare-tuple edits; Tier A d6b37bb1c. fourth -- countersign UI.
+UNVERIFIED: none of the four items.
+NEXT: release sairnlegacy claim.
+EVIDENCE-path: SAIRN-handoff-cody-b49.md, SAIRN-report-cody-b49.txt, docs/live-residue/2026-10-22-cody-b49-leg-f3-live.json
+CONTEXT 33.3% of 1,000,000 -- 332,853 tokens, measured.

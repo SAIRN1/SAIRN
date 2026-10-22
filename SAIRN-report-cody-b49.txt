@@ -1,0 +1,25 @@
+REPORT -- cody b49, 2026-10-22
+
+LANDED on origin/main, no force (push_retry --loop, attempt 2): 05e92c154 probe fix | d6a136606 5e skipped rows |
+  d14b3b343 live residue | 2f6b51efa register record. Each git merge-base --is-ancestor after fetch. register --check OK.
+1. THE EIGHT (cc b29 notes s1, not a cody list): ALL CLOSED at HEAD, each guarding suite green today --
+   1 dental schema msg (b34; 12/0) | 2 prequal/bonding 503 (b34/b35; 24/0) | 3 revoke false success (b34/b35/b37; 9/0, 8/0, 5/0) |
+   4 400-as-NOT_PROVISIONED (b34; 6/0) | 5 request photos unread (9f9cf9235; 27/0) | 6 style profile envelope (9f9cf9235) |
+   7 roofing JHA/warranty (fourth 5e38373c6; 10/0) | 8 senior contract/auth (fourth 02cec2f84; 15/0).
+   "Still not resolved as of b48" is stale: all eight closed 2026-10-21.
+2. 5e SKIPPED ANCHORS: resolved -- and they were hiding a red probe. run_adversarial_prompt_corpus_probe.py red since 34d1ff0ed
+   (2026-09-26): arm 8 anchor vanished, arm 4 "5 fenced" (8 now), arm 10 pre-fixture counts. Re-derived (anchor; floor >=5;
+   lock refuses, as M1). Anchors made countable [(SUBJECT, old, new)]: freshness ok 645->648, skipped 1->0; ablation: old
+   anchor reads VANISHED. Probe 12/12. Gate: 5e names each skipped row, DENY if the push touches it, note otherwise --
+   ablated through real --pre-push in a worktree (touch -> DENY SKIPPED; unrelated -> note). Selftest 56/56.
+   TOOL GAP (cc, not fixed): freshness ignores a BARE-tuple edit -- neither counted nor skipped.
+3. LIVE F3 (sairn.vercel.app, LEG-PINNACLE-2026, API -- NO countersign UI exists in sairnlegacy.html, so no click-through):
+   C0 403 FORBIDDEN | set list 200 | D1 403 COUNTERSIGN_REQUIRED | prepare 200 | self-sign 403 NOT_QUALIFIED_TO_SIGN |
+   director sign 200 | D2 apprentice files signed record 200 | D2b reuse 409 ALREADY_SPENT | read-back present |
+   settings restored ([]) re-read | C1 403 FORBIDDEN | 2 test creds deactivated (roster active=false). PINs random, never printed.
+   Residue + removal SQL: docs/live-residue/2026-10-22-cody-b49-leg-f3-live.json. Nothing deleted by me.
+4. METHODOLOGY: a checker's skipped list is a silent pass; "skipped down" is not "counted up" (bare-tuple form fell out of
+   both). Proof is the counted total rising + an ablation reading VANISHED. Saved as memory; offered for disciplines #40.
+NOTE: the demo-credentials file printed one owner PIN to my terminal once (a grep whose redaction missed the table form);
+   it is already tracked in the repo, nothing new exposed, not repeated.
+OPEN: cc -- freshness bare-tuple gap; Tier A d6b37bb1c. fourth -- countersign UI. Michael -- residue SQL. Claim sairnlegacy held.
