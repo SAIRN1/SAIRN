@@ -10762,6 +10762,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b48-sd-agent-error-leak.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "delete require.cache[require.resolve('./_lib/ai-rate-limit')];"
+    }
+   ],
+   "sha": "c53c75c1bc0e2dc41a376917500edc88f4d377fc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_gh_push_argv_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -11632,6 +11645,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b48-leg-f3-prepare-deferral.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d6b37bb1c48609f79609104f5809ca168455b98f",
    "criteria_version": "2026-10-06.1"
   },
   {
