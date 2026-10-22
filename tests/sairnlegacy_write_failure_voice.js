@@ -241,7 +241,8 @@ test('it survives only in the historical comment that records it was wrong', () 
 });
 
 test('sdnData records a reason on EVERY failure path, including no licence', () => {
-  const body = grab(SRC, 'function sdnData(action,resource,payload,withSession){');
+  // b56: the signature gained extraBody (the F3 countersign reference); the anchor follows it.
+  const body = grab(SRC, 'function sdnData(action,resource,payload,withSession,extraBody){');
   assert.match(body, /NO_LICENSE/, 'a missing licence key is still an unexplained null');
   assert.match(body, /legLastErr\[resource\]=\{code:/, 'a server refusal is not recorded');
   assert.match(body, /code:'NETWORK'/, 'a network failure is not recorded');

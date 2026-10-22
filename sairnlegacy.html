@@ -685,6 +685,25 @@ label.chk input{width:auto;}
     <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Case</th><th>Crematory</th><th>Scheduled</th><th>Status</th><th>Disposition</th><th>Actions</th></tr></thead>
     <tbody id="crtbody"></tbody></table></div>
   </div></div>
+  <div class="card" id="cs-card"><div class="cb">
+    <h3 style="font-size:15px;margin:0 0 4px">Countersignatures</h3>
+    <p style="font-size:12px;color:var(--muted);margin:0 0 10px">A cremation record is filed only after a second licensed director (Owner or Director) countersigns it. Saving a record stages it here with a one-time reference: hand that reference to the director who reviews it, then press File.</p>
+    <h4 style="font-size:13px;margin:8px 0 4px">Staged on this device</h4>
+    <div class="tw" tabindex="0" role="region" aria-label="Staged cremation records"><table><thead><tr><th>Case</th><th>Crematory</th><th>Reference</th><th>Expires</th><th>Stage</th><th>Actions</th></tr></thead>
+    <tbody id="cs-pending"></tbody></table></div>
+    <h4 style="font-size:13px;margin:14px 0 4px">Countersign a record (Owner or Director)</h4>
+    <label for="cs-ref" style="font-size:12px">Reference from the person who prepared it</label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:4px 0">
+      <input id="cs-ref" autocomplete="off" style="flex:1;min-width:220px;min-height:24px">
+      <button type="button" class="btn bo bs" onclick="legCsLookup()">Look up</button>
+      <button type="button" class="btn bp bs" onclick="legCsSign()">Countersign</button>
+    </div>
+    <div id="cs-result" role="status" aria-live="polite" style="font-size:12px;min-height:18px"></div>
+    <h4 style="font-size:13px;margin:14px 0 4px">Waiting across the home</h4>
+    <button type="button" class="btn bo bs" onclick="legCsOpen()">Refresh the list</button>
+    <div class="tw" tabindex="0" role="region" aria-label="Records waiting for a countersignature"><table><thead><tr><th>Stage</th><th>Prepared by</th><th>Role</th><th>Expires</th></tr></thead>
+    <tbody id="cs-open"><tr><td colspan="4" style="text-align:center;color:var(--muted);padding:12px;">Press Refresh the list (Owner or Director)</td></tr></tbody></table></div>
+  </div></div>
 </div>
 <div class="modal" id="cremationmodal">
   <div class="mbox">
@@ -1609,7 +1628,7 @@ function legFetchTimeoutSignal(){
     return AbortSignal.timeout(LEG_FETCH_TIMEOUT_MS); }catch(e){}
   return undefined;
 }
-function sdnData(action,resource,payload,withSession){
+function sdnData(action,resource,payload,withSession,extraBody){
   var lic=legLicenseKey();
   // Recorded, not just returned. A missing licence key produced the same
   // silent null as a server refusal, so both arrived at the caller as "sync
@@ -1640,7 +1659,9 @@ function sdnData(action,resource,payload,withSession){
     signal: legFetchTimeoutSignal(),
     method:'POST',
     headers:h,
-    body:JSON.stringify({action:action,resource:resource,app_id:APP_ID,payload:payload||{}})
+    // b56: extraBody carries ONLY the countersign reference (countersign_token) that api/sd-data.js reads
+    // for a locked resource; every other call passes nothing and the body is unchanged.
+    body:JSON.stringify(Object.assign({action:action,resource:resource,app_id:APP_ID,payload:payload||{}},extraBody||{}))
   }).then(function(r){
     return r.json().then(function(d){
       if(!r.ok||!d||!d.ok){
@@ -3237,12 +3258,100 @@ async function saveCremation(){
     disposition_type:$('crdisposition').value,disposition_details:$('crdispositiondetails').value.trim(),
     completed_datetime:(existing&&existing.completed_datetime)||'',created_at:legLocalToday()};
   if(rec.status==='Completed'&&!rec.completed_datetime)rec.completed_datetime=new Date().toISOString();
-  var list=cremations();
-  if(ceid){list=list.map(function(x){return x.id===ceid?rec:x;});}else{list.push(rec);}
-  st('leg_cremations',list);
+  // b56 F3: a cremation record is never written on one person's say-so (api/leg-countersign.js,
+  // MODE_ALWAYS, owner included). It is STAGED: the server returns a one-time reference, a
+  // different licensed director countersigns with it, and only then is this exact record filed.
+  // Nothing goes into the local list before it is filed -- the server says "nothing was saved",
+  // so the screen must not say otherwise.
+  var r=await legCs('prepare',{resource:'leg_cremations',payload:rec});
+  if(!r.ok){toast(r.msg||'Could not stage this record for countersignature -- nothing was saved. Try again.',6000);return;}
+  var pend=legCsPending();
+  pend.push({token:r.data.token,expires_at:r.data.expires_at,rec:rec,staged_at:new Date().toISOString()});
+  legCsSave(pend);
   closeCremationModal();rCremation();
-  var syncResult=await sdnData('write','leg_cremations',rec);
-  toast(syncResult?'Cremation record saved':legWriteFailText('leg_cremations','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
+  toast('Staged, NOT filed yet. Give the reference shown under Countersignatures to another licensed director.',6000);
+}
+
+// ── F3 COUNTERSIGNATURE UI (b56) ───────────────────────────────────────────
+// CONCEPT: a cremation authorisation is filed only with a second named signer.
+// The preparer stages it and holds the one-time reference (the server returns
+// it once and stores only its hash); a DIFFERENT Owner/Director countersigns
+// with that reference; the preparer then files exactly the staged record. The
+// server decides every step -- this screen shows what it answered, verbatim.
+var LEG_CS_API='https://sairn.vercel.app/api/leg-countersign';
+var LEG_CS_KEY='sairnlegacy_cs_pending';
+function legCs(action,payload){
+  var lic=legLicenseKey();
+  if(!lic)return Promise.resolve({ok:false,status:0,data:null,code:'NO_LICENSE',msg:'No licence key on this device -- enter it in Settings. Nothing was staged or signed.'});
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};
+  if(legSession&&legSession.token)h['X-SD-Auth']=legSession.token;
+  return fetch(LEG_CS_API,{signal:legFetchTimeoutSignal(),method:'POST',headers:h,body:JSON.stringify(Object.assign({action:action},payload||{}))})
+    .then(function(r){return r.json().catch(function(){return{};}).then(function(d){
+      return {ok:r.ok&&!!d&&!!d.ok,status:r.status,data:d,code:(d&&d.error&&d.error.code)||'',msg:(d&&d.error&&d.error.message)||''};
+    });})
+    .catch(function(e){return {ok:false,status:0,data:null,code:'NETWORK',msg:'Could not reach the server ('+e.message+'). Nothing was changed.'};});
+}
+function legCsPending(){try{var v=JSON.parse(localStorage.getItem(LEG_CS_KEY)||'[]');return Array.isArray(v)?v:[];}catch(e){return [];}}
+function legCsSave(v){try{localStorage.setItem(LEG_CS_KEY,JSON.stringify(v));}catch(e){toast('This browser would not keep the staged record -- note the reference before leaving this page.',6000);}}
+var LEG_CS_STAGE={awaiting_signature:'Waiting for a countersignature',signed:'Countersigned -- ready to file',filed:'Filed',expired:'Expired -- stage it again'};
+function legCsRender(){
+  var el=$('cs-pending');if(!el)return;
+  var pend=legCsPending();
+  el.innerHTML=pend.length?pend.map(function(p,i){
+    return '<tr><td>'+H(caseLabel(p.rec.case_id))+'</td><td>'+H(p.rec.crematory_name||'--')+'</td>'+
+      '<td><code style="user-select:all;word-break:break-all">'+H(p.token)+'</code></td>'+
+      '<td>'+(p.expires_at?fdatetime(p.expires_at):'--')+'</td><td>'+H(p.stage?(LEG_CS_STAGE[p.stage]||p.stage):'Not checked yet')+'</td>'+
+      '<td><button type="button" class="btn bo bs" onclick="legCsCheck('+i+')">Check</button> '+
+      '<button type="button" class="btn bp bs" onclick="legCsFile('+i+')">File</button> '+
+      '<button type="button" class="btn bo bs" onclick="legCsDiscard('+i+')">Discard</button></td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:16px;">Nothing staged on this device</td></tr>';
+}
+async function legCsCheck(i){
+  var pend=legCsPending(),p=pend[i];if(!p)return;
+  var r=await legCs('status',{token:p.token});
+  if(!r.ok){toast(r.msg||'Could not check that record.',5000);return;}
+  p.stage=r.data.stage;legCsSave(pend);legCsRender();
+  toast(LEG_CS_STAGE[r.data.stage]||r.data.stage);
+}
+async function legCsFile(i){
+  var pend=legCsPending(),p=pend[i];if(!p)return;
+  var ok=await sdnData('write','leg_cremations',p.rec,false,{countersign_token:p.token});
+  if(!ok){toast(legWriteFailText('leg_cremations','Not filed -- nothing was saved to the server.'),6000);return;}
+  var list=cremations().filter(function(x){return x.id!==p.rec.id;});list.push(p.rec);
+  st('leg_cremations',list);
+  pend.splice(i,1);legCsSave(pend);rCremation();
+  toast('Cremation record filed with its countersignature');
+}
+function legCsDiscard(i){
+  var pend=legCsPending();if(!pend[i])return;
+  if(!confirm('Discard this staged record? Nothing was filed, and its reference will no longer be shown here.'))return;
+  pend.splice(i,1);legCsSave(pend);legCsRender();
+}
+async function legCsLookup(){
+  var tok=($('cs-ref').value||'').trim(),out=$('cs-result');
+  if(!tok){out.textContent='Enter the reference the preparer gave you.';return;}
+  var r=await legCs('status',{token:tok});
+  if(!r.ok){out.textContent=r.msg||'That reference was not recognised.';return;}
+  var d=r.data;
+  out.textContent=(LEG_CS_STAGE[d.stage]||d.stage)+'. Prepared by '+(d.prepared_by||'?')+' ('+(d.prepared_role||'?')+'); expires '+(d.expires_at?fdatetime(d.expires_at):'--')+
+    '. Review the record with the person who prepared it before you countersign -- the reference does not show its contents.';
+}
+async function legCsSign(){
+  var tok=($('cs-ref').value||'').trim(),out=$('cs-result');
+  if(!tok){out.textContent='Enter the reference the preparer gave you.';return;}
+  var r=await legCs('countersign',{token:tok});
+  out.textContent=r.ok?'Countersigned. The person who prepared it can now file it.':(r.msg||'Not countersigned.');
+  if(r.ok){$('cs-ref').value='';legCsOpen();}
+}
+async function legCsOpen(){
+  var el=$('cs-open');if(!el)return;
+  var r=await legCs('open',{});
+  if(!r.ok){el.innerHTML='<tr><td colspan="4" style="padding:12px;color:var(--muted)">'+H(r.msg||'Could not load the list.')+'</td></tr>';return;}
+  var items=r.data.items||[];
+  el.innerHTML=(items.length?items.map(function(x){
+    return '<tr><td>'+H(LEG_CS_STAGE[x.stage]||x.stage)+'</td><td>'+H(x.prepared_by||'--')+'</td><td>'+H(x.prepared_role||'--')+'</td><td>'+(x.expires_at?fdatetime(x.expires_at):'--')+'</td></tr>';
+  }).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:12px;">Nothing waiting</td></tr>')+
+  (r.data.truncated?'<tr><td colspan="4" style="padding:8px;color:var(--muted)">Showing the first '+H(r.data.cap)+' only -- the list was cut short.</td></tr>':'');
 }
 function logCremationHandoff(caseId){
   fillCaseSelects();
@@ -3265,6 +3374,7 @@ function rCremation(){
       '<td><span class="badge '+(statusColors[c.status]||'bx')+'">'+H(c.status)+'</span></td><td>'+H(c.disposition_type||'--')+'</td>'+
       '<td><button class="btn bo bs" onclick="editCremation(\''+c.id+'\')">Edit</button> <button class="btn bo bs" onclick="logCremationHandoff(\''+c.case_id+'\')">Log Handoff</button></td></tr>';
   }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No cremation records yet</td></tr>';
+  legCsRender();
 }
 
 // ── PRE-NEED & INSURANCE / BENEFIT ASSIGNMENT ─────────────────────────────
