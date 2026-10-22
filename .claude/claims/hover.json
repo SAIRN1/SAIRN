@@ -1195,6 +1195,17 @@
       "status": "released",
       "released_at": "2026-10-22T16:35:15Z",
       "files": null
+    },
+    {
+      "id": "hover-1792702755",
+      "session": "hover",
+      "subject": "hover",
+      "task": "hover b85: standing check comparing hover-audit-log with the tracked tools dir, finding-class rule in hover_log, prepared fixes for #1705 and #1698, ledger substantive discharges, scrutiny-flags.json identification",
+      "claimed_at": "2026-10-22T20:59:15Z",
+      "claimed_at_epoch": 1792702755.3226695,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
