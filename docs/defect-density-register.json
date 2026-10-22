@@ -37486,6 +37486,51 @@
       "recurrence_open": "NOT CLOSED. Not verified with NVDA itself. Modals not opened. Other launch-wave apps not passed."
     },
     {
+      "commit": "16626f0b9350",
+      "date": "2026-10-22",
+      "subject": "fix(hover cold scan pool, #741 / #1626): land the sairncode resource_app_map fix that existed only in the operational copy",
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools/hover_cold_scan_pool.py"
+      ],
+      "lines_added": 111,
+      "lines_removed": 4,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": "hover_cold_scan_pool.py resource_app_map() mapped sairncode to only 7 of its 28 real registered resources, picking up the quoted words delete, read, write, soft_delete, tombstones and therapy_accumulator instead and missing sc_dme: api/_resources/sairncode.js declares its RESOURCES array about 200 lines before its app marker, and the extractor scanned only the text after the app line. The risk-weighted rotation draw therefore never scored sairncode's other resources (logged #741, 2026-09-29). The fix was written 2026-09-30 in the operational copy under hover-audit-log/ and never committed, so the tracked tool kept the defect until this commit (#1626, found again b71, b82). Fixed: _resources_array_span finds the array by name (inline resources: [...] or a const declared anywhere), comments are stripped inside the span, and the old position-relative scan remains as a fall-back. Seven fixtures (ordinary shape, sairncode-shaped, trailing-comment prose, in-array comment prose, and three on the real file) were in the operational copy; on the real repo the tracked code maps 7 sairncode resources with the noise words in and sc_dme missing, this file maps 28 with sc_dme and without the noise words; selftest 70 ok before, 77 ok after, 0 failed.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "f37d66af2b2d",
+        "date": "2026-09-29",
+        "subject": "feat(hover): land hover's own tooling in the platform repo -- Michael's decision, mirror repo restricted to log/anchors/beacon only",
+        "lag_days": 23
+      },
+      "citation_note": "1.11 is cited for the cost of a check that reported on less than it claimed: the rotation draw looked complete while one app's resources were mostly absent from it, and nothing said so. It is not a fail-open of a gate; the effect was a skewed draw, not a wrong verdict.",
+      "contributing_factors": [
+        {
+          "factor": "The extractor assumed the app marker precedes the resource array and no fixture used a file where it does not; the one outlier file was found by a count looking implausible (7 against 10 to 45).",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Name-based array location with fixtures for both orderings and a real-file check."
+        },
+        {
+          "factor": "The fix lived only in the operational copy under hover-audit-log/, outside git, for 22 days after it was written, and the tracked copy that the tools directory ships kept the defect (#1626).",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Landed in the tracked tools directory by this commit; the other four divergent pairs from #1626 are not touched."
+        }
+      ],
+      "recurrence_open": "THE OPERATIONAL AND TRACKED COPIES OF FOUR OTHER TOOLS STILL DIVERGE (citation_class_check.py, hover_editor_review.py, hover_completeness_probe.py, hover_cross_vendor_check.py), so #1626 stays open for those; this commit lands only the cold-scan-pool content. The extractor still scans a file for a resources key by regular expression, not a parser, and the fall-back to the old position-relative scan can still return a wrong span for a shape nobody has seen."
+    },
+    {
       "commit": "847e89943d6d",
       "date": "2026-10-22",
       "subject": "fix(stonedesk b54): every select/field named, every panel headed, 56 contrast nodes fixed",
