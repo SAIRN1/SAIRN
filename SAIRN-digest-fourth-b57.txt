@@ -1,0 +1,23 @@
+SAIRN DIGEST -- fourth b57 -- 2026-10-22
+CONTEXT 45.2% of 1,000,000 -- 452,219 tokens, measured.
+STATUS: F3 driven LIVE through the deployed UI (pass, residue recorded); 15 modal controls named (live); ai heading heard clean.
+DECISION-NEEDED: run sql/zz_probe_residue_delete_b57_leg_f3.sql to remove the demo test cremation record? (optional)
+READ: SAIRN-handoff-fourth-b57.md (whole state). Detail: SAIRN-report-fourth-b57.txt.
+SQL: sql/zz_probe_residue_delete_b57_leg_f3.sql (residue removal, guarded; nothing run)
+CHANGED:
+  10e601502/7ea680c61 docs/live-residue/2026-10-22-fourth-b57-leg-f3-ui-live.json + the removal SQL file; Tier A (slabs) to hank
+  09e810819 stonedesk: 14 modal/sub-view controls in SD_A11Y_NAMES + slab-bind select labelled; 33 arms; live 14/14 named
+  a8ed1f41d register re-seat after rebase
+1 LIVE F3, clicked in two contexts: stage -> self-sign refused -> director countersigns -> File filed; replay 409 SPENT;
+  read-back present; settings restored; both TEST creds deactivated
+2 NVDA raw log: 66 heading lines, 0 emoji; ai heading heard; aiquote missed once (heard b54-b56; headless 3/3) -- filed
+3 emoji OUTSIDE headings = separate backlog: there the emoji is often the whole name, so a blanket hide makes unnamed buttons
+EVIDENCE-path: docs/live-residue/2026-10-22-fourth-b57-leg-f3-ui-live.json; tests/stonedesk_a11y_pass.js; scratchpad live_f3_b57.json.
+NEXT, in order:
+  a decision above (optional removal SQL)
+  b aiquote NVDA re-check; if missed, trace what takes focus after its render hook
+  c emoji-outside-headings backlog (per-control rule) and an open-modal axe pass
+  d Michael: `! npm ci --ignore-scripts --no-audit --no-fund` (b54, still denied)
+UNVERIFIED: aiquote heading in the b57 NVDA run; modals axe-audited while open.
+PRIVACY: scratchpad nvda_sd57.log holds speech from other windows -- do not share.
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\fd66c7b5-98f7-4e46-ac2a-b0383cde9210.jsonl

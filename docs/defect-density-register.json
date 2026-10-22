@@ -38214,7 +38214,7 @@
       "recurrence_open": "NOTHING STOPS THE TWO DIRECTORIES FROM DIVERGING AGAIN: the operational directory is still where some tools are run from and edited, and no check compares it with the tracked directory. The merged tool's verdicts were compared with the operational tool on 71 sampled entries, not on all 1,399 citations (a full three-version run was started and not finished). The abbreviation list is still a short fixed list."
     },
     {
-      "commit": "208dbf597514",
+      "commit": "09e8108196e5",
       "date": "2026-10-22",
       "subject": "fix(stonedesk b57): the 15 modal / sub-view controls the panel pass never rendered are named",
       "files": [

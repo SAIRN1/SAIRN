@@ -594,6 +594,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/stonedesk_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "09e8108196e5b4a20094f712e708e33499231403",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/sd-data-leg-overlap.test.js",
    "class": "test file",
    "level": "WEAKENING",

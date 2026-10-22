@@ -1,0 +1,49 @@
+SAIRN REPORT -- fourth b57 -- 2026-10-22
+
+RESULT: all items landed (through e0f8b59a6), no force, no skip.
+Handoff: SAIRN-handoff-fourth-b57.md.
+
+1 LIVE F3 DRIVE, LEG-PINNACLE-2026, approved                  10e601502
+  Driven THROUGH THE DEPLOYED UI (b56 3c574265f), in two browser contexts
+  (TEST apprentice and TEST director, provisioned by the demo owner with
+  random PINs). Every step clicked:
+    Save -> staged (0 local rows)
+    apprentice self-countersign -> refused, server message shown
+    director Look up -> 'Waiting for a countersignature'
+    director Countersign -> 'Countersigned'
+    Check -> 'ready to file'
+    File -> 'filed with its countersignature'
+  Replaying the same reference over the API: 409 COUNTERSIGN_ALREADY_SPENT.
+  Owner read-back: present. Settings restored to [] and re-read. Both
+  credentials deactivated (active=false). 0 page errors.
+  Residue enumeration: docs/live-residue/2026-10-22-fourth-b57-leg-f3-ui-live.json
+  Removal: sql/zz_probe_residue_delete_b57_leg_f3.sql (sections 1-3, with
+  the recoverability guard). Nothing was deleted.
+
+2 MODAL / SUB-VIEW CONTROL NAMES                               09e810819
+  14 static controls added to SD_A11Y_NAMES; the slab-bind template now
+  names its select. qb-agent was a false positive (runtime-tied label);
+  the 4 id-less hits were inside comments.
+  Live: bytes = origin at 21:25Z; 14/14 carry their name on the live page.
+  Suite: 33 arms, and M1-M3 fail on HEAD.
+
+3 NVDA RE-RUN (raw log, not the summary)
+  201 steps, 0 refused; 66 heading lines, 0 with an emoji.
+  The ai heading was HEARD: ' StoneDesk AI Assistant, heading, level 2'.
+  aiquote was NOT heard this run (focus on BODY), though it was heard in
+  b54, b55 and b56, and a headless trace lands on its H2 3/3.
+  Intermittent; filed.
+
+4 METHODOLOGY: emoji outside headings is a SEPARATE backlog item.
+  Outside headings the emoji is often the WHOLE name (icon-only buttons),
+  so the blanket aria-hidden rule that was safe for headings would create
+  unnamed buttons. It needs a per-control rule and its own verification.
+
+5 PUSH: landed. Two refusals were fixed rather than skipped:
+  - the residue SQL guard did not carry the checker's marker phrase;
+  - a Tier A obligation was needed for slabs (assigned to hank).
+  A register re-seat conflicted on rebase: the re-seat commits were
+  skipped, and --reseat was run on the final sha.
+
+OPEN: optional residue removal; aiquote intermittent; emoji backlog;
+modals not axe-audited while open; npm ci still denied.
