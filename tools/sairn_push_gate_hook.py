@@ -2894,6 +2894,15 @@ def main():
                                 '%s (count %s)  %s' % (_k.upper(), r.get('count'),
                                                        str(r.get('anchor'))[:100]))
                                for r in _pj.get(_k, [])]
+                # A SKIPPED probe's anchors were never counted, so nothing above
+                # can name them going bad (cody b49, routed by cc b46). Same
+                # attribution as every other row: denied when this push touches
+                # the probe, printed as owed otherwise. That is how
+                # tests/run_adversarial_prompt_corpus_probe.py sat red from
+                # 2026-09-26 to b49 with a vanished anchor.
+                _found += [(s[0], None, 'SKIPPED  %s -- its anchors are not counted'
+                            % str(s[1])[:120])
+                           for s in _pj.get('skipped', [])]
             if _pr.returncode != 0 and not _found:
                 # A tip whose tool predates a --json field. Unnamed is not
                 # attributable, and unattributable is not a pass.
@@ -2929,6 +2938,8 @@ def main():
                 "Twice means the harness refuses to plant it, or plants the first copy, and",
                 "the arm stops testing the line it names. Zero means the code moved. Widen",
                 "the anchor to text only its own site has (cody b43/b44), or re-derive it.",
+                "SKIPPED means nothing could count them: give the subject a module-level",
+                "literal and pass [(SUBJECT, old, new)] (cody b49).",
                 OVERRIDE_HINT,
             ]), gate='probe-anchors')
 
