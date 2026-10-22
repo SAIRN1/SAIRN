@@ -4409,8 +4409,8 @@
       "task": "b51 countersign off-profile fail-closed, probe_anchor_freshness bare tuple, fail-open sweep  FILES: api/_lib/countersign.js api/sd-data.js api/b51-countersign-lock-drift.test.js tools/probe_anchor_freshness.py docs/sairn-path-manifest.json SAIRN-handoff-cody-b51.md SAIRN-report-cody-b51.txt SAIRN-digest-cody-b51.txt",
       "claimed_at": "2026-10-22T15:49:35Z",
       "claimed_at_epoch": 1792684175.5188904,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-22T16:15:18Z",
       "files": [
         "SAIRN-digest-cody-b51.txt",
         "SAIRN-handoff-cody-b51.md",
