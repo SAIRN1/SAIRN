@@ -4729,8 +4729,8 @@
       "task": "b52 CLAUDE.md audit-key line, rt_stops SQL status",
       "claimed_at": "2026-10-22T15:45:43Z",
       "claimed_at_epoch": 1792683943.9487178,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-22T15:49:01Z",
       "files": null
     }
   ],
