@@ -4677,6 +4677,17 @@
       "status": "released",
       "released_at": "2026-10-22T13:30:45Z",
       "files": null
+    },
+    {
+      "id": "cc-1792676734",
+      "session": "cc",
+      "subject": "cc",
+      "task": "b48 hover scope 1640, deny replication, preflight 5f",
+      "claimed_at": "2026-10-22T13:45:34Z",
+      "claimed_at_epoch": 1792676734.1155324,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
