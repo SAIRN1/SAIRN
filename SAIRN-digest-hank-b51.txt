@@ -1,0 +1,16 @@
+HANK b51 DIGEST -- 2026-10-22 -- D1 MAR billing gate fixed + live-verified; D2 fixed upstream by cc
+NOTE: the batch after b50; Michael's message called it b50, so the done line says b50. Files are b51.
+CONTEXT 28.4% of 1,000,000 -- 283,821 tokens, measured.
+STATUS: 76193dc91 + d1fb6d5c5 + 1eacd46ea LANDED, NOT FORCED; prod deploy READY on 1eacd46ea.
+1. D1: billing without a live grant -> 403 before the assignment tier; refusal audited NO_LIVE_GRANT.
+2. D1b: a granted MAR read that cannot be logged -> 503, not served.
+3. Live ALF-AUDIT-2026: billing assigned to a resident -> 200 with the MAR BEFORE deploy, 403 AFTER.
+   Owner control 200; one NO_LIVE_GRANT audit row in the DB.
+4. Local: b51 suite 11/0 (3 mutants red); mar_billing_grant 28/0.
+5. D2: cc b50 9bb0abf3e landed first; my duplicate dropped (Michael-approved rebase skip).
+   cc's fix verified on my scratch scenarios (exit 2 on no-app and on a name mismatch).
+DECISION-NEEDED (Michael): none.
+NEXT: cc Tier A on 76193dc91; sweep other grant-or-assignment reads if dispatched.
+CHANGED: api/sd-data.js, api/b51-mar-billing-assigned.test.js, sql/alf_audit_owner_credential_2026-10-22.sql
+EVIDENCE-path: SAIRN-handoff-hank-b51.md, SAIRN-report-hank-b51.txt
+UNVERIFIED: D1b (503 on audit failure) on the deployed API; local arm A1 only.

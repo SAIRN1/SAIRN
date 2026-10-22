@@ -1,0 +1,29 @@
+HANK b51 REPORT -- 2026-10-22 (the batch after b50; the confirmation message called it b50)
+
+METHODOLOGY: a grantee role is admitted by its grant or not at all, and the log row is the grant's condition,
+so a read that cannot be logged is not served.
+
+1. D1 FIXED + VERIFIED LIVE (76193dc91; deploy dpl_Hh2ysc61ihPgd9SVodwowmRg8Jj4 READY on 1eacd46ea).
+   - family_mar: billing (a grantee role) with no live grant -> 403 FORBIDDEN, before the assignment query.
+     The refusal is audited mar_access_grant_refused, reason NO_LIVE_GRANT.
+   - A granted read whose mar_access_read row fails -> 503 AUDIT_UNAVAILABLE.
+   - Local: api/b51-mar-billing-assigned.test.js 11/0 (3 mutants red); tests/mar_billing_grant.test.js 28/0.
+   - Live, ALF-AUDIT-2026: audit-owner (credential via sql/alf_audit_owner_credential_2026-10-22.sql, run by
+     Michael) provisioned billing hank-b51-billing. Resident zz-b51-resident is assigned to it; contact
+     zz-b51-contact has consent. All read back.
+       BEFORE deploy: billing family_mar -> 200 with the MAR (defect reproduced live).
+       AFTER  deploy: billing family_mar -> 403 FORBIDDEN, no MAR; owner control -> 200.
+       DB: one sairncare_audit_log row: mar_access_grant_refused {family_mar, NO_LIVE_GRANT, zz-b51-contact}.
+   - Evidence: scratchpad\b51\evidence_before.json, evidence_after.json, live.py (full paths in the handoff).
+
+2. D2: cc b50 fixed it first (9bb0abf3e). My duplicate was dropped in the rebase (git rebase --skip, Michael
+   approved). My scratch scenarios against cc's fix:
+   - no-app registry: invisible -> exit 2, named;
+   - name disagreement: TypeError -> exit 2;
+   - fixer: false success -> REFUSED (exit 1);
+   - clean tree: unchanged.
+
+3. PUSH: 76193dc91, d1fb6d5c5, 1eacd46ea LANDED, not forced (2 ref races retried by script). Then the docs.
+
+OPEN: cc Tier A on 76193dc91 + my 3 earlier; sweep other two-tier reads (needs dispatch); cody G1;
+cc optional fixer exit code.
