@@ -37815,6 +37815,101 @@
         }
       ],
       "recurrence_open": "Same shape may exist in other api/ catch-alls; only sd-agent.js:351 was routed and fixed. The license-gate arms (lines 263-266) still relay store messages by design (coded, user-facing)."
+    },
+    {
+      "commit": "8095ab289db5",
+      "date": "2026-10-22",
+      "subject": "fix(stonedesk b56): heading emoji hidden from the reader; six inputs to the 24px target minimum",
+      "files": [
+        "stonedesk.html",
+        "tests/stonedesk_a11y_pass.js"
+      ],
+      "lines_added": 59,
+      "lines_removed": 6,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "fourth b56. Heading emoji wrapped aria-hidden in sdA11yPass (emoji blocks only, once per heading); min-height 24px on fq-client, nest-slab-w/h, nest-cut-w/h, nest-cut-label. Raw NVDA log: 66 heading utterances, none with an emoji; 7 formerly headingless panels heard; doc-scan zone heard as a button. axe 0 violations on 67 panels. Suite 30 arms, 6/6 new mutants killed.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "real NVDA 2026.2 run (b55) + NVDA en/cldr.dic + axe-core 4.10.2 target-size, scratchpad nvda_dental.py / ts55.py (not in repo)",
+      "found_by_session": null,
+      "injection": {
+        "commit": "57db94fbf375",
+        "date": "2026-06-22",
+        "subject": "Fix JavaScript syntax errors in stonedesk.html - 94/106 scripts passing Node syntax check",
+        "lag_days": 122
+      },
+      "citation_note": "No coding rule covers this class: decorative emoji placed inside headings, and unstyled inputs never measured against the 24px target minimum. Proposed: decoration in a name is aria-hidden; every input gets a measured minimum.",
+      "contributing_factors": [
+        {
+          "factor": "Panel titles were written with a leading emoji, which NVDA CLDR speaks at level none.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Emoji runs in headings wrapped aria-hidden at load and after nav."
+        },
+        {
+          "factor": "Inputs without a class rendered at the browser default 19px height.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "min-height 24px on the six measured inputs."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. Emoji outside headings (buttons, upload zones) are still spoken, e.g. the doc-scan zone. The ai heading was not heard in the b56 NVDA run (foreground lost at that step)."
+    },
+    {
+      "commit": "f2d29cc050e4",
+      "date": "2026-10-22",
+      "subject": "feat(sairnlegacy b56): F3 countersignature UI -- stage, countersign, file",
+      "files": [
+        "sairnlegacy.html",
+        "tests/sairnlegacy_countersign_ui.js",
+        "tests/sairnlegacy_write_failure_voice.js"
+      ],
+      "lines_added": 251,
+      "lines_removed": 8,
+      "app": "sairnlegacy",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "fourth b56, cody b49 O2. saveCremation stored locally then wrote; the server refuses every unsigned leg_cremations write (MODE_ALWAYS). Now: Save stages via /api/leg-countersign prepare, a different director countersigns with the one-time reference, File sends the exact record with countersign_token; nothing is stored locally before filing. Suite 15 arms, 7/7 mutants killed; browser click-through with the API stubbed. Not driven against live.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "d6b37bb1c486",
+        "date": "2026-10-22",
+        "subject": "feat(sairnlegacy, cody b48): F3's apprentice prepare route reaches the countersignature lock",
+        "lag_days": 0
+      },
+      "citation_note": "No coding rule covers this class: a server-side lock shipped with no client for it, so the UI's only write path was refused while its local copy looked saved. Proposed: a lock lands with the screen that drives it.",
+      "contributing_factors": [
+        {
+          "factor": "The countersign lock (b18/b48) shipped server-side with no screen calling /api/leg-countersign.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Stage / countersign / file UI on the Cremation panel."
+        },
+        {
+          "factor": "saveCremation wrote the local list before the server answered, so a refused record looked saved.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Nothing enters the local list before it is filed."
+        },
+        {
+          "factor": "The live F3 drive (cody b49) could only use the API, because no UI existed to click.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "vm suite + stubbed browser click-through; live drive still open."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. Not driven against the live API (it would leave leg_cremations and token residue). Cremation records already saved locally before b56 and refused by the server are still on those devices. Other locked resources, if added to an F3 list, have no UI either."
     }
   ],
   "started": "2026-09-09",
