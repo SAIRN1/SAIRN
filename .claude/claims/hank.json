@@ -4590,8 +4590,8 @@
       "task": "b50 discharge hank-assigned reviews",
       "claimed_at": "2026-10-22T13:36:47Z",
       "claimed_at_epoch": 1792676207.5924804,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-22T13:48:27Z",
       "files": null
     }
   ],
