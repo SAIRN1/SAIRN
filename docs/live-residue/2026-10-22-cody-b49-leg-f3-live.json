@@ -1,0 +1,58 @@
+{
+  "written_by": "scratchpad live_f3_b49.py (cody b49; not a repo tool -- this file is its enumeration)",
+  "session": "cody",
+  "batch": "b49",
+  "date": "2026-10-22",
+  "class": "VERIFICATION-WRITING",
+  "licence": "LEG-PINNACLE-2026 (the SAIRNlegacy demo licence only)",
+  "why_it_had_to_write": "The F3 deferral (d6b37bb1c) is only proven by a countersigned apprentice write LANDING. Every refusal arm would also pass against a handler that refused everything.",
+  "result": "C0 403 FORBIDDEN (no list) | D1 403 COUNTERSIGN_REQUIRED (listed, unsigned) | apprentice self-sign 403 NOT_QUALIFIED_TO_SIGN | D2 200 (director-signed) | D2b 409 COUNTERSIGN_ALREADY_SPENT | read-back: present | settings restored | C1 403 FORBIDDEN (after restore)",
+  "no_tool_here_runs_a_delete": "the removal SQL below is for a human to run, one statement at a time, after its blast-radius query",
+  "rows": [
+    {
+      "table": "public.leg_cremations",
+      "id_column": "cremation_id",
+      "id": "CR-B49-F3-LIVE-F3D9FB",
+      "what": "the countersigned TEST record the apprentice filed (D2). Its data.note says it is a test, not a real authorisation.",
+      "blast_radius_sql": "select count(*) from public.leg_cremations where license_hash = encode(digest('LEG-PINNACLE-2026','sha256'),'hex') and cremation_id = 'CR-B49-F3-LIVE-F3D9FB';",
+      "blast_radius_expected": "1",
+      "removal_sql": "delete from public.leg_cremations where license_hash = encode(digest('LEG-PINNACLE-2026','sha256'),'hex') and cremation_id = 'CR-B49-F3-LIVE-F3D9FB';",
+      "confirm_sql": "select count(*) from public.leg_cremations where license_hash = encode(digest('LEG-PINNACLE-2026','sha256'),'hex') and cremation_id = 'CR-B49-F3-LIVE-F3D9FB';",
+      "confirm_expected": "0"
+    },
+    {
+      "table": "public.sairnlegacy_countersign_tokens",
+      "id_column": "prepared_by (no fixed id: the row id is generated)",
+      "id": "prepared_by = 'b49-f3-apprentice'",
+      "what": "the one prepare row, countersigned by b49-f3-director and SPENT on the D2 write (D2b then answered 409 ALREADY_SPENT).",
+      "blast_radius_sql": "select count(*) from public.sairnlegacy_countersign_tokens where license_hash = encode(digest('LEG-PINNACLE-2026','sha256'),'hex') and prepared_by = 'b49-f3-apprentice';",
+      "blast_radius_expected": "1",
+      "removal_sql": "delete from public.sairnlegacy_countersign_tokens where license_hash = encode(digest('LEG-PINNACLE-2026','sha256'),'hex') and prepared_by = 'b49-f3-apprentice';",
+      "confirm_sql": "select count(*) from public.sairnlegacy_countersign_tokens where license_hash = encode(digest('LEG-PINNACLE-2026','sha256'),'hex') and prepared_by = 'b49-f3-apprentice';",
+      "confirm_expected": "0"
+    },
+    {
+      "table": "public.sairnlegacy_employee_auth",
+      "id_column": "employee_id",
+      "id": "b49-f3-apprentice, b49-f3-director",
+      "what": "two TEST credentials (apprentice, director), PINs random and never recorded; both DEACTIVATED through set_active with a reason, confirmed active=false on the roster. Deactivated, not deleted -- the app's own lifecycle has no delete.",
+      "blast_radius_sql": "select employee_id, role, active from public.sairnlegacy_employee_auth where license_hash = encode(digest('LEG-PINNACLE-2026','sha256'),'hex') and employee_id in ('b49-f3-apprentice','b49-f3-director');",
+      "blast_radius_expected": "2 rows, active = false",
+      "removal_sql": "delete from public.sairnlegacy_employee_auth where license_hash = encode(digest('LEG-PINNACLE-2026','sha256'),'hex') and employee_id in ('b49-f3-apprentice','b49-f3-director') and active = false;",
+      "confirm_sql": "select count(*) from public.sairnlegacy_employee_auth where license_hash = encode(digest('LEG-PINNACLE-2026','sha256'),'hex') and employee_id in ('b49-f3-apprentice','b49-f3-director');",
+      "confirm_expected": "0"
+    },
+    {
+      "table": "public.sairnlegacy_settings",
+      "id_column": "license_hash",
+      "id": "the LEG-PINNACLE-2026 row",
+      "what": "NOT residue to delete: the apprentice countersign list was set to ['leg_cremations'] for the drive and RESTORED to its prior value ([]) at the end, confirmed by re-read. updated_by/updated_at now name the owner session of this run, and hank b46's settings audit wrote one row per save (2 saves).",
+      "blast_radius_sql": "select apprentice, updated_by, updated_at from public.sairnlegacy_settings where license_hash = encode(digest('LEG-PINNACLE-2026','sha256'),'hex');",
+      "blast_radius_expected": "apprentice.countersign = []",
+      "removal_sql": "none -- do not delete this row",
+      "confirm_sql": "select apprentice->'countersign' from public.sairnlegacy_settings where license_hash = encode(digest('LEG-PINNACLE-2026','sha256'),'hex');",
+      "confirm_expected": "[]"
+    }
+  ],
+  "not_removed_by_design": "public.sairnlegacy_audit_log: the two PIN-setup rows (auditPinSetup) and the two leg_settings save rows this run caused. An audit ledger is not residue; it records that the test happened."
+}
