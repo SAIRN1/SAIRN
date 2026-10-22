@@ -220,7 +220,11 @@ def ledger(repo, log_path=LOG_PATH):
     refs = referenced_shas(entries)
     rows = []
     for sha, subject in commits:
-        covered = sha.lower() in refs
+        # prefix match in either direction: git log --oneline abbreviates to
+        # core.abbrev (9 here, growing with the repo) and a ref holds whatever
+        # length was typed; exact membership reported 0 of 191 covered (b83).
+        s = sha.lower()
+        covered = any(r.startswith(s) or s.startswith(r) for r in refs)
         rows.append({'sha': sha, 'subject': subject, 'covered': covered})
     return rows
 
@@ -385,6 +389,33 @@ def run_fixtures():
     ck('end-to-end: the referenced commit is COVERED', fake_sha in covered_shas)
     ck('end-to-end: the other real review commit is UNCOVERED',
        any(not r['covered'] for r in rows) and len(rows) == 2)
+
+    # --- abbreviation length: git log --oneline prints core.abbrev characters
+    # (7 in a small repo, 9 in this one, more as it grows) while refs hold
+    # whatever length was typed. Exact membership called every mismatch
+    # uncovered (b83: 0 of 191 reported, 160 true).
+    full = subprocess.run(['git', 'rev-parse', commits[0][0]], cwd=work_repo,
+                          capture_output=True, text=True, check=True).stdout.strip()
+    for ref_len in (7, 8, 10):
+        with open(log_tmp, 'w', encoding='utf-8') as f:
+            f.write(json.dumps({'type': 'check', 'ref': full[:ref_len]}) + '\n')
+        rows = ledger(repo=work_repo, log_path=log_tmp)
+        ck('a %d-character ref covers its commit against a %d-character abbreviation'
+           % (ref_len, len(commits[0][0])),
+           [r['covered'] for r in rows if r['sha'] == commits[0][0]] == [True])
+    subprocess.run(['git', 'config', 'core.abbrev', '9'], cwd=work_repo, check=True)
+    commits9 = review_commits(work_repo)
+    with open(log_tmp, 'w', encoding='utf-8') as f:
+        f.write(json.dumps({'type': 'check', 'ref': full[:8]}) + '\n')
+    rows = ledger(repo=work_repo, log_path=log_tmp)
+    ck('an 8-character ref covers its commit against a 9-character abbreviation '
+       '(this repo\'s real shape), and only that commit',
+       len(commits9[0][0]) == 9
+       and [r['covered'] for r in rows] == [r['sha'] == commits9[0][0] for r in rows])
+    with open(log_tmp, 'w', encoding='utf-8') as f:
+        f.write(json.dumps({'type': 'check', 'ref': full[:6] + ('0' if full[6] != '0' else '1') + full[7:9]}) + '\n')
+    ck('a ref that merely starts like the sha (a different 7th character) covers nothing',
+       not any(r['covered'] for r in ledger(repo=work_repo, log_path=log_tmp)))
 
     print()
     print('%d ok, %d failed' % (ok_count[0], fail_count[0]))
