@@ -544,6 +544,26 @@ console.log('leg_bookings -- the double-booking race the client half could not '
          + 'booking stays on screen until something else redraws');
     }
 
+    // (a2) THE SERVER'S OTHER 409 IS A REFUSAL TOO (cc b53, H1 #1694).
+    // BOOKING_CHECK_INDETERMINATE means the overlap check could not be
+    // completed, so the server saved nothing. The row used to stay on this
+    // device: H1 drove the real saveBooking() and found 1 row left where
+    // BOOKING_CONFLICT leaves 0.
+    {
+      const ctx = ctxFor([], { status: 409,
+        payload: { error: { code: 'BOOKING_CHECK_INDETERMINATE',
+                            message: 'This booking was NOT saved, because the '
+                                   + 'double-booking check could not be completed' } } });
+      await ctx.saveBooking();
+      ok(bk(ctx).length === 0,
+         'an INDETERMINATE refusal is REMOVED from this device as well -- the '
+         + 'server saved nothing, so neither may the calendar');
+      ok(ctx.toasts.some((t) => /NOT saved/.test(t))
+         && !ctx.toasts.some((t) => /already booked|Booking created/.test(t)),
+         '...and the toast carries the server\'s "NOT saved" words, not the '
+         + 'conflict text and not a success');
+    }
+
     // (b) THE SNAPSHOT BUG. A cancellation lands on this device while the
     // request is in flight. Writing back the pre-await `list` would silently
     // revert it -- the exact defect fixed in confirmReserve() on 2026-09-02,

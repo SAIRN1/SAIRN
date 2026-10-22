@@ -3111,7 +3111,13 @@ async function saveBooking(){
   // 2026-09-05, so legLastErrCode() is enough and a second direct-fetch call
   // site -- with its own copy of the headers, the token and the timeout -- is
   // not worth having.
-  if(!syncResult&&legLastErrCode('leg_bookings')==='BOOKING_CONFLICT'){
+  // BOTH 409s ARE REFUSALS OF THIS BOOKING (cc b53, H1 #1694).
+  // BOOKING_CHECK_INDETERMINATE (api/_lib/leg-overlap.js) means the server
+  // could not tell whether this booking overlaps one of its unreadable rows,
+  // so it did NOT save it. Only BOOKING_CONFLICT used to roll back, which left
+  // a booking on this device that the server never had.
+  var bkRefused=!syncResult&&legLastErrCode('leg_bookings');
+  if(bkRefused==='BOOKING_CONFLICT'||bkRefused==='BOOKING_CHECK_INDETERMINATE'){
     var fresh=bookings();
     var i=-1;
     for(var k=0;k<fresh.length;k++){
@@ -3120,7 +3126,9 @@ async function saveBooking(){
     }
     if(i>-1){fresh.splice(i,1);st('leg_bookings',fresh);}
     rScheduling();
-    toast(legWriteFailText('leg_bookings','That facility is already booked for that time on another device -- nothing was saved.'),7000);
+    toast(legWriteFailText('leg_bookings',bkRefused==='BOOKING_CONFLICT'
+      ?'That facility is already booked for that time on another device -- nothing was saved.'
+      :'This booking was NOT saved: the server could not complete the double-booking check. Report this -- it is a data problem.'),7000);
     return;
   }
   toast(syncResult?'Booking created':legWriteFailText('leg_bookings','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);

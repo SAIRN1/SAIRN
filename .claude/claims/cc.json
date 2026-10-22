@@ -5092,6 +5092,19 @@
       "source": "status-registry",
       "why": "same declared FILES",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-22T15:53:17Z",
+      "my_subject": "cc",
+      "my_task": "b53 sairnlegacy H6 booking indeterminate, criticality D2 re-verify",
+      "other_session": "fourth",
+      "other_subject": "sairnlegacy",
+      "other_task": "countersign ui f3",
+      "other_claimed_at": "2026-10-22T15:28:07Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same app: sairnlegacy",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
 }
