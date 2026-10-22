@@ -1,0 +1,60 @@
+REPORT cc b51
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-22
+RANGE     39eb41d6 (ledger discharge), 172f4aae (handoff), this report and digest. No --force, NO OVERRIDE.
+
+== 1. The 7 register problems (docs/CRITICALITY-TIERS.md, owner fourth) ==
+Source: python tools/criticality_tier_check.py -> exit 1, PROBLEMS:7. All are register-data drift; none is a checker defect.
+1 NO TIER       sairnlegacy/leg_settings (api/_resources/sairnlegacy.js:66) has no row. Added by 38b2b506 (2026-10-21).
+2 NO TIER       sairnsenior/sen_period_closings (api/_resources/sairnsenior.js:83) has no row. Added by 144dfb71 (2026-10-16).
+3 COUNT         sairnlegacy rollup (line 133) A=**20**; the rows say 21.
+4 COUNT         sairnlegacy rollup B=16; the rows say 15.
+                3 and 4 come from 1c9ad7cf (2026-10-19 14:45), which moved the leg_clergy row B->A without touching the rollup.
+5 LIST MISSING  leg_clergy (Tier A) is not named in the sairnlegacy rollup list. Same commit. Fix with --fix-rollup-list.
+6 COUNT         sairnscape rollup (line 136) A=**3**; the rows say 4.
+7 COUNT         sairnscape rollup B=9; the rows say 8.
+                6 and 7 come from 899597b5 (2026-10-19 11:14), which moved the customers row B->A; the list already names it.
+Order for fourth: rows 1+2 first (they move the counts), then --fix-rollup-list, then the A/B cells, then the headline. Re-run to PROBLEMS:0.
+Attribution: each problem is traced by row-history walking (git log -G on the row and on the registry line), not inferred.
+
+== 2. fourth b49 Tier A obligation -- DISCHARGED (39eb41d6), SOUND-WITH-GAPS ==
+CRITERIA:
+  claims hold at HEAD;
+  a refused write never shows as saved;
+  an unreadable read is never 'none';
+  no XSS;
+  suites drive the real functions, with teeth.
+Covered commits: 02cec2f8 senior, 5e38373c roofing, dd3c45f6 biz Z8. No later commit touches them.
+Holds:
+  contract/authorisation refusals are withdrawn and named (sairnsenior.html:4766, :5503);
+  toast uses textContent and rfEsc escapes;
+  suites 15/0, 10/0, 19/0 -- fixes removed: senior RED 5/15, roofing RED 3/10;
+  checkblocks 4/4/6 blocks clean.
+Teeth killed:
+  senior C1, C3, A1, C7, G1, G2, G3;
+  roofing J1-J3, W1-W4.
+GAPS:
+  MEDIUM (cc re-read; pre-existing at 02cec2f8^:4361): a REFUSED sen_claims write stays local -- pushed before the await (:4374), never withdrawn, never dropped by senServerWinsMerge (:2289), and readyToBillVisits (:4190) then hides its visit.
+  low-med: a non-JSON 4xx (WAF 403, 413) is kept as 'no answer'.
+  low: 503 SCHEMA_OUTDATED is withdrawn as 'refused' while NOT_PROVISIONED is kept.
+  low-med: a roofing parent-read failure leaves the JHA/warranty panels stale (:4166, :4836).
+  low: 6 surviving mutants; the biz R7 arm can pass vacuously.
+
+== 3. METHODOLOGY ==
+A register problem is not routed until it names the commit that caused it and the exact cell to change.
+5 of the 7 come from two commits that changed a row without its rollup -- the --fix-rollup-list pattern, one column over.
+
+== OPEN ==
+fourth: register problems 1-7; the b49 gaps (refused claim first).
+hank: 38b2b506 (b50).
+cody: d6b37bb1 (b50).
+
+== TRANSCRIPT ==
+C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\87a27b9f-55e9-45e8-b017-01ed1febac1a.jsonl
+
+== CHANGED ==
+docs/tier-a-reviews.json, the deliverables.
+
+SHA256 b3ab6b7bb9ede62a2e21e95149e0f3bda09c24873e930513ec3675e8c30ab87f
+END-OF-REPORT

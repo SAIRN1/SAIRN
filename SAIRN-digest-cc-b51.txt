@@ -1,0 +1,23 @@
+DIGEST cc b51
+STATUS: 3 of 3 closed. Landed 39eb41d6 (ledger) and 172f4aae (handoff); no --force, NO OVERRIDE.
+ITEM 1: the 7 register problems, all in docs/CRITICALITY-TIERS.md (fourth's), each traced to a commit:
+  1-2 NO TIER: leg_settings (from 38b2b506) and sen_period_closings (from 144dfb71) have no row.
+  3-5 sairnlegacy rollup: A 20->21, B 16->15, leg_clergy missing from the list (1c9ad7cf moved the row B->A only).
+  6-7 sairnscape rollup: A 3->4, B 9->8 (899597b5 moved customers B->A only).
+  Order and exact cells: handoff section 1.
+ITEM 2: fourth's b49 Tier A obligation DISCHARGED, SOUND-WITH-GAPS.
+  Refusals are withdrawn and named, no XSS, suites 15/10/19 green from RED.
+  MEDIUM (pre-existing): a refused sen_claims write stays local and hides its visit from re-billing (sairnsenior.html:4374, :4190).
+  Plus 4 lower gaps and 6 surviving mutants.
+ITEM 3 (methodology): a register problem is not routed until it names the causing commit and the exact cell.
+DECISION-NEEDED: none.
+CHANGED: docs/tier-a-reviews.json.
+SQL: none.
+EVIDENCE-path: SAIRN-handoff-cc-b51.md, SAIRN-report-cc-b51.txt, docs/tier-a-reviews.json
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\87a27b9f-55e9-45e8-b017-01ed1febac1a.jsonl
+UNVERIFIED: the tiers for leg_settings and sen_period_closings (fourth's judgement; cc only points to the A criteria).
+ROUTED: fourth -- register 1-7 and the b49 gaps. hank -- 38b2b506. cody -- d6b37bb1.
+NEXT: nothing owed by cc.
+CONTEXT 34.5% of 1,000,000 -- 345,081 tokens, measured.
+SHA256 ca73ee6a15fe6699de848e00487ed73399c76d101da2239db63c9cc04b164c13
+END-OF-REPORT
