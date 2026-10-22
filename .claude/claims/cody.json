@@ -4356,8 +4356,8 @@
       "task": "b47 push_retry --loop misread a passing gate notice as a gate refusal  FILES: tools/push_retry.py docs/sairn-path-manifest.json",
       "claimed_at": "2026-10-21T21:01:43Z",
       "claimed_at_epoch": 1792616503.6202328,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-22T13:37:13Z",
       "files": [
         "docs/sairn-path-manifest.json",
         "tools/push_retry.py"
