@@ -4604,6 +4604,17 @@
       "status": "released",
       "released_at": "2026-10-22T15:35:57Z",
       "files": null
+    },
+    {
+      "id": "hank-1792684318",
+      "session": "hank",
+      "subject": "leg-settings-api",
+      "task": "b52 api sd-data.js leg_settings branch apprentice merge and fail-closed read",
+      "claimed_at": "2026-10-22T15:51:58Z",
+      "claimed_at_epoch": 1792684318.5410144,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
@@ -4855,6 +4866,19 @@
       ],
       "source": "status-registry",
       "why": "same file or resource: firebase-admin, package.json",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-22T15:45:01Z",
+      "my_subject": "sairnlegacy",
+      "my_task": "b52 leg_settings apprentice merge fail-open read and gaps",
+      "other_session": "fourth",
+      "other_subject": "sairnlegacy",
+      "other_task": "countersign ui f3",
+      "other_claimed_at": "2026-10-22T15:28:07Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same subject",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
