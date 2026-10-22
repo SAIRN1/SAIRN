@@ -1,0 +1,19 @@
+DIGEST cc b47
+STATUS: 5 of 5 closed; no code change; no --force, NO OVERRIDE.
+ITEM 1: Dependabot #5 Fixed (Michael, GitHub web) against 775ee2da = cc b44 firebase-admin 13.10.0. Already committed and pushed; nothing new to commit.
+  Re-measured at HEAD: no node-forge in the lock; firebase-admin lock 13.10.0 = installed 13.10.0; dependency_integrity_check CLEAN.
+ITEM 2: pulled, clean rebase; was 0/10, now 0/0.
+ITEM 3: context re-measured after compaction (fixtures 56/56); the figure is the CONTEXT line below.
+ITEM 4: pushed, no force, landed 0/0.
+ITEM 5: handoff/report/digest on Drive.
+DECISION-NEEDED: none.
+CHANGED: deliverables and the claim file only.
+SQL: none.
+EVIDENCE-path: SAIRN-report-cc-b47.txt, SAIRN-handoff-cc-b47.md
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\87a27b9f-55e9-45e8-b017-01ed1febac1a.jsonl
+UNVERIFIED: CHECK 5f inside a full --preflight (next: a worktree run via sweep-runner).
+ROUTED: cody -- 5e 'skipped' anchors. hank/cody/fourth -- npm ci --ignore-scripts --no-audit --no-fund once.
+NEXT: nothing owed by cc.
+CONTEXT 8.5% of 1,000,000 -- 85,385 tokens, measured.
+SHA256 b48d1df43db5eda48cc343e9a37f3be8fc2ffb634583cac1b364b4b7cadffa99
+END-OF-REPORT

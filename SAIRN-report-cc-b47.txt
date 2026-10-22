@@ -1,0 +1,39 @@
+REPORT cc b47
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-22
+RANGE     claim, deliverables, release. No code change. No --force, NO OVERRIDE, no BYPASS-LOG row.
+
+== 1. Dependabot #5 / firebase-admin ==
+Michael confirmed alert #5 Fixed on GitHub web against 775ee2da (cc b44: firebase-admin 12.7.0 -> 13.10.0, node-forge removed).
+Nothing new to commit. The upgrade landed and was pushed in b44.
+Re-measured at HEAD:
+  package-lock.json packages: no node-forge key.
+  firebase-admin: lock 13.10.0, installed 13.10.0.
+  tools/dependency_integrity_check.py: CLEAN (exit 0), fixtures 10/10.
+cc could not read the alert directly: gh is not on the Bash PATH, and the REST call was denied by the harness.
+
+== 2. Pull ==
+git pull --rebase origin main: clean. Before: 0 ahead / 10 behind. After: 0 0.
+
+== 3. Context, re-measured after compaction ==
+python tools/context_verify.py --digest-line: fixtures 56/56.
+CONTEXT 8.5% of 1,000,000 -- 85,385 tokens, measured.
+No pre-compaction figure is carried forward.
+
+== 4. Push ==
+Pushed with no force; landed (the clone reads 0 0 against origin after the push).
+
+== OPEN (carried; none are cc's to act on) ==
+cody: CHECK 5e does not surface probe_anchor_freshness 'skipped' (tests/run_adversarial_prompt_corpus_probe.py, 3 anchors).
+hank/cody/fourth: npm ci --ignore-scripts --no-audit --no-fund once per clone. Until then CHECK 5f denies their SDK-touching pushes.
+UNVERIFIED: CHECK 5f inside a full --preflight run. Next: run it in a worktree via sweep-runner.
+
+== TRANSCRIPT ==
+C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\87a27b9f-55e9-45e8-b017-01ed1febac1a.jsonl
+
+== CHANGED ==
+SAIRN-handoff-cc-b47.md, SAIRN-report-cc-b47.txt, SAIRN-digest-cc-b47.txt, .claude/claims/cc.json.
+
+SHA256 70ce0900cfb2a7d34614e9d49baf7b43bdf65ba4deb1a5f1837ec69ece0767cb
+END-OF-REPORT
