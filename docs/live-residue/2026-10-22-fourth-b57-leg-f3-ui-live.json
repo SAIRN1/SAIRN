@@ -1,0 +1,25 @@
+{
+ "written_by": "scratchpad live_f3_b57.py (fourth b57; not a repo tool -- this file is its enumeration)",
+ "session": "fourth",
+ "batch": "b57",
+ "date": "2026-10-22",
+ "class": "VERIFICATION-WRITING",
+ "approved_by": "Michael, b57 dispatch item 1: drive F3 live against LEG-PINNACLE-2026 and record the residue",
+ "licence": "LEG-PINNACLE-2026 (the SAIRNlegacy demo licence only)",
+ "why_it_had_to_write": "The b56 countersign UI (3c574265f) is only proven by a countersigned record LANDING through the screen. cody b49 proved the API; this drives the deployed UI: stage, countersign and file were CLICKED in two browser contexts (apprentice, director).",
+ "result": "apprentice Save -> staged, 0 local rows | apprentice Countersign on own record -> 'Only a licensed funeral director (Owner or Director) can countersign...' | director Look up -> 'Waiting for a countersignature. Prepared by b57-f3-apprentice (apprentice)' | director Countersign -> 'Countersigned.' | apprentice Check -> 'Countersigned -- ready to file' | apprentice File -> 'Cremation record filed with its countersignature' | replay of the same reference (API) -> 409 COUNTERSIGN_ALREADY_SPENT | owner read-back: present | leg_settings restored to prior [] and re-read | both test credentials deactivated, roster active=false | 0 page errors | 0 other writes blocked",
+ "removal_sql_file": "sql/zz_probe_residue_delete_b57_leg_f3.sql",
+ "no_tool_here_runs_a_delete": "the removal SQL is in the file above, for a human to run one section at a time after its blast-radius select",
+ "rows": [
+  {"table": "public.leg_cremations", "id_column": "cremation_id", "id": "CR-1792702765162-46",
+   "what": "the countersigned TEST record the apprentice FILED through the UI; crematory_name 'b57 F3 LIVE UI TEST -- not a real authorisation', attached to the seeded demo case CS-1 (FH-2026-001)",
+   "removal": "sql/zz_probe_residue_delete_b57_leg_f3.sql section 1"},
+  {"table": "public.sairnlegacy_countersign_tokens", "id_column": "prepared_by (row id is generated)", "id": "prepared_by = 'b57-f3-apprentice'",
+   "what": "the one prepare row, countersigned by b57-f3-director and SPENT by the filing",
+   "removal": "sql/zz_probe_residue_delete_b57_leg_f3.sql section 2"},
+  {"table": "public.sairnlegacy_employee_auth", "id_column": "employee_id", "id": "b57-f3-apprentice, b57-f3-director",
+   "what": "two TEST credentials, PINs random and never recorded; DEACTIVATED via set_active with a reason, read back active=false. Deactivated, not deleted -- the app's own lifecycle has no delete",
+   "removal": "sql/zz_probe_residue_delete_b57_leg_f3.sql section 3 (with the recoverability guard; PROVISIONING_ROLES = ['owner'])"}
+ ],
+ "not_residue": "sairnlegacy_settings: the apprentice countersign list was set to [leg_cremations] for the drive and restored to its prior value [] (re-read confirms). Audit-log rows are kept by design."
+}

@@ -38212,6 +38212,50 @@
         }
       ],
       "recurrence_open": "NOTHING STOPS THE TWO DIRECTORIES FROM DIVERGING AGAIN: the operational directory is still where some tools are run from and edited, and no check compares it with the tracked directory. The merged tool's verdicts were compared with the operational tool on 71 sampled entries, not on all 1,399 citations (a full three-version run was started and not finished). The abbreviation list is still a short fixed list."
+    },
+    {
+      "commit": "a7a8bb27adbe",
+      "date": "2026-10-22",
+      "subject": "fix(stonedesk b57): the 15 modal / sub-view controls the panel pass never rendered are named",
+      "files": [
+        "stonedesk.html",
+        "tests/stonedesk_a11y_pass.js"
+      ],
+      "lines_added": 19,
+      "lines_removed": 2,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "fourth b57. Field Map schedule/overview/pipeline, slab location filter, safety training and incident, AI quote tier, intake link and the slab-bind select had no name; the per-panel axe pass never rendered them. Named via SD_A11Y_NAMES (and the template for the slab-bind select). Suite 33 arms; M1-M3 fail on HEAD.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "fourth b56 static scan of controls outside the rendered panels (scratchpad; not in repo)",
+      "found_by_session": null,
+      "injection": {
+        "commit": "57db94fbf375",
+        "date": "2026-06-22",
+        "subject": "Fix JavaScript syntax errors in stonedesk.html - 94/106 scripts passing Node syntax check",
+        "lag_days": 122
+      },
+      "citation_note": "No coding rule covers this class: controls in modals and sub-views are never seen by a per-panel axe pass. Proposed: a static scan for unnamed controls alongside the rendered pass.",
+      "contributing_factors": [
+        {
+          "factor": "The axe pass audits each panel as rendered on navigation; modal and sub-view controls are not in that DOM state.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Static scan added to the method; arms M1-M3 lock the names."
+        },
+        {
+          "factor": "Controls were built with option text or placeholders only.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Written names applied where none exists."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. A rendered axe pass of each modal has not been run; the static scan is a heuristic. aiquote heading intermittently not focused (b57 NVDA run)."
     }
   ],
   "started": "2026-09-09",
