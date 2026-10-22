@@ -2381,6 +2381,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairnlegacy_countersign_ui.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "311ca123d4db1683259123557da7b900d22d2959",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlegacy_write_failure_voice.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "311ca123d4db1683259123557da7b900d22d2959",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/n1-n4-and-sf-delete.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -4361,6 +4377,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "535c261c04ac198ad825b34d57cfb8fb62374892",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/stonedesk_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "53862ea19bf39706cb5a99064cb982d3c1516fe6",
    "criteria_version": "2026-10-06.1"
   },
   {
