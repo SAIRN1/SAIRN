@@ -580,6 +580,39 @@ def cold_pool(repo, log_path=LOG_PATH):
 
 _APP_LINE = re.compile(r"app\s*:\s*'([a-z0-9_]+)'")
 _RES_NAME = re.compile(r"'([a-z][a-z0-9_]*)'")
+_RESOURCES_KEY = re.compile(r"resources\s*:\s*(\[|[A-Za-z_]\w*)")
+_CONST_ARRAY = re.compile(r"\bconst\s+%s\s*=\s*\[")
+
+
+def _resources_array_span(text, ref):
+    """The bracket span of the array actually assigned to `resources:` --
+    either inline (`resources: [...]`) or via a named const declared
+    ANYWHERE in the file (`const RESOURCES = [...]`, referenced later as
+    `resources: RESOURCES`). Position-independent by construction: finds
+    the array by NAME, never by "everything after some other line" (the
+    #741 bug -- api/_resources/sairncode.js declares its `const
+    RESOURCES = [...]` array 200+ lines BEFORE its `app:`/`resources:`
+    line, the only app file ordered that way, so a position-relative scan
+    silently missed it and picked up unrelated quoted prose in a trailing
+    comment instead). Returns None if the array cannot be located at all
+    -- never a guess at a wrong span."""
+    if ref == '[':
+        start = text.index('resources')
+        bstart = text.index('[', start)
+    else:
+        cm = re.search(_CONST_ARRAY.pattern % re.escape(ref), text)
+        if not cm:
+            return None
+        bstart = text.index('[', cm.start())
+    depth = 0
+    for i in range(bstart, len(text)):
+        if text[i] == '[':
+            depth += 1
+        elif text[i] == ']':
+            depth -= 1
+            if depth == 0:
+                return bstart, i
+    return None
 
 
 def resource_app_map(repo):
@@ -603,10 +636,27 @@ def resource_app_map(repo):
             continue
         app = m.group(1)
         apps += 1
-        # names inside the resources array; the registry files are flat
-        # string lists, so every quoted lowercase identifier after the app
-        # line that looks like a resource name is one.
-        for rm in _RES_NAME.finditer(text[m.end():]):
+        # Locate the REAL resources array by name, not by position (#741):
+        # `resources: [...]` inline, or `resources: VARNAME` pointing at a
+        # `const VARNAME = [...]` declared anywhere else in the file.
+        rk = _RESOURCES_KEY.search(text)
+        span = _resources_array_span(text, rk.group(1)) if rk else None
+        if span is None:
+            # fall back to the old position-relative scan rather than
+            # emitting zero resources for a shape this doesn't recognize --
+            # a degraded map beats a refused one for an app this role has
+            # not yet seen a new file structure from.
+            for rm in _RES_NAME.finditer(text[m.end():]):
+                out.setdefault(rm.group(1), app)
+            continue
+        # Strip `//` line comments before extracting -- a resource array
+        # can carry its own inline documentation comments quoting an
+        # unrelated word in prose (sairncode.js's RESOURCES array quotes
+        # 'delete' describing a VERB, not listing a resource named
+        # 'delete'), and a bracket span alone does not distinguish that
+        # from a real array element.
+        span_text = re.sub(r'//[^\n]*', '', text[span[0]:span[1]])
+        for rm in _RES_NAME.finditer(span_text):
             out.setdefault(rm.group(1), app)
     if apps == 0:
         raise NoRepo('api/_resources yielded ZERO app registries -- refusing '
@@ -955,6 +1005,63 @@ def run_fixtures():
         else:
             fail_count[0] += 1
             print('  FAIL ' + name)
+
+    # --- resource_app_map ordering independence (2026-09-30, #741) ---
+    fx_apps = os.path.join(tempfile.mkdtemp(), 'api', '_resources')
+    os.makedirs(fx_apps)
+    # Shape 1: app: BEFORE resources (every app file except sairncode.js).
+    open(os.path.join(fx_apps, 'fxfirst.js'), 'w', encoding='utf-8').write(
+        "module.exports = {\n  app: 'fxfirst',\n"
+        "  resources: ['fx_alpha', 'fx_beta'],\n};\n")
+    # Shape 2: app: AFTER resources, referenced by a separate const --
+    # sairncode.js's real shape, the one that broke -- plus a trailing
+    # comment containing quoted prose words ('delete' etc., the exact
+    # false-positive shape sairncode.js's own real comment produces) that
+    # must NOT be picked up as resource names.
+    open(os.path.join(fx_apps, 'fxlast.js'), 'w', encoding='utf-8').write(
+        "const RESOURCES = [\n"
+        "  // this family has a real 'delete' action, quoted in prose --\n"
+        "  // the exact real sairncode.js RESOURCES-array-INTERNAL comment\n"
+        "  // shape, distinct from the trailing module.exports comment.\n"
+        "  'fx_gamma', 'fx_delta',\n];\n"
+        "module.exports = {\n  app: 'fxlast',\n  resources: RESOURCES,\n"
+        "  // 'read' is a real verb, not a resource, mentioned in prose\n"
+        "  // here the same way sairncode.js's own trailing comment does.\n"
+        "};\n")
+    got = resource_app_map(os.path.dirname(os.path.dirname(fx_apps)))
+    ck('ordinary inline resources: [...] shape (app: line BEFORE) still '
+       'resolves both real resources',
+       got.get('fx_alpha') == 'fxfirst' and got.get('fx_beta') == 'fxfirst')
+    ck('SAIRNCODE-SHAPED FIXTURE (the real #741 bug): app: line AFTER a '
+       'separately-declared const array still resolves both real '
+       'resources -- the ordering the real sairncode.js file uses',
+       got.get('fx_gamma') == 'fxlast' and got.get('fx_delta') == 'fxlast')
+    ck('a quoted prose word inside a TRAILING comment (module.exports) is '
+       'NOT picked up as a resource name',
+       got.get('read') != 'fxlast')
+    ck('a quoted prose word inside a comment WITHIN the array itself is '
+       'NOT picked up either -- the second, sharper real shape found on '
+       "sairncode.js's own real RESOURCES array ('delete', embedded "
+       'between two real entries, not just trailing after them)',
+       got.get('delete') != 'fxlast')
+
+    # --- known-bad case: the REAL sairncode.js file, per direct
+    # instruction -- resolves cleanly against the actual platform repo,
+    # not only a synthetic stand-in.
+    real_repo = discover_repo([])
+    if real_repo:
+        real_map = resource_app_map(real_repo)
+        sc_count = sum(1 for v in real_map.values() if v == 'sairncode')
+        ck('REAL FILE: api/_resources/sairncode.js resolves to something '
+           'close to its real ~28 resources, not the old 7',
+           sc_count >= 25)
+        ck('REAL FILE: a real sairncode.js resource name (sc_dme, absent '
+           "under the old bug) is now correctly mapped",
+           real_map.get('sc_dme') == 'sairncode')
+        ck('REAL FILE: the old false-positive noise words no longer leak '
+           'in as sairncode "resources"',
+           real_map.get('delete') != 'sairncode'
+           and real_map.get('read') != 'sairncode')
 
     # --- TIER_ROW parsing, against real shapes the register actually uses ---
     tmp_md = os.path.join(tempfile.mkdtemp(), 'tiers.md')
