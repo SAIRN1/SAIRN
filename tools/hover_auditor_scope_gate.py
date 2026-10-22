@@ -161,6 +161,46 @@ AUDITOR_SESSION_RE = re.compile(r'^hover[0-9]*$')
 # tools/sairn_session_identity.py's own header refuses.
 UNPROVISIONED = '.claude/claims/__unprovisioned__.json'
 
+# ── ONE INSTANCE'S OWN BATCH DELIVERABLES, AT THE CLONE ROOT (cc b48) ───────
+# H1 finding #1640 (h1-b73-handoff-blocked-by-own-scope-gate): this gate
+# refused SAIRN-handoff-H1-b73.md and SAIRN-latest-H1.md, and it was still
+# refusing H1's b81 digest at b82. Those files record the auditor's OWN actions.
+# That is the side of the skill's test the OWN_CLAIM entry already quotes. No
+# entry covered them because violations() matched only an exact path or a
+# '/'-prefix, and a batch number cannot be listed in advance.
+#
+# AN ENTRY BEGINNING '^' IS AN ANCHORED REGEX, matched against the WHOLE path
+# with fullmatch. Every other entry keeps its old meaning. The entry is still a
+# plain string, so it prints, hashes and compares the way the others do.
+#
+# THE LABEL IS DERIVED FROM THE SESSION NAME, by the same convention as the
+# claim file: `hover` -> H1, `hover<N>` -> H<N>. It is per instance on purpose.
+# hover2 may not write H1's handoff, for the same reason it may not write
+# hover.json. ROOT LEVEL ONLY: the pattern has no '/', so a
+# docs/SAIRN-handoff-H1-b1.md stays refused.
+OWN_DELIVERABLE_KINDS = ('handoff', 'report', 'digest', 'closure-recheck')
+
+
+def auditor_label(session):
+    """`hover` -> 'H1', `hover<N>` -> 'H<N>', anything else -> None."""
+    if not (session and AUDITOR_SESSION_RE.match(session)):
+        return None
+    return 'H' + (session[len('hover'):] or '1')
+
+
+def own_deliverables_pattern(label):
+    return (r'^SAIRN-(?:(?:%s)-%s-b[0-9]+\.(?:md|txt)|latest-%s\.md)$'
+            % ('|'.join(re.escape(k) for k in OWN_DELIVERABLE_KINDS),
+               label, label))
+
+
+def _matches(path, entry):
+    if entry.startswith('^'):
+        return re.fullmatch(entry, path) is not None
+    if entry.endswith('/'):
+        return path.startswith(entry)
+    return path == entry
+
 
 class AuditorScope(object):
     """The paths ONE auditor instance may write, derived from its session name.
@@ -190,7 +230,12 @@ class AuditorScope(object):
         self.own_claim = (
             '.claude/claims/%s.json' % self.session
             if AUDITOR_SESSION_RE.match(self.session) else UNPROVISIONED)
-        self.paths = self.SHARED + (self.own_claim,)
+        label = auditor_label(self.session)
+        # UNPROVISIONED, not a pattern, for a non-auditor: an exact path that
+        # matches nothing, the same fail-closed sentinel the claim half uses.
+        self.own_deliverables = (own_deliverables_pattern(label)
+                                 if label else UNPROVISIONED)
+        self.paths = self.SHARED + (self.own_claim, self.own_deliverables)
 
     @classmethod
     def is_auditor_session(cls, name):
@@ -229,6 +274,7 @@ def _session():
 # IMPORT-TIME on purpose: OWN_SCOPE feeds the module-level ALLOWED tuple below.
 OWN_SCOPE = AuditorScope(_session())
 OWN_CLAIM = OWN_SCOPE.own_claim
+OWN_DELIVERABLES = OWN_SCOPE.own_deliverables
 
 # ── THE ALLOWLIST, AND EVERY ENTRY CARRIES THE SENTENCE THAT PUT IT THERE ────
 # Nothing is here because it seemed reasonable. If a future reader wants to add
@@ -270,6 +316,14 @@ ALLOWED = (
      'hover_separation_audit.py (detects)... and hover_separation_ci.py '
      '(detects, server-side)... are all three squarely on the '
      '\'audits, does not get audited\' side of the test above"'),
+    # Added cc b48 for H1 finding #1640. It uses the same quotation as
+    # OWN_CLAIM, because a handoff, report or digest is the record of the
+    # session's own batch in exactly the way a claim file is the record of its
+    # own work. #1640 argued that the sentence already exists, and it does.
+    (OWN_DELIVERABLES,
+     'SKILL.md, core rule exception: "this role\'s own operational tooling -- '
+     'the self-log ... anything that records or verifies the hover auditor\'s '
+     '*own* actions rather than the platform\'s -- is not \'platform code\'"'),
 )
 
 # Named explicitly so the reader does not have to infer it from the absence of
@@ -355,15 +409,7 @@ def violations(paths, scope=None):
         p = p.replace('\\', '/').strip()
         if not p:
             continue
-        ok = False
-        for prefix, _why in prefixes:
-            if prefix.endswith('/'):
-                if p.startswith(prefix):
-                    ok = True
-                    break
-            elif p == prefix:
-                ok = True
-                break
+        ok = any(_matches(p, prefix) for prefix, _why in prefixes)
         (allowed if ok else refused).append(p)
     return allowed, refused
 

@@ -56,7 +56,8 @@
       "api/b38-deleted-row-platform.test.js",
       "api/_lib/routes.test.js",
       "tests/requirements.txt",
-      "docs/requirements.txt"
+      "docs/requirements.txt",
+      "tests/run_hover_separation_probe.py"
     ],
     "cody": [
       "tools/push_retry.py"

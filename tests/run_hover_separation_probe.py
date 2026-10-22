@@ -137,6 +137,36 @@ _, refused = G.violations(['.claude/skills/sairn-hover-auditor-evil/x.md'], H1)
 ok('a sibling dir sharing the prefix is NOT allowed by accident',
    refused == ['.claude/skills/sairn-hover-auditor-evil/x.md'], refused)
 
+# H1 finding #1640 (cc b48): the auditor's OWN root-level batch deliverables.
+# Two cases are the exact files the hook refused at H1 b73 and b81.
+H1_OWN = ['SAIRN-handoff-H1-b73.md', 'SAIRN-latest-H1.md',
+          'SAIRN-digest-H1-b81.txt', 'SAIRN-report-H1-b81.txt',
+          'SAIRN-closure-recheck-H1-b82.md']
+_, refused = G.violations(H1_OWN, H1)
+ok('#1640: H1\'s own handoff/report/digest/latest files are allowed',
+   not refused, refused)
+_, refused = G.violations(['SAIRN-handoff-H2-b5.md', 'SAIRN-latest-H2.md'],
+                          G.AuditorScope('hover2'))
+ok('#1640: ...and hover2\'s are allowed for hover2', not refused, refused)
+NEAR_MISS = ['SAIRN-handoff-H2-b5.md', 'SAIRN-handoff-H11-b5.md',
+             'docs/SAIRN-handoff-H1-b73.md', 'SAIRN-handoff-H1-b73.md.bak',
+             'SAIRN-handoff-H1-b.md', 'SAIRN-latest-H1.mdx',
+             'SAIRN-handoff-cc-b47.md', 'SAIRN-ACTIVE-WORK-cc.md']
+_, refused = G.violations(NEAR_MISS, H1)
+ok('#1640: ...but ANOTHER instance\'s, a build agent\'s, a non-root or a '
+   'near-miss name is refused for H1', len(refused) == len(NEAR_MISS), refused)
+_, refused = G.violations(H1_OWN, G.AuditorScope('hover2'))
+ok('#1640: ...and hover2 may not write H1\'s -- two instances stay two parties',
+   len(refused) == len(H1_OWN), refused)
+_, refused = G.violations(H1_OWN, G.AuditorScope('cc'))
+ok('#1640: ...and a non-auditor session gets no deliverable entry at all',
+   len(refused) == len(H1_OWN), refused)
+ok('#1640: the AUDIT accepts any instance\'s deliverable and refuses a build '
+   'agent\'s', A.in_auditor_scope('SAIRN-handoff-H1-b73.md')
+   and A.in_auditor_scope('SAIRN-digest-H2-b9.txt')
+   and not A.in_auditor_scope('SAIRN-handoff-cc-b47.md')
+   and not A.in_auditor_scope('docs/SAIRN-handoff-H1-b73.md'))
+
 
 # ══ B. scope vs signature -- the bug this probe exists to keep fixed ════════
 print('\nB. scope and signature are different sets')

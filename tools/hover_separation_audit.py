@@ -92,6 +92,24 @@ SEPARATION_CI = 'tools/hover_separation_ci.py'
 AUDITOR_SESSION_RE = re.compile(r'^hover[0-9]*$')
 UNPROVISIONED = '.claude/claims/__unprovisioned__.json'
 
+# ONE INSTANCE'S OWN ROOT-LEVEL BATCH DELIVERABLES (cc b48, H1 finding #1640).
+# This is the same derivation as tools/hover_auditor_scope_gate.py's, moved in
+# the same change for the reason given above for the claim file.
+OWN_DELIVERABLE_KINDS = ('handoff', 'report', 'digest', 'closure-recheck')
+
+
+def auditor_label(session):
+    """`hover` -> 'H1', `hover<N>` -> 'H<N>', anything else -> None."""
+    if not (session and AUDITOR_SESSION_RE.match(session)):
+        return None
+    return 'H' + (session[len('hover'):] or '1')
+
+
+def own_deliverables_pattern(label):
+    return (r'^SAIRN-(?:(?:%s)-%s-b[0-9]+\.(?:md|txt)|latest-%s\.md)$'
+            % ('|'.join(re.escape(k) for k in OWN_DELIVERABLE_KINDS),
+               label, label))
+
 
 class AuditorScope(object):
     """The paths ONE auditor instance may write, derived from its session name."""
@@ -103,7 +121,10 @@ class AuditorScope(object):
         self.own_claim = (
             '.claude/claims/%s.json' % self.session
             if AUDITOR_SESSION_RE.match(self.session) else UNPROVISIONED)
-        self.paths = self.SHARED + (self.own_claim,)
+        label = auditor_label(self.session)
+        self.own_deliverables = (own_deliverables_pattern(label)
+                                 if label else UNPROVISIONED)
+        self.paths = self.SHARED + (self.own_claim, self.own_deliverables)
 
     @classmethod
     def is_auditor_session(cls, name):
@@ -114,6 +135,13 @@ class AuditorScope(object):
         m = re.match(r'^\.claude/claims/([a-z][a-z0-9_-]{1,31})\.json$',
                      (path or '').replace('\\', '/'))
         return bool(m and cls.is_auditor_session(m.group(1)))
+
+    @classmethod
+    def deliverable_of_any_auditor(cls, path):
+        """Is this SOME auditor instance's own root-level deliverable? This is
+        the history-side question; the gate's own question is narrower."""
+        return re.fullmatch(own_deliverables_pattern(r'H[0-9]+'),
+                            (path or '').replace('\\', '/')) is not None
 
 
 # ── THE AUDIT ASKS A DIFFERENT QUESTION FROM THE GATE, AND CONFLATING THEM IS
@@ -376,7 +404,8 @@ def in_auditor_scope(path):
     Not the gate's question. See the block above AUDITOR_SHARED_SCOPE.
     """
     return (_under(path, AUDITOR_SHARED_SCOPE)
-            or AuditorScope.claim_file_of_any_auditor(path))
+            or AuditorScope.claim_file_of_any_auditor(path)
+            or AuditorScope.deliverable_of_any_auditor(path))
 
 
 def is_auditor_signature(path):
