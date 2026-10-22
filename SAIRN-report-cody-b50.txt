@@ -1,0 +1,13 @@
+REPORT -- cody b50, 2026-10-22
+
+LANDED on origin/main, no force: ac68c838f (sql file + manifest), 846887d4e (claim release). merge-base --is-ancestor both.
+1. SQL PATH: sql/2026-10-22-cody-b49-leg-f3-residue-removal.sql. Step 1 blast radius (expect 1,1,2; else STOP); step 2 one
+   transaction deleting the test cremation CR-B49-F3-LIVE-F3D9FB, the spent token (prepared_by b49-f3-apprentice) and the two
+   deactivated test creds (apprentice, director -- never owner), PR 3.4 guard aborts if no active owner remains; step 3 confirm
+   (0,0,0, owners >= 1). Settings and audit log untouched by design. employee_auth_guard_check OK; sql_preflight --live
+   db/schema_snapshot.json 0 findings exit 0; all referenced columns present in the snapshot.
+   CORRECTION: b49 gave the SQL only inside docs/live-residue JSON, against CLAUDE.md's "SQL goes in sql/". Fixed here.
+2. "DISCIPLINES #40": docs/2026-09-13-cross-domain-disciplines.md has 39 numbered conventions (counted). #40 was my offer to
+   add b49's lesson -- a checker's skipped list is a silent pass; prove the counted total rose, not that skipped fell.
+   Not written: docs/ is fourth's and a new convention is Michael's call. DECISION: yes/no.
+3. CLAIM: sairnlegacy released 2026-10-22T15:13:06Z (846887d4e); cody holds no active claim.

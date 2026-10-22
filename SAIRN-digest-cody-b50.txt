@@ -1,0 +1,14 @@
+DIGEST -- cody b50, 2026-10-22. Three items, all DONE.
+STATUS: ONE SQL FILE WRITTEN, NOT RUN. NO APP CODE. NO LIVE WRITES.
+CHANGED: sql/2026-10-22-cody-b49-leg-f3-residue-removal.sql, docs/sairn-path-manifest.json (cody override b50).
+LANDED: ac68c838f (sql), 846887d4e (claim release) on origin/main, no force.
+ITEM 1 -- SQL path: sql/2026-10-22-cody-b49-leg-f3-residue-removal.sql (step 1 expect 1,1,2; step 2 one transaction + owner guard; step 3 confirm).
+  Guard check OK; preflight --live 0 findings. b49 had it only inside the residue JSON -- corrected.
+ITEM 2 -- "Disciplines #40" = a proposed 40th convention for docs/2026-09-13-cross-domain-disciplines.md (39 today):
+  "a checker's skipped list is a silent pass -- prove the counted total rose." Not written; Michael's call.
+ITEM 3 -- sairnlegacy claim RELEASED (846887d4e); no active cody claim.
+DECISION-NEEDED: Michael -- run the sql file (step 1 first). Michael -- disciplines #40 yes/no.
+UNVERIFIED: the SQL has not been run; its counts are expectations from b49's drive.
+NEXT: none for cody until dispatched. Carried: cc bare-tuple gap + Tier A d6b37bb1c; fourth countersign UI.
+EVIDENCE-path: SAIRN-handoff-cody-b50.md, SAIRN-report-cody-b50.txt
+CONTEXT 36.2% of 1,000,000 -- 361,595 tokens, measured.
