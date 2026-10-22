@@ -4674,8 +4674,8 @@
       "task": "b47 pull, context check, handoff",
       "claimed_at": "2026-10-22T13:27:57Z",
       "claimed_at_epoch": 1792675677.9036608,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-22T13:30:45Z",
       "files": null
     }
   ],
