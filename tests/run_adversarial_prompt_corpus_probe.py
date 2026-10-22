@@ -64,6 +64,12 @@ import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOL = os.path.join(REPO, 'tools', 'adversarial_prompt_corpus.py')
+# The same file as a repo-relative literal, so tools/probe_anchor_freshness.py
+# can count the sabotage anchors below. TOOL is computed from REPO, so all three
+# were `skipped` -- never counted -- and that is how arm 8's anchor vanished on
+# 2026-09-26 (34d1ff0ed widened UNTRUSTED_WORDS) and stayed red unseen until
+# cody b49.
+SUBJECT = os.path.join('tools', 'adversarial_prompt_corpus.py')
 FAILED = []
 
 
@@ -109,9 +115,14 @@ def main():
     # is a control holding a platform to its own worst state. What must hold is
     # that the sweep RAN and CLASSIFIED; arm 10 is what proves those sites are
     # still being seen rather than silently lost.
-    arm('4. the sweep runs and classifies: zero unfenced, 5 reported as fenced',
+    # A FLOOR, NOT AN EQUALITY (cody b49). This said "5" and went red on
+    # 2026-09-26 when 34d1ff0ed fenced three more sites (8 today): the arm
+    # punished a fix. The five traced sites may never vanish; more may be added.
+    _fenced = re.search(r'NOT AS CLEAN: (\d+) site\(s\)', out)
+    arm('4. the sweep runs and classifies: zero unfenced, at least 5 reported '
+        'as fenced (%s)' % (_fenced.group(1) if _fenced else '?'),
         code == 0 and 'NO DELIMITER: 0 site(s)' in out
-        and 'NOT AS CLEAN: 5 site(s)' in out,
+        and bool(_fenced) and int(_fenced.group(1)) >= 5,
         'exit ' + str(code) + chr(10) + out[-300:])
     arm('5. ...and the counts are real: literal + interpolated > 90 sites',
         bool(re.search(r'PROMPT SITES: (\d+) literal', out))
@@ -132,7 +143,10 @@ def main():
 
     print('\nMUTATION CONTROLS -- three sabotages, each must change the verdict')
 
-    def sabotage(label, old, new, expect):
+    # `edit` is [(SUBJECT, old, new)]: the list-of-tuples form tools/probe_anchor_freshness.py
+    # counts, so a vanished anchor here is seen without running this file.
+    def sabotage(label, edit, expect):
+        (_subject, old, new), = edit
         n_ = src.count(old)
         if n_ != 1:
             arm(label, False, 'ANCHOR-%d -- re-derive it, do not type it' % n_)
@@ -161,16 +175,16 @@ def main():
     # covers this mutation.
     sabotage('8. emptying the untrusted-field list cannot produce a CLEAN '
              'sweep -- the lock refuses first, so the criteria cannot go quiet',
-             "UNTRUSTED_WORDS = ('complaint', 'notes', 'transcript')",
-             "UNTRUSTED_WORDS = ()",
+             [(SUBJECT, "UNTRUSTED_WORDS = ('complaint', 'notes', 'note', 'transcript', 'desc')",
+              "UNTRUSTED_WORDS = ()")],
              lambda c, o: c == 2 and 'COULD NOT RUN' in o
              and 'NOTHING was scanned' in o)
 
     # M2. The lock is broken -> the sweep must REFUSE to run, not report.
     sabotage('9. a broken criterion makes the sweep REFUSE rather than report '
              'findings from criteria that cannot classify a known case',
-             "UNTRUSTED_PREFIXES = (\n    'ocr',",
-             "UNTRUSTED_PREFIXES = (\n    'zzz_not_a_field',",
+             [(SUBJECT, "UNTRUSTED_PREFIXES = (\n    'ocr',",
+              "UNTRUSTED_PREFIXES = (\n    'zzz_not_a_field',")],
              lambda c, o: c == 2 and 'COULD NOT RUN' in o
              and 'NOTHING was scanned' in o)
 
@@ -183,12 +197,18 @@ def main():
     # the five sites are still being traced now that they are fenced: without
     # it, a criteria change that stopped seeing them entirely would look
     # identical to a clean platform.
-    sabotage('10. emptying the fence-call hints moves all 5 fenced sites to '
-             'at-risk -- none vanishes, so a clean sweep is not blindness',
-             "    'sffence(', 'fencedblock(', 'promptwithuntrusted(',",
-             "    'zzz_no_such_fence',",
-             lambda c, o: c == 1 and 'NO DELIMITER: 5 site(s)' in o
-             and 'NOT AS CLEAN: 0 site(s)' in o)
+    # RE-DERIVED cody b49, THE SAME CORRECTION AS M1: since 34d1ff0ed
+    # (2026-09-26) the lock carries a FENCED per-app fixture, so emptying the
+    # hints misclassifies it and the sweep REFUSES (exit 2) before it reports
+    # any count. Fenced sites cannot go quiet because nothing is reported at
+    # all, and that is what this arm now requires. It asserted the pre-fixture
+    # counts (5 -> at-risk) and had been red since that commit.
+    sabotage('10. emptying the fence-call hints cannot make a fenced site '
+             'vanish -- the lock refuses the sweep first',
+             [(SUBJECT, "    'sffence(', 'fencedblock(', 'promptwithuntrusted(',",
+              "    'zzz_no_such_fence',")],
+             lambda c, o: c == 2 and 'COULD NOT RUN' in o
+             and 'NOTHING was scanned' in o)
     print('\nRESTORATION')
     now = io.open(TOOL, 'rb').read()
     arm('11. the tool is byte-identical again', now == snap)
