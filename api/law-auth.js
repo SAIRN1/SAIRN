@@ -272,7 +272,10 @@ module.exports = async (req, res) => {
       '&active=eq.true&select=' + select + '&limit=1'), { headers });
     const rows = await r.json();
     if (!r.ok) { const e = new Error('lookup failed'); e.detail = rows; e.notProvisioned = isMissingTable(rows); throw e; }
-    return (Array.isArray(rows) && rows[0]) || null;
+    // hank b52 sweep: a non-list answer is a failed lookup, not "no such
+    // employee" -- mfa_enroll read null as "not enrolled" and switched 2FA off.
+    if (!Array.isArray(rows)) { const e = new Error('lookup unreadable'); e.detail = rows; throw e; }
+    return rows[0] || null;
   }
 
   async function patchEmployee(employee_id, patch) {
@@ -454,7 +457,13 @@ module.exports = async (req, res) => {
       // enrollment now requires an Owner reset (action:mfa_reset), which is
       // audit-logged and attributable to a person.
       const existing = await loadEmployee(caller.employee_id);
-      if (existing && existing.mfa_enabled) {
+      // No ACTIVE row for a still-valid token (deactivated since sign-in) is a
+      // refusal, never "not enrolled" (hank b52 sweep).
+      if (!existing) {
+        res.status(403).json({ error: { code: 'NOT_ACTIVE', message: 'This account is not active, so two-factor cannot be set up for it.' } });
+        return;
+      }
+      if (existing.mfa_enabled) {
         res.status(409).json({ error: { code: 'MFA_ALREADY_ENABLED', message: 'Two-factor is already on for this account. An Owner must reset it before it can be set up again.' } });
         return;
       }

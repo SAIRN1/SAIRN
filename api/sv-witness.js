@@ -400,7 +400,8 @@ async function requireWitness(ctx) {
       '&select=require_two_person&limit=1'), { headers });
     const prows = await pr.json();
     if (!pr.ok) return null;          // could-not-tell, handled below
-    const prow = (Array.isArray(prows) && prows[0]) || null;
+    if (!Array.isArray(prows)) return null;   // hank b52: unreadable is could-not-tell, not "no two-person rule"
+    const prow = prows[0] || null;
     return { require_two_person: !!(prow && prow.require_two_person === true) };
   })();
   if (!policy) {

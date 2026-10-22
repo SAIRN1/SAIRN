@@ -14898,7 +14898,13 @@ module.exports = async (req, res) => {
       }
       const famPriorRows = await famPriorR.json();
       if (!famPriorR.ok) return upstream(res, famPriorRows);
-      const famPrior = (Array.isArray(famPriorRows) && famPriorRows[0]) || null;
+      // A non-list answer is could-not-tell, not "first save" (hank b52 sweep):
+      // read as null it re-stamped who granted MAR consent, and when.
+      if (!Array.isArray(famPriorRows)) {
+        res.status(502).json({ error: { code: 'UNREADABLE_PRIOR', message: 'This contact\'s saved consent could not be read back, so nothing was changed. Try again shortly.' } });
+        return;
+      }
+      const famPrior = famPriorRows[0] || null;
       // ── STAMPED ON THE TRANSITION, NOT ON EVERY WRITE (2026-09-29) ───────
       // These four fields were `famConsent ? famNow : null` and friends, and the
       // write is a `resolution=merge-duplicates` upsert that rebuilds the whole
@@ -17355,7 +17361,15 @@ module.exports = async (req, res) => {
         }
         if (legSetR.ok) {
           const legSetRows = await legSetR.json().catch(function () { return null; });
-          legHome = (Array.isArray(legSetRows) && legSetRows[0]) || null;
+          // UNREADABLE IS NOT "NO SETTINGS" (hank b52 sweep, same class as the
+          // leg_settings branch). With legHome null, decide() saw no apprentice
+          // policy, so a resource the home FORBIDS an apprentice came back
+          // ALLOWED. Refused instead.
+          if (!Array.isArray(legSetRows)) {
+            res.status(502).json({ error: { code: 'UNREADABLE_SETTINGS', message: 'The home\'s role settings could not be read, so nothing was read or saved. Try again shortly.' } });
+            return;
+          }
+          legHome = legSetRows[0] || null;
           // THIS EMPLOYEE'S OWN ROW OF THE MAP, NEVER THE WHOLE MAP. `decide`
           // reads `grants[resource]`, so handing it the home-wide object keyed
           // by employee id would make every lookup `undefined` -- a refusal,
@@ -17373,9 +17387,14 @@ module.exports = async (req, res) => {
           // never saved settings. Anything else is worth a line, because
           // "nobody has answered F2" and "the settings read is broken" look
           // identical from the narrow default they both produce.
+          // NOT a narrow default (hank b52): with no settings row decide() has
+          // no apprentice forbidden list, which is the WIDE answer for an
+          // apprentice. A broken read is refused; only 404/400 (never saved,
+          // or the table not provisioned) proceeds on the product default.
           console.error('sd-data: sairnlegacy_settings read failed, HTTP '
-            + legSetR.status + ' -- falling back to the NARROW default for '
-            + resource + '/' + action);
+            + legSetR.status + ' -- refusing ' + resource + '/' + action);
+          res.status(502).json({ error: { code: 'UNREADABLE_SETTINGS', message: 'The home\'s role settings could not be read, so nothing was read or saved. Try again shortly.' } });
+          return;
         }
       }
       if (legRoles.decide(resource, legSess.role, action, legGrants, legHome) === legRoles.DENY) {
