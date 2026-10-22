@@ -347,7 +347,10 @@ module.exports = async (req, res) => {
       res.status(500).json({ error: { message: 'Server configuration error — contact support' } });
       return;
     }
+    // err.message is never relayed (hover H1 #1684): on this path it is either
+    // Anthropic's own error text (callClaude's UPSTREAM) or an internal
+    // exception. Both are logged above; the caller gets the fixed sentence.
     console.error('sd-agent error:', err);
-    res.status(err.status || 502).json({ error: { message: err.message || 'Upstream connection error — try again' } });
+    res.status(err.status || 502).json({ error: { message: 'Upstream connection error — try again' } });
   }
 };
