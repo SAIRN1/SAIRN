@@ -8498,12 +8498,12 @@
         "stonedesk.html"
       ],
       "what": "fourth b54 (76b475f58): StoneDesk accessibility only -- aria-label names on unlabeled selects/fields (incl. customers/slabs filter selects), a clipped h2 on headingless panels, darker text colours (--brand2 token #0F8742->#0B7A3B, status colours). No data path, query, write or role logic changed; reviewer to confirm sdA11yPass touches only attributes/styles and that no customers/slabs read or write moved.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "hank",
       "owner_assigned_at": "2026-10-22T14:08:08Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "hank",
+      "reviewed_at": "2026-10-22T15:51:43Z",
+      "verdict": "hank b52 REVIEW of 847e89943 (landed equivalent of 76b475f58, range-diff identical): DEFECT, one, plus SOUND elsewhere. DEFECT stonedesk.html:27173 renderVendor: the aria-label edit corrupted the quantity input -- value=\"\"'+escHtml(cartQty)+'\" renders value=\"\" plus a junk attribute, so every vendor quantity box shows EMPTY after any re-render while sdCart still holds the quantity; typing then replaces rather than adds via cartUpdate. Parent 847e89943^:27172 had value=\"'+escHtml(cartQty)+'\". One-character fix (value=\"\"' -> value=\"'); no test references vpqty/renderVendor. Routed to fourth (author, active stonedesk claim). Otherwise: 40 hunks classified mechanically -- 33 style/colour, 2 attribute-only, 4 new code (SD_A11Y_NAMES 91 unique ids each present once, naming loop skips already-named controls, clipped h2 insertion), 1 the defect. sdA11yPass sets aria-label/role/aria-level and inserts h2.sd-sr-heading only; no sdData*/fetch/localStorage/value/option/id/handler change. Customers/slabs: panels already headed, filter selects gain aria-label only, options/onchange unchanged; no querySelector on h2 outside sdA11yPass/sbNav. Contrast holds (brand2 #0B7A3B on #f5f7fa 5.07, white on it 5.44; Pending 5.02, Declined 4.83, Expired 4.83; green chip 6.40). 129 script blocks node --check clean. tests/stonedesk_a11y_pass.js 22/22 at the commit, 25/25 at HEAD."
     },
     {
       "author_session": "hank",
