@@ -4685,8 +4685,8 @@
       "task": "b48 hover scope 1640, deny replication, preflight 5f",
       "claimed_at": "2026-10-22T13:45:34Z",
       "claimed_at_epoch": 1792676734.1155324,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-22T14:02:26Z",
       "files": null
     }
   ],
