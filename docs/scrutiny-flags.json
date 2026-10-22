@@ -5631,6 +5631,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairnlegacy_countersign_ui.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6cb41b5d1b87ba1c0ba3187b93cc9c369a33072d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlegacy_write_failure_voice.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6cb41b5d1b87ba1c0ba3187b93cc9c369a33072d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_hover_separation_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -11037,6 +11053,14 @@
     }
    ],
    "sha": "c9bccaae2536ab254fc557722adf3eab6ea21690",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/stonedesk_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c9bd517fc8a1f9662028fbf087aae766b02c363d",
    "criteria_version": "2026-10-06.1"
   },
   {
