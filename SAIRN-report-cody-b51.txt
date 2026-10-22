@@ -1,0 +1,22 @@
+REPORT -- cody b51, 2026-10-22
+
+LANDED on origin/main, no force: 1e471c7ab (countersign fix), 2d52f2d5b (freshness fix), 8e21a74e2 (register), aa6c9ee16
+  (Tier A obligation -> hank, regenerated MASTER-PLAN + traceability), 705e1ef0d (bypass log), gate-bookkeeping re-seats.
+  Each git merge-base --is-ancestor after fetch. Claim `platform` released after landing.
+SAID OUT LOUD: one scoped skip, SAIRN_SKIP=external-files -- the only finding was an H1 file in the shared Drive folder
+  (h1_countersign_repro.js), not cody's, not in the push. Every other gate ran and passed.
+1. d6b37bb1 LOCK DRIFT -- FIXED IN THE SHARED LIBRARY: requireCountersignature returned null ("signed, proceed") off-profile;
+   all 4 callers pre-filter with their own list, so drift filed unsigned. Now 500 COUNTERSIGN_LOCK_MISCONFIGURED before any fetch.
+   b51 test 5/5: U1 library refusal, 0 fetches | R0 control files | R1 drift + F3-deferred write -> 500 | R2 drift + owner -> 500 |
+   X ablation: old `return null` files R1's record. Regressions green (b18 59, b28 15, b48 8, leg matrix 37, law suites).
+   PRE-EXISTING REDS, identical at HEAD, not in known-red: law-trust-reconcile-endpoint (403 expected, 200 got, x2),
+   sd-data-law-trusttx-clearance (RPC lacks clearance). Routed hank.
+2. BARE TUPLE -- FIXED (criteria .3). Attribution: my b49 finding routed to cc, NOT in cc's b50 report. Fixtures i/j/k both ways;
+   selftest ALL PASS; control 12/12; sweep ok 648, 0 findings; ablation bare form new 648 vs HEAD 645.
+3. SWEEP (subagent leads, each re-read by me): class A lock helpers -- countersign fixed; sv-witness and sairncare-witness are
+   single-table, no second list to drift: sound. Class B read-then-merge fail-open on a non-array 200: leg_settings (hank, routed),
+   bld_draws release fields, supplier lead times, style profile, sb void, law-auth MFA setup. NO suite drives that branch at any
+   of them -- coverage does not match runtime there. Low severity (PostgREST always returns an array on 200). Routed hank.
+PROCESS: push_retry --loop timed out (120s) against a ~4 min gate; manual pushes; my loop's `git add -A` staged rebase conflict
+   markers -- refused by the pre-commit check, fixed by regenerating both docs; ledger entries verified intact. Memory saved.
+OPEN: hank -- Tier A 1e471c7ab, 6 class-B sites, 2 law reds. H1/Michael -- index h1_countersign_repro.js. cc -- push_retry timeout.

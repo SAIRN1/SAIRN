@@ -1,0 +1,14 @@
+DIGEST -- cody b51, 2026-10-22. Four items: 1, 2, 4 DONE; 3 swept and ROUTED.
+STATUS: API LIBRARY + TOOL FIX + TEST. NO SQL. NO LIVE WRITES. Deployed by push.
+CHANGED: api/_lib/countersign.js, api/sd-data.js (2 comments), api/b51-countersign-lock-drift.test.js, tools/probe_anchor_freshness.py, manifest, register, tier-a, generated docs.
+LANDED: 1e471c7ab, 2d52f2d5b, 8e21a74e2, aa6c9ee16, 705e1ef0d on origin/main, no force. Claim released.
+ITEM 1 -- requireCountersignature now REFUSES off-profile (was null = signed). Covers all 4 callers. 5/5 + ablation (old line files unsigned).
+ITEM 2 -- freshness counts a bare edit tuple (criteria .3); ablation 648 vs 645. (It was my b49 finding, not in cc's b50 report.)
+ITEM 3 -- class A: only countersign had the two-list drift (witness libs single-table). Class B: 6 read-then-merge sites treat a
+  non-array 200 as "nothing stored"; no suite drives that branch at any of them. Low severity. Routed hank with sites.
+SKIP USED: SAIRN_SKIP=external-files (an H1 file in the shared Drive folder, not cody's). Every other gate passed.
+DECISION-NEEDED: hank -- Tier A 1e471c7ab; 6 class-B sites; 2 pre-existing law reds. H1/Michael -- index h1_countersign_repro.js.
+UNVERIFIED: not driven live (the drift case cannot occur without a code change; it is proven in-process).
+NEXT: cc -- push_retry 120s timeout vs ~4 min gate on sd-data changes.
+EVIDENCE-path: SAIRN-handoff-cody-b51.md, SAIRN-report-cody-b51.txt
+CONTEXT 46.1% of 1,000,000 -- 460,721 tokens, measured.
