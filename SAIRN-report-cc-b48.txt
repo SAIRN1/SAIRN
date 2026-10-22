@@ -1,0 +1,65 @@
+REPORT cc b48
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-22
+RANGE     6d801c8a (H1 #1640 fix) + scrutiny rows, landed at 5d32ba5b; then deliverables. No --force, NO OVERRIDE, no BYPASS-LOG row.
+
+== 1. H1 #1640 -- CLOSED (6d801c8a) ==
+CRITERIA: H1's own root-level batch files pass for H1 only; another instance's, a build agent's, non-root and near-miss names stay refused; gate and audit copies agree.
+CONCEPT: an auditor instance's own handoff/report/digest/latest files record its own actions, so they join its derived scope via an anchored-regex entry.
+tools/hover_auditor_scope_gate.py:
+  - entries starting '^' are fullmatch regexes; the others are unchanged;
+  - AuditorScope.own_deliverables (hover -> H1, hover<N> -> H<N>);
+  - an ALLOWED entry quoting the same SKILL.md exception as OWN_CLAIM.
+tools/hover_separation_audit.py: duplicate copy plus deliverable_of_any_auditor (history side).
+tests/run_hover_separation_probe.py (declared under cc in assigned_overrides): +6 arms. 154/154.
+  Ablated: 151/154, and the three new allow-arms are red.
+hover_separation_ci exit 0; its probe 0 failures. hover_separation_audit verdict unchanged (2 pre-existing violations, same shas).
+NOT DRIVEN: a real commit in H1's armed clone (out of cc's reach by design). H1 confirms on its next handoff commit.
+
+== 2. Deny replication -- CLOSED, DEVIATION ==
+cody: already had hank's 13 entries; unchanged (byte-identical to backup).
+fourth: 8 -> 13, same set as hank's; every other key and allow entry identical.
+DEVIATION: fix-deny.ps1 (Windows PowerShell 5.1, no pwsh on the machine) corrupted non-ASCII allow entries:
+  cody: 1 entry, \u2500\u2500 -> '--';
+  fourth: 4 entries, plus a raw cp1252 0x97 byte, so the file was not valid UTF-8.
+  Both restored byte-identical from backups. The same -cnotcontains append was then done in Python (ensure_ascii, UTF-8).
+Backups: scratchpad\settings.local.json.{cody,fourth}.bak-cc-b48 (moved out of those clones, where they were untracked).
+
+== 3. Auditor-local deny lists -- PARTLY DONE, BLOCKED ON MICHAEL ==
+Read-only:
+  SAIRN-hover denies hover2 (4 forms) -- done.
+  SAIRN-hover2 has NO deny for SAIRN-hover (16 deny entries, none naming it).
+cc cannot write there: its own deny list (Write/Edit, plus Bash naming either auditor clone) and the CLAUDE.md separation boundary.
+The exact fix-deny.ps1 command is in the handoff section 4. hover2's file is pure ASCII, so the script is safe on it.
+Fresh-window verification per auditor: not done; needs Michael to open the windows.
+
+== 4. CHECK 5f inside a full --preflight -- VERIFIED ==
+The sweep-runner agent had no shell (COULD NOT RUN), so cc ran it directly.
+Setup: a throwaway worktree in the scratchpad with no ancestor node_modules, and a local commit touching only a comment in api/_lib/firebase-admin.js (never pushed).
+  A  no node_modules             exit 1  5f DENY: 41 MISSING (scope npm)                                PASS
+  B  copy of the clone's install exit 1  no 5f finding (the check alone exits 0)                        PASS
+  C  copy, firebase-admin 12.7.0 exit 1  5f DENY: DRIFT node_modules/firebase-admin, locked 13.10.0, installed 12.7.0   PASS
+The other finding in every arm: path-scope COULD NOT RUN (the worktree has no provisioned sairn-session). This is expected noise.
+Teardown: the worktree and the wt5f-probe branch are removed.
+The clone's firebase-admin is 13.10.0, cmp-identical to the b46 backup; the dependency check is CLEAN.
+
+== 5. Push ==
+The first push was rejected by a remote race (cannot lock ref). Rebased and re-pushed: 90f47f56..5d32ba5b, 0 0.
+
+== OPEN ==
+Michael: the hover2 deny entries plus fresh-window verification for each auditor.
+Michael: optionally make fix-deny.ps1 UTF-8-safe (-Encoding UTF8 on both cmdlets).
+H1: confirm #1640 with a real commit.
+cody: 5e 'skipped' anchors.
+hank/cody/fourth: npm ci once per clone.
+
+== TRANSCRIPT ==
+C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\87a27b9f-55e9-45e8-b017-01ed1febac1a.jsonl
+
+== CHANGED ==
+tools/hover_auditor_scope_gate.py, tools/hover_separation_audit.py, tests/run_hover_separation_probe.py, docs/sairn-path-manifest.json,
+docs/scrutiny-flags.json, the deliverables; outside git: SAIRN-fourth/.claude/settings.local.json.
+
+SHA256 5e9d74781181eab681d8bd5e4280ac6945f8d4b448e8f108929272ada1423535
+END-OF-REPORT

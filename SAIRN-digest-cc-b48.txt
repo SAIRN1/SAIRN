@@ -1,0 +1,26 @@
+DIGEST cc b48
+STATUS: 4 of 6 closed, 1 closed with deviation, 1 partly blocked on Michael. Landed 6d801c8a; origin 0/0. No --force, NO OVERRIDE.
+ITEM 1 (H1 #1640): CLOSED. The hover scope gate now allows an instance's OWN root-level SAIRN-{handoff,report,digest,closure-recheck}-H<n>-b<N> and SAIRN-latest-H<n>.md.
+  It is per instance (hover->H1, hoverN->HN), via an anchored-regex entry; the audit copy moved in step.
+  Probe 154/154; ablated 151/154 (the new allow-arms red). H1 confirms on its next real commit.
+ITEM 2: cody already had 13 (unchanged); fourth 8 -> 13 = hank's set.
+  DEVIATION: fix-deny.ps1 on PS 5.1 corrupted non-ASCII allow entries (cody 1, fourth 4, plus a raw 0x97 byte).
+  Restored byte-identical; the same -cnotcontains append was done in Python.
+ITEM 3: SAIRN-hover already denies hover2. SAIRN-hover2 does NOT deny SAIRN-hover.
+  cc cannot write there (own deny list plus the separation rule).
+  The command for Michael is in handoff section 4. Fresh-window verification for each auditor is not done.
+ITEM 4: CHECK 5f VERIFIED inside a full --preflight in a throwaway worktree.
+  A no node_modules -> DENY MISSING; B real install copy -> no 5f finding; C firebase-admin 12.7.0 -> DENY DRIFT.
+  The only other finding was path-scope COULD NOT RUN (unprovisioned worktree). Torn down; the clone's install is unchanged.
+ITEM 5: pushed after one remote-race retry; landed 0/0.
+DECISION-NEEDED: Michael -- run the hover2 deny command, then a fresh-window check per auditor; optionally make fix-deny.ps1 UTF-8-safe.
+CHANGED: tools/hover_auditor_scope_gate.py, tools/hover_separation_audit.py, tests/run_hover_separation_probe.py, docs/sairn-path-manifest.json; SAIRN-fourth settings.local.json (untracked).
+SQL: none.
+EVIDENCE-path: SAIRN-report-cc-b48.txt, SAIRN-handoff-cc-b48.md
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\87a27b9f-55e9-45e8-b017-01ed1febac1a.jsonl
+UNVERIFIED: #1640 in H1's armed clone; the auditor deny lists in fresh windows.
+ROUTED: H1 -- confirm #1640. cody -- 5e skipped anchors. hank/cody/fourth -- npm ci once.
+NEXT: nothing owed by cc.
+CONTEXT 20.1% of 1,000,000 -- 200,984 tokens, measured.
+SHA256 780c7ab2477b68866025a35aaf9221a8959a1af1e69b90e55b76da92a896c744
+END-OF-REPORT
