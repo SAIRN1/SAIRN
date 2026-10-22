@@ -4612,8 +4612,8 @@
       "task": "b52 api sd-data.js leg_settings branch apprentice merge and fail-closed read",
       "claimed_at": "2026-10-22T15:51:58Z",
       "claimed_at_epoch": 1792684318.5410144,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-22T16:43:20Z",
       "files": null
     }
   ],
