@@ -31,9 +31,11 @@ function test(name, fn) {
     .then(function () { console.log('  ok   ' + name); pass++; })
     .catch(function (e) { console.log('  FAIL ' + name + '\n       ' + e.message); fail++; });
 }
+// An arm's own expectation failing -- the only thing mustFail counts as red.
+class ArmFailure extends Error {}
 function eq(a, e, what) {
   if (JSON.stringify(a) !== JSON.stringify(e)) {
-    throw new Error(what + ': got ' + JSON.stringify(a) + ', expected ' + JSON.stringify(e));
+    throw new ArmFailure(what + ': got ' + JSON.stringify(a) + ', expected ' + JSON.stringify(e));
   }
 }
 
@@ -209,9 +211,15 @@ const M_PREFIX_INTAKE = function (s) {
   return mutate(s, '[A-Za-z0-9+\\/]+={0,2}$/.test(p)', '/.test(p)');
 };
 
+// hank b52 (cc b50 review of 2fe89f26): only an ASSERTION failure counts as the
+// arm going red. Any throw used to count, so a mutant that broke the harness
+// for an unrelated reason (a missed anchor, a syntax error) read as killed.
 async function mustFail(arm, src, name) {
   let failed = false;
-  try { await arm(src); } catch (e) { failed = true; }
+  try { await arm(src); } catch (e) {
+    if (!(e instanceof ArmFailure)) throw new Error(name + ': arm threw a non-assertion error, so this mutant proves nothing: ' + e.message);
+    failed = true;
+  }
   if (!failed) throw new Error(name + ' survived: the arm that holds this barrier stayed green');
 }
 

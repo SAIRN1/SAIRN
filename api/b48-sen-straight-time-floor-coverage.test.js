@@ -230,22 +230,38 @@ const byVisit = (list, id) => (list || []).filter((x) => x.visit_id === id);
                                   { closing_id: 'CL-R2', data: { kind: 'reopen', reverses: 'CL-R1', reason: 'b48 fixture' } }] }
   };
   const sameVisit = { visit_id: 'P1-A', assigned_employee_id: 'E2', data: byVisit(pVisits, 'P1-A')[0] };
-  async function payRun(hash) {
-    const urls = [];
-    const lic = require.resolve('./_lib/license');
+  // The licence mock reads the CURRENT hash, so one compiled handler can serve
+  // two agencies in turn (G5, the warm-instance case cc b50 named as D9).
+  let CURRENT_HASH = null;
+  const lic = require.resolve('./_lib/license');
+  function compileHandler() {
     delete require.cache[lic];
     require.cache[lic] = { id: lic, filename: lic, loaded: true, exports: { validateLicenseKey: async function () {
-      return { valid: true, active: true, license_hash: hash, trial_ends_at: null, stripe_subscription_id: null, app_id: 'sairnsenior' };
+      return { valid: true, active: true, license_hash: CURRENT_HASH, trial_ends_at: null, stripe_subscription_id: null, app_id: 'sairnsenior' };
     } } };
     const m = new Module(SD_FILE, module);
     m.filename = SD_FILE; m.paths = Module._nodeModulePaths(__dirname);
     m._compile(SD_TEXT, SD_FILE);
+    return m;
+  }
+  async function payRun(hash, warm) {
+    const urls = [];
+    CURRENT_HASH = hash;
+    const m = warm || compileHandler();
     const prev = global.fetch;
     global.fetch = async function (url) {
       const u = String(url); urls.push(u);
+      const scoped = /license_hash=eq\./.test(u);
       const mine = u.indexOf('license_hash=eq.' + encodeURIComponent(hash)) !== -1;
       const j = (rows) => ({ ok: true, status: 200, json: async () => rows, text: async () => JSON.stringify(rows) });
       if (/_employee_auth\?/.test(u)) return j([{ license_hash: hash, employee_id: 'mgr', role: 'owner', active: true }]);
+      // AN UNSCOPED READ GETS EVERY AGENCY'S ROWS, as the real table would
+      // (cc b50: the old mock answered [] here, so a dropped scope showed up as
+      // A losing its data rather than as B SEEING A's). A read scoped to
+      // another licence gets nothing.
+      if (!scoped && /sen_period_closings\?/.test(u)) {
+        return j([].concat.apply([], Object.keys(AGENCY).map((h) => AGENCY[h].closings)));
+      }
       if (!mine) return j([]);
       if (/sen_visits\?/.test(u)) return j([sameVisit]);
       if (/sen_pay_rates\?/.test(u)) return j(RATES.map((r) => ({ rate_id: r.id, data: r })));
@@ -284,6 +300,14 @@ const byVisit = (list, id) => (list || []).filter((x) => x.visit_id === id);
   await test('G4. a REOPENED period is not frozen: close + reopen of P1 -> no adjustment, the visit is simply outside this run', function () {
     assert.strictEqual(R.res.statusCode, 200, JSON.stringify(R.res.body).slice(0, 200));
     assert.deepStrictEqual([byVisit(R.res.body.data.adjustments, 'P1-A').length, byVisit(R.res.body.data.overpayments, 'P1-A').length], [0, 0]);
+  });
+
+  await test('G5. ONE warm handler instance serves A then B: B still gets no adjustment -- nothing from A survives in module state', async function () {
+    const warm = compileHandler();
+    const wA = await payRun('hash-agency-A', warm), wB = await payRun('hash-agency-B', warm);
+    assert.strictEqual(byVisit(wA.res.body.data.adjustments, 'P1-A').length, 1, 'warm A lost its adjustment');
+    assert.strictEqual(wB.res.statusCode, 200, JSON.stringify(wB.res.body).slice(0, 200));
+    assert.strictEqual(byVisit(wB.res.body.data.adjustments, 'P1-A').length, 0, 'warm B saw the A closing');
   });
 
   section('M. MUTANTS -- each must turn the arm that guards it red');
@@ -326,17 +350,17 @@ const byVisit = (list, id) => (list || []).filter((x) => x.visit_id === id);
       'const closedFor = (serviceDate) => (closedPeriodFor(closedPeriods, serviceDate) ? closedPeriods[0] : null);'),
       function () { assert.strictEqual(byVisit(run(pVisits, [P1, P2]).adjustments, 'P2-A')[0].paid_at, P2.paid_at); }, 'first-period');
   });
-  await test('M5. the handler reads closings WITHOUT the licence scope -> G1 red (the mock serves only scoped reads)', async function () {
-    // The read senReadClosedPeriods() makes (the one the pay run uses), anchored
-    // with its select so the second closings read in the file is not matched.
+  // M5 (b48) asserted that an unscoped closings read made AGENCY A lose its
+  // adjustment -- true only of the old mock, which answered an unscoped read
+  // with []. With the realistic mock (every agency's rows) the same mutant
+  // shows up as B SEEING A's closing, which is M6. Replaced, not weakened.
+  await test('M6. the same unscoped closings read -> G2 red: B now SEES the A closing (the leak direction, with the realistic mock)', async function () {
     const from = "const lr = await fetch(rest('sen_period_closings?license_hash=eq.' + enc(licHash)";
-    const k = SD_SRC.split(from).length - 1;
-    if (k !== 1) throw new Error('handler anchor found ' + k + ' times');
     SD_TEXT = SD_SRC.replace(from, "const lr = await fetch(rest('sen_period_closings?x=1'");
-    let red = false;
-    try { const m = await payRun('hash-agency-A'); assert.strictEqual(byVisit(m.res.body.data.adjustments, 'P1-A').length, 1); }
-    catch (e) { red = true; } finally { SD_TEXT = SD_SRC; }
-    if (!red) throw new Error('unscoped closings read survived');
+    let leaked;
+    try { const m = await payRun('hash-agency-B'); leaked = byVisit(m.res.body.data.adjustments, 'P1-A').length; }
+    finally { SD_TEXT = SD_SRC; }
+    assert.strictEqual(leaked, 1, 'expected the unscoped read to leak the A closing into B; got ' + leaked);
   });
 
   console.log('\n' + pass + ' passed, ' + fail + ' failed');

@@ -66,10 +66,24 @@ test('NO app can see another app\'s resources -- all pairs, not a sample', () =>
     for (const name of reg.RESOURCE_NAMES) {
       const owner = reg.OWNER_BY_RESOURCE[name];
       if (owner === app || owner === 'shared') continue;
+      // DECLARED cross-app names (a module's `visibleToAllApps: true`, read
+      // off the registry, not listed here) are visible by design -- see
+      // api/_resources/index.js CROSS_APP_NAMES. The arm below pins that set.
+      if (reg.CROSS_APP_NAMES.indexOf(name) !== -1) continue;
       if (reg.isVisibleTo(name, app)) bad.push(app + ' -> ' + name + ' (owned by ' + owner + ')');
     }
   }
   assert.deepStrictEqual(bad, [], bad.slice(0, 10).join('; '));
+});
+
+// hank b52 (cc b50 flagged the arm above red on rt_routes/rt_stops). Those two
+// are visible to every app ON PURPOSE (cody b27, routes.js header), so the arm
+// now skips declared cross-app names -- and THIS arm pins the declared set, so
+// a module that newly opts in to visibleToAllApps fails here and has to be
+// added deliberately rather than slipping past the all-pairs arm.
+test('the cross-app set is EXACTLY the declared one: rt_routes and rt_stops, from routes.js', () => {
+  assert.deepStrictEqual(reg.CROSS_APP_NAMES.slice().sort(), ['rt_routes', 'rt_stops']);
+  for (const name of reg.CROSS_APP_NAMES) assert.strictEqual(reg.OWNER_BY_RESOURCE[name], 'routes', name);
 });
 
 test('an UNATTRIBUTABLE licence is allowed through, deliberately', () => {
