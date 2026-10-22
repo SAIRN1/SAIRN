@@ -486,6 +486,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_adversarial_prompt_corpus_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "05e92c1548f73d9a0597e58f19e980ca061eba72",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/app_session_isolation.js",
    "class": "test file",
    "level": "WEAKENING",
@@ -11682,6 +11690,19 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "for s in _pj.get('skipped', [])]"
+    }
+   ],
+   "sha": "d6a1366068b2916ce45810445bb7edd8685a3636",
    "criteria_version": "2026-10-06.1"
   },
   {
