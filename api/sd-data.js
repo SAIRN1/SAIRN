@@ -14394,9 +14394,10 @@ module.exports = async (req, res) => {
       const alfAuditTable = alfAuditLib.AUDIT_TABLE_BY_APP.sairncare;
       // Best-effort BY DESIGN and that posture is audit.js's, not a shortcut
       // taken here: a logging outage must never block a legitimate grant or a
-      // legitimate refusal. The return value is deliberately not checked --
-      // there is no honest thing to do with it at these three call sites,
-      // because the action's outcome is already decided when it is written.
+      // legitimate refusal. The return value is deliberately not checked at
+      // the grant and refusal call sites, because the action's outcome is
+      // already decided when it is written. The ONE exception is the granted
+      // MAR read, which is not served unless its row is written (b51, D1b).
       const alfAudit = function (session, event_type, detail) {
         return alfAuditLib.writeAuditLog(SUPABASE_URL, SERVICE_KEY, {
           license_hash: licHash,
@@ -14544,6 +14545,21 @@ module.exports = async (req, res) => {
             })[0] || null;
           }
         }
+        // A GRANTEE ROLE IS ADMITTED BY ITS GRANT OR NOT AT ALL (hank b51, D1).
+        // The assignment tier below has no role check of its own, so a billing
+        // employee who was a resident's assigned_employee_id read that MAR with
+        // no grant, no expiry and no audit row -- the exact default the
+        // 2026-10-13 decision forbids. Refused here, before the assignment
+        // query, and the refusal is audited like the grant action's.
+        if (!marBroad && !marGrant && ALF_MAR_GRANT_GRANTEE_ROLES[session.role]) {
+          await alfAudit(session, 'mar_access_grant_refused', {
+            reason: 'NO_LIVE_GRANT', action: 'family_mar',
+            contact_id: famP.contact_id || null });
+          res.status(403).json({ error: { code: 'FORBIDDEN', message:
+            'Reading a medication record needs a live grant from the office '
+            + 'manager for this resident.' } });
+          return;
+        }
         let marScope = null;
         if (!marBroad && !marGrant) {
           const mar_ar = await fetch(rest('alf_clients?license_hash=eq.' + enc(licHash)
@@ -14688,13 +14704,24 @@ module.exports = async (req, res) => {
         // clinical traffic and logging it here would bury the handful of rows
         // this control exists to surface -- an audit trail nobody can read is
         // the same as none.
+        //
+        // AND A GRANTED READ THAT CANNOT BE LOGGED IS NOT SERVED (hank b51,
+        // D1b). The best-effort posture above holds for the grant and for
+        // refusals, whose outcome is already decided; here the log row IS the
+        // grant's condition, so an unwritten row means the read did not happen.
         if (marGrant) {
-          await alfAudit(session, 'mar_access_read', {
+          const marReadLogged = await alfAudit(session, 'mar_access_read', {
             grant_id: marGrant.grant_id,
             contact_id: String(famP.contact_id),
             resident_id: contact.resident_id,
             granted_by: marGrant.granted_by,
             expires_at: marGrant.expires_at });
+          if (marReadLogged !== true) {
+            res.status(503).json({ error: { code: 'AUDIT_UNAVAILABLE', message:
+              'This granted read could not be logged, so it was not served. '
+              + 'Try again shortly.' } });
+            return;
+          }
         }
         res.status(200).json({ ok: true, provisioned: true, family_mar: view,
                                via_grant: marGrant ? marGrant.grant_id : null });
