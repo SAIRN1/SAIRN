@@ -190,16 +190,19 @@ async function main() {
         'the batch was written after a pre-read that never answered');
     });
 
-  await test('...but a pre-read that ANSWERED with a refusal falls through and '
-    + 'writes, because the store said nothing about a deletion',
+  // REVERSED in hank b53 by Michael's b53 decision: this arm used to pin the
+  // fall-through ("the store said nothing about a deletion"). A guard that
+  // cannot read its subject has not checked it, so the batch now refuses.
+  await test('...and a pre-read that ANSWERED with a refusal (500) ALSO writes '
+    + 'nothing -- 502 UNREADABLE_PRIOR, the same rule as the single write',
     async () => {
       const { handler, calls } = loadHandler({ readStatus: 500 });
       const res = mockRes();
       await handler(mockReq('write_batch', { records: customers(2) }), res);
-      assert.strictEqual(res.body.ok, true, JSON.stringify(res.body));
-      assert.strictEqual(res.body.written, 2);
+      assert.strictEqual(res.statusCode, 502, JSON.stringify(res.body));
+      assert.strictEqual(res.body.error.code, 'UNREADABLE_PRIOR');
       assert.strictEqual(calls.filter(c => c.method === 'POST'
-        && c.url.indexOf('sd_customers') !== -1).length, 1);
+        && c.url.indexOf('sd_customers') !== -1).length, 0);
     });
 
   await test('an oversized batch is REFUSED, never truncated -- a truncated '

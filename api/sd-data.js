@@ -4892,7 +4892,22 @@ module.exports = async (req, res) => {
           '&customer_id=in.(' + customerBatch.ids(bplan.withId).map(enc).join(',') +
           ')&select=customer_id,data'), { headers });
         let bdelRows = null;
-        if (bcur.ok) bdelRows = await bcur.json().catch(function () { return null; });
+        // REFUSED WHEN IT CANNOT BE READ (hank b53, Michael's b53 decision --
+        // the same rule as the single-row guard below). A 4xx/5xx or a non-list
+        // body used to give tombstonedIds(null) = {}, and every deleted
+        // customer in the batch was written back. 404/400 (not provisioned)
+        // still proceeds to the upsert's own NOT_PROVISIONED answer.
+        if (!bcur.ok && bcur.status !== 404 && bcur.status !== 400) {
+          res.status(502).json({ error: { code: 'UNREADABLE_PRIOR', message: 'Whether these customers were deleted could not be checked, so nothing was saved. Try again shortly.' } });
+          return;
+        }
+        if (bcur.ok) {
+          bdelRows = await bcur.json().catch(function () { return null; });
+          if (!Array.isArray(bdelRows)) {
+            res.status(502).json({ error: { code: 'UNREADABLE_PRIOR', message: 'Whether these customers were deleted could not be checked, so nothing was saved. Try again shortly.' } });
+            return;
+          }
+        }
         const bsplit = customerBatch.partition(bplan.withId,
                                                customerBatch.tombstonedIds(bdelRows));
         const bkeep = bsplit.keep;
@@ -18091,9 +18106,22 @@ module.exports = async (req, res) => {
       // order. Refused explicitly instead.
       if (resource === 'dnt_providers' && payload && payload.linked_employee_id) {
         const dupR = await fetch(rest('dnt_providers?license_hash=eq.' + enc(licHash) + '&select=provider_id,data'), { headers });
+        // FAIL-CLOSED (hank b53), following the coverage-rules precedent
+        // below: a uniqueness check that silently does not run is
+        // indistinguishable from one that passed, and a second provider row
+        // for one login leaves the patient scope decided by row order.
+        // 404/400 (not provisioned) still proceeds.
+        if (!dupR.ok && dupR.status !== 404 && dupR.status !== 400) {
+          res.status(503).json({ error: { code: 'PROVIDER_CHECK_UNAVAILABLE', message: 'The existing providers could not be read, so this one was not saved -- saving it without that check could link one login to two providers. Try again.' } });
+          return;
+        }
         if (dupR.ok) {
-          const dupRows = await dupR.json();
-          const clash = (Array.isArray(dupRows) ? dupRows : []).filter((x) =>
+          const dupRows = await dupR.json().catch(function () { return null; });
+          if (!Array.isArray(dupRows)) {
+            res.status(503).json({ error: { code: 'PROVIDER_CHECK_UNAVAILABLE', message: 'The existing providers could not be read, so this one was not saved -- saving it without that check could link one login to two providers. Try again.' } });
+            return;
+          }
+          const clash = dupRows.filter((x) =>
             x && x.data && x.data.linked_employee_id === payload.linked_employee_id && String(x.provider_id) !== String(payload.id))[0];
           if (clash) {
             res.status(409).json({ error: { code: 'EMPLOYEE_ALREADY_LINKED', message: 'That login is already linked to another provider. Unlink it there first.' } });
@@ -18217,9 +18245,9 @@ module.exports = async (req, res) => {
         // procedure_type_id therefore does not clash with the string form --
         // correct, because lookupCoverage() would not match them either.
         //
-        // FAIL-CLOSED, WHICH IS A DELIBERATE DIVERGENCE FROM THE dnt_providers
-        // PRECEDENT ABOVE. That one wraps its read in `if (dupR.ok)` and lets
-        // the write through when the check cannot run. This follows the newer
+        // FAIL-CLOSED. (This diverged from the dnt_providers check above, which
+        // let the write through when its read failed; hank b53 brought that one
+        // into line with this one.) This follows the newer
         // and more considered precedent in the same file instead -- the GFE
         // block's 503 GFE_CHECK_UNAVAILABLE -- because a uniqueness check that
         // silently does not run is indistinguishable from one that passed, and

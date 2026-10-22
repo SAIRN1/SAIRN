@@ -447,7 +447,14 @@ async function manage(req, res, ctx) {
     const existing = await fetch(rest(TOKEN_TABLE + '?license_hash=eq.' + enc(licHash) +
       '&revoked_at=is.null&select=id'), { headers });
     const exrows = await existing.json().catch(() => null);
-    if (existing.ok && Array.isArray(exrows) && exrows.length >= MAX_TOKENS_PER_LICENSE) {
+    // hank b53: a cap that cannot count is not a cap. An unreadable or
+    // non-list answer used to skip it and mint anyway.
+    if (!existing.ok || !Array.isArray(exrows)) {
+      res.status(503).json({ error: { code: 'TOKEN_COUNT_UNAVAILABLE',
+        message: 'The live feed tokens could not be counted, so no new one was made. Try again shortly.' } });
+      return;
+    }
+    if (exrows.length >= MAX_TOKENS_PER_LICENSE) {
       res.status(409).json({ error: { code: 'TOO_MANY_TOKENS',
         message: 'This practice already has ' + MAX_TOKENS_PER_LICENSE + ' live feed tokens. Revoke one first.' } });
       return;

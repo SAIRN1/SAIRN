@@ -124,6 +124,21 @@ async function test(name, fn) {
     await test(t.tag + '1. ' + t.resource + ': a 500 / 403 / unparsable / non-list pre-read -> 502 UNREADABLE_PRIOR, nothing written', () => armUnreadable(t));
     await test(t.tag + '2. ' + t.resource + ' controls: deleted -> 409; live row and no row -> written; 404 -> not this refusal', () => armControls(t));
   }
+  // P. The sweep's other sites, fixed in the same commit. SOURCE pins only --
+  // each pins the refusal line exactly once; the write_batch path is DRIVEN in
+  // api/sd-data-customers-batch.test.js (its 500 arm now expects 502).
+  const pin = (file, line) => {
+    const t = fs.readFileSync(path.join(__dirname, file), 'utf8');
+    assert.strictEqual(t.split(line).length - 1, 1, file + ': guard not present exactly once: ' + line.slice(0, 70));
+  };
+  await test('P1. dnt_providers one-login check refuses 503 when its read fails (source pin)', () =>
+    pin('sd-data.js', "if (!dupR.ok && dupR.status !== 404 && dupR.status !== 400) {"));
+  await test('P2. dnt-bi feed-token cap refuses 503 when it cannot count (source pin)', () =>
+    pin('dnt-bi.js', 'if (!existing.ok || !Array.isArray(exrows)) {'));
+  await test('P3. sd-sub-data compliance gate refuses 503 on a non-400/404 failure (source pin)', () =>
+    pin('sd-sub-data.js', 'if (!cr.ok && cr.status !== 400 && cr.status !== 404) {'));
+  await test('P4. write_batch tombstone pre-read refuses 502 when it cannot read (source pin; driven in the batch suite)', () =>
+    pin('sd-data.js', 'if (!bcur.ok && bcur.status !== 404 && bcur.status !== 400) {'));
   console.log('M. mutants');
   await test('M1. sd_customers !ok refusal removed -> C1 red', () => mustFail((s) => armUnreadable(TARGETS[0], s),
     mutate("if (!rcur.ok && rcur.status !== 404 && rcur.status !== 400) {", 'if (false) {'), 'customers !ok'));

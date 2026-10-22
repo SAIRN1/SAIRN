@@ -369,9 +369,20 @@ module.exports = async (req, res) => {
       if (!payload.id) {
         const cr = await fetch(rest('sd_subs?license_hash=eq.' + enc(licHash) +
           '&sub_id=eq.' + enc(sub_id) + '&select=name,active,' + COMPLIANCE_COLUMNS + '&limit=1'), { headers: sbHeaders });
+        // hank b53: only the documented case falls through -- 400/404, the
+        // compliance migration not yet run. Any other failure, or a non-list
+        // body, means the gate could not run, so the assignment is refused.
+        if (!cr.ok && cr.status !== 400 && cr.status !== 404) {
+          res.status(503).json({ error: { code: 'COMPLIANCE_CHECK_UNAVAILABLE', message: 'This subcontractor\'s insurance and licence could not be checked, so they were not assigned. Try again shortly.' } });
+          return;
+        }
         if (cr.ok) {
-          const crows = await cr.json();
-          const subRow = Array.isArray(crows) && crows[0];
+          const crows = await cr.json().catch(function () { return null; });
+          if (!Array.isArray(crows)) {
+            res.status(503).json({ error: { code: 'COMPLIANCE_CHECK_UNAVAILABLE', message: 'This subcontractor\'s insurance and licence could not be checked, so they were not assigned. Try again shortly.' } });
+            return;
+          }
+          const subRow = crows[0];
           if (subRow) {
             const st = complianceStatus(subRow, nowISO().slice(0, 10));
             if (st.blocking.length) {
@@ -389,8 +400,8 @@ module.exports = async (req, res) => {
             }
           }
         }
-        // cr not ok (including the 400 when the migration has not run) falls
-        // through and assigns. Stated rather than silent: with no compliance
+        // cr 400/404 (the migration has not run) falls through and assigns
+        // (narrowed in hank b53: other failures now refuse, above). Stated rather than silent: with no compliance
         // columns there is nothing to check, and refusing every assignment on
         // an unmigrated shop would be a worse failure than the gap this
         // closes. The roster read reports compliance_provisioned:false so the
