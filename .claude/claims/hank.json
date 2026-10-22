@@ -4593,6 +4593,17 @@
       "status": "released",
       "released_at": "2026-10-22T13:48:27Z",
       "files": null
+    },
+    {
+      "id": "hank-1792678644",
+      "session": "hank",
+      "subject": "sairncare",
+      "task": "b51 mar billing assignment tier fix and criticality tier check fail closed",
+      "claimed_at": "2026-10-22T14:17:24Z",
+      "claimed_at_epoch": 1792678644.258319,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
