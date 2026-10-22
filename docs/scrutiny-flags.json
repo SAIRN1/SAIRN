@@ -5761,6 +5761,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairnlegacy_countersign_ui.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "756f0bda15f353b7b2da40b214c55e8df9783326",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlegacy_write_failure_voice.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "756f0bda15f353b7b2da40b214c55e8df9783326",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_save_reviews_retry_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -13105,6 +13121,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "f52470d5435be23dd43a9a878009d5a67f3723d2",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/stonedesk_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f5832674ef304907ce9dae2e985567cae31cb388",
    "criteria_version": "2026-10-06.1"
   },
   {

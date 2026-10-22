@@ -37817,7 +37817,7 @@
       "recurrence_open": "Same shape may exist in other api/ catch-alls; only sd-agent.js:351 was routed and fixed. The license-gate arms (lines 263-266) still relay store messages by design (coded, user-facing)."
     },
     {
-      "commit": "8095ab289db5",
+      "commit": "f5832674ef30",
       "date": "2026-10-22",
       "subject": "fix(stonedesk b56): heading emoji hidden from the reader; six inputs to the 24px target minimum",
       "files": [
@@ -37861,7 +37861,7 @@
       "recurrence_open": "NOT CLOSED. Emoji outside headings (buttons, upload zones) are still spoken, e.g. the doc-scan zone. The ai heading was not heard in the b56 NVDA run (foreground lost at that step)."
     },
     {
-      "commit": "f2d29cc050e4",
+      "commit": "756f0bda15f3",
       "date": "2026-10-22",
       "subject": "feat(sairnlegacy b56): F3 countersignature UI -- stage, countersign, file",
       "files": [
