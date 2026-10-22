@@ -170,6 +170,12 @@ piecemeal before being named: **PR §1.11**.
 ## Project context
 
 - **Codebase:** `stonedesk.html`, a single-file app around 2.0MB and growing.
+- **Audit licence keys: `SEN-AUDIT-2026` is in `KNOWN_AUDIT_KEYS`**, the
+  tuple in `tools/audit_licence.py`. hank added it in b35 (`0ff033a3`), on its
+  dated live measurement. An audit-shaped key that is NOT in the tuple still
+  proceeds, but with a NOTE that its seed may not have been run. Read the
+  tuple for the current list and do not copy it here, for the
+  same reason as the script-block count below.
 - **Do not hardcode the script-block count or a known-broken list here.** Both
   change every session; a hardcoded list went stale within hours in 2026-07-26.
   Re-verify against the file directly using **HTML-parser-based extraction, not
