@@ -11921,6 +11921,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/stonedesk_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d93a3082e8b80a45541aa63595ffcc00a05858f0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/hook_integrity_check.py",
    "class": "push-gate logic",
    "level": "CHANGE",
@@ -12486,6 +12494,22 @@
     }
    ],
    "sha": "e6227220222ed7a2fc42fb6cff5f42291d89692d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlegacy_countersign_ui.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "e6c71c9c03d183628ba782d72898c3030440e95e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlegacy_write_failure_voice.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "e6c71c9c03d183628ba782d72898c3030440e95e",
    "criteria_version": "2026-10-06.1"
   },
   {
