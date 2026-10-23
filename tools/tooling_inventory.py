@@ -123,6 +123,27 @@ PURPOSES = {
         'a pass. It CANNOT prove Google acknowledged the bytes -- the mount is '
         'a sync directory -- and prints the board\'s Drive file id so a chat '
         'turn can close that through the API instead.'),
+    'sairnlaw_citator_stress.py': ('PROBE',
+        'a fabricated or altered case citation that SAIRNlaw presents as real, or '
+        'never shows: drives the real api/legal-citator.js verify action and the '
+        'real sairnlaw.html lawCiteGuard path over a fixed corpus (Mata v. Avianca '
+        'fabrications, wrong court / name / holding on real cites, a fabrication '
+        'seventh in a draft, a substring collision in one batch), with the '
+        'CourtListener answer as a declared fixture. Exit 1 on any item verified '
+        'or unshown; 2 when a control fails.'),
+    'sairnlaw_deadline_coverage_gap.py': ('CHECKER',
+        'a seeded SAIRNlaw deadline jurisdiction with no isolation test, only a '
+        'neighbour state\'s incidental arm, or no mutation / sabotage arm, listed '
+        'oldest-untested first by the first commit of its seed. Cross-cutting '
+        'readdirSync suites are counted separately and never as isolation.'),
+    'sairnlaw_iolta_reconcile_stress.py': ('PROBE',
+        'a forced bank / trust-ledger / client-ledger discrepancy that the real '
+        'reconcileTrustLedger() reports as AGREES with nothing flagged, read '
+        'through sairnlaw.html\'s own LAW_RECON_STATUS labels: one-cent bank '
+        'short, an unrecorded deposit, a device-total cent, a mis-typed '
+        'disbursement, a shortfall parked as a 91-day deposit in transit, a '
+        'client-to-client misallocation with totals unchanged, a negative client, '
+        'an unreadable amount, an undated row. Exit 1 on any silent reconcile.'),
     'dependency_integrity_check.py': ('CHECKER',
         'an INSTALLED dependency that is not the one the manifests declare, or '
         'is not the one that loads: a locked npm package missing or at a '
