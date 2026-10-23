@@ -37531,6 +37531,50 @@
       "recurrence_open": "probe_anchor_freshness silently ignores an edit passed as a BARE tuple argument (neither counted nor skipped) -- found in b49, routed to cc, not fixed here."
     },
     {
+      "commit": "09e8108196e5",
+      "date": "2026-10-22",
+      "subject": "fix(stonedesk b57): the 15 modal / sub-view controls the panel pass never rendered are named",
+      "files": [
+        "stonedesk.html",
+        "tests/stonedesk_a11y_pass.js"
+      ],
+      "lines_added": 19,
+      "lines_removed": 2,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "fourth b57. Field Map schedule/overview/pipeline, slab location filter, safety training and incident, AI quote tier, intake link and the slab-bind select had no name; the per-panel axe pass never rendered them. Named via SD_A11Y_NAMES (and the template for the slab-bind select). Suite 33 arms; M1-M3 fail on HEAD.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "fourth b56 static scan of controls outside the rendered panels (scratchpad; not in repo)",
+      "found_by_session": null,
+      "injection": {
+        "commit": "57db94fbf375",
+        "date": "2026-06-22",
+        "subject": "Fix JavaScript syntax errors in stonedesk.html - 94/106 scripts passing Node syntax check",
+        "lag_days": 122
+      },
+      "citation_note": "No coding rule covers this class: controls in modals and sub-views are never seen by a per-panel axe pass. Proposed: a static scan for unnamed controls alongside the rendered pass.",
+      "contributing_factors": [
+        {
+          "factor": "The axe pass audits each panel as rendered on navigation; modal and sub-view controls are not in that DOM state.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Static scan added to the method; arms M1-M3 lock the names."
+        },
+        {
+          "factor": "Controls were built with option text or placeholders only.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Written names applied where none exists."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. A rendered axe pass of each modal has not been run; the static scan is a heuristic. aiquote heading intermittently not focused (b57 NVDA run)."
+    },
+    {
       "commit": "1e471c7ab6f9",
       "date": "2026-10-22",
       "subject": "fix(countersign, cody b51): an off-profile resource is refused, not passed as signed (cc b50 review of d6b37bb1)",
@@ -37711,50 +37755,6 @@
         }
       ],
       "recurrence_open": "NOT CLOSED. Not driven against the live API (it would leave leg_cremations and token residue). Cremation records already saved locally before b56 and refused by the server are still on those devices. Other locked resources, if added to an F3 list, have no UI either."
-    },
-    {
-      "commit": "dbbf43b6dbf5",
-      "date": "2026-10-22",
-      "subject": "fix(platform b53): the rest of the \"skip the check on an unreadable read\" sweep -- batch tombstones, provider link, BI token cap, sub compliance",
-      "files": [
-        "api/b53-soft-delete-guard-fail-closed.test.js",
-        "api/dnt-bi.js",
-        "api/sd-data-customers-batch.test.js",
-        "api/sd-data.js",
-        "api/sd-sub-data.js"
-      ],
-      "lines_added": 80,
-      "lines_removed": 16,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "Guards skipped on an unreadable read: sd_customers write_batch tombstone pre-read wrote deleted customers back; dnt_providers one-login check let a second provider row link the same login (patient scope by row order); dnt-bi feed-token cap minted past MAX; sd-sub-data COI/licence gate assigned on any failure. All now refuse when the check cannot run.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "four separate guards in sd-data.js, dnt-bi.js and sd-sub-data.js"
-      },
-      "citation_note": "PR 1.11 shape",
-      "contributing_factors": [
-        {
-          "factor": "each guard wrapped its refusal in if (resp.ok) or Array.isArray(...) && ..., so an unreadable read skipped the check",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "refuse 502/503 when the check cannot run; 404/400 not-provisioned proceeds"
-        },
-        {
-          "factor": "no detector for the shape; found by a 67-site manual sweep",
-          "kind": "detection",
-          "action_status": "planned",
-          "action": "route a static check to cc (tools/)"
-        }
-      ],
-      "recurrence_open": "recordFailure() lockout PATCH unchecked in 11 *-auth files is a related, unfixed shape"
     },
     {
       "commit": "59c3e0208efe",
@@ -38036,6 +38036,43 @@
       "recurrence_open": "NOT CLOSED. 43 missing-dom-fix stub fields (36315fb99) show the raw element id as their visible label -- a product decision, not recoloured. target-size x5 (field-quote, nesting). Emoji inside headings are read aloud. The NVDA pass heard the pre-fix live build; the fixed build is axe-verified, not yet NVDA-heard."
     },
     {
+      "commit": "8e617d197fc3",
+      "date": "2026-10-22",
+      "subject": "fix(platform b53): the soft-delete resurrection guards refuse when they cannot read the stored row",
+      "files": [
+        "api/b53-soft-delete-guard-fail-closed.test.js",
+        "api/sd-data-tombstone-propagation.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 174,
+      "lines_removed": 6,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "The sd_customers and SAIRNcode soft-delete-only resurrection guards skipped their 409 DELETED when the pre-read answered 4xx/5xx or an unparsable/non-list body, so a stale device's save un-deleted the record. Now 502 UNREADABLE_PRIOR, nothing written; 404/400 not-provisioned still falls through. b53 suite C1-C2/S1-S2 driven, M1-M4 red.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "two guards written 2026-09-24 with a documented fall-through, the design Michael reversed in b53"
+      },
+      "citation_note": "PR 1.11 shape",
+      "contributing_factors": [
+        {
+          "factor": "the resurrection guards refused only inside if (pre.ok), so a failed or unparsable pre-read fell through to the wholesale upsert",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "502 UNREADABLE_PRIOR on !ok (except 404/400) and on a non-list body"
+        }
+      ],
+      "recurrence_open": "cost/availability fail-opens (ai-rate-limit, claude.js, sd-render) remain by documented decision",
+      "single_factor_note": "one guard shape, copied to two branches"
+    },
+    {
       "commit": "a7c848c83680",
       "date": "2026-10-22",
       "subject": "fix(stonedesk b55): 17 stub fields get real labels; the doc-scan upload zone is a keyboard button",
@@ -38131,41 +38168,48 @@
       "recurrence_open": "Same shape may exist in other api/ catch-alls; only sd-agent.js:351 was routed and fixed. The license-gate arms (lines 263-266) still relay store messages by design (coded, user-facing)."
     },
     {
-      "commit": "8e617d197fc3",
+      "commit": "dbbf43b6dbf5",
       "date": "2026-10-22",
-      "subject": "fix(platform b53): the soft-delete resurrection guards refuse when they cannot read the stored row",
+      "subject": "fix(platform b53): the rest of the \"skip the check on an unreadable read\" sweep -- batch tombstones, provider link, BI token cap, sub compliance",
       "files": [
         "api/b53-soft-delete-guard-fail-closed.test.js",
-        "api/sd-data-tombstone-propagation.test.js",
-        "api/sd-data.js"
+        "api/dnt-bi.js",
+        "api/sd-data-customers-batch.test.js",
+        "api/sd-data.js",
+        "api/sd-sub-data.js"
       ],
-      "lines_added": 174,
-      "lines_removed": 6,
+      "lines_added": 80,
+      "lines_removed": 16,
       "app": "PLATFORM",
       "layer": "product",
-      "severity": "high",
+      "severity": "moderate",
       "detection_method": "code-review",
-      "summary": "The sd_customers and SAIRNcode soft-delete-only resurrection guards skipped their 409 DELETED when the pre-read answered 4xx/5xx or an unparsable/non-list body, so a stale device's save un-deleted the record. Now 502 UNREADABLE_PRIOR, nothing written; 404/400 not-provisioned still falls through. b53 suite C1-C2/S1-S2 driven, M1-M4 red.",
+      "summary": "Guards skipped on an unreadable read: sd_customers write_batch tombstone pre-read wrote deleted customers back; dnt_providers one-login check let a second provider row link the same login (patient scope by row order); dnt-bi feed-token cap minted past MAX; sd-sub-data COI/licence gate assigned on any failure. All now refuse when the check cannot run.",
       "rules": [],
       "citation_confidence": "not-citable",
-      "injection_phase": "design",
+      "injection_phase": "coding",
       "phase_confidence": "inferred",
       "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "unknown_reason": "two guards written 2026-09-24 with a documented fall-through, the design Michael reversed in b53"
+        "unknown_reason": "four separate guards in sd-data.js, dnt-bi.js and sd-sub-data.js"
       },
       "citation_note": "PR 1.11 shape",
       "contributing_factors": [
         {
-          "factor": "the resurrection guards refused only inside if (pre.ok), so a failed or unparsable pre-read fell through to the wholesale upsert",
+          "factor": "each guard wrapped its refusal in if (resp.ok) or Array.isArray(...) && ..., so an unreadable read skipped the check",
           "kind": "technical",
           "action_status": "done",
-          "action": "502 UNREADABLE_PRIOR on !ok (except 404/400) and on a non-list body"
+          "action": "refuse 502/503 when the check cannot run; 404/400 not-provisioned proceeds"
+        },
+        {
+          "factor": "no detector for the shape; found by a 67-site manual sweep",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "route a static check to cc (tools/)"
         }
       ],
-      "recurrence_open": "cost/availability fail-opens (ai-rate-limit, claude.js, sd-render) remain by documented decision",
-      "single_factor_note": "one guard shape, copied to two branches"
+      "recurrence_open": "recordFailure() lockout PATCH unchecked in 11 *-auth files is a related, unfixed shape"
     },
     {
       "commit": "f2dfd784337a",
@@ -38214,48 +38258,180 @@
       "recurrence_open": "NOTHING STOPS THE TWO DIRECTORIES FROM DIVERGING AGAIN: the operational directory is still where some tools are run from and edited, and no check compares it with the tracked directory. The merged tool's verdicts were compared with the operational tool on 71 sampled entries, not on all 1,399 citations (a full three-version run was started and not finished). The abbreviation list is still a short fixed list."
     },
     {
-      "commit": "09e8108196e5",
-      "date": "2026-10-22",
-      "subject": "fix(stonedesk b57): the 15 modal / sub-view controls the panel pass never rendered are named",
+      "commit": "1eab88206c24",
+      "date": "2026-10-23",
+      "subject": "feat(sairnlaw tools, cc b55): citator, deadline-coverage and IOLTA stress tools, each run against the real code",
       "files": [
-        "stonedesk.html",
-        "tests/stonedesk_a11y_pass.js"
+        "docs/TOOLING-INVENTORY.md",
+        "tools/sairnlaw_citator_stress.py",
+        "tools/sairnlaw_deadline_coverage_gap.py",
+        "tools/sairnlaw_iolta_reconcile_stress.py",
+        "tools/tooling_inventory.py"
       ],
-      "lines_added": 19,
-      "lines_removed": 2,
-      "app": "stonedesk",
+      "lines_added": 837,
+      "lines_removed": 9,
+      "app": "sairnlaw",
       "layer": "product",
-      "severity": "moderate",
-      "detection_method": "static-checker",
-      "summary": "fourth b57. Field Map schedule/overview/pipeline, slab location filter, safety training and incident, AI quote tier, intake link and the slab-bind select had no name; the per-panel axe pass never rendered them. Named via SD_A11Y_NAMES (and the template for the slab-bind select). Suite 33 arms; M1-M3 fail on HEAD.",
+      "severity": "high",
+      "detection_method": "fault-injection",
+      "summary": "PRESENCE PASSED AS PROOF (named cc b55): a check confirms that a thing EXISTS -- a case at a reporter cite, ledger totals that match, a test file for a jurisdiction -- and the app reports that as the thing being RIGHT. SAIRNlaw citator, measured by tools/sairnlaw_citator_stress.py against the real api/legal-citator.js verify handler and the real sairnlaw.html lawCiteGuard (CourtListener answers as a declared fixture). 8 of 12 corpus items FAIL. (1) EXISTENCE IS NOT CORRECTNESS: a real reporter cite with the WRONG COURT (Brady v. Maryland, 373 U.S. 83 (9th Cir. 1963)), the WRONG CASE NAME (Roe v. Smith, 410 U.S. 113) or an INVENTED HOLDING (Miranda, 384 U.S. 436, a car-search holding) comes back verified -- legal-citator.js:290-296 marks verified on any 200 with a cluster and never compares the claimed name, court or proposition. (2) UNSEEN IS UNCHECKED IS UNSHOWN: three Mata v. Avianca fabrications in public-domain (Shaboon v. Egyptair, 2013 IL App (1st) 111279-U), Westlaw (Martinez v. Delta, 2019 WL 4639462) and bare-name (Durden v. KLM) form are never extracted by mtExtractCitations (sairnlaw.html MT_CITE_PATTERNS, reporter shapes only), so lawCiteGuard shows nothing at all. (3) A fabrication SEVENTH in a draft is extracted and then dropped: mtVerifyCitations batches slice(0,6) and the guard prints checked.length, so the seventh is neither checked nor named. Controls: a correct Brady cite verifies; Varghese 925 F.3d 1339, Petersen 905 F. Supp. 2d 121, 999 U.S. 9999 and an off-by-one page are flagged not_found. OPEN, not fixed; owners hank (api/) and fourth (sairnlaw.html).",
       "rules": [],
       "citation_confidence": "not-citable",
       "injection_phase": "design",
       "phase_confidence": "inferred",
-      "found_by_tool": "fourth b56 static scan of controls outside the rendered panels (scratchpad; not in repo)",
+      "found_by_tool": "tools/sairnlaw_citator_stress.py",
       "found_by_session": null,
       "injection": {
-        "commit": "57db94fbf375",
-        "date": "2026-06-22",
-        "subject": "Fix JavaScript syntax errors in stonedesk.html - 94/106 scripts passing Node syntax check",
-        "lag_days": 122
+        "unknown_reason": "not traced to a single commit; the behaviour dates from the first version of the code measured"
       },
-      "citation_note": "No coding rule covers this class: controls in modals and sub-views are never seen by a per-panel axe pass. Proposed: a static scan for unnamed controls alongside the rendered pass.",
+      "citation_note": "No standing rule names the existence-versus-correctness shape; it is named here as PRESENCE PASSED AS PROOF.",
       "contributing_factors": [
         {
-          "factor": "The axe pass audits each panel as rendered on navigation; modal and sub-view controls are not in that DOM state.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Static scan added to the method; arms M1-M3 lock the names."
+          "factor": "Verification was designed as a lookup (does a case exist at this cite) and the result is labelled verified, a word users read as correct.",
+          "kind": "technical",
+          "action_status": "planned",
+          "action": "Compare the cited case name and court with the resolved cluster and report a mismatch as its own state, never verified."
         },
         {
-          "factor": "Controls were built with option text or placeholders only.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Written names applied where none exists."
+          "factor": "The extractor recognises reporter citations only, and nothing reports text it could not read as a citation.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "Flag case-name, WL and public-domain shapes as unchecked citations in the guard; show every extracted citation, not only the first six."
         }
       ],
-      "recurrence_open": "NOT CLOSED. A rendered axe pass of each modal has not been run; the static scan is a heuristic. aiquote heading intermittently not focused (b57 NVDA run)."
+      "recurrence_open": "A holding cannot be verified by any lookup; a correct name+court with a misstated proposition would still verify."
+    },
+    {
+      "commit": "1eab88206c24",
+      "date": "2026-10-23",
+      "subject": "feat(sairnlaw tools, cc b55): citator, deadline-coverage and IOLTA stress tools, each run against the real code",
+      "files": [
+        "docs/TOOLING-INVENTORY.md",
+        "tools/sairnlaw_citator_stress.py",
+        "tools/sairnlaw_deadline_coverage_gap.py",
+        "tools/sairnlaw_iolta_reconcile_stress.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 837,
+      "lines_removed": 9,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "fault-injection",
+      "summary": "PRESENCE PASSED AS PROOF (named cc b55): a check confirms that a thing EXISTS -- a case at a reporter cite, ledger totals that match, a test file for a jurisdiction -- and the app reports that as the thing being RIGHT. api/legal-citator.js:285-287 maps each CourtListener result back to a submitted citation by exact match, THEN by substring in either direction. In one batch ['47 U.S. 483', 'Brown v. Board of Education, 347 U.S. 483 (1954)'] the upstream result for 347 U.S. 483 matches the FABRICATED '47 U.S. 483' by substring first, so the fabrication comes back VERIFIED as Brown v. Board of Education, and the real Brown citation comes back not_found. Reachable by a direct verify call with free-text citations (the API accepts them); the sairnlaw.html client sends exact extracted strings, so it takes the exact-match branch. Measured by tools/sairnlaw_citator_stress.py item X1. OPEN; owner hank.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/sairnlaw_citator_stress.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "not traced to a single commit; the behaviour dates from the first version of the code measured"
+      },
+      "citation_note": "Not a rule breach so much as a matching heuristic that can transfer one result to another key.",
+      "contributing_factors": [
+        {
+          "factor": "Substring fallbacks were added to tolerate formatting drift and were not constrained to one result per key.",
+          "kind": "technical",
+          "action_status": "planned",
+          "action": "Match on the normalised reporter citation only, refuse a key that more than one result could match, and never let a later result overwrite a different key."
+        },
+        {
+          "factor": "The verify action had no behavioural test (tests/run_citator_freshness_probe.py says the file has no harness).",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tools/sairnlaw_citator_stress.py drives verify end to end."
+        }
+      ],
+      "recurrence_open": "Other upstream result shapes (pin cites, parallel cites) were not surveyed."
+    },
+    {
+      "commit": "1eab88206c24",
+      "date": "2026-10-23",
+      "subject": "feat(sairnlaw tools, cc b55): citator, deadline-coverage and IOLTA stress tools, each run against the real code",
+      "files": [
+        "docs/TOOLING-INVENTORY.md",
+        "tools/sairnlaw_citator_stress.py",
+        "tools/sairnlaw_deadline_coverage_gap.py",
+        "tools/sairnlaw_iolta_reconcile_stress.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 837,
+      "lines_removed": 9,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "fault-injection",
+      "summary": "PRESENCE PASSED AS PROOF (named cc b55): a check confirms that a thing EXISTS -- a case at a reporter cite, ledger totals that match, a test file for a jurisdiction -- and the app reports that as the thing being RIGHT. SAIRNlaw IOLTA reconciliation, measured by tools/sairnlaw_iolta_reconcile_stress.py against the real reconcileTrustLedger() (api/_lib/law-trust-reconcile.js) and sairnlaw.html LAW_RECON_STATUS. 7 of 9 forced discrepancies surface; 2 reconcile as \"Reconciled\" with nothing flagged. M5: a $40 TRUST SHORTFALL parked as a deposit in transit dated 91 days before the statement (client B credited 540, 1340 owed against 1300 in the bank) -> AGREES, because outstanding items carry no age limit and expected_bank = ledger - outstanding absorbs any figure. M6: a $200 disbursement for client A charged to client B with totals unchanged -> AGREES, because the client leg is derived from the same rows (allocation_vs_ledger is self-labelled structural) and the device leg compares only a TOTAL. Surfaced correctly: one-cent bank short, unrecorded deposit, device-total cent, a disbursement keyed as a deposit, a negative client (Trust Alert), an unreadable amount, an undated row. OPEN; owners hank (api/_lib) and fourth (sairnlaw.html).",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/sairnlaw_iolta_reconcile_stress.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "not traced to a single commit; the behaviour dates from the first version of the code measured"
+      },
+      "citation_note": "No standing rule names it; the module header itself quotes the IOLTA principle M6 violates.",
+      "contributing_factors": [
+        {
+          "factor": "Outstanding items are accepted at any age, so a stale deposit in transit can explain away a real shortfall.",
+          "kind": "technical",
+          "action_status": "planned",
+          "action": "Report a deposit in transit older than a stated threshold as its own discrepancy, never inside AGREES."
+        },
+        {
+          "factor": "No independent per-client record reaches the reconciler; the third leg is a total.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Pass per-client balances from an independent source (the device, or client statements) and compare per client."
+        }
+      ],
+      "recurrence_open": "A misallocation that is ALSO mirrored on the device cannot be caught by any comparison of two copies of the same entries."
+    },
+    {
+      "commit": "1eab88206c24",
+      "date": "2026-10-23",
+      "subject": "feat(sairnlaw tools, cc b55): citator, deadline-coverage and IOLTA stress tools, each run against the real code",
+      "files": [
+        "docs/TOOLING-INVENTORY.md",
+        "tools/sairnlaw_citator_stress.py",
+        "tools/sairnlaw_deadline_coverage_gap.py",
+        "tools/sairnlaw_iolta_reconcile_stress.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 837,
+      "lines_removed": 9,
+      "app": "sairnlaw",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "fault-injection",
+      "summary": "PRESENCE PASSED AS PROOF (named cc b55): a check confirms that a thing EXISTS -- a case at a reporter cite, ledger totals that match, a test file for a jurisdiction -- and the app reports that as the thing being RIGHT. SAIRNlaw deadline rules, measured by tools/sairnlaw_deadline_coverage_gap.py over the 39 jurisdictions in sql/sairnlaw_deadline_seed_*.json. 37 of 39 have no mutation or sabotage arm -- every test that exists has never been seen to fail; only me (deadline-maine.test.js) and us-federal (tests/sairnlaw_retrigger.js) do. 7 have no isolation test at all (in, mi, pa, il, ca, ny, tx -- oldest seed 2026-08-21/22) and 2 are covered only by one contrast arm in a NEIGHBOUR state's suite (oh in deadline-mississippi.test.js, ga in deadline-westvirginia.test.js). Cross-cutting readdirSync suites touch all 39 and are not counted as isolation. OPEN; owners cody (tests/) and hank (api/_lib).",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/sairnlaw_deadline_coverage_gap.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "not traced to a single commit; the behaviour dates from the first version of the code measured"
+      },
+      "citation_note": "The test-quality half of the pattern: a test FILE existing is reported as coverage.",
+      "contributing_factors": [
+        {
+          "factor": "Isolation suites were written per state as the seeds landed, without a negative control.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "Add a probe per jurisdiction that mutates one rule value and requires the suite to go red, oldest first."
+        },
+        {
+          "factor": "Nothing listed coverage per jurisdiction until this tool.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tools/sairnlaw_deadline_coverage_gap.py, exit 1 while any gap exists."
+        }
+      ],
+      "recurrence_open": "A mutation arm proves a test can fail, not that its expected dates are right."
     }
   ],
   "started": "2026-09-09",
