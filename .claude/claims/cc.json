@@ -4740,8 +4740,8 @@
       "task": "b55 citator stress tool, jurisdiction deadline coverage report, iolta reconcile stress",
       "claimed_at": "2026-10-23T16:25:31Z",
       "claimed_at_epoch": 1792772731.8873339,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-23T16:55:31Z",
       "files": null
     }
   ],
