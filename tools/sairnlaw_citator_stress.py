@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# OWNER: cc
 """SAIRNlaw citator adversarial stress test -- fabricated and altered citations.
 
     python tools/sairnlaw_citator_stress.py            # run the corpus, print every row

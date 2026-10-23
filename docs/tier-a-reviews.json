@@ -8625,6 +8625,28 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-10-23T16:49:24Z",
+      "opened_at_sha": "1eab88206c244ece817e1c3cd9b37c9d92e90302",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 4,
+      "resources": [
+        "law_trust_reconcile"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tools/sairnlaw_iolta_reconcile_stress.py"
+      ],
+      "what": "cc b55: tools/sairnlaw_iolta_reconcile_stress.py (new, TEST/PROBE only -- reads law_trust_reconcile through the real reconcileTrustLedger(); no product code changed). Review asks: are its 9 forced-discrepancy scenarios and PASS rule a fair statement of 'never silently reconcile a real discrepancy away', and are M5 (stale deposit in transit) and M6 (client misallocation, totals unchanged) real IOLTA failures rather than artefacts of the scenarios.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-10-23T16:49:24Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
