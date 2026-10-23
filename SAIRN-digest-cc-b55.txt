@@ -1,0 +1,25 @@
+DIGEST cc b55 (SAIRNlaw)
+STATUS: 6 of 6 closed. Tools 1eab8820, register bb415802, landed 0/0; no product code changed; no --force, NO OVERRIDE.
+ITEM 4 (reuse first): citator PARTIAL (verify real, untested); deadlines and IOLTA EXIST. All three new tools drive the REAL functions.
+ITEM 1 citator stress: tools/sairnlaw_citator_stress.py -> 4 PASS, 8 FAIL, control OK (exit 1).
+  VERIFIED despite a wrong court (Brady 9th Cir.), a wrong case name (Roe v. Smith) and an invented holding (Miranda).
+  Mata fabrications in WL, public-domain and bare-name form are never extracted, so never shown.
+  A 7th citation is dropped. X1: a fabricated "47 U.S. 483" is VERIFIED as Brown (legal-citator.js:285-287).
+ITEM 2 deadline gaps: tools/sairnlaw_deadline_coverage_gap.py -> 37 of 39 have a gap.
+  NO ISOLATION: in mi pa il ca ny tx. INCIDENTAL ONLY: oh ga. NO MUTATION: 37 (only me and us-federal covered). Oldest first.
+ITEM 3 IOLTA stress: tools/sairnlaw_iolta_reconcile_stress.py -> 7 PASS, 2 FAIL (exit 1).
+  M5: a $40 shortfall parked as a 91-day deposit in transit reads "Reconciled".
+  M6: a client-to-client misallocation with totals unchanged reads "Reconciled".
+ITEM 5 pattern: PRESENCE PASSED AS PROOF -- "exists" reported as "right". 4 OPEN records in the defect register.
+ITEM 6: pushed, no force, landed. Tier A obligation (law_trust_reconcile) assigned to hank.
+DECISION-NEEDED: none.
+CHANGED: 3 new tools/sairnlaw_*.py, tools/tooling_inventory.py, docs/TOOLING-INVENTORY.md, docs/defect-density-register.json, docs/tier-a-reviews.json.
+SQL: none.
+EVIDENCE-path: SAIRN-report-cc-b55.txt (full corpora and tables), SAIRN-handoff-cc-b55.md
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\87a27b9f-55e9-45e8-b017-01ed1febac1a.jsonl
+UNVERIFIED: live CourtListener behaviour (the citator upstream is a fixture). Whether X1's upstream shape occurs live. Whether any firm uses deposits-in-transit as in M5.
+ROUTED: hank+fourth -- citator mismatch state + extraction; hank -- X1, IOLTA age threshold + per-client leg, the Tier A review; cody+hank -- deadline mutation probes, oldest first.
+NEXT: nothing owed by cc. Re-run the three tools after each fix; each FAIL row names what should turn PASS.
+CONTEXT 59.7% of 1,000,000 -- 597,483 tokens, measured.
+SHA256 ea773719e57bff19b672e99609e036c18cba5ee98eaeb2b55538fe482f51c179
+END-OF-REPORT

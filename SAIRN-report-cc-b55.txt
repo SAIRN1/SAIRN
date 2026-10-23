@@ -1,0 +1,162 @@
+REPORT cc b55 -- SAIRNlaw: citator stress, deadline coverage gaps, IOLTA reconcile stress
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-23
+RANGE     1eab8820 (tools), bb415802 (register), OWNER lines + Tier A obligation (landed c3bcc21a..43990904), 12e918fd (handoff), this report and digest.
+          No product code changed. No --force, NO OVERRIDE. Claim sairnlaw (cc), released at close.
+
+== ITEM 4 -- REUSE CHECK, BEFORE BUILDING ==
+Read-only survey:
+  CITATOR -- PARTIAL. The verify path is real; no test drove it.
+  DEADLINES -- EXIST. 39 suites / 47 seeds; no per-jurisdiction coverage view.
+  IOLTA -- EXISTS. 33 unit arms + mutation + wiring probes; no adversarial scenarios.
+All three tools drive the REAL functions. None reimplements app logic or edits app code.
+
+== ITEMS 1-3 -- TOOLS ==
+tools/sairnlaw_citator_stress.py
+  REAL: api/legal-citator.js verify; sairnlaw.html MT_CITE_PATTERNS / mtExtractCitations / mtVerifyCitations / lawCiteGuard (vm).
+  FIXTURE: CourtListener answers.
+  Criteria lock 9/9. Ablation: the upstream resolving Varghese turns F1 red.
+tools/sairnlaw_deadline_coverage_gap.py
+  Isolation = real engine + the jurisdiction's own seed by name + a test named for the state.
+  Incidental = a neighbour's arm. readdirSync = cross-cutting.
+  Mutation = a mutation/sabotage arm, or a MUTATIONS probe naming it.
+  Criteria lock 8/8.
+tools/sairnlaw_iolta_reconcile_stress.py
+  REAL: reconcileTrustLedger() + LAW_RECON_STATUS + the negative-client dashboard rule.
+  Criteria lock 6/6.
+Each tool: exit 0 clean / 1 finding / 2 COULD NOT RUN (a control failing is 2). OWNER: cc. PURPOSES entries added.
+Tier A obligation on law_trust_reconcile opened, assigned to hank.
+
+== THE ACTUAL CORPORA AND RESULTS (generated from each tool's --json at HEAD) ==
+== CITATOR CORPUS (exit 1) ==
+PASS         F1 [F/client] Varghese v. China Southern Airlines Co., 925 F.3d 1339 (11th Cir. 2019)
+   extracted=['925 F.3d 1339'] states=[('925 F.3d 1339', 'not_found', None)]
+PASS         F2 [F/client] Petersen v. Iran Air, 905 F. Supp. 2d 121 (D.D.C. 2012)
+   extracted=['905 F. Supp. 2d 121'] states=[('905 F. Supp. 2d 121', 'not_found', None)]
+FAIL         F3 [F/client] Shaboon v. Egyptair, 2013 IL App (1st) 111279-U
+   extracted=[] states=[]
+FAIL         F4 [F/client] Martinez v. Delta Airlines, Inc., 2019 WL 4639462 (Tex. App. 2019)
+   extracted=[] states=[]
+FAIL         F5 [F/client] Durden v. KLM Royal Dutch Airlines
+   extracted=[] states=[]
+PASS         F6 [F/client] Holloway v. Tranquil Systems, 999 U.S. 9999 (2031)
+   extracted=['999 U.S. 9999'] states=[('999 U.S. 9999', 'not_found', None)]
+FAIL         A1 [A/client] Brady v. Maryland, 373 U.S. 83 (9th Cir. 1963)
+   extracted=['373 U.S. 83'] states=[('373 U.S. 83', 'verified', 'Brady v. Maryland')]
+FAIL         A2 [A/client] Roe v. Smith, 410 U.S. 113 (1973)
+   extracted=['410 U.S. 113'] states=[('410 U.S. 113', 'verified', 'Roe v. Wade')]
+FAIL         A3 [A/client] Miranda v. Arizona, 384 U.S. 436 (1966) (holding that a warrantless search of a parked car is always permitted)
+   extracted=['384 U.S. 436'] states=[('384 U.S. 436', 'verified', 'Miranda v. Arizona')]
+PASS         A4 [A/client] Brown v. Board of Education, 347 U.S. 484 (1954)
+   extracted=['347 U.S. 484'] states=[('347 U.S. 484', 'not_found', None)]
+FAIL         A5 [F/client] SEVENTH:Varghese v. China Southern Airlines Co., 925 F.3d 1339 (11th Cir. 2019)
+   extracted=['925 F.3d 1339'] states=[('925 F.3d 1339', 'not_found', None)]
+FAIL         X1 [X/api] 47 U.S. 483 || Brown v. Board of Education, 347 U.S. 483 (1954)
+   extracted=n/a states=[('47 U.S. 483', 'verified', 'Brown v. Board of Education'), ('Brown v. Board of Education, 347 U.S. 483 (1954)', 'not_found', None)]
+CONTROL-OK   C1 [C/client] Brady v. Maryland, 373 U.S. 83 (1963)
+   extracted=['373 U.S. 83'] states=[('373 U.S. 83', 'verified', 'Brady v. Maryland')]
+
+== DEADLINE GAPS, OLDEST-UNTESTED FIRST (exit 1; 39 jurisdictions) ==
+oh          since 2026-08-21 rules   8  INCIDENTAL ONLY + NO MUTATION  isolation=deadline-mississippi.test.js
+in          since 2026-08-22 rules   7  NO ISOLATION + NO MUTATION     isolation=-
+mi          since 2026-08-22 rules  18  NO ISOLATION + NO MUTATION     isolation=-
+pa          since 2026-08-22 rules  11  NO ISOLATION + NO MUTATION     isolation=-
+il          since 2026-08-23 rules   6  NO ISOLATION + NO MUTATION     isolation=-
+ca          since 2026-08-24 rules  10  NO ISOLATION + NO MUTATION     isolation=-
+fl          since 2026-08-24 rules   7  NO MUTATION                    isolation=deadline-florida-coverage.test.js,deadline-florida-exclusivity.test.js
+ga          since 2026-08-24 rules  12  INCIDENTAL ONLY + NO MUTATION  isolation=deadline-westvirginia.test.js
+ny          since 2026-08-24 rules  11  NO ISOLATION + NO MUTATION     isolation=-
+tx          since 2026-08-24 rules  11  NO ISOLATION + NO MUTATION     isolation=-
+ma          since 2026-08-25 rules  11  NO MUTATION                    isolation=deadline-massachusetts.test.js,deadline-missouri.test.js
+nc          since 2026-08-25 rules  13  NO MUTATION                    isolation=deadline-newjersey.test.js,deadline-northcarolina.test.js,deadline-virginia.test.js,deadline-washington.test.js
+nj          since 2026-08-25 rules  11  NO MUTATION                    isolation=deadline-newjersey.test.js
+va          since 2026-08-25 rules  12  NO MUTATION                    isolation=deadline-massachusetts.test.js,deadline-missouri.test.js,deadline-virginia.test.js
+wa          since 2026-08-25 rules  14  NO MUTATION                    isolation=deadline-newjersey.test.js,deadline-washington.test.js
+wv          since 2026-08-25 rules  17  NO MUTATION                    isolation=deadline-northcarolina.test.js,deadline-westvirginia.test.js
+mn          since 2026-08-26 rules  11  NO MUTATION                    isolation=deadline-connecticut.test.js,deadline-minnesota.test.js,deadline-utah.test.js
+mo          since 2026-08-26 rules  14  NO MUTATION                    isolation=deadline-minnesota.test.js,deadline-missouri.test.js
+ct          since 2026-08-27 rules   1  NO MUTATION                    isolation=deadline-connecticut.test.js,deadline-utah.test.js
+nv          since 2026-08-27 rules  10  NO MUTATION                    isolation=deadline-nevada.test.js,deadline-oregon.test.js
+ut          since 2026-08-27 rules   9  NO MUTATION                    isolation=deadline-nevada.test.js,deadline-utah.test.js
+ok          since 2026-08-28 rules   9  NO MUTATION                    isolation=deadline-oklahoma.test.js,deadline-southcarolina.test.js
+or          since 2026-08-28 rules   6  NO MUTATION                    isolation=deadline-oklahoma.test.js,deadline-oregon.test.js
+sc          since 2026-08-28 rules   9  NO MUTATION                    isolation=deadline-southcarolina.test.js
+al          since 2026-08-30 rules  11  NO MUTATION                    isolation=deadline-alabama.test.js
+ar          since 2026-08-30 rules  13  NO MUTATION                    isolation=deadline-arkansas.test.js
+id          since 2026-08-30 rules  11  NO MUTATION                    isolation=deadline-hawaii.test.js,deadline-idaho.test.js,deadline-nebraska.test.js,deadline-newhampshire.test.js
+ks          since 2026-08-30 rules  10  NO MUTATION                    isolation=deadline-kansas.test.js
+md          since 2026-08-30 rules  11  NO MUTATION                    isolation=deadline-maryland.test.js
+ms          since 2026-08-30 rules  11  NO MUTATION                    isolation=deadline-hawaii.test.js,deadline-mississippi.test.js
+ne          since 2026-08-30 rules  10  NO MUTATION                    isolation=deadline-hawaii.test.js,deadline-nebraska.test.js,deadline-newhampshire.test.js
+nm          since 2026-08-30 rules  15  NO MUTATION                    isolation=deadline-hawaii.test.js,deadline-newmexico.test.js
+wi          since 2026-08-30 rules  12  NO MUTATION                    isolation=deadline-wisconsin.test.js
+hi          since 2026-08-31 rules  11  NO MUTATION                    isolation=deadline-hawaii.test.js,deadline-newhampshire.test.js
+de          since 2026-09-01 rules  10  NO MUTATION                    isolation=deadline-delaware.test.js
+nh          since 2026-09-01 rules  13  NO MUTATION                    isolation=deadline-newhampshire.test.js
+mt          since 2026-09-02 rules  15  NO MUTATION                    isolation=deadline-montana.test.js
+covered both ways: me, us-federal
+
+== IOLTA SCENARIOS (exit 1) ==
+CONTROL-OK   C0 [control] correct books, every leg agrees
+   rows=[{"id": "T1", "client_id": "CL-A", "type": "Deposit", "amount": 1000, "date": "2026-09-01", "cleared_on": "2026-09-02"}, {"id": "T2", "client_id": "CL-B", "type": "Deposit", "amount": 500, "date": "2026-09-03", "cleared_on": "2026-09-04"}, {"id": "T3", "client_id": "CL-A", "type": "Disbursement", "amount": 200, "date": "2026-09-10", "cleared_on": "2026-09-11"}] bank=[{"statement_date": "2026-09-30", "bank_balance": 1300}] device=130000
+   -> status AGREES label "Reconciled" disagreeing [] negative [] clients [['CL-A', 80000], ['CL-B', 50000]]
+PASS         M1 [bank] the bank is ONE CENT short (1299.99)
+   rows=[{"id": "T1", "client_id": "CL-A", "type": "Deposit", "amount": 1000, "date": "2026-09-01", "cleared_on": "2026-09-02"}, {"id": "T2", "client_id": "CL-B", "type": "Deposit", "amount": 500, "date": "2026-09-03", "cleared_on": "2026-09-04"}, {"id": "T3", "client_id": "CL-A", "type": "Disbursement", "amount": 200, "date": "2026-09-10", "cleared_on": "2026-09-11"}] bank=[{"statement_date": "2026-09-30", "bank_balance": 1299.99}] device=130000
+   -> status DISAGREES label "Discrepancy" disagreeing ['bank_vs_ledger'] negative [] clients [['CL-A', 80000], ['CL-B', 50000]]
+PASS         M2 [bank] the bank holds $500 the ledger never recorded
+   rows=[{"id": "T1", "client_id": "CL-A", "type": "Deposit", "amount": 1000, "date": "2026-09-01", "cleared_on": "2026-09-02"}, {"id": "T2", "client_id": "CL-B", "type": "Deposit", "amount": 500, "date": "2026-09-03", "cleared_on": "2026-09-04"}, {"id": "T3", "client_id": "CL-A", "type": "Disbursement", "amount": 200, "date": "2026-09-10", "cleared_on": "2026-09-11"}] bank=[{"statement_date": "2026-09-30", "bank_balance": 1800}] device=130000
+   -> status DISAGREES label "Discrepancy" disagreeing ['bank_vs_ledger'] negative [] clients [['CL-A', 80000], ['CL-B', 50000]]
+PASS         M3 [client] the device's client-ledger total is one cent off the server's
+   rows=[{"id": "T1", "client_id": "CL-A", "type": "Deposit", "amount": 1000, "date": "2026-09-01", "cleared_on": "2026-09-02"}, {"id": "T2", "client_id": "CL-B", "type": "Deposit", "amount": 500, "date": "2026-09-03", "cleared_on": "2026-09-04"}, {"id": "T3", "client_id": "CL-A", "type": "Disbursement", "amount": 200, "date": "2026-09-10", "cleared_on": "2026-09-11"}] bank=[{"statement_date": "2026-09-30", "bank_balance": 1300}] device=129999
+   -> status DISAGREES label "Discrepancy" disagreeing ['device_vs_server'] negative [] clients [['CL-A', 80000], ['CL-B', 50000]]
+PASS         M4 [ledger] a $200 disbursement keyed as a DEPOSIT (trust ledger overstated by $400)
+   rows=[{"id": "T1", "client_id": "CL-A", "type": "Deposit", "amount": 1000, "date": "2026-09-01", "cleared_on": "2026-09-02"}, {"id": "T2", "client_id": "CL-B", "type": "Deposit", "amount": 500, "date": "2026-09-03", "cleared_on": "2026-09-04"}, {"id": "T3", "client_id": "CL-A", "type": "Deposit", "amount": 200, "date": "2026-09-10", "cleared_on": "2026-09-11"}] bank=[{"statement_date": "2026-09-30", "bank_balance": 1300}] device=170000
+   -> status DISAGREES label "Discrepancy" disagreeing ['bank_vs_ledger'] negative [] clients [['CL-A', 120000], ['CL-B', 50000]]
+FAIL         M5 [concealment] a $40 TRUST SHORTFALL parked as a "deposit in transit" dated 91 days before the statement. Client B is credited 540; only 1300 is in the bank against 1340 owed
+   rows=[{"id": "T1", "client_id": "CL-A", "type": "Deposit", "amount": 1000, "date": "2026-09-01", "cleared_on": "2026-09-02"}, {"id": "T2", "client_id": "CL-B", "type": "Deposit", "amount": 500, "date": "2026-09-03", "cleared_on": "2026-09-04"}, {"id": "T3", "client_id": "CL-A", "type": "Disbursement", "amount": 200, "date": "2026-09-10", "cleared_on": "2026-09-11"}, {"id": "T9", "client_id": "CL-B", "type": "Deposit", "amount": 40, "date": "2026-07-01", "cleared": false}] bank=[{"statement_date": "2026-09-30", "bank_balance": 1300}] device=134000
+   -> status AGREES label "Reconciled" disagreeing [] negative [] clients [['CL-A', 80000], ['CL-B', 54000]]
+FAIL         M6 [client] A's $200 disbursement charged to B's ledger, totals unchanged (A shows 1000 not 800; B shows 300 not 500)
+   rows=[{"id": "T1", "client_id": "CL-A", "type": "Deposit", "amount": 1000, "date": "2026-09-01", "cleared_on": "2026-09-02"}, {"id": "T2", "client_id": "CL-B", "type": "Deposit", "amount": 500, "date": "2026-09-03", "cleared_on": "2026-09-04"}, {"id": "T3", "client_id": "CL-B", "type": "Disbursement", "amount": 200, "date": "2026-09-10", "cleared_on": "2026-09-11"}] bank=[{"statement_date": "2026-09-30", "bank_balance": 1300}] device=130000
+   -> status AGREES label "Reconciled" disagreeing [] negative [] clients [['CL-A', 100000], ['CL-B', 30000]]
+PASS         M7 [client] a $600 disbursement for A charged to B, driving B NEGATIVE (-100)
+   rows=[{"id": "T1", "client_id": "CL-A", "type": "Deposit", "amount": 1000, "date": "2026-09-01", "cleared_on": "2026-09-02"}, {"id": "T2", "client_id": "CL-B", "type": "Deposit", "amount": 500, "date": "2026-09-03", "cleared_on": "2026-09-04"}, {"id": "T3", "client_id": "CL-B", "type": "Disbursement", "amount": 600, "date": "2026-09-10", "cleared_on": "2026-09-11"}] bank=[{"statement_date": "2026-09-30", "bank_balance": 900}] device=90000
+   -> status AGREES label "Reconciled" disagreeing [] negative ['CL-B'] clients [['CL-A', 100000], ['CL-B', -10000]]
+PASS         M8 [ledger] an unreadable amount on one row ('12O0' with a letter O)
+   rows=[{"id": "T1", "client_id": "CL-A", "type": "Deposit", "amount": "12O0", "date": "2026-09-01", "cleared_on": "2026-09-02"}, {"id": "T2", "client_id": "CL-B", "type": "Deposit", "amount": 500, "date": "2026-09-03", "cleared_on": "2026-09-04"}, {"id": "T3", "client_id": "CL-A", "type": "Disbursement", "amount": 200, "date": "2026-09-10", "cleared_on": "2026-09-11"}] bank=[{"statement_date": "2026-09-30", "bank_balance": 1300}] device=130000
+   -> status DISAGREES label "Discrepancy" disagreeing ['device_vs_server', 'bank_vs_ledger'] negative ['CL-A'] clients [['CL-A', -20000], ['CL-B', 50000]]
+PASS         M9 [ledger] one row with no date
+   rows=[{"id": "T1", "client_id": "CL-A", "type": "Deposit", "amount": 1000, "date": "2026-09-01", "cleared_on": "2026-09-02"}, {"id": "T2", "client_id": "CL-B", "type": "Deposit", "amount": 500, "date": "", "cleared_on": "2026-09-04"}, {"id": "T3", "client_id": "CL-A", "type": "Disbursement", "amount": 200, "date": "2026-09-10", "cleared_on": "2026-09-11"}] bank=[{"statement_date": "2026-09-30", "bank_balance": 1300}] device=130000
+   -> status PARTIAL label "Partly reconciled" disagreeing [] negative [] clients [['CL-A', 80000], ['CL-B', 50000]]
+
+== ITEM 5 -- METHODOLOGY: PRESENCE PASSED AS PROOF ==
+A check confirms a thing EXISTS, and the app reports that as the thing being RIGHT.
+  Citator: a case exists at the cite -> "verified", whatever name, court or holding is claimed (A1-A3).
+  Reconcile: the totals match -> "Reconciled", while a stale in-transit item hides a shortfall (M5) or money sits on the wrong client (M6).
+  Deadlines: a test file exists -> the state is treated as covered, though 37/39 have never been seen to fail.
+Two companion shapes in the citator:
+  UNSEEN IS UNCHECKED IS UNSHOWN (F3-F5, A5): what the extractor does not recognise, or drops past six, is never checked and never displayed.
+  NEAREST-KEY TRANSFER (X1): a substring fallback moves one citation's result onto another key.
+Register: 4 OPEN records in docs/defect-density-register.json, filed on 1eab8820 (the measuring commit; precedent 877191ec5d09 and 25814d5521fa):
+  product/high      citator existence-only + blind spots + 7th dropped
+  product/moderate  citator X1
+  product/high      IOLTA M5/M6
+  test/moderate     deadline mutation coverage
+defect_register.py --check OK (734 records).
+
+== OPEN (exact next steps in the handoff section 6) ==
+hank+fourth: citator mismatch state, show all citations, flag WL/public-domain/bare names.
+hank: X1.
+hank+fourth: in-transit age threshold, independent per-client record.
+cody+hank: one-rule mutation probes, oldest first; dedicated suites for 9 jurisdictions.
+hank: discharge the IOLTA-tool Tier A obligation.
+
+== TRANSCRIPT ==
+C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\87a27b9f-55e9-45e8-b017-01ed1febac1a.jsonl
+
+== CHANGED ==
+tools/sairnlaw_citator_stress.py, tools/sairnlaw_deadline_coverage_gap.py, tools/sairnlaw_iolta_reconcile_stress.py (new);
+tools/tooling_inventory.py; docs/TOOLING-INVENTORY.md; docs/defect-density-register.json; docs/tier-a-reviews.json; deliverables.
+
+SHA256 4ec99af5dc2e846efa19c537b65ed308d9786a7a69ed33dd349416f22d06b54c
+END-OF-REPORT
