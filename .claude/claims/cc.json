@@ -4732,6 +4732,17 @@
       "status": "released",
       "released_at": "2026-10-22T15:49:01Z",
       "files": null
+    },
+    {
+      "id": "cc-1792772731",
+      "session": "cc",
+      "subject": "sairnlaw",
+      "task": "b55 citator stress tool, jurisdiction deadline coverage report, iolta reconcile stress",
+      "claimed_at": "2026-10-23T16:25:31Z",
+      "claimed_at_epoch": 1792772731.8873339,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
