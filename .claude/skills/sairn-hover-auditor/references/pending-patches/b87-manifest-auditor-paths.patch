@@ -1,6 +1,6 @@
 --- a/docs/sairn-path-manifest.json
 +++ b/docs/sairn-path-manifest.json
-@@ -105,7 +105,11 @@
+@@ -113,7 +113,12 @@
    "auditor_paths": [
      ".claude/skills/sairn-hover-auditor/",
      "docs/hover-audit-log/",
@@ -8,6 +8,7 @@
 +    "docs/hover-evidence/",
 +    "tools/hover_auditor_scope_gate.py",
 +    "tools/hover_separation_audit.py",
++    "tools/hover_separation_ci.py",
 +    "tools/hover_routing_gap_check.py",
 +    "tests/run_hover_routing_gap_probe.py"
    ],
