@@ -320,12 +320,15 @@ atest('CONTROL: a TRANSPORT FAILURE is NO_ACTIVE_CHECK, never a deactivation. '
   assert.strictEqual(r.code, 'NO_ACTIVE_CHECK', JSON.stringify(r));
 });
 
-atest('CONTROL: ...and a non-OK response is NO_ACTIVE_CHECK as well, not an '
-  + 'empty row list read as "no active credential"', async () => {
+// REVERSED in hank b56 by Michael's b56 decision: an ANSWERED 4xx/5xx is
+// ACTIVE_CHECK_FAILED (refused by both callers), no longer NO_ACTIVE_CHECK.
+// Still never read as "no active credential".
+atest('a non-OK response is ACTIVE_CHECK_FAILED -- refused, and never an empty '
+  + 'row list read as "no active credential"', async () => {
   const s = restStub(null, 'notok');
   const r = await withFetch(s.fetchImpl,
     () => credentialStillActive(SESSION, 'LIC', s.rest, {}));
-  assert.strictEqual(r.code, 'NO_ACTIVE_CHECK', JSON.stringify(r));
+  assert.strictEqual(r.code, 'ACTIVE_CHECK_FAILED', JSON.stringify(r));
 });
 
 atest('CONTROL: NO_ACTIVE_CHECK is NOT ok. The three states are distinct and a '

@@ -569,7 +569,8 @@ async function handlePush(body, res, req) {
     return;
   }
   // hank b55 (W1): an unreadable answer is refused, not pushed on the token alone.
-  if (!stillActive.ok && stillActive.code === 'ACTIVE_CHECK_UNREADABLE') {
+  if (!stillActive.ok && (stillActive.code === 'ACTIVE_CHECK_UNREADABLE'
+                          || stillActive.code === 'ACTIVE_CHECK_FAILED')) {
     res.status(502).json({ error: { code: stillActive.code, message: stillActive.message } });
     return;
   }

@@ -234,7 +234,11 @@ function roleReads(calls) {
     const { res } = await callLaw('law_trusttx', 'write', 'attorney', TX1, {
       rosterDown: true
     });
-    is(res.statusCode === 503 && eCode(res) === 'COUNTERSIGN_CHECK_FAILED',
+    // hank b56: since the active-credential pre-gate refuses an ANSWERED roster
+    // failure (502 ACTIVE_CHECK_FAILED), it can refuse first. Either refusal is
+    // the fail-closed property this arm is about; the write must not happen.
+    is((res.statusCode === 503 && eCode(res) === 'COUNTERSIGN_CHECK_FAILED')
+       || (res.statusCode === 502 && eCode(res) === 'ACTIVE_CHECK_FAILED'),
        'R4. the roster lookup FAILS -> 503 COUNTERSIGN_CHECK_FAILED and no '
        + 'write, never the token\'s word as a fallback',
        res.statusCode + ' ' + eCode(res) + ' ' + eMsg(res));

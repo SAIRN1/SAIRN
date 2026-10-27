@@ -51,12 +51,28 @@ async function armW1(src) {
     assert.deepStrictEqual([r.ok, r.code], [false, 'ACTIVE_CHECK_UNREADABLE'], label + ': ' + JSON.stringify(r));
   }
 }
+// hank b56 (Michael's b56 decision): an ANSWERED 4xx/5xx is refused too, under its
+// OWN code -- distinct from the unreadable-2xx path above, so a regression that
+// folds one into the other is visible.
+async function armW1Answered(src) {
+  const auth = compile(AUTH_FILE, src);
+  for (const st of [500, 503, 403, 401]) {
+    const r = await withFetch(async () => ({ ok: false, status: st, json: async () => ({ message: 'x' }), text: async () => 'x' }),
+      () => auth.credentialStillActive(SESSION, 'LIC', rest, {}));
+    assert.deepStrictEqual([r.ok, r.code, r.status], [false, 'ACTIVE_CHECK_FAILED', st], 'HTTP ' + st + ': ' + JSON.stringify(r));
+  }
+}
 async function armW1Controls(src) {
   const auth = compile(AUTH_FILE, src);
   const live = await withFetch(async () => okBody([{ active: true }]), () => auth.credentialStillActive(SESSION, 'LIC', rest, {}));
   assert.deepStrictEqual(live, { ok: true });
   const blip = await withFetch(async () => { throw new Error('ECONNRESET'); }, () => auth.credentialStillActive(SESSION, 'LIC', rest, {}));
   assert.strictEqual(blip.code, 'NO_ACTIVE_CHECK', 'a transport failure is still the third state, not a refusal');
+  for (const st of [404, 400]) {   // b56: not provisioned keeps the third state
+    const np = await withFetch(async () => ({ ok: false, status: st, json: async () => ({}), text: async () => '' }),
+      () => auth.credentialStillActive(SESSION, 'LIC', rest, {}));
+    assert.strictEqual(np.code, 'NO_ACTIVE_CHECK', 'HTTP ' + st + ' (not provisioned): ' + JSON.stringify(np));
+  }
   const off = await withFetch(async () => okBody([{ active: false }]), () => auth.credentialStillActive(SESSION, 'LIC', rest, {}));
   assert.strictEqual(off.code, 'CREDENTIAL_INACTIVE');
 }
@@ -98,9 +114,10 @@ function mutate(src, from, to) {
   console.log('b55 -- an unreadable answer fails CLOSED');
   await test('W1a. credentialStillActive: an unparsable or non-list 2xx -> ACTIVE_CHECK_UNREADABLE', () => armW1(AUTH_SRC));
   await test('W1b. controls: active -> ok; a transport throw -> NO_ACTIVE_CHECK; active:false -> CREDENTIAL_INACTIVE', () => armW1Controls(AUTH_SRC));
-  await test('W1c. both callers refuse ACTIVE_CHECK_UNREADABLE 502 (source pins)', () => {
-    pin('sd-data.js', "if (!preActive.ok && preActive.code === 'ACTIVE_CHECK_UNREADABLE') {");
-    pin('bridge.js', "if (!stillActive.ok && stillActive.code === 'ACTIVE_CHECK_UNREADABLE') {");
+  await test('W1d. (b56) an ANSWERED 500/503/403/401 -> ACTIVE_CHECK_FAILED with the status, distinct from W1a', () => armW1Answered(AUTH_SRC));
+  await test('W1c. both callers refuse ACTIVE_CHECK_UNREADABLE and ACTIVE_CHECK_FAILED 502 (source pins)', () => {
+    pin('sd-data.js', "if (!preActive.ok && (preActive.code === 'ACTIVE_CHECK_UNREADABLE'\n                              || preActive.code === 'ACTIVE_CHECK_FAILED')) {");
+    pin('bridge.js', "if (!stillActive.ok && (stillActive.code === 'ACTIVE_CHECK_UNREADABLE'\n                          || stillActive.code === 'ACTIVE_CHECK_FAILED')) {");
   });
   await test('W2a. license.js: an unparsable licence body throws UPSTREAM + unparsable (never "no licence")', () => armW2(LIC_SRC));
   await test('W2b. claude.js refuses LICENCE_UNREADABLE before the fail-open (source pin)', () =>
@@ -123,6 +140,8 @@ function mutate(src, from, to) {
   console.log('M. mutants');
   await test('M1. credentialStillActive non-list guard removed -> W1a red', () => mustFail(() => armW1(mutate(AUTH_SRC,
     "  if (!Array.isArray(rows)) {\n    return { ok: false, code: 'ACTIVE_CHECK_UNREADABLE'", "  if (false) {\n    return { ok: false, code: 'ACTIVE_CHECK_UNREADABLE'")), 'W1'));
+  await test('M3. (b56) the answered-failure refusal reverted to NO_ACTIVE_CHECK -> W1d red', () => mustFail(() => armW1Answered(mutate(AUTH_SRC,
+    "return { ok: false, code: 'ACTIVE_CHECK_FAILED', status: r.status,", "return { ok: false, code: 'NO_ACTIVE_CHECK', status: r.status,")), 'W1d'));
   await test('M2. license.js unparsable tag removed -> W2a red', () => mustFail(() => armW2(mutate(LIC_SRC,
     'e.unparsable = true;', 'e.unparsable = false;')), 'W2'));
   console.log('\n' + pass + ' passed, ' + fail + ' failed');

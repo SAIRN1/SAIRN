@@ -1183,7 +1183,17 @@ async function credentialStillActive(session, licHash, rest, headers) {
     // answering "active" would silently disable the control. Third state.
     return { ok: false, code: 'NO_ACTIVE_CHECK' };
   }
-  if (!r.ok) return { ok: false, code: 'NO_ACTIVE_CHECK' };
+  // AN ANSWERED 4xx/5xx IS REFUSED TOO (Michael, b56). The store answered and
+  // said it could not serve the check, which is not the blip the transport
+  // catch above is for -- so it gets its own code and both callers refuse it.
+  // 404/400 keeps the platform's not-provisioned meaning (the auth table or
+  // column does not exist, so no credential of this app can be checked) and
+  // stays NO_ACTIVE_CHECK -- the same exception every b52-b55 guard keeps.
+  if (!r.ok && (r.status === 404 || r.status === 400)) return { ok: false, code: 'NO_ACTIVE_CHECK' };
+  if (!r.ok) {
+    return { ok: false, code: 'ACTIVE_CHECK_FAILED', status: r.status,
+             message: 'Whether this sign-in is still active could not be checked, so nothing was done. Try again shortly.' };
+  }
   // AN UNREADABLE 2xx IS NOT A TRANSPORT FAILURE (hank b55, W1). It used to
   // land in the catch above, answer NO_ACTIVE_CHECK, and let the caller
   // proceed on the token alone -- skipping the deactivation check. It has its

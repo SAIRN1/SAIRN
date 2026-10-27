@@ -2351,7 +2351,8 @@ module.exports = async (req, res) => {
           && preExpectedApp === preSession.app;
         // hank b55 (W1): the store answered and the answer could not be read --
         // refused, never continued on the token alone.
-        if (!preActive.ok && preActive.code === 'ACTIVE_CHECK_UNREADABLE') {
+        if (!preActive.ok && (preActive.code === 'ACTIVE_CHECK_UNREADABLE'
+                              || preActive.code === 'ACTIVE_CHECK_FAILED')) {
           res.status(502).json({ error: { code: preActive.code, message: preActive.message } });
           return;
         }

@@ -103,9 +103,12 @@ const VERBS = ['read', 'write', 'write_batch', 'soft_delete', 'tombstones'];
     let r = await call('sairnbiz', 'owner', 'read', null);
     is(code(r) !== 'CREDENTIAL_INACTIVE' && r.statusCode >= 400 && r.dataCalls.length === 0,
        'X1. a sairnbiz token with no sairnbiz row is answered by the branch gate, not told it was deactivated', show(r));
+    // REVERSED in hank b56 (Michael's b56 decision): an ANSWERED 500 from the
+    // employee lookup is refused 502 ACTIVE_CHECK_FAILED -- still never told it
+    // was deactivated, and nothing is read.
     r = await call('stonedesk', 'owner', 'read', { status: 500 });
-    is(r.statusCode === 200 && code(r) !== 'CREDENTIAL_INACTIVE',
-       'T1. the employee lookup FAILED -> not a deactivation, the request continues (unchanged)', show(r));
+    is(r.statusCode === 502 && code(r) === 'ACTIVE_CHECK_FAILED' && r.dataCalls.length === 0,
+       'T1. the employee lookup FAILED (answered 500) -> 502 ACTIVE_CHECK_FAILED, not a deactivation, nothing read', show(r));
   }
 
   console.log('\n' + (fail ? 'FAILED' : 'PASSED') + ' -- ' + pass + ' passed, '
