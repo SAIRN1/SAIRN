@@ -4760,6 +4760,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "fourth-1793114600",
+      "session": "fourth",
+      "subject": "sairnsenior",
+      "task": "sen_claims refused draft ready to bill",
+      "claimed_at": "2026-10-27T15:23:20Z",
+      "claimed_at_epoch": 1793114600.424739,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
