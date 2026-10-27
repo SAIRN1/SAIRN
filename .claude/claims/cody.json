@@ -4445,6 +4445,28 @@
         "tests/vercel_frame_headers.js",
         "vercel.json"
       ]
+    },
+    {
+      "id": "cody-1793113344",
+      "session": "cody",
+      "subject": "platform",
+      "task": "b53 64KB default jsonb measure, condition_coverage probe, dental demo bookable seed, ratio sweep  FILES: api/sd-data.js api/sd-sub-data.js api/_lib/sd-store.js api/bridge.js api/b52-cap-jsonb-measure.test.js tests/run_condition_coverage_probe.py docs/sairn-path-manifest.json SAIRN-handoff-cody-b53.md SAIRN-report-cody-b53.txt SAIRN-digest-cody-b53.txt",
+      "claimed_at": "2026-10-27T15:02:24Z",
+      "claimed_at_epoch": 1793113344.960272,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-cody-b53.txt",
+        "SAIRN-handoff-cody-b53.md",
+        "SAIRN-report-cody-b53.txt",
+        "api/_lib/sd-store.js",
+        "api/b52-cap-jsonb-measure.test.js",
+        "api/bridge.js",
+        "api/sd-data.js",
+        "api/sd-sub-data.js",
+        "docs/sairn-path-manifest.json",
+        "tests/run_condition_coverage_probe.py"
+      ]
     }
   ],
   "refusals": [
