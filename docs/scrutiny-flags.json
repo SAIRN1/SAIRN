@@ -3274,6 +3274,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_condition_coverage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "3e63b93f55f70b227bc445a3cbab456a865cf51c",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/lifecycle-audit-event-coverage.test.js",
    "class": "test file",
    "level": "CHANGE",
