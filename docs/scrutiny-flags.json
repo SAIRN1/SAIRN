@@ -4079,6 +4079,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b52-cap-jsonb-measure.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "4c474f212d49c8c1832936aa912a8245527485b6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_write_path_scan_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -7394,6 +7402,14 @@
     }
    ],
    "sha": "8ea00b19ef9df36e5c1a7fab88cc195400fae015",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_condition_coverage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "8efa92fdbe8e89990830b2579d215853ffeef1ea",
    "criteria_version": "2026-10-06.1"
   },
   {
