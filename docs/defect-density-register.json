@@ -38434,7 +38434,7 @@
       "recurrence_open": "A mutation arm proves a test can fail, not that its expected dates are right."
     },
     {
-      "commit": "7e79483845df",
+      "commit": "d8f47f7ab32b",
       "date": "2026-10-27",
       "subject": "fix(sd-data, cody b52): a per-resource cap is measured the way its constraint measures -- jsonb text (hover H2 seq1109)",
       "files": [
