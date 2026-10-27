@@ -2198,6 +2198,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_dora_metrics_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "29ba49f1648cb5591c902b129bcfffbb70adde89",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_tier_a_review_gate_probe.py",
    "class": "test file",
    "level": "CHANGE",
