@@ -45,6 +45,7 @@ const SRC = [
   grab('async function savePayerContract(){'),
   grab('async function saveAuthorization(){'),
   grab('async function generateClaim(visitId){'),
+  grab('function readyToBillVisits(){'),
 ].join('\n');
 
 let pass = 0, fail = 0;
@@ -62,7 +63,7 @@ const AUTH_FORM = { 'az-client': 'C1', 'az-number': 'A-77', 'az-units': '40', 'a
 function make(outcome, opts) {
   opts = opts || {};
   const store = Object.assign({ sen_payer_contracts: [], sen_authorizations: [], sen_claims: [],
-    sen_clients: [{ id: 'C1', name: 'Ann', payer: 'Medicaid' }], sen_visits: [{ id: 'V1', client_id: 'C1', scheduled_date: '2026-03-02' }] }, opts.store || {});
+    sen_clients: [{ id: 'C1', name: 'Ann', payer: 'Medicaid' }], sen_visits: [{ id: 'V1', client_id: 'C1', scheduled_date: '2026-03-02', status: 'completed' }] }, opts.store || {});
   const form = Object.assign({}, CONTRACT_FORM, AUTH_FORM, opts.form || {});
   const toasts = [];
   const ctx = {
@@ -143,6 +144,16 @@ const last = (t) => t.toasts[t.toasts.length - 1] || '';
   await t.ctx.generateClaim('V1');
   check('G2. a FAILED claim write keeps the pricing and authorisation message', /\$30\/hr/.test(last(t)) && /PRIOR AUTHORISATION IS REQUIRED/.test(last(t)), last(t));
   check('G3. ...and names the failure without blaming the connection', /refused the row/.test(last(t)) && !/connection/i.test(last(t)), last(t));
+  // b59, H1 #1713: the refused draft used to STAY, so readyToBillVisits() counted V1 as billed and it left the list.
+  check('G4. a REFUSED claim draft is withdrawn from the device', t.store.sen_claims.length === 0, JSON.stringify(t.store.sen_claims));
+  check('G5. ...so its visit is back in Ready to bill', t.ctx.readyToBillVisits().map((v) => v.id).join() === 'V1');
+  check('G6. ...and the biller is told it is back', /back in Ready to bill/.test(last(t)), last(t));
+  t = make('network');
+  await t.ctx.generateClaim('V1');
+  check('G7. NO answer keeps the draft on the device (not a refusal), so the visit is not offered twice', t.store.sen_claims.length === 1 && t.ctx.readyToBillVisits().length === 0);
+  t = make('ok');
+  await t.ctx.generateClaim('V1');
+  check('G8. control: a saved claim stays and its visit leaves Ready to bill', t.store.sen_claims.length === 1 && t.ctx.readyToBillVisits().length === 0);
 
   console.log('\n' + (fail ? 'FAILED' : 'ok') + '  sairnsenior contract/auth save: ' + pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);

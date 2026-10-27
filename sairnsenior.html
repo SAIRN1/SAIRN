@@ -4375,6 +4375,16 @@ async function generateClaim(visitId){
   renderReadyToBill();renderClaimsTable();blRenderKpis();
   delete senLastErr.sen_claims;
   var saved=await senData('write','sen_claims',rec,true);
+  // b59 (H1 #1713): a draft the server REFUSED is withdrawn. It was kept, so
+  // readyToBillVisits() counted its visit as billed and the visit left the
+  // Ready to bill list although no claim existed on the server -- a visit never
+  // billed. Same rule as the b49 contract/authorisation saves: refused ->
+  // withdrawn; could not reach the server -> kept on the device, and said so.
+  var wf=saved?null:senWriteFail('sen_claims');
+  if(wf&&!wf.kept){
+    st('sen_claims',claims().filter(function(x){return x.id!==rec.id;}));
+    renderReadyToBill();renderClaimsTable();blRenderKpis();
+  }
   var priced=rate.status==='applied'
     ? 'Claim created at '+fmt(rate.rate_per_hour)+'/hr -- '+rate.reason
     : 'Claim created at a ZERO rate -- '+rate.reason+' Set the rate by hand before submitting.';
@@ -4408,7 +4418,7 @@ async function generateClaim(visitId){
   }
   // b49: a failed write PREFIXES the failure; it no longer replaces the pricing
   // and authorisation lines the biller needs either way.
-  toast(saved?priced+authMsg:senWriteFail('sen_claims').text+' -- '+priced+authMsg,
+  toast(saved?priced+authMsg:wf.text+(wf.kept?'':' The visit is back in Ready to bill.')+' -- '+priced+authMsg,
     saved&&rate.status==='applied'&&!authMsg?4000:9000);
 }
 function renderClaimsTable(){
