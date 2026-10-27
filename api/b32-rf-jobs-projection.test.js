@@ -146,6 +146,26 @@ async function call(file, action, payload) {
     delete require.cache[ABLATED];
   }
 
+  // ── W2: THE WRITE RESPONSE'S ASSIGNEE AND `ok`, ON THE REAL HANDLER (cody
+  // b52, hover H2 seq1127). W1 asserted id and job_class only, so four
+  // mutants of `assigned_employee_id: requestedAssignee || ''` and `ok: true`
+  // -> false survived a Stryker run. The response is what the client is TOLD
+  // after a save, so each of the three ways the assignee resolves is pinned.
+  section('W2. THE WRITE RESPONSE CARRIES THE RESOLVED ASSIGNEE');
+  {
+    const cases = [
+      ['W2a. a requested assignee comes back as itself', { id: 'JOB-A', name: 'n', assigned_employee_id: 'emp-2' }, 'emp-2'],
+      ['W2b. an EMPTY assignee comes back as \'\' (not null, not false)', { id: 'JOB-B', name: 'n', assigned_employee_id: '' }, ''],
+      ['W2c. an omitted assignee keeps the STORED one (emp-real)', { id: 'JOB-C', name: 'n' }, 'emp-real']
+    ];
+    for (const [label, payload, want] of cases) {
+      const res = await call(SD_DATA, 'write', payload);
+      const b = res.body || {};
+      is(res.statusCode === 200 && b.ok === true && b.data && b.data.assigned_employee_id === want,
+         label + ', with ok === true', res.statusCode + ' ' + JSON.stringify(b).slice(0, 300));
+    }
+  }
+
   section('S. STRUCTURE');
   {
     const src = fs.readFileSync(SD_DATA, 'utf8');
