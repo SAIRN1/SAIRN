@@ -71,6 +71,13 @@ REGISTER = 'docs/defect-density-register.json'
 # duplicated on purpose and the probe asserts the two agree across five session
 # names, so updating one alone would trade a landed fix for a red suite.
 SEPARATION_CI = 'tools/hover_separation_ci.py'
+# The other two triad files and the routing-gap pair, moved here IN THE SAME CHANGE
+# as tools/hover_auditor_scope_gate.py (see the block there). This copy is duplicated
+# on purpose and tests/run_hover_separation_probe.py asserts the two agree.
+SCOPE_GATE = 'tools/hover_auditor_scope_gate.py'
+SEPARATION_AUDIT = 'tools/hover_separation_audit.py'
+ROUTING_GAP_CHECK = 'tools/hover_routing_gap_check.py'
+ROUTING_GAP_PROBE = 'tests/run_hover_routing_gap_probe.py'
 # ── ONE AUDITOR INSTANCE'S SCOPE, KEYED BY ITS SESSION NAME ─────────────────
 # Kept identical in meaning to tools/hover_auditor_scope_gate.py's, and the
 # probe asserts the two agree for SEVERAL session names rather than for one.
@@ -114,7 +121,8 @@ def own_deliverables_pattern(label):
 class AuditorScope(object):
     """The paths ONE auditor instance may write, derived from its session name."""
 
-    SHARED = (SKILL_DIR, REGISTER, SEPARATION_CI)
+    SHARED = (SKILL_DIR, REGISTER, SEPARATION_CI, SCOPE_GATE, SEPARATION_AUDIT,
+              ROUTING_GAP_CHECK, ROUTING_GAP_PROBE)
 
     def __init__(self, session):
         self.session = session or ''

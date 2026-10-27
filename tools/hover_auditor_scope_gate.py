@@ -130,6 +130,20 @@ REGISTER = 'docs/defect-density-register.json'
 # reason alone.
 SEPARATION_CI = 'tools/hover_separation_ci.py'
 
+# ── AUDIT TOOLING THAT LIVES OUTSIDE THE SKILL DIRECTORY (Michael, 2026-10-22) ──
+# The other two files of this gate's own enforcement triad, and the routing-gap
+# tool and its probe, are on the "audits, does not get audited" side of the
+# skill's own test. SKILL.md says so by name for the triad (core rule, "Named
+# concretely, added 2026-10-08") and, for the routing-gap pair, in "Where
+# findings go" (added b85, the sentence written FIRST). They are listed here so
+# the auditor can fix its own tools (#1705, #1698) without a bypass. ADDED BY A
+# BUILD AGENT BECAUSE THIS FILE IS THE ONE THAT REFUSES THE AUDITOR: it cannot
+# widen its own scope.
+SCOPE_GATE = 'tools/hover_auditor_scope_gate.py'
+SEPARATION_AUDIT = 'tools/hover_separation_audit.py'
+ROUTING_GAP_CHECK = 'tools/hover_routing_gap_check.py'
+ROUTING_GAP_PROBE = 'tests/run_hover_routing_gap_probe.py'
+
 # ── ONE AUDITOR INSTANCE'S SCOPE, KEYED BY ITS SESSION NAME ─────────────────
 # This was `OWN_CLAIM = '.claude/claims/hover.json'`, a single hardcoded string,
 # and it was the second location of one assumption: hover finding #205 had
@@ -223,7 +237,8 @@ class AuditorScope(object):
     # not, so an entry added to just one of the two makes the hook and the
     # history audit disagree -- and tests/run_hover_separation_probe.py asserts
     # across five session names that they do not.
-    SHARED = (SKILL_DIR, REGISTER, SEPARATION_CI)
+    SHARED = (SKILL_DIR, REGISTER, SEPARATION_CI, SCOPE_GATE, SEPARATION_AUDIT,
+              ROUTING_GAP_CHECK, ROUTING_GAP_PROBE)
 
     def __init__(self, session):
         self.session = session or ''
@@ -324,6 +339,31 @@ ALLOWED = (
      'SKILL.md, core rule exception: "this role\'s own operational tooling -- '
      'the self-log ... anything that records or verifies the hover auditor\'s '
      '*own* actions rather than the platform\'s -- is not \'platform code\'"'),
+    # Added for H1 findings #1705 and #1698 (Michael's ruling 2026-10-22: audit
+    # tooling is the auditor's to fix). The first two use the triad sentence that
+    # has been in SKILL.md since 2026-10-08; the last two use the sentence added
+    # in "Where findings go" at b85, written before this entry as the gate's own
+    # refusal message requires.
+    (SCOPE_GATE,
+     'SKILL.md, core rule section, 2026-10-08 addition: "the enforcement '
+     'triad for THIS core rule -- hover_auditor_scope_gate.py (prevents), '
+     'hover_separation_audit.py (detects)... and hover_separation_ci.py '
+     '(detects, server-side)... are all three squarely on the '
+     '\'audits, does not get audited\' side of the test above"'),
+    (SEPARATION_AUDIT,
+     'SKILL.md, core rule section, 2026-10-08 addition: "the enforcement '
+     'triad for THIS core rule -- hover_auditor_scope_gate.py (prevents), '
+     'hover_separation_audit.py (detects)... and hover_separation_ci.py '
+     '(detects, server-side)... are all three squarely on the '
+     '\'audits, does not get audited\' side of the test above"'),
+    (ROUTING_GAP_CHECK,
+     'SKILL.md, "Where findings go", b85: "read this role\'s own log and the '
+     'open-work index to find auditor findings that never reached a build '
+     'agent\'s queue: they audit, they are not audited by this role"'),
+    (ROUTING_GAP_PROBE,
+     'SKILL.md, "Where findings go", b85: "read this role\'s own log and the '
+     'open-work index to find auditor findings that never reached a build '
+     'agent\'s queue: they audit, they are not audited by this role"'),
 )
 
 # Named explicitly so the reader does not have to infer it from the absence of
