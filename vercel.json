@@ -3,6 +3,14 @@
   "outputDirectory": "dist",
   "routes": [
     {
+      "src": "/(.*)",
+      "headers": {
+        "Content-Security-Policy": "frame-ancestors 'none'",
+        "X-Frame-Options": "DENY"
+      },
+      "continue": true
+    },
+    {
       "src": "/stonedesk$",
       "dest": "/stonedesk.html"
     },
