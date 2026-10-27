@@ -1,0 +1,18 @@
+REPORT -- cody b54, 2026-10-27
+
+1. PUSHED: b53's 15 local commits LANDED (bounded attempt 2 of 5; f45edc2c3 caps, 3a450c744/5f04bec63 probe, d92e71c22 Tier A,
+   528b103d3 b53 deliverables -- merge-base --is-ancestor). push_retry.py has no single-attempt mode (without --loop it prints
+   usage) and its git calls time out at 120s < the ~4 min gate, so per instruction no --loop: one bounded attempt per call
+   (bookkeeping staged by name, ledger resolver on conflict, push), max 5. Never forced, no skips.
+2. RATIO LEADS: 5 FIXED in ae2600407 (landed, attempt 3 of 5), each re-read in code first:
+   run_all_tests (not_run counted as pass, incl. "ALL M PASS") | text_gate_literal_sweep (COULD-NOT-RUN counted as covered;
+   2 of 223 now) | flaky_checker_quarantine (numerator outside registry; "N of N" on unreadable registry) |
+   sairn_reachability_check (real 0 fell through to the wrong metric) | checker_confidence (pooled history).
+   7 ROUTED, not re-read: reliability_growth, hover_separation_audit, defect_budget_policy (documented, needs a decision),
+   ownership_evidence_drift, gate1_verify --app, live_probe_residue_audit, cron_beat_refusal_check. Sites in handoff.
+3. METHODOLOGY: not-run/skipped-as-pass found twice this batch (both fixed); b49/b52 had closed it in probe_anchor_freshness,
+   condition_coverage, seven b52 tools. Claimed only for the ~108 traced files of ~333 swept.
+4. HANK: public-availability.js builds slots with Date.UTC from stored HH:MM, ignoring settings.timezone (America/New_York):
+   09:00 served as 09:00Z = 05:00 ET (live, b53). Fix in tz incl. DST + arm. Flagged in handoff s4, not touched.
+5. CLAIM: platform released (commit rides with the deliverables push).
+OPEN: hank timezone; 7 ratio leads; push_retry bounded mode/timeout (cc); Tier A reviews of b52/b53 caps.

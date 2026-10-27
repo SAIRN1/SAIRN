@@ -1,0 +1,16 @@
+DIGEST -- cody b54, 2026-10-27. Six items: 1, 3, 4, 5, 6 DONE; 2 = 5 of 12 fixed, 7 routed.
+STATUS: TOOLS ONLY this batch. NO APP CODE. NO SQL. NO LIVE WRITES.
+CHANGED: tools/run_all_tests.py, tools/text_gate_literal_sweep.py, tools/flaky_checker_quarantine.py, tools/sairn_reachability_check.py, tools/checker_confidence.py, manifest, register.
+LANDED: b53's 15 commits (f45edc2c3 ... 528b103d3) and ae2600407 on origin/main; bounded attempts, no --loop, no force, no skip.
+ITEM 1 -- push done in bounded single attempts (push_retry has no single-attempt mode and a 120s git timeout < the ~4 min gate).
+ITEM 2 -- worst first: run_all_tests counted not-run files as passing ("ALL M PASS" possible) -> fixed; + 4 more fixed.
+  7 routed with sites (not re-read): reliability_growth, hover_separation_audit, defect_budget_policy, ownership_evidence_drift,
+  gate1_verify, live_probe_residue_audit, cron_beat_refusal_check.
+ITEM 3 -- not-run/skipped-as-pass: 2 found + fixed this batch; earlier closures listed; claim limited to the ~108 traced files.
+ITEM 4 -- HANK: dental public-availability builds slots in UTC, ignores practice timezone (09:00 -> 05:00 ET). In handoff s4.
+ITEM 5 -- platform claim released.
+DECISION-NEEDED: cc -- 7 ratio leads; push_retry bounded mode + timeout above gate runtime. hank -- timezone.
+UNVERIFIED: run_all_tests change compiled, not run in full (a full run is hours).
+NEXT: none for cody until dispatched.
+EVIDENCE-path: SAIRN-handoff-cody-b54.md, SAIRN-report-cody-b54.txt
+CONTEXT 75.1% of 1,000,000 -- 751,259 tokens, measured.
