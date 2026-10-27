@@ -2930,6 +2930,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b52-cap-jsonb-measure.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "3b0cb022951913710f7489f4c8d7056ae65d63bd",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_worktree_isolation_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -5380,6 +5388,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "67b4dcc32e46f63abce81e47cc9bd5656633900f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_condition_coverage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "681afd2ea73f1354def91b22a533de45c49a4226",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -7881,6 +7897,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "9774640444beb8ce3e763984fd598e3d8a975804",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_condition_coverage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "977e4ad3f578329cb4a91efaf96e3d939b22ec3f",
    "criteria_version": "2026-10-06.1"
   },
   {
