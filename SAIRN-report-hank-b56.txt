@@ -1,0 +1,20 @@
+HANK b56 REPORT -- 2026-10-27
+
+METHODOLOGY (standing): a source-pinned failure path is not closed. The deployed-behaviour check runs in the same
+batch as the fix. What cannot be reached live is driven on the deployed code in an isolated sandbox, and anything
+not driven stays OPEN.
+
+1. credentialStillActive (cf13093c8): an answered 4xx/5xx -> ACTIVE_CHECK_FAILED; the pre-gate and bridge.js
+   refuse it 502.
+   EXCEPTION: 404/400 stays NO_ACTIVE_CHECK (not provisioned, the b52-b55 rule) -- please confirm.
+   Tests: W1d answered 500/503/403/401 distinct from W1a unreadable; 404/400 control; M3 red. b55 suite 13/0.
+   Reversed old-behaviour arms: auth.test 61/0, b36 T1 9/0, b28 R4 15/0. api/ red = the 5 pre-existing.
+   Live failure path: UNVERIFIED (not inducible from outside) -> OPEN (C1L).
+2-4. W3/W4/W5 vs the DEPLOYED code: dpl_6D5AiVWxSdGQz6VyxFvy27xnv8AK @ d5362736c (blobs identical at the tip).
+   Vercel Sandbox sbx_9VJ56..., deny-all network; file sha256 matched inside the sandbox.
+     W4 unreadable dup check -> 503 UNAVAILABLE (control 200).
+     W5 unreadable CAS -> 502 RENEWAL_UNCONFIRMED (controls 409 / 200).
+     W3 NOT run in the sandbox (54 KB, context budget). The same deployed-sha files run locally -> 502
+     (control 200). OPEN (W3S).
+   Live reachable paths: W3 401/401, W4 400 (validation, no write), W5 401/401.
+6. PUSH: cf13093c8 + 8632435a8 LANDED on origin/main, not forced. No override. No Tier A obligation.

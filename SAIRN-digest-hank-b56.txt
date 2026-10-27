@@ -1,0 +1,17 @@
+HANK b56 DIGEST -- 2026-10-27 -- active-check refuses answered 4xx/5xx; W4/W5 verified on deployed code
+CONTEXT 74.5% of 1,000,000 -- 744,649 tokens, measured.
+STATUS: cf13093c8 + 8632435a8 LANDED on origin/main, NOT FORCED; no override.
+1. credentialStillActive: answered 4xx/5xx -> ACTIVE_CHECK_FAILED, refused 502 by pre-gate + bridge.
+   404/400 kept as NO_ACTIVE_CHECK (not provisioned).
+2. Tests: W1d (answered) distinct from W1a (unreadable), M3 red; 3 old-behaviour arms reversed.
+   api/ red = 5 pre-existing.
+3. Deployed code (dpl_6D5AiVWxSdGQz6VyxFvy27xnv8AK @ d5362736c) in a Vercel Sandbox, deny-all, hashes matched:
+   W4 -> 503 UNAVAILABLE; W5 -> 502 RENEWAL_UNCONFIRMED; controls correct.
+4. W3: NOT sandboxed (context budget); the deployed-sha files run locally -> 502. OPEN.
+5. Live reachable paths: W3 401, W4 400 (no write), W5 401.
+DECISION-NEEDED (Michael): keep 404/400 as NO_ACTIVE_CHECK in credentialStillActive?
+NEXT: W3 sandbox run; C1 failure path in the sandbox (auth.js at the deployed sha).
+CHANGED: api/_lib/auth.js, api/sd-data.js, api/bridge.js; tests: auth, b55, b36, b28
+EVIDENCE-path: SAIRN-handoff-hank-b56.md, SAIRN-report-hank-b56.txt
+UNVERIFIED: W3 in the sandbox.
+UNVERIFIED: C1 failure path on deployed code.
