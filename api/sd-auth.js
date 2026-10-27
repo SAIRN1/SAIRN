@@ -255,11 +255,22 @@ module.exports = async (req, res) => {
           const patchBody = attempts >= LOCKOUT_THRESHOLD
             ? { failed_attempts: 0, locked_until: new Date(Date.now() + LOCKOUT_MINUTES * 60000).toISOString() }
             : { failed_attempts: attempts };
+          let lockRes = null;
           try {
-            await fetch(rest('sd_employee_auth?license_hash=eq.' + enc(licHash) + '&employee_id=eq.' + enc(employee_id)), {
+            lockRes = await fetch(rest('sd_employee_auth?license_hash=eq.' + enc(licHash) + '&employee_id=eq.' + enc(employee_id)), {
               method: 'PATCH', headers, body: JSON.stringify(patchBody)
             });
-          } catch (e) { /* non-fatal — the login is refused either way */ }
+          } catch (e) { lockRes = null; }
+          // hank b54: a lockout that cannot be recorded is not a lockout. If this
+          // PATCH fails (a missing UPDATE grant, a 5xx), failed_attempts never
+          // rises and PIN guessing is unbounded -- so the attempt is answered 503
+          // and logged, never the ordinary 401 'try again'.
+          if (!lockRes || !lockRes.ok) {
+            console.error('auth: a failed attempt could not be recorded (HTTP '
+              + (lockRes ? lockRes.status : 'none') + ') -- lockout cannot engage');
+            res.status(503).json({ error: { code: 'LOCKOUT_UNAVAILABLE', message: 'Sign-in is temporarily unavailable, so this attempt was not checked further. Try again shortly.' } });
+            return;
+          }
         }
         // Same generic error whether the employee_id doesn't exist or the
         // pin is wrong — don't leak which one via response differences.

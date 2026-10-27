@@ -190,11 +190,21 @@ module.exports = async (req, res) => {
     if (!row) return false;
     const attempts = (row.failed_attempts || 0) + 1;
     const locked = attempts >= LOCKOUT_THRESHOLD;
+    let lockRes = null;
     try {
-      await patchEmployee(row.employee_id, locked
+      lockRes = await patchEmployee(row.employee_id, locked
         ? { failed_attempts: 0, locked_until: new Date(Date.now() + LOCKOUT_MINUTES * 60000).toISOString() }
         : { failed_attempts: attempts });
-    } catch (e) { /* non-fatal — the attempt is refused either way */ }
+    } catch (e) { lockRes = null; }
+    // hank b54: a lockout that cannot be recorded is not a lockout. If this
+    // PATCH fails (a missing UPDATE grant, a 5xx), failed_attempts never
+    // rises and PIN guessing is unbounded -- so the attempt is answered 503
+    // and logged, never the ordinary 401 'try again'.
+    if (!lockRes || !lockRes.ok) {
+      console.error('auth: failed attempt for ' + row.employee_id + ' could not be recorded (HTTP '
+        + (lockRes ? lockRes.status : 'none') + ') -- lockout cannot engage');
+      return null;
+    }
     return locked;
   }
   async function clearFailures(row) {
@@ -268,7 +278,10 @@ module.exports = async (req, res) => {
       // missing row, so employee_id existence can't be timed.
       const pinOk = row ? verifyPin(pin, row.pin_hash, row.pin_salt) : verifyPin(pin, null, null);
       if (!pinOk) {
-        await recordFailure(row);
+        if ((await recordFailure(row)) === null) {
+          res.status(503).json({ error: { code: 'LOCKOUT_UNAVAILABLE', message: 'Sign-in is temporarily unavailable, so this attempt was not checked further. Try again shortly.' } });
+          return;
+        }
         res.status(401).json({ error: { code: 'INVALID_CREDENTIALS', message: 'Incorrect employee ID or PIN' } });
         return;
       }

@@ -225,6 +225,7 @@ module.exports = async (req, res) => {
     // hard failure of the whole feature. This is a narrower, more honest version of the old
     // fail-open behavior -- it no longer covers "got a response but didn't like it," only "never
     // got a response."
+    // KEPT FAIL-OPEN, Michael b54: an unparsable 2xx body (r.json() throwing above) also lands here -- a COST control, so one uncounted render beats blocking a feature the shop is entitled to.
     console.error('sd-render usage cap-check network error (failing open):', e);
   }
 

@@ -3008,7 +3008,13 @@ module.exports = async (req, res) => {
       }
       const curRows = await cur.json();
       if (!cur.ok) return upstream(res, curRows);
-      let row = (Array.isArray(curRows) && curRows[0]) || null;
+      // hank b54: a non-list answer is not "no observations yet" -- folding onto
+      // null and upserting wiped the accumulated lead-time stats.
+      if (!Array.isArray(curRows)) {
+        res.status(502).json({ error: { code: 'UNREADABLE_PRIOR', message: 'The saved lead times could not be read back, so nothing was changed. Try again shortly.' } });
+        return;
+      }
+      let row = curRows[0] || null;
 
       if (mode === 'observe') {
         const risk = require('./_lib/job-risk');
@@ -3991,7 +3997,13 @@ module.exports = async (req, res) => {
       }
       const curRows = await cur.json();
       if (!cur.ok) return upstream(res, curRows);
-      const existing = (Array.isArray(curRows) && curRows[0]) || null;
+      // hank b54: a non-list answer is not "no profile yet" -- mergeObservation(null)
+      // upserted over the accumulated style samples.
+      if (!Array.isArray(curRows)) {
+        res.status(502).json({ error: { code: 'UNREADABLE_PRIOR', message: 'The saved style profile could not be read back, so nothing was changed. Try again shortly.' } });
+        return;
+      }
+      const existing = curRows[0] || null;
 
       if (action === 'read') {
         res.status(200).json({
