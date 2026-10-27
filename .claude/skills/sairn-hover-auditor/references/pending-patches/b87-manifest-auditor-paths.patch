@@ -1,0 +1,15 @@
+--- a/docs/sairn-path-manifest.json
++++ b/docs/sairn-path-manifest.json
+@@ -105,7 +105,11 @@
+   "auditor_paths": [
+     ".claude/skills/sairn-hover-auditor/",
+     "docs/hover-audit-log/",
+-    "docs/hover-evidence/"
++    "docs/hover-evidence/",
++    "tools/hover_auditor_scope_gate.py",
++    "tools/hover_separation_audit.py",
++    "tools/hover_routing_gap_check.py",
++    "tests/run_hover_routing_gap_probe.py"
+   ],
+ 
+   "_self_named_patterns_are_matched_against_the_PUSHING_agents_own_name": "Each `%s` is filled with the pushing session's name, read from .git/sairn-session rather than from the folder. So `SAIRN-handoff-cc-b24.md` is cc's to push and nobody else's, and the pattern cannot be widened by renaming a directory.",

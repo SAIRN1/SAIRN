@@ -30,3 +30,11 @@ Measured on scratch copies, nothing applied to the real files:
 - The patch alone does not exclude cc or hank from editing these files: `docs/sairn-path-manifest.json` `auditor_paths` lists only the skill directory and two docs directories. Whether to add the four paths there is a separate decision for Michael; I have not drafted it.
 
 `tools/hover_separation_audit.py` itself is on the list because Michael named it; none of the three b85 patches edits it, so its entry is only needed for a future edit.
+
+## b87: the manifest change (`b87-manifest-auditor-paths.patch`), and the ORDER it must land in
+
+Michael's b87 ruling: the four tool paths go into `docs/sairn-path-manifest.json` `auditor_paths`, so cc, hank, cody and fourth are mechanically blocked from them (the manifest's `classify()` tests auditor paths first and returns AUDITOR, "no build population may push into it"). This is a one-array edit; `git apply --check` passes. It is a platform file outside `ALLOWED`, so I prepared it and did not apply it.
+
+**Land it AFTER the ALLOWED entries, never before.** Driven with the real `classify()` on a scratch copy of the manifest, today vs patched: cc pushing `tools/hover_auditor_scope_gate.py`, `tools/hover_separation_audit.py` or `tools/hover_routing_gap_check.py` is OWNED today and AUDITOR after; cody pushing `tests/run_hover_routing_gap_probe.py` is OWNED today and AUDITOR after; the other populations go FOREIGN to AUDITOR. The ALLOWED-entries commit edits the first two files, so with the manifest first, cc could not push it, and with the ALLOWED entries missing from the gate the auditor cannot edit the files either: a deadlock nobody can release but by bypass. Controls unchanged by the patch: `tools/defect_register.py`, `tools/hover_separation_ci.py` and `tools/sairn_path_manifest.py` classify as before for all four populations.
+
+Check at the start of b87: the ALLOWED-entries commit named in the dispatch is NOT an object in this clone and is not on origin/main (the last commit touching the gate on origin is still `c121f781c`), so neither the ALLOWED change nor this one has landed, and the three b85 patches are NOT applied. One observation, not asked for: `tools/hover_separation_ci.py` is already in `ALLOWED` and is also not in `auditor_paths`; cc and the others can still push it.
