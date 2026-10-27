@@ -5993,6 +5993,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_condition_coverage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "7542e7169adcc12e7d9340d6edb636d7640e5a62",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sairnlegacy_countersign_ui.js",
    "class": "test file",
    "level": "CHANGE",
@@ -8849,6 +8857,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "9fb3c7b8f2003d1df144de2c1b1acbf7bd1ae84a",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_condition_coverage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9fd69b1de182c21e18a3ced5b83170de6ba35313",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -12671,6 +12687,14 @@
     }
    ],
    "sha": "e2e8bbe97e70542fb7d5ea3fa478d7d7e3b6c5d5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b52-cap-jsonb-measure.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "e37425be64db28c3451bfc99587304f4729574dc",
    "criteria_version": "2026-10-06.1"
   },
   {
