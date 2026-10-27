@@ -1,0 +1,89 @@
+REPORT cc b56 -- StoneDesk money/legal/compliance: PRESENCE PASSED AS PROOF stress
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-27
+RANGE     ae076845 (tools + Tier A obligation), c1e381c4 (claim record), 24938e93 (handoff), this report and digest.
+          Landed a93b3780..c1e381c4, 0 0. No product code changed. No --force, NO OVERRIDE.
+
+== ITEM 4 -- CHECKLIST AS CODE: tools/presence_proof.py ==
+CLAIM / TRUTH / FAIL MEANS (names the claim, never an exit code) / DETECTOR / CONTROL / ABLATION / UNSEEN / SCOPE.
+require_plan() exits 2 if any item is unanswered.
+verdict(): a crash is FAIL; a control not shown is CONTROL-FAIL. Fixtures 10/10.
+
+== ITEM 1 -- tools/stonedesk_presence_stress.py (exit 1) ==
+REAL: api/sd-data.js sd_approvals write; complianceStatus (api/sd-sub-data.js text) + subxCompliancePill; safetyUpdateKPIs; silica markup.
+STUB: licence, session, employee-auth row, Supabase write.
+CONTROL-OK   T1c claim 'Signed' -- a priced, deposited approval with a real PNG signature
+   input={"t": "approvals", "payload": {"approval_id": "APPR-STRESS-1", "client_name": "Ruiz kitchen", "quote_num": "Q-118", "signed_date": "2026-10-27", "total_amount": 12400, "deposit_amount": 6200, "signature_png": "data:image/png;base64,iVBORw0K
+   observed={"http": 200, "stored": true, "err": null}
+FAIL         T1a claim 'Signed' -- the record carries NO signature image at all
+   input={"t": "approvals", "payload": {"approval_id": "APPR-STRESS-1", "client_name": "Ruiz kitchen", "quote_num": "Q-118", "signed_date": "2026-10-27", "total_amount": 12400, "deposit_amount": 6200, "signature_png": null}}
+   observed={"http": 200, "stored": true, "err": null}
+FAIL         T1b claim 'Signed' -- the signature is 'AAAA', which is not an image
+   input={"t": "approvals", "payload": {"approval_id": "APPR-STRESS-1", "client_name": "Ruiz kitchen", "quote_num": "Q-118", "signed_date": "2026-10-27", "total_amount": 12400, "deposit_amount": 6200, "signature_png": "data:image/png;base64,AAAA"}}
+   observed={"http": 200, "stored": true, "err": null}
+FAIL         T1d claim 'paid' -- no payment exists anywhere; the client simply sent deposit_status "paid"
+   input={"t": "approvals", "payload": {"approval_id": "APPR-STRESS-1", "client_name": "Ruiz kitchen", "quote_num": "Q-118", "signed_date": "2026-10-27", "total_amount": 12400, "deposit_amount": 6200, "signature_png": "data:image/png;base64,iVBORw0K
+   observed={"http": 200, "stored": true, "err": null}
+PASS         T1z claim 'Signed' -- a $0 approval, which the branch exists to refuse
+   input={"t": "approvals", "payload": {"approval_id": "APPR-STRESS-1", "client_name": "Ruiz kitchen", "quote_num": "Q-118", "signed_date": "2026-10-27", "total_amount": 0, "deposit_amount": 0, "signature_png": "data:image/png;base64,iVBORw0KGgoAAAA
+   observed={"http": 400, "stored": false, "err": "NO_TOTAL"}
+CONTROL-OK   T2c claim 'COMPLIANT' -- COI and licence both valid, W-9 on file
+   input={"t": "pill", "row": {"coi_expiry": "2027-06-01", "licence_expiry": "2027-06-01", "w9_on_file": true}}
+   observed={"compliance": {"coi": "valid", "licence": "valid", "w9": true, "blocking": [], "expiring": []}, "html": "COMPLIANT"}
+FAIL         T2a claim 'COMPLIANT' -- NO licence on record and NO W-9 -- only an insurance date
+   input={"t": "pill", "row": {"coi_expiry": "2027-06-01", "licence_expiry": null, "w9_on_file": false}}
+   observed={"compliance": {"coi": "valid", "licence": "untracked", "w9": false, "blocking": [], "expiring": []}, "html": "COMPLIANT"}
+FAIL         T2b claim 'COMPLIANT' -- NO certificate of insurance on record -- only a licence date
+   input={"t": "pill", "row": {"coi_expiry": null, "licence_expiry": "2027-06-01", "w9_on_file": true}}
+   observed={"compliance": {"coi": "untracked", "licence": "valid", "w9": true, "blocking": [], "expiring": []}, "html": "COMPLIANT"}
+CONTROL-OK   T3c claim '100%' -- current silica training, an exposure-control-plan owner, nothing overdue
+   input={"t": "safety", "data": {"training": [{"type": "silica_annual", "date": "2026-09-01", "expiry": "2027-09-01"}], "incidents": [], "inspections": [], "ecp": {"owner": "Dana Ortiz"}}}
+   observed={"kpi4": "100%", "kpi4_color": "#15803d", "kpi1": "365"}
+FAIL         T3a claim 'green' -- an EMPTY safety record: no training, no ECP owner, no inspections, nothing logged
+   input={"t": "safety", "data": {"training": [], "incidents": [], "inspections": [], "ecp": {}}}
+   observed={"kpi4": "80%", "kpi4_color": "#15803d", "kpi1": "365"}
+FAIL         T3b claim 'green' -- the only silica training is from 2019 with NO expiry recorded
+   input={"t": "safety", "data": {"training": [{"type": "silica_annual", "date": "2019-01-01", "expiry": ""}], "incidents": [], "inspections": [], "ecp": {"owner": "Dana Ortiz"}}}
+   observed={"kpi4": "100%", "kpi4_color": "#15803d", "kpi1": "365"}
+FAIL         T4a claim 'Dry Cut Violations' -- no exposure data is read anywhere -- the tile values are markup
+   input={"t": "silica"}
+   observed={"literal_tiles": ["12 Wet Cut Days MTD", "0 Dry Cut Violations", "8 Air Samples YTD", "AL Max Level (Action)"], "tiles": 4}
+ABLATION: the total<=0 refusal compiled out -> T1z PASS -> FAIL (run with --ablate; observed this batch).
+
+== ITEMS 2+3 -- ROUTED, NOT SELF-REGISTERED ==
+Reading: item 3 (do not self-register outside tools/) governs item 2.
+No tools/ defect was found this batch, so cc filed no register record.
+hank:
+  api/sd-data.js:3814-3862 -- the signature is not validated (T1a/T1b).
+  api/sd-data.js:3859 -- deposit_status is free client text (T1d).
+  api/sd-sub-data.js:67 -- complianceStatus (T2a/T2b).
+fourth:
+  stonedesk.html:36608 -- the compliance pill (T2a/T2b).
+  stonedesk.html:28004 -- the safety score (T3a/T3b).
+  stonedesk.html:10809-10812 -- the silica tiles are literals (T4a).
+Routed via status-registry FOR HANK / FOR FOURTH notes (appended and confirmed) and handoff section 3, with ready-to-file record specs.
+Survey only, not driven:
+  esigApprove (a 1-px or missing canvas signs; stale lastCalc; first-name match);
+  invoice Paid from a typed deposit; margin constant 65%; tax all-time sums.
+
+== METHODOLOGY ==
+Write FAIL MEANS as "the app shows <CLAIM> while <TRUTH>" BEFORE driving.
+Make the tool refuse to run without it, a control and an ablation.
+This batch: the T1z ablation shows the one PASS can fail; the 3 controls show the detectors can see a true claim.
+
+== OPEN ==
+hank: findings 1-3 + the sd_approvals Tier A review.
+fourth: findings 4-6.
+cc next: esigApprove / invoice Paid / margin / tax scenarios.
+Michael: keep or re-file the four b55 self-registered records.
+
+== TRANSCRIPT ==
+C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\87a27b9f-55e9-45e8-b017-01ed1febac1a.jsonl
+
+== CHANGED ==
+tools/presence_proof.py, tools/stonedesk_presence_stress.py (new); tools/tooling_inventory.py; docs/TOOLING-INVENTORY.md;
+docs/tier-a-reviews.json; .claude/claims/cc.json; the deliverables.
+
+SHA256 7b1a9a65b1744a16f574c4859927b0b526a3605b10216cfefcb8bb4a5a4c68d6
+END-OF-REPORT

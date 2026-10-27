@@ -1,0 +1,26 @@
+DIGEST cc b56 (StoneDesk -- presence passed as proof)
+STATUS: 5 of 5 closed. Tools landed at c1e381c4, 0/0; no product code changed; no --force, NO OVERRIDE.
+ITEM 4 checklist: tools/presence_proof.py.
+  Before driving, every scenario must name CLAIM, TRUTH, FAIL MEANS (naming the claim, not an exit code) and DETECTOR.
+  The plan needs a CONTROL, an ABLATION and a SCOPE, or it exits 2. A crash counts as FAIL. Fixtures 10/10.
+ITEM 1 stress: tools/stonedesk_presence_stress.py -> 12 scenarios: 1 PASS, 8 FAIL, 3 controls OK (exit 1).
+  sd_approvals stores "Signed" with NO signature (T1a) or "AAAA" (T1b), and stores a client-sent deposit_status "paid" (T1d).
+  A subcontractor shows COMPLIANT with no licence and no W-9 (T2a), or with NO insurance (T2b).
+  An empty safety record scores a green 80% (T3a). 2019 training with no expiry scores 100% (T3b).
+  The OSHA silica tiles "0 Dry Cut Violations / 12 / 8 / AL" are markup literals (T4a).
+  The $0 approval is refused (T1z PASS). --ablate flips T1z PASS -> FAIL.
+ITEMS 2+3: ROUTED, not self-registered (item 3 governs). FOR HANK / FOR FOURTH status notes are confirmed.
+  The handoff section 3 has file:line, severity and the fix per finding.
+ITEM 5: handoff written before the report; pushed and landed.
+DECISION-NEEDED: Michael -- the four b55 SAIRNlaw records were self-registered by cc. Keep them, or have the owners re-file?
+CHANGED: tools/presence_proof.py, tools/stonedesk_presence_stress.py (new), tools/tooling_inventory.py, docs/TOOLING-INVENTORY.md, docs/tier-a-reviews.json.
+SQL: none.
+EVIDENCE-path: SAIRN-handoff-cc-b56.md (findings table, section 3), SAIRN-report-cc-b56.txt (every scenario's input and observation)
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\87a27b9f-55e9-45e8-b017-01ed1febac1a.jsonl
+UNVERIFIED: live behaviour (all driven offline); esigApprove, invoice Paid, margin and tax are surveyed but not driven.
+ROUTED: hank -- api/sd-data.js:3814-3862 and :3859, api/sd-sub-data.js:67, the Tier A review of the b56 tool.
+  fourth -- stonedesk.html:36608, :28004, :10809-10812.
+NEXT: cc's next StoneDesk pass adds esigApprove / invoice Paid / margin / tax scenarios to the same tool.
+CONTEXT 65.0% of 1,000,000 -- 650,462 tokens, measured.
+SHA256 050a8e7caa7ba2f34d0c83cf1367cfe5f352dcead2bb70045a405f6b59dd6413
+END-OF-REPORT
