@@ -1,0 +1,74 @@
+REPORT cc b57 -- StoneDesk presence-proof stress, part 2 (e-signature, invoice Paid, margin, tax) + ROUTE enforced
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-27
+RANGE     fc042cf0 (tools), d6cbb038 (handoff), this report and digest. Landed b1d395d3..6bf998c6, 0 0.
+          No product code changed. Nothing self-registered. No --force, NO OVERRIDE.
+
+== ITEM 1 == The four b55 SAIRNlaw records are kept as-is (Michael). Unchanged.
+
+== ITEMS 2+3 -- tools/stonedesk_presence_stress.py (exit 1) ==
+29 scenarios: 1 PASS, 21 FAIL, 7 controls OK. --ablate: T1z PASS -> FAIL.
+Every scenario names CLAIM / TRUTH / FAIL MEANS / DETECTOR / SITE. Each family has a control. A crash counts as FAIL.
+The checklist refused the first plan (X2 FAIL MEANS did not name its claim); the wording was fixed.
+All 4 new controls first came back CONTROL-FAIL (missing escapers); those are now loaded from the file.
+
+CONTROL-OK   E0 claim 'Project Approved!' -- a drawn signature on the current quote, one matching customer
+   observed={"approved": true, "approval": {"quoteNum": "Q-118", "totalAmt": 12400, "sig": "data:image/png;base64,SIG"}, "customers": [["C9", "approved"]]}
+FAIL         E1 claim 'Project Approved!' -- the signature pad is NOT ON THE PAGE, so nothing was signed
+   observed={"approved": true, "approval": {"quoteNum": "Q-118", "totalAmt": 12400, "sig": ""}, "customers": [["C9", "approved"]]}
+FAIL         E2 claim 'Project Approved!' -- the pad holds ONE pixel at 1/255 alpha -- a stray touch, not a signature
+   observed={"approved": true, "approval": {"quoteNum": "Q-118", "totalAmt": 12400, "sig": "data:image/png;base64,SIG"}, "customers": [["C9", "approved"]]}
+FAIL         E3 claim 'Project Approved!' -- the screen shows quote Q-200 at $9,800; lastCalc still holds a $3,000 total
+   observed={"approved": true, "approval": {"quoteNum": "Q-200", "totalAmt": 3000, "sig": "data:image/png;base64,SIG"}, "customers": [["C9", "approved"]]}
+FAIL         E4 claim 'Project Approved!' -- two customers are named Maria Lopez; nothing says which one signed
+   observed={"approved": true, "approval": {"quoteNum": "Q-118", "totalAmt": 12400, "sig": "data:image/png;base64,SIG"}, "customers": [["C1", "approved"], ["C2", null]]}
+CONTROL-OK   I0 claim 'Paid' -- $5,000 invoice, $5,000 cheque recorded
+   observed={"status": "Paid", "balance": 0, "amount": 5000, "deposit": 5000, "notes": ["Invoice INV-1001 saved"], "stored": true}
+FAIL         I1 claim 'Paid' -- a $6,000 cheque against a $5,000 invoice: the customer is owed a $1,000 credit
+   observed={"status": "Paid", "balance": 0, "amount": 5000, "deposit": 6000, "notes": ["Invoice INV-1001 saved"], "stored": true}
+FAIL         I2 claim 'marked as Paid' -- the store write FAILED, so the Paid status is lost on reload
+   observed={"status": "Paid", "balance": 0, "amount": 5000, "notes": ["Invoice marked as Paid"], "stored": false}
+FAIL         I3 claim 'Paid' -- a 50% DEPOSIT REQUEST invoice built from the quote; the customer has paid nothing
+   observed={"status": "Paid", "balance": 0, "amount": 6200, "deposit": 6200, "notes": ["Invoice pre-filled with the 50% deposit \u2014 review and save", "Invoice INV-1001 saved"], "stored": true}
+CONTROL-OK   M0 claim '60%' -- all costs entered: quote 10,000, COGS 4,050
+   observed={"margin": "60%", "color": "#16a34a"}
+FAIL         M1 claim 'green' -- the SLAB COST is blank -- the largest cost of the job is unknown
+   observed={"margin": "90%", "color": "#16a34a"}
+FAIL         M2 claim '65%' -- no cost has been recorded for any job
+   observed={"kpi_margin": "65%"}
+FAIL         M3 claim 'margin' -- a saved quote stores its total as a NUMBER (12400)
+   observed={"crash": "(q.total || \"0\").replace is not a function"}
+CONTROL-OK   X0 claim '$100' -- one sales-tax entry this year, $100
+   observed={"ytd": "$100", "t1099": "0"}
+FAIL         X1 claim 'YTD' -- a $900 entry is from 2024, not this year
+   observed={"ytd": "$1,000", "t1099": "0"}
+FAIL         X2 claim 'Logged' -- a rate of 825 is 825%, a typo for 8.25
+   observed={"last": {"id": "TX1793112394562", "state": "TX", "jurisdiction": "", "taxable": 1000, "rate": 825, "tax": 8250, "date": "2026-10-27"}}
+FAIL         X3 claim '0' -- $5,000 was paid to an installer LLC; nobody checked whether a 1099 is due
+   observed={"ytd": "$0", "t1099": "0"}
+b56 rows unchanged: T1a T1b T1d T2a T2b T3a T3b T4a FAIL; T1z PASS; T1c T2c T3c CONTROL-OK.
+
+== ITEM 4 -- ROUTED, NOT SELF-REGISTERED ==
+fourth (stonedesk.html): 13 new sites E1-E4, I1-I3, M1-M3, X1-X3, plus the b56 T2/T3/T4 sites. A FOR FOURTH note was appended and confirmed.
+hank (api/): T1a T1b T1d, T2a T2b (b56). The b56 FOR HANK note stands.
+The tool prints a ROUTING table and writes nothing to the register; neither did cc.
+
+== ITEM 5 -- METHODOLOGY, ENFORCED ==
+presence_proof.py checklist item 9 ROUTE: every stress scenario names its SITE, or the plan exits 2.
+route() and may_self_register() read the owner from docs/sairn-path-manifest.json.
+The tool exits 2 if a FAIL has no owner. TOOLING-INVENTORY carries the rule. Fixtures 16/16.
+
+== OPEN ==
+fourth: 13 findings, M3 first (a TypeError: the Financial KPIs never render once a quote is saved) and E1/E2 (signing).
+hank: the b56 api findings + the Tier A review.
+Conditional (path real, frequency unmeasured): E3 stale lastCalc, I3 leftover deposit, E2 the 1/255 pixel.
+
+== TRANSCRIPT ==
+C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\87a27b9f-55e9-45e8-b017-01ed1febac1a.jsonl
+
+== CHANGED ==
+tools/presence_proof.py, tools/stonedesk_presence_stress.py, tools/tooling_inventory.py, docs/TOOLING-INVENTORY.md, deliverables.
+
+SHA256 f909aea159ed7d85c40cb549ca9f2a810bde4221bc6b26695204b9526afbabe3
+END-OF-REPORT

@@ -1,0 +1,24 @@
+DIGEST cc b57 (StoneDesk presence-proof, part 2)
+STATUS: 6 of 6 closed. Tools fc042cf0, landed 0/0; no product code changed; nothing self-registered; no --force, NO OVERRIDE.
+ITEM 1: the four b55 SAIRNlaw records are kept as-is. Unchanged.
+ITEMS 2+3: tools/stonedesk_presence_stress.py now has 29 scenarios: 1 PASS, 21 FAIL, 7 controls OK. --ablate flips T1z PASS -> FAIL.
+  e-sign: approved with NO signature pad (E1), one 1/255 pixel (E2), Q-200 at a stale $3,000 (E3), first same-name customer (E4).
+  invoices: an overpayment shows Paid with no credit (I1); "marked as Paid" on a failed save (I2); a deposit-request invoice saves Paid (I3).
+  margin: blank slab cost is green (M1); KPI is a constant 65% (M2); a TypeError means the KPIs never render once a quote is saved (M3).
+  tax: YTD spans years (X1); an 825% rate is logged (X2); the 1099 count is a literal 0 (X3).
+  Every scenario names CLAIM/TRUTH/FAIL MEANS/DETECTOR/SITE. All 4 new controls first failed on missing escapers.
+ITEM 4: ROUTED -- fourth gets 13 new stonedesk.html sites (status note confirmed); hank's b56 api sites stand. The register is untouched.
+ITEM 5: ROUTE is checklist item 9 in tools/presence_proof.py.
+  A scenario with no SITE exits 2. The owner comes from the path manifest. may_self_register() is true only for own files. Fixtures 16/16.
+ITEM 6: handoff d6cbb038 written before the report; pushed and landed.
+DECISION-NEEDED: none.
+CHANGED: tools/presence_proof.py, tools/stonedesk_presence_stress.py, tools/tooling_inventory.py, docs/TOOLING-INVENTORY.md.
+SQL: none.
+EVIDENCE-path: SAIRN-handoff-cc-b57.md (findings + routing tables), SAIRN-report-cc-b57.txt (observed values per scenario)
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\87a27b9f-55e9-45e8-b017-01ed1febac1a.jsonl
+UNVERIFIED: live behaviour (all offline). E3, I3 and E2 are real paths whose frequency is not measured.
+ROUTED: fourth -- the 13 sites, M3 and E1/E2 first. hank -- the b56 api findings and the sd_approvals Tier A review.
+NEXT: nothing owed by cc. Owners re-run the tool after each fix.
+CONTEXT 70.8% of 1,000,000 -- 708,389 tokens, measured.
+SHA256 f8eefef185b36a5da592668a5f63c28bc2ee653db6460fad09ab11861be7e18b
+END-OF-REPORT
