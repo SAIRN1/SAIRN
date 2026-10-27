@@ -1206,6 +1206,17 @@
       "status": "released",
       "released_at": "2026-10-22T21:12:29Z",
       "files": null
+    },
+    {
+      "id": "hover-1793110751",
+      "session": "hover",
+      "subject": "hover",
+      "task": "hover b86: exact ALLOWED diff text for the scope gate, ledger 16 left, restore drill if push 84 reached",
+      "claimed_at": "2026-10-27T14:19:11Z",
+      "claimed_at_epoch": 1793110751.636048,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
