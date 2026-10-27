@@ -1,0 +1,21 @@
+HANK b57 REPORT -- 2026-10-27
+
+METHODOLOGY (standing): a fail-open/closed item is closed only when its failure branch has run on the DEPLOYED code
+-- the files at the production githubCommitSha, in a deny-all Vercel Sandbox, sha256 checked inside. Source pins
+and local runs are not verification. Recorded in memory; large transfers go to a subagent.
+
+Provenance: prod dpl_67Y3hCGiPFgDcEMQxhx8TEc6JzD6 (READY) @ ce2596cf0 (contains C1 cf13093c8, W3 da19dd707).
+Sandbox sbx_F29RT2O0MalaOBDIGV57ixxKFDGI, deny-all, node v24.22.1, stopped; 6/6 sha256 matched inside.
+
+1. W3 CLOSED: unreadable 2xx on every checkpoint read -> verify 502 (logged "checkpoint read unreadable");
+   control -> 200 ok:true.
+2. C1 CLOSED (function at the deployed sha), 11/11:
+   - answered 500/503/403/401 -> ACTIVE_CHECK_FAILED;
+   - unreadable/non-list 2xx -> ACTIVE_CHECK_UNREADABLE;
+   - 404/400 -> NO_ACTIVE_CHECK (your decision);
+   - transport throw -> NO_ACTIVE_CHECK;
+   - active -> ok;
+   - inactive -> CREDENTIAL_INACTIVE.
+   Caller 502s (pre-gate, bridge) are verified locally only -- optional follow-up CL.
+3. 404/400 decision: no code change needed (already as you ruled).
+4. PUSH: these three docs only, not forced. No claim taken (verification only).

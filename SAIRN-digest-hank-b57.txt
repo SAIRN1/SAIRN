@@ -1,0 +1,15 @@
+HANK b57 DIGEST -- 2026-10-27 -- W3 and C1 verified on deployed code in a Vercel Sandbox; method made standing
+CONTEXT 76.9% of 1,000,000 -- 769,145 tokens, measured.
+STATUS: docs only, NOT FORCED; no code change; no claim (verification only).
+1. Provenance: prod dpl_67Y3hCGiPFgDcEMQxhx8TEc6JzD6 @ ce2596cf0.
+   Sandbox sbx_F29RT2O0MalaOBDIGV57ixxKFDGI, deny-all, 6/6 hashes matched inside.
+2. W3 CLOSED: unreadable checkpoint reads -> verify 502 (was ok:true); control 200.
+3. C1 CLOSED: answered 4xx/5xx -> ACTIVE_CHECK_FAILED; unreadable -> ACTIVE_CHECK_UNREADABLE; 11/11.
+   404/400 -> NO_ACTIVE_CHECK, as decided.
+4. Methodology: deployed-sha sandbox run before any fail-open/closed item is marked closed.
+   Recorded in memory.
+DECISION-NEEDED (Michael): none.
+NEXT: optional CL -- sandbox the callers' 502 (bridge.js small; sd-data.js ~1 MB via a subagent).
+CHANGED: these three docs; memory deployed-sandbox-verification-before-closing.
+EVIDENCE-path: SAIRN-handoff-hank-b57.md, SAIRN-report-hank-b57.txt
+UNVERIFIED: the callers' 502 on deployed code (function-level verified only).
