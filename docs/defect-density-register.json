@@ -38629,6 +38629,47 @@
       "recurrence_open": "Four milder cases the sweep marked clean-by-rule were not changed: resource_reachability_check per-app totals vs header total, blob_conversion_coverage docstring vs .test.js skip, entitlement_freshness_check EXTERNAL_OWNED, secrets_inventory hard-coded 47/11."
     },
     {
+      "commit": "cf13093c87fb",
+      "date": "2026-10-27",
+      "subject": "fix(platform b56): credentialStillActive refuses an ANSWERED 4xx/5xx too -- ACTIVE_CHECK_FAILED, 502 at both callers",
+      "files": [
+        "api/_lib/auth.js",
+        "api/_lib/auth.test.js",
+        "api/b28-role-from-token.test.js",
+        "api/b36-sd-customers-deleted-row.test.js",
+        "api/b55-unreadable-fails-closed.test.js",
+        "api/bridge.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 53,
+      "lines_removed": 12,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "credentialStillActive treated an ANSWERED 4xx/5xx from the employee lookup like a transport blip (NO_ACTIVE_CHECK), so a deactivated employee's still-valid token kept working whenever the auth read failed with a status. Now ACTIVE_CHECK_FAILED, refused 502 by both callers. b55 suite W1d + M3.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the availability decision was documented in credentialStillActive from 2026-09-26"
+      },
+      "citation_note": "PR 1.11 shape",
+      "contributing_factors": [
+        {
+          "factor": "an answered 4xx/5xx from the deactivation lookup was folded into NO_ACTIVE_CHECK and both callers proceeded on the token alone",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "ACTIVE_CHECK_FAILED, refused 502 by the sd-data pre-gate and bridge.js; 404/400 stays NO_ACTIVE_CHECK"
+        }
+      ],
+      "recurrence_open": "404/400 still proceeds on the token alone, by the not-provisioned exception (pending Michael's confirmation)",
+      "single_factor_note": "one function, two callers"
+    },
+    {
       "commit": "d8f47f7ab32b",
       "date": "2026-10-27",
       "subject": "fix(sd-data, cody b52): a per-resource cap is measured the way its constraint measures -- jsonb text (hover H2 seq1109)",
