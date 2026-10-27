@@ -38434,6 +38434,46 @@
       "recurrence_open": "A mutation arm proves a test can fail, not that its expected dates are right."
     },
     {
+      "commit": "3a450c7443a1",
+      "date": "2026-10-27",
+      "subject": "fix(tests, cody b53): run_condition_coverage_probe is green -- arm 4 re-aimed, arm 5 passes the sandbox root",
+      "files": [
+        "tests/run_condition_coverage_probe.py"
+      ],
+      "lines_added": 26,
+      "lines_removed": 15,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "tests/run_condition_coverage_probe.py was red at HEAD: arm 4 dirtied the tree with an untracked marker and looked for 'WORKING TREE IS DIRTY', but condition_coverage.py had scoped its refusal to measured engines (untracked ignored) and reworded it, so 4b failed every run; arm 5 called sweep() without the now-required root= and crashed with ValueError before 5a-5e. Re-aimed arm 4 to dirty a measured engine (restored from a byte snapshot, 4c checks it) and passed root=; 26/0.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The tool's scoped refusal and required root= landed in separate commits; not traced."
+      },
+      "citation_note": "A control that fell behind its subject's own deliberate changes; no standing rule names that drift.",
+      "contributing_factors": [
+        {
+          "factor": "The probe asserted the tool message and dirt model verbatim, so a deliberate tool change made it red with nothing wrong in the tool.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Arm 4 dirties a measured engine and checks the current message; arm 5 passes root=."
+        },
+        {
+          "factor": "The red was carried as pre-existing across batches instead of being diagnosed.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Diagnosed and fixed in b53."
+        }
+      ],
+      "recurrence_open": "Other probes that assert a tool message verbatim can drift the same way; not swept."
+    },
+    {
       "commit": "45ba1d9f7ee5",
       "date": "2026-10-27",
       "subject": "fix(platform b54): a failed PIN attempt that cannot be recorded is refused 503 -- the lockout can no longer silently never engage",
@@ -38491,6 +38531,53 @@
         }
       ],
       "recurrence_open": "a 503 only on a wrong PIN when the PATCH fails can reveal that an employee_id exists while the write path is broken; a correct PIN is still accepted when the lockout cannot be written"
+    },
+    {
+      "commit": "5e769b4e7c27",
+      "date": "2026-10-27",
+      "subject": "fix(tools, cody b54): five ratios no longer count what did not run, or what is outside the denominator",
+      "files": [
+        "docs/sairn-path-manifest.json",
+        "tools/checker_confidence.py",
+        "tools/flaky_checker_quarantine.py",
+        "tools/run_all_tests.py",
+        "tools/sairn_reachability_check.py",
+        "tools/text_gate_literal_sweep.py"
+      ],
+      "lines_added": 61,
+      "lines_removed": 17,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "Five tools/ ratios counted what did not run or what lay outside the denominator: run_all_tests counted a pinned run's not_run files as passing (and could print ALL M PASS); text_gate_literal_sweep counted COULD-NOT-RUN probes as coverage; flaky_checker_quarantine divided all-history checkers by today's registry and printed N of N on an unreadable registry; sairn_reachability_check let a real 0 fall through to the wrong metric; checker_confidence pooled all history. Fixed in one commit, each printing what it excluded.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Five tools with separate histories; not traced per tool."
+      },
+      "citation_note": "Did-not-run and could-not-tell were folded into pass or into the numerator.",
+      "contributing_factors": [
+        {
+          "factor": "Numerators were built from a different or wider population than the denominator, or treated not-run as pass.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Each ratio now intersects its sets and prints the excluded count."
+        },
+        {
+          "factor": "No standing check compares a tool numerator population with its denominator.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "Seven further leads routed (b54 handoff); a generic check is not built."
+        }
+      ],
+      "recurrence_open": "Seven b53 leads remain unfixed: reliability_growth, hover_separation_audit, defect_budget_policy, ownership_evidence_drift, gate1_verify, live_probe_residue_audit, cron_beat_refusal_check."
     },
     {
       "commit": "8bf6165462d1",
@@ -38762,46 +38849,6 @@
         }
       ],
       "recurrence_open": "credentialStillActive still answers NO_ACTIVE_CHECK on !ok (an answered 4xx/5xx), by its documented availability decision"
-    },
-    {
-      "commit": "3a450c7443a1",
-      "date": "2026-10-27",
-      "subject": "fix(tests, cody b53): run_condition_coverage_probe is green -- arm 4 re-aimed, arm 5 passes the sandbox root",
-      "files": [
-        "tests/run_condition_coverage_probe.py"
-      ],
-      "lines_added": 26,
-      "lines_removed": 15,
-      "app": "tooling",
-      "layer": "test",
-      "severity": "low",
-      "detection_method": "code-review",
-      "summary": "tests/run_condition_coverage_probe.py was red at HEAD: arm 4 dirtied the tree with an untracked marker and looked for 'WORKING TREE IS DIRTY', but condition_coverage.py had scoped its refusal to measured engines (untracked ignored) and reworded it, so 4b failed every run; arm 5 called sweep() without the now-required root= and crashed with ValueError before 5a-5e. Re-aimed arm 4 to dirty a measured engine (restored from a byte snapshot, 4c checks it) and passed root=; 26/0.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The tool's scoped refusal and required root= landed in separate commits; not traced."
-      },
-      "citation_note": "A control that fell behind its subject's own deliberate changes; no standing rule names that drift.",
-      "contributing_factors": [
-        {
-          "factor": "The probe asserted the tool message and dirt model verbatim, so a deliberate tool change made it red with nothing wrong in the tool.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Arm 4 dirties a measured engine and checks the current message; arm 5 passes root=."
-        },
-        {
-          "factor": "The red was carried as pre-existing across batches instead of being diagnosed.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Diagnosed and fixed in b53."
-        }
-      ],
-      "recurrence_open": "Other probes that assert a tool message verbatim can drift the same way; not swept."
     }
   ],
   "started": "2026-09-09",
