@@ -1,0 +1,123 @@
+#!/usr/bin/env python3
+# OWNER: cc
+"""Run a patch-apply or hook-touching command with its full argv logged FIRST.
+
+    python tools/logged_exec.py -- git apply path/to/x.patch
+    python tools/logged_exec.py --log      # print the log
+    python tools/logged_exec.py --fixtures
+
+THE RULE (cc b59, methodology): every command that applies a patch or touches
+a hook or gate file is run through this wrapper, never typed into a shell.
+The wrapper:
+  1. writes the exact argv, the cwd, the time and the session to
+     .git/sairn-exec-log.jsonl BEFORE it runs, so the command is on record even
+     if it is what breaks the tree;
+  2. REFUSES any argument that is a shell operator (>, >>, 2>, |, &&, ;) or
+     that starts with one. It runs the command WITHOUT a shell, so such a token
+     would be passed through literally, never interpreted. A redirect wanted
+     here means the command is being run the wrong way;
+  3. records the size and git blob hash of every gate file before and after,
+     and exits 3 if any gate changed during the run.
+
+WHY: on 2026-10-27, at about 11:04, tools/sairn_push_gate_hook.py was
+truncated to 0 bytes and empty files named `cd` and `git` appeared in cc's
+clone, during a window in which a patch was applied in that clone by a command
+nobody captured (cc b58 handoff, section 1). Empty files named after the
+first word of each command segment are the signature of a redirect attaching
+to the next token, and with no argv on record the cause could not be
+reconstructed.
+
+Exit codes: the command's own exit code; 2 for a refusal (a shell operator,
+no command, or a log that cannot be written); 3 when a gate file changed.
+"""
+import datetime
+import json
+import os
+import subprocess
+import sys
+
+GATES = ('tools/sairn_push_gate_hook.py', 'tools/register_feed_gate.py',
+         'tools/copy_exactly_gate.py', 'tools/hover_auditor_scope_gate.py',
+         '.githooks/pre-push', '.githooks/pre-commit', '.githooks/post-rewrite')
+SHELL_OPS = ('>', '>>', '2>', '2>>', '&>', '|', '||', '&&', ';', '<')
+
+
+def shell_op(arg):
+    """The shell operator an argument is, or starts with; else None."""
+    a = str(arg)
+    for op in sorted(SHELL_OPS, key=len, reverse=True):
+        if a == op or a.startswith(op):
+            return op
+    return None
+
+
+def git(*a):
+    r = subprocess.run(['git'] + list(a), capture_output=True, text=True)
+    return r.stdout.strip() if r.returncode == 0 else ''
+
+
+def snapshot(root):
+    out = {}
+    for g in GATES:
+        p = os.path.join(root, g)
+        out[g] = (os.path.getsize(p), git('hash-object', p)) if os.path.isfile(p) else (None, None)
+    return out
+
+
+def run_fixtures():
+    cases = [(shell_op('>'), '>'), (shell_op('>tools/x.py'), '>'), (shell_op('2>&1'), '2>'),
+             (shell_op('|'), '|'), (shell_op('&&'), '&&'), (shell_op('git'), None),
+             (shell_op('a>b'), None), (shell_op('-m'), None)]
+    return ['shell_op got %r, wanted %r' % (g, w) for g, w in cases if g != w], len(cases)
+
+
+def main(argv):
+    if '--fixtures' in argv:
+        bad, n = run_fixtures()
+        print('LOGGED EXEC -- %d/%d fixtures' % (n - len(bad), n))
+        for b in bad:
+            print('  ! ' + b)
+        return 2 if bad else 0
+    root = git('rev-parse', '--show-toplevel')
+    gitdir = git('rev-parse', '--absolute-git-dir')
+    if not root or not gitdir:
+        print('COULD NOT RUN: not inside a git work tree.')
+        return 2
+    log = os.path.join(gitdir, 'sairn-exec-log.jsonl')
+    if '--log' in argv:
+        print(open(log, encoding='utf-8').read() if os.path.isfile(log) else '(no log yet)')
+        return 0
+    if '--' not in argv or not argv[argv.index('--') + 1:]:
+        print('usage: python tools/logged_exec.py -- <command> [args...]')
+        return 2
+    cmd = argv[argv.index('--') + 1:]
+    ops = [(a, shell_op(a)) for a in cmd if shell_op(a)]
+    rec = {'at': datetime.datetime.now().astimezone().isoformat(timespec='seconds'),
+           'session': os.environ.get('SAIRN_SESSION') or '', 'cwd': os.getcwd(), 'argv': cmd,
+           'shell_operators': [a for a, _ in ops], 'refused': bool(ops)}
+    try:
+        with open(log, 'a', encoding='utf-8') as fh:
+            fh.write(json.dumps(rec) + '\n')
+    except OSError as e:
+        print('REFUSED: the exec log could not be written (%s), so the command is not run.' % e)
+        return 2
+    print('LOGGED argv: %s' % json.dumps(cmd))
+    if ops:
+        print('REFUSED: argument(s) %s are shell operators. This runs WITHOUT a shell, so a '
+              'redirect would not happen here -- and in a shell it is the shape that truncated '
+              'the push gate on 2026-10-27. Run the command without the redirect.' % [a for a, _ in ops])
+        return 2
+    before = snapshot(root)
+    rc = subprocess.run(cmd).returncode
+    after = snapshot(root)
+    changed = [g for g in GATES if before[g] != after[g]]
+    with open(log, 'a', encoding='utf-8') as fh:
+        fh.write(json.dumps({'at': rec['at'], 'argv': cmd, 'rc': rc, 'gates_changed': changed}) + '\n')
+    if changed:
+        print('GATE FILE CHANGED during this command: %s. Check it before any push.' % ', '.join(changed))
+        return 3
+    return rc
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv[1:]))

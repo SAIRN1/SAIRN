@@ -21,7 +21,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**370 files in `tools/`.** By what actually invokes them:
+**371 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -30,7 +30,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 5 | session-start or prompt hooks, informational |
 | **DECIDED** | 79 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 79 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 100 | nothing runs these at all |
+| **UNWIRED** | 101 | nothing runs these at all |
 
 **THE HOOK-DERIVED HALF OF THE TABLE ABOVE IS THE RECORDED WIRING, NOT THE LIVE ONE.** This clone's `.claude/settings.json` carries an EMPTY `hooks` object, committed on 2026-10-13 after Michael disabled every hook on 2026-10-11 because they were causing agent compaction. The 19 tool wirings behind BLOCKING / REPORT-ONLY / ADVISORY are read from `docs\hooks-disabled-2026-10-13.json`, which records all 23 commands verbatim. **A tool shown as ADVISORY here is wired as a SessionStart or prompt hook in that record and is NOT running in this clone today.** The alternative was believing the zero, and that is what the generator did until 2026-10-16: ADVISORY came out empty, the push gate itself came out SUITE-ONLY, and three arms of `tests/run_tooling_inventory_probe.py` were red against a `--check` that said the document matched the repo -- both ends of that comparison came from the same blind reader.
 
@@ -42,7 +42,7 @@ By what they are, independent of wiring:
 | CHECKER | 249 |
 | GATE | 1 |
 | GENERATOR | 23 |
-| GUARD | 2 |
+| GUARD | 3 |
 | LIBRARY | 27 |
 | LIVE | 29 |
 | PROBE | 5 |
@@ -511,7 +511,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (100)
+## UNWIRED (101)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -570,6 +570,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `law_trust_lock_live_probe.py` | LIVE | a SAIRNlaw trust hard-lock that has stopped holding on the DEPLOYED endpoint -- fourth's b26 finding H1 was that this lock could be DELETED ENTIRELY with every suite still green, and both suites that answered it drive a MOCK. With a REAL paralegal session it catches four distinguishable things: a paralegal reading or writing law_trusttx or law_bankstatements at all (must be 403 FORBIDDEN); C2's two-stage carve-out COLLAPSING INTO THE SAME REFUSAL AS THE LOCK, since a paralegal WRITE to law_trusttx must be COUNTERSIGN_REQUIRED and not FORBIDDEN and those are opposite findings; the lock having become a blanket refusal, via four negative controls (paralegal reads of law_clients and law_timeentries, and OWNER reads of both locked resources, must all be 200); and a teardown that did not happen, because it deactivates its own paralegal and READS THAT BACK by attempting the login. Writes two fixed-id credential rows on the AUDIT licence only | &mdash; |
 | `leg_session_gate_live_probe.py` | LIVE | a SAIRNlegacy leg_ resource -- the death record and the chain-of-custody log for human remains -- answering a caller who holds the licence key and NO employee session, on the DEPLOYED function rather than the handler in this clone; it asserts the gate's own NO_SESSION code rather than merely a non-200 (a dead licence also refuses), reads an ungated resource alongside so four refusals are a SPLIT rather than a lockout, and reports an absent licence row or a bot challenge as UNVERIFIED rather than as a pass | &mdash; |
 | `load_deadline_seed.py` | LIVE | loads a deadline seed into a live licence | &mdash; |
+| `logged_exec.py` | GUARD | a patch-apply or hook-touching command run with no record of what it was: logs the full argv to .git/sairn-exec-log.jsonl BEFORE running it, refuses any shell-operator argument (it runs without a shell), and exits 3 if a gate or hook file changed during the run. Written after the 2026-10-27 push-gate truncation, whose originating command was never captured. | &mdash; |
 | `mech_panels_live_check.py` | LIVE | a SAIRNmechanical panel that looks wired and does not reach its table, and -- with --static, needing no licence -- a dropdown offering a value the endpoint REFUSES. That second one is the reason it exists rather than being a one-off run: nothing else compares the Equipment panel's asset-type `<option>` list to api/_lib/mech-assets.js ASSET_TYPES, and a disagreement hands every user a 400 UNKNOWN_ASSET_TYPE from a form that offered the value. It asserts the ROUND TRIP rather than the columns: column metadata proves the DDL, and only a write-then-read proves the app preserves the three-state NULLs both tables are designed around (an unweighed charge must not come back 0, an unstated gwp_over_150 must not come back false, an unrecorded expiry must not read as current). Neither table grants DELETE by design, so the verification row is RETIRED or SUPERSEDED rather than removed and the run says so -- and the ids carry a per-run timestamp so a re-run cannot collide with the last one. --static is a COULD-NOT-TELL about the panels and prints that rather than a pass | &mdash; |
 | `negated_status_assertion_scan.py` | CHECKER | a READ-LIST of assertions that express "the caller got through" as the NEGATION of one status code. `!== 401` is satisfied by a 403, by a 500 and by the harness throwing -- and on 2026-09-16 exactly that arm, in tests/app_session_isolation.js, printed "law_trusttx is reachable with the LICENCE ALONE -- no session -- and answers 403" IN GREEN, over a gate that had just been put in front of attorney IOLTA trust money. DELIBERATELY NOT A VERDICT: `!== <code>` is CORRECT when the claim is "some OTHER lock answered first", and nothing mechanical can tell that from "it got through" -- so every row is printed with its assertion and its message for a human, and the tool says so in its own output. It does NOT classify by message text, because keyword-matching "reaches" would be wrong in both directions, which this platform has paid for twice. Reads comment-stripped source, since the repo now contains several comments DISCUSSING the defect. FOUND A SECOND INSTANCE ON ITS FIRST REAL RUN: api/sairndental/public-book.test.js asserted a three-way disjunction for "reaches the network stage" and was green while the request 502ed before reaching anything | &mdash; |
 | `obligation_surface.py` | REPORT-ONLY | a REVIEW OBLIGATION NOBODY IS REMINDED OF. It catches the queue ageing past the point the platform has already decided is late -- it imports OWNER_STALE_HOURS from tier_a_review_gate rather than keeping a threshold of its own, so the two cannot drift. Its first run found 12 of 20 open obligations overdue and the oldest at 404h, sixteen days, none of which was printed anywhere a session would see on the way in. The data was never missing: tier_a_review_gate --list prints the queue and nothing ran it. REFUSES rather than reassuring -- an absent, unparseable or wrong-shaped register exits 2 and says which, because a surface whose empty state and broken state read identically is worse than none. An obligation whose opened_at cannot be parsed is a THIRD STATE, printed separately and never folded into fresh, since the one record nobody can age is the one most likely to be oldest. NOT a hook and not a gate: it blocks nothing and is exit-1 as a signal only | &mdash; |
@@ -652,7 +653,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      370   git ls-files tools/
+  tools on disk                      371   git ls-files tools/
   hook entries                        19   docs\hooks-disabled-2026-10-13.json (RECORDED wiring -- this clone's live hooks are the committed disarm, and the record is read rather than the zero being believed)
   push-gate invocations               20   tools\sairn_push_gate_hook.py
   report-only registry                78   report_only_checks.REGISTRY

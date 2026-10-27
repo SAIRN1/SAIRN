@@ -123,6 +123,12 @@ PURPOSES = {
         'a pass. It CANNOT prove Google acknowledged the bytes -- the mount is '
         'a sync directory -- and prints the board\'s Drive file id so a chat '
         'turn can close that through the API instead.'),
+    'logged_exec.py': ('GUARD',
+        'a patch-apply or hook-touching command run with no record of what it was: '
+        'logs the full argv to .git/sairn-exec-log.jsonl BEFORE running it, refuses '
+        'any shell-operator argument (it runs without a shell), and exits 3 if a '
+        'gate or hook file changed during the run. Written after the 2026-10-27 '
+        'push-gate truncation, whose originating command was never captured.'),
     'presence_proof.py': ('CHECKER',
         'a stress test that could pass a false positive silently: the PRESENCE '
         'PASSED AS PROOF checklist as code. A plan is refused (exit 2) unless '
