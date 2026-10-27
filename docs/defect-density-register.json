@@ -38762,6 +38762,46 @@
         }
       ],
       "recurrence_open": "credentialStillActive still answers NO_ACTIVE_CHECK on !ok (an answered 4xx/5xx), by its documented availability decision"
+    },
+    {
+      "commit": "ebb26bfbb4d1",
+      "date": "2026-10-27",
+      "subject": "fix(tests, cody b53): run_condition_coverage_probe is green -- arm 4 re-aimed, arm 5 passes the sandbox root",
+      "files": [
+        "tests/run_condition_coverage_probe.py"
+      ],
+      "lines_added": 26,
+      "lines_removed": 15,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "tests/run_condition_coverage_probe.py was red at HEAD: arm 4 dirtied the tree with an untracked marker and looked for 'WORKING TREE IS DIRTY', but condition_coverage.py had scoped its refusal to measured engines (untracked ignored) and reworded it, so 4b failed every run; arm 5 called sweep() without the now-required root= and crashed with ValueError before 5a-5e. Re-aimed arm 4 to dirty a measured engine (restored from a byte snapshot, 4c checks it) and passed root=; 26/0.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The tool's scoped refusal and required root= landed in separate commits; not traced."
+      },
+      "citation_note": "A control that fell behind its subject's own deliberate changes; no standing rule names that drift.",
+      "contributing_factors": [
+        {
+          "factor": "The probe asserted the tool message and dirt model verbatim, so a deliberate tool change made it red with nothing wrong in the tool.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Arm 4 dirties a measured engine and checks the current message; arm 5 passes root=."
+        },
+        {
+          "factor": "The red was carried as pre-existing across batches instead of being diagnosed.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Diagnosed and fixed in b53."
+        }
+      ],
+      "recurrence_open": "Other probes that assert a tool message verbatim can drift the same way; not swept."
     }
   ],
   "started": "2026-09-09",
