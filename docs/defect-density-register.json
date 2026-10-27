@@ -38673,6 +38673,54 @@
         }
       ],
       "recurrence_open": "The uniform 64KB default still measures compact JSON; tables whose constraint is 65536 on jsonb text keep a small window there (not routed by H2, not changed here). Exponent-form numbers are measured as JS prints them."
+    },
+    {
+      "commit": "da19dd707ad5",
+      "date": "2026-10-27",
+      "subject": "fix(platform b55): the six WRONG fail-opens from the b54 unparsable-2xx sweep fail closed",
+      "files": [
+        "api/_lib/auth.js",
+        "api/_lib/license.js",
+        "api/audit-checkpoint.js",
+        "api/b55-unreadable-fails-closed.test.js",
+        "api/bridge.js",
+        "api/claude.js",
+        "api/sairncash/trial-renew.js",
+        "api/sairndental/public-complaint-submit.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 247,
+      "lines_removed": 13,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "Six fail-opens on an unparsable 2xx: claude.js allowed AI calls when the licence body was unreadable; credentialStillActive skipped the deactivation check; derive_charges silently dropped billable MAR/ADL/activity events; audit-checkpoint verify passed over an unread chain; the dental complaint duplicate check filed a second complaint; sairncash trial-renew reported an unconfirmed renewal as 200. All now refuse. api/b55-unreadable-fails-closed.test.js 11/0, M1-M2 red.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "six separate sites in six files, each written separately"
+      },
+      "citation_note": "PR 1.11 shape",
+      "contributing_factors": [
+        {
+          "factor": "an unparsable 2xx was caught as a transport failure or defaulted to empty, and each site then took its permissive branch",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "each site refuses (or throws to a refusing caller) on an unreadable answer"
+        },
+        {
+          "factor": "no detector for the shape; found by a 69-hit manual sweep",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "route a static check to cc (tools/)"
+        }
+      ],
+      "recurrence_open": "credentialStillActive still answers NO_ACTIVE_CHECK on !ok (an answered 4xx/5xx), by its documented availability decision"
     }
   ],
   "started": "2026-09-09",
