@@ -2717,6 +2717,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_condition_coverage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "36eadc6535afb9be0b8073d87505046642d4d974",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_gate_skip_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -3386,6 +3394,14 @@
     }
    ],
    "sha": "403b9d2b5d349071f75ff3857adcf96c38b685bd",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_condition_coverage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "40b3f93d9c1a2441ea8b22055252fc1c9f75483c",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -10191,6 +10207,14 @@
     }
    ],
    "sha": "b6b5af2d306a7effcd3db3e6f938444bdba793eb",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b52-cap-jsonb-measure.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "b71929e1c91d1c38547675a6f7e99f8107c81483",
    "criteria_version": "2026-10-06.1"
   },
   {
