@@ -38533,7 +38533,7 @@
       "recurrence_open": "a 503 only on a wrong PIN when the PATCH fails can reveal that an employee_id exists while the write path is broken; a correct PIN is still accepted when the lockout cannot be written"
     },
     {
-      "commit": "5e769b4e7c27",
+      "commit": "0daff04674ec",
       "date": "2026-10-27",
       "subject": "fix(tools, cody b54): five ratios no longer count what did not run, or what is outside the denominator",
       "files": [
