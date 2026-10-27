@@ -1,0 +1,24 @@
+REPORT -- cody b52, 2026-10-27
+
+LANDED on origin/main, no force, no skip: d8f47f7ab (cap jsonb, H2 1109) | bb1d93a88 (rf_jobs arms, H2 1127) | 21fc838ab (vercel
+  frame headers) | ca5a88be5 (residue) | 8e35dce1f (dora CFR) | c2c39263d (seven tools) | 0c46dc3b9 (Tier A -> cc). All
+  merge-base --is-ancestor after fetch. Claim released; status idle.
+1. H1 #1613/#1614: CLOSED at HEAD by b28 7e43c9dab -- verified in code (roster role re-read, settling step, callerEmployeeId at all
+   4 call sites) and b28 suite 15/0. Nothing to fix. H1's repro driver not run (hover scope).
+2. H2 seq1127 (rf_jobs write response): W2a/b/c pin assignee (requested / '' / stored) and ok===true; 10/10; all 5 surviving
+   mutants hand-planted and now killed. (H1 seq1127 is unrelated housekeeping.)
+3. LIVE STAFF WRITE (DNT-PINNACLE-2026): 96,419-byte photo appointment created 200, declined whole-row 200, read-back intact.
+   Demo has 0 publicly bookable procedures, so staff-created; existing patient reused (no new dnt_patients row). Residue 1 Declined
+   row; sql/2026-10-27-cody-b52-dnt-residue-removal.sql.
+   FRAME HEADERS: vercel.json catch-all route sets frame-ancestors 'none' + X-Frame-Options DENY. Test 6/6 (old config 4 fail).
+   LIVE: both headers on 6/6 pages, all render top-level.
+4. H2 seq1109 (cap vs constraint measure): per-resource caps now measure jsonb text after the location stamp; 64KB policy default
+   unchanged. b52 test 6/6 incl. ablation (compact measure lets a 1,936,406-jsonb-byte record through). Cap regressions green.
+5. METHODOLOGY: tool_provenance_status.py is hover2's -- run DENIED, edit out of scope; audited from source: SKIP hides 3 files
+   (itself included) from "DUE: d of N"; validations by bare filename, no content hash. ROUTED to hover2 via status registry.
+   SWEEP tools/ (33 files, subagent leads, each re-read): 8 fixed -- dora_metrics (CFR 11.7% printed vs 6.4% true; numerator was
+   not in the denominator), suite_control_coverage, probe_anchor_freshness, checker_denominator, second_pass_coverage_scan,
+   condition_coverage (--limit subset could exit 0), auth_header_name_sweep, session_recheck_coverage. Controls green.
+   4 milder clean-by-rule cases recorded, not changed. Register records for both fix commits.
+PRE-EXISTING RED: tests/run_condition_coverage_probe.py arm 4b, identical with my change stashed (dirty-tree baseline).
+OPEN: hover2 provenance tool; cc Tier A d8f47f7ab; Michael residue SQL + demo bookable procedures; 64KB default measure decision.

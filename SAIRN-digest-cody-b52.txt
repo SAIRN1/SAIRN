@@ -1,0 +1,17 @@
+DIGEST -- cody b52, 2026-10-27. Six items, all DONE (two halves routed: hover2's tool, cc's Tier A review).
+STATUS: API + TOOLS + VERCEL CONFIG. ONE LIVE WRITE PAIR ON THE DEMO LICENCE. NO SQL RUN. Deployed by push; headers verified live.
+CHANGED: api/sd-data.js, api/_lib/jsonb-text-bytes.js, 2 api tests, vercel.json, tests/vercel_frame_headers.js, 8 tools/*.py, dora probe, manifest, register, tier-a.
+LANDED: d8f47f7ab, bb1d93a88, 21fc838ab, ca5a88be5, 8e35dce1f, c2c39263d, 0c46dc3b9 on origin/main, no force, no skip. Claim released.
+ITEM 1 -- H1 #1613/#1614 already closed by b28 7e43c9dab; verified in code + b28 15/0. Nothing to fix.
+ITEM 2 -- H2 seq1127: rf_jobs write-response assignee + ok pinned; all 5 surviving mutants now killed.
+ITEM 3 -- live staff write on a 96KB photo appointment: create 200, decline 200 (b28 cap live). Frame headers live on 6/6 pages.
+ITEM 4 -- H2 seq1109: per-resource caps measure jsonb text, as the DB constraint does; 6/6 + ablation.
+ITEM 5 -- hover2's tool_provenance_status: SKIP hides 3 files incl. itself; no content hash -> routed (run denied). Sweep fixed
+  8 tools/ miscounts; worst: dora_metrics CFR 11.7% printed vs 6.4% true (numerator outside its denominator).
+DECISION-NEEDED: Michael -- sql/2026-10-27-cody-b52-dnt-residue-removal.sql (step 1 first); demo has 0 publicly bookable procedures.
+  cc -- Tier A d8f47f7ab. hover2 -- provenance denominator (status-registry note). Michael -- 64KB default: compact or jsonb measure?
+UNVERIFIED: the jsonb measure vs a real database (modelled from Postgres output rules, as H2's finding was).
+PRE-EXISTING: tests/run_condition_coverage_probe.py 4b red, identical with my change stashed.
+NEXT: none for cody until dispatched.
+EVIDENCE-path: SAIRN-handoff-cody-b52.md, SAIRN-report-cody-b52.txt, docs/live-residue/2026-10-27-cody-b52-dnt-staff-write.json
+CONTEXT 64.2% of 1,000,000 -- 642,436 tokens, measured.
