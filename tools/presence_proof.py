@@ -45,7 +45,41 @@ CHECKLIST = (
                'unflagged is a FAIL, not "not applicable".'),
     ('SCOPE', 'Say what is REAL (driven as shipped) and what is a FIXTURE or STUB, in the '
               'tool\'s header and in its output.'),
+    ('ROUTE', 'Name the SITE (repo path, and line) each stress scenario exercises. A FAIL is '
+              'ROUTED to that file\'s owner by docs/sairn-path-manifest.json and is NEVER '
+              'self-registered: the owner files the register record against their FIX '
+              'commit. Only a finding in a file the tool\'s own session owns may be '
+              'registered by it (route()/may_self_register() below). Michael, cc b57, '
+              'after cc filed four SAIRNlaw product records itself in b55.'),
 )
+
+MANIFEST = 'docs/sairn-path-manifest.json'
+
+
+def _owners(repo):
+    import json as _json
+    import os as _os
+    with open(_os.path.join(repo, MANIFEST), encoding='utf-8') as fh:
+        pops = _json.load(fh)['populations']
+    return {who: v.get('owns', []) for who, v in pops.items()}
+
+
+def route(site, repo):
+    """The owning session for a repo path ('api/sd-data.js:3814' -> 'hank'), or
+    None when no population owns it. Read from the manifest, never from a list
+    kept here."""
+    import fnmatch
+    path = str(site or '').split(':')[0].replace('\\', '/')
+    for who, pats in _owners(repo).items():
+        for p in pats:
+            if (p.endswith('/') and path.startswith(p)) or ('/' not in p and fnmatch.fnmatch(path, p)):
+                return who
+    return None
+
+
+def may_self_register(site, session, repo):
+    """True only when `session` owns the file the finding is in."""
+    return route(site, repo) == session
 
 
 class Scenario(object):
@@ -56,10 +90,12 @@ class Scenario(object):
     detect(obs)  -- returns True when the app SHOWS `claim`, read per DETECTOR.
     """
 
-    def __init__(self, sid, claim, truth, fail_means, detect, expect_claim=False, unseen=None):
+    def __init__(self, sid, claim, truth, fail_means, detect, expect_claim=False, unseen=None,
+                 site=None):
         self.sid, self.claim, self.truth = sid, claim, truth
         self.fail_means, self.detect = fail_means, detect
         self.expect_claim, self.unseen = expect_claim, unseen
+        self.site = site
 
 
 def plan_problems(scenarios, ablation, scope):
@@ -80,6 +116,8 @@ def plan_problems(scenarios, ablation, scope):
             bad.append('%s: FAIL MEANS is an exit code, not what the user sees' % s.sid)
         if not s.expect_claim and s.claim and s.claim.lower() not in fm:
             bad.append('%s: FAIL MEANS does not name the claim %r' % (s.sid, s.claim))
+        if not s.expect_claim and not str(s.site or '').strip():
+            bad.append('%s: no SITE, so a FAIL could not be ROUTED to an owner' % s.sid)
     if not any(s.expect_claim for s in scenarios):
         bad.append('no CONTROL: no scenario where the claim is true and must be shown')
     if not str(ablation or '').strip():
@@ -114,9 +152,11 @@ def verdict(scenario, obs):
 
 
 def run_fixtures():
+    import os as _os
+    repo = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
     ok = Scenario('ok', 'Paid', 'it is paid', '', lambda o: True, expect_claim=True)
     st = Scenario('s', 'Paid', '$1 of $5000 received', 'the app shows Paid while $1 of $5000 is received',
-                  lambda o: o.get('status') == 'Paid')
+                  lambda o: o.get('status') == 'Paid', site='stonedesk.html:1')
     cases = [
         (plan_problems([ok, st], 'x', 'y') == [], 'a full plan is accepted'),
         (any('CONTROL' in b for b in plan_problems([st], 'x', 'y')), 'a plan with no control is refused'),
@@ -133,8 +173,16 @@ def run_fixtures():
         (verdict(Scenario('c', 'Paid', 't', '', lambda o: o.get('status') == 'Paid', True),
                  {'status': 'x'})[0] == 'CONTROL-FAIL', 'a control not shown is CONTROL-FAIL'),
         (any('TRUTH' in b for b in plan_problems(
-            [ok, Scenario('t', 'Paid', '', 'shows Paid', lambda o: 0)], 'x', 'y')),
+            [ok, Scenario('t', 'Paid', '', 'shows Paid', lambda o: 0, site='x.html')], 'x', 'y')),
          'a stress input with no TRUTH is refused'),
+        (any('ROUTED' in b for b in plan_problems(
+            [ok, Scenario('r', 'Paid', 't', 'shows Paid', lambda o: 0)], 'x', 'y')),
+         'a stress input with no SITE is refused -- its FAIL could not be routed'),
+        (route('api/sd-data.js:3814', repo) == 'hank', 'an api/ site routes to hank'),
+        (route('stonedesk.html:28004', repo) == 'fourth', 'a root .html site routes to fourth'),
+        (route('tests/x.js', repo) == 'cody', 'a tests/ site routes to cody'),
+        (not may_self_register('api/sd-data.js:1', 'cc', repo), 'cc may NOT self-register an api/ finding'),
+        (may_self_register('tools/x.py:1', 'cc', repo), '...and may register a tools/ finding'),
     ]
     return [why for good, why in cases if not good], len(cases)
 

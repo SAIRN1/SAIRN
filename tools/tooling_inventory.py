@@ -129,15 +129,23 @@ PURPOSES = {
         'every scenario names the CLAIM the user sees, the TRUTH, an operational '
         'FAIL MEANS that names the claim (never an exit code) and a DETECTOR, and '
         'the plan has a CONTROL, an ABLATION and a SCOPE statement. verdict() '
-        'counts a crash as FAIL, never PASS.'),
+        'counts a crash as FAIL, never PASS. ROUTE (b57): every stress scenario '
+        'names its SITE; route() reads the owner from docs/sairn-path-manifest.json, '
+        'and a finding outside the tool session own files is ROUTED to that '
+        'owner and NEVER self-registered (may_self_register()).'),
     'stonedesk_presence_stress.py': ('PROBE',
         'a StoneDesk money / legal / compliance status shown while the fact '
         'behind it is false: sd_approvals stored as Signed with no or an '
         'undecodable signature, or with a client-sent deposit_status paid; a '
         'subcontractor COMPLIANT with no licence and W-9, or no insurance; a green '
         'safety score for an empty record or undated 2019 training; OSHA silica '
-        'tiles that are markup literals. Drives the real handler and functions; '
-        'gated by presence_proof.py; --ablate proves the $0 refusal arm can fail.'),
+        'tiles that are markup literals; and (b57) esigApprove approving with no '
+        'signature pad, one stray pixel, a stale lastCalc or a same-name customer; '
+        'an invoice Paid on an overpayment, an unsaved mark-paid or a deposit-request '
+        'invoice; a margin from a constant or a blank slab cost, or a KPI crash; tax '
+        'YTD across years, an 825% rate, a literal 1099 count. Drives the real '
+        'handler and functions; gated by presence_proof.py; prints a ROUTING table '
+        'by owner and registers nothing; --ablate proves the $0 refusal arm can fail.'),
     'sairnlaw_citator_stress.py': ('PROBE',
         'a fabricated or altered case citation that SAIRNlaw presents as real, or '
         'never shows: drives the real api/legal-citator.js verify action and the '
