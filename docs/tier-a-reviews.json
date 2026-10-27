@@ -8669,6 +8669,28 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-10-27T14:26:58Z",
+      "opened_at_sha": "c6cea225000ca8a2fdcaa8a4d6c765c7b94fd068",
+      "opened_at_sha_basis": "head",
+      "opened_at_sha_extra_files": null,
+      "resources": [
+        "sd_approvals"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tools/stonedesk_presence_stress.py"
+      ],
+      "what": "cc b56: tools/stonedesk_presence_stress.py (new PROBE, read-only) drives the real api/sd-data.js sd_approvals write and the real subcontractor compliance / safety functions; no product code changed. Review asks: are the 12 scenarios and their FAIL MEANS fair statements of a false Signed / paid / COMPLIANT / green, and are T1a/T1b/T1d, T2a/T2b, T3a/T3b and T4a real defects rather than harness artefacts.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-10-27T14:26:58Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

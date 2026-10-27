@@ -123,6 +123,21 @@ PURPOSES = {
         'a pass. It CANNOT prove Google acknowledged the bytes -- the mount is '
         'a sync directory -- and prints the board\'s Drive file id so a chat '
         'turn can close that through the API instead.'),
+    'presence_proof.py': ('CHECKER',
+        'a stress test that could pass a false positive silently: the PRESENCE '
+        'PASSED AS PROOF checklist as code. A plan is refused (exit 2) unless '
+        'every scenario names the CLAIM the user sees, the TRUTH, an operational '
+        'FAIL MEANS that names the claim (never an exit code) and a DETECTOR, and '
+        'the plan has a CONTROL, an ABLATION and a SCOPE statement. verdict() '
+        'counts a crash as FAIL, never PASS.'),
+    'stonedesk_presence_stress.py': ('PROBE',
+        'a StoneDesk money / legal / compliance status shown while the fact '
+        'behind it is false: sd_approvals stored as Signed with no or an '
+        'undecodable signature, or with a client-sent deposit_status paid; a '
+        'subcontractor COMPLIANT with no licence and W-9, or no insurance; a green '
+        'safety score for an empty record or undated 2019 training; OSHA silica '
+        'tiles that are markup literals. Drives the real handler and functions; '
+        'gated by presence_proof.py; --ablate proves the $0 refusal arm can fail.'),
     'sairnlaw_citator_stress.py': ('PROBE',
         'a fabricated or altered case citation that SAIRNlaw presents as real, or '
         'never shows: drives the real api/legal-citator.js verify action and the '
