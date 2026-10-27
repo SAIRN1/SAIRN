@@ -5116,6 +5116,19 @@
       "source": "status-registry",
       "why": "same app: sairnlegacy",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-27T14:16:31Z",
+      "my_subject": "cc",
+      "my_task": "b56 presence-proof checklist and stonedesk read-only stress tools in tools/",
+      "other_session": "fourth",
+      "other_subject": "stonedesk",
+      "other_task": "vendor qty emoji modal nvda",
+      "other_claimed_at": "2026-10-27T14:14:19Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same app: stonedesk",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
 }
