@@ -17,3 +17,16 @@ Michael ruled in b85 that #1705 and #1698 are audit tooling and are this role's 
 ## Check before applying
 
 `git apply --check <patch>` passed against HEAD `d790e95d2` plus the b85 working tree. Re-run it first: both files are edited by others.
+
+## b86: the exact text of the four entries (`b86-allowed-entries-scope-gate-and-audit.patch`)
+
+**Where it goes, because the b86 dispatch said `.claude/settings.json`:** `ALLOWED` is not in `settings.json`. That file holds permission rules only (its deny list even names `Edit(./.claude/settings.json)`). The scope is defined in `tools/hover_auditor_scope_gate.py` (the `ALLOWED` tuple and `AuditorScope.SHARED`) and is duplicated, on purpose, in `AuditorScope.SHARED` of `tools/hover_separation_audit.py`; the gate's own comment says an entry added to only one of the two makes the hook and the history audit disagree. The patch edits exactly those two places: four new constants in each file, `SHARED` extended by the four paths in each, and four new `ALLOWED` tuples in the gate (the scope gate and the separation audit carry the 2026-10-08 triad sentence that is already in `SKILL.md`; the routing-gap check and its probe carry a verbatim fragment of the b85 paragraph, checked against `SKILL.md`). Apply with `git apply tools/...` from the repo root after `git apply --check`; this role does not apply it.
+
+Measured on scratch copies, nothing applied to the real files:
+- `violations()` today refuses all four paths and refuses `README.md` and `tools/defect_register.py`; patched, it allows the four and still refuses those two.
+- The gate's and the audit's `AuditorScope(session).paths` agree for `hover`, `hover2` and `hover3` after the patch.
+- The history audit (`tools/hover_separation_audit.py --json`) over the real repo gives a byte-identical document before and after (2 violations, both pre-existing self-log entries; 0 new), so the 23 past commits that touched these four paths do not become violations.
+- `tests/run_hover_separation_probe.py` in a scratch git repo: 152 passed, 2 failed on BOTH the unpatched and the patched copies (the two arms, F9 and H14, need real history to be non-empty), so the five-session agreement arms are unchanged by the patch.
+- The patch alone does not exclude cc or hank from editing these files: `docs/sairn-path-manifest.json` `auditor_paths` lists only the skill directory and two docs directories. Whether to add the four paths there is a separate decision for Michael; I have not drafted it.
+
+`tools/hover_separation_audit.py` itself is on the list because Michael named it; none of the three b85 patches edits it, so its entry is only needed for a future edit.
