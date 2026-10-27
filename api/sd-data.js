@@ -46,6 +46,7 @@ const mechCred = require('./_lib/mech-credentials');
 const mechAssets = require('./_lib/mech-assets');
 const rfSupplier = require('./_lib/roofing-supplier-match');
 const dntLocation = require('./_lib/dnt-location');
+const { jsonbTextBytes } = require('./_lib/jsonb-text-bytes');
 const dntRollup = require('./_lib/dnt-rollup');
 const lawTrustReconcile = require('./_lib/law-trust-reconcile');
 const lawTimeEntry = require('./_lib/law-timeentry');
@@ -1058,7 +1059,16 @@ module.exports = async (req, res) => {
   // for the measurement and why this is fail-closed on the verb rather than
   // gated on a classification being right.
   if (action !== 'read') {
-    const payloadBytes = Buffer.byteLength(JSON.stringify(payload), 'utf8');
+    // A PER-RESOURCE CAP IS THE TABLE'S OWN CONSTRAINT, so it is measured the
+    // way the constraint measures: octet_length(data::text) on jsonb, after
+    // the dental location stamp (cody b52, hover H2 seq1109). Compact JSON
+    // undercounts jsonb text by a space per ':' and ',', which let a record
+    // past this gate that the database then refused with an unclassified
+    // error. The uniform 64KB default is an API policy, not a constraint, and
+    // keeps its compact measure.
+    const payloadBytes = (PAYLOAD_CAP_BY_RESOURCE[resource] !== undefined)
+      ? jsonbTextBytes(resource.indexOf('dnt_') === 0 ? dntLocation.stampLocation(payload) : payload)
+      : Buffer.byteLength(JSON.stringify(payload), 'utf8');
     // PER (RESOURCE, ACTION), falling back to per-resource and then to 64KB --
     // see payloadCapFor() and PAYLOAD_CAP_BY_ACTION above.
     const payloadCap = payloadCapFor(resource, action);
