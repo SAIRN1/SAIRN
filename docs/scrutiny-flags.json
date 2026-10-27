@@ -12295,6 +12295,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": ".githooks/pre-push",
+   "class": "CI / hook configuration",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "db28b36981c2c058e0ee7b0f18218d0449735948",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/bld_draws_role_arms.test.js",
    "class": "test file",
    "level": "WEAKENING",

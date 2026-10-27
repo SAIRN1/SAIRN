@@ -1,0 +1,23 @@
+DIGEST cc b59
+STATUS: items 1,2,4,5,6 closed; item 3 (root cause) NOT established. Landed 69d381cd, 0/0; no --force, NO OVERRIDE.
+ITEM 1: f413c5ea is an EXACT MATCH to H1's b86 patch. The tracked blob 6a464c6b applied to 3e8a5215^ gives blob-identical scope gate (5ab4c392) and separation audit (b9f36af4).
+  Only those 2 files are touched; nothing extra. The b58 DECISION-NEEDED is resolved.
+ITEM 2: already on origin as 3e8a5215 -- pushed in b58 within cc's range, before this verification. H1 can proceed.
+ITEM 3: a replay of cc's 11:03 command shape in a worktree was KILLED for low memory mid-gate (not restarted).
+  Until then the gate kept 307,268 bytes and no cd/git file appeared. The 11:02 patch-apply command was never captured.
+  Also found and restored: core.bare=true in the shared .git/config (a known class, bare_run_write_check.py).
+ITEM 4: .githooks/pre-push now refuses a push if any gate script is empty or differs from its HEAD blob (fail closed).
+  Arms: clean 0, emptied 1, edited 1.
+ITEM 5: tools/logged_exec.py logs argv before running, refuses shell operators (no shell), and exits 3 if a gate or hook changed. Fixtures 8/8.
+ITEM 6: pushed via push_retry --loop, landed 0/0.
+DECISION-NEEDED: Michael -- please paste the command line (and shell) used to apply H1's b86 patch in SAIRN-cc at 11:02, so the truncation can be replayed.
+CHANGED: .githooks/pre-push, tools/logged_exec.py (new), tools/tooling_inventory.py, docs/TOOLING-INVENTORY.md.
+SQL: none.
+EVIDENCE-path: SAIRN-handoff-cc-b59.md, SAIRN-report-cc-b59.txt, scratchpad\b58-evidence\{cd,git}
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\87a27b9f-55e9-45e8-b017-01ed1febac1a.jsonl
+UNVERIFIED: the truncation root cause; which probe set core.bare=true.
+ROUTED: none new. Carried -- hank/fourth b56-b58 findings.
+NEXT: cc -- replay Michael's command via logged_exec.py; fix the core.bare probe (restore in finally).
+CONTEXT 81.2% of 1,000,000 -- 811,601 tokens, measured.
+SHA256 c53f6021c600754863fe2a55ec54a3487fab2a9ca8dcd66529c225c78f0ce535
+END-OF-REPORT

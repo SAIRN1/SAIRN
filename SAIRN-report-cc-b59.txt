@@ -1,0 +1,51 @@
+REPORT cc b59 -- f413c5ea verification, gate truncation follow-up, gate self-integrity, logged_exec
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-27
+RANGE     69d381cd (pre-push integrity + logged_exec), ca726e23 (handoff), this report and digest.
+          Landed 0 0. No product code changed. No --force, NO OVERRIDE.
+
+== 1. f413c5ea vs H1 b86 spec -- EXACT MATCH ==
+Spec: the tracked patch blob 6a464c6b (H1 b86 pending-patches), described in SAIRN-handoff-H1-b86.md section 1.
+Method: git cat-file -p 6a464c6b | git apply, on a throwaway worktree at 3e8a5215^.
+Result:
+  tools/hover_auditor_scope_gate.py -- 5ab4c392 = commit, MATCH
+  tools/hover_separation_audit.py   -- b9f36af4 = commit, MATCH
+The commit touches only those 2 files (+50/-2). Nothing extra.
+(A first check on a retyped copy was discarded: it had lost 2 single-space context lines.)
+
+== 2. On origin ==
+Already there as 3e8a5215 -- pushed in b58 inside cc's range, BEFORE this verification. Stated, not hidden.
+
+== 3. Root cause -- NOT ESTABLISHED ==
+Replay of cc's 11:03 command shape (dry-run push to a throwaway ref, worktree): KILLED by the system for low memory during the gate run. Not restarted.
+Before the kill: the gate stayed 307,268 bytes and no cd/git file was created. Hypothesis 2 (a hook mis-parsing cc's command) is weakened, not eliminated.
+The 11:02-11:04 patch-apply command was another actor's and was never captured.
+Next: Michael provides that command line + the shell; cc replays it via logged_exec.py.
+Also: after the killed replay, core.bare=true was found in the shared .git/config (mtime 12:04:58).
+  Restored: git config core.bare false. A KNOWN class (tools/bare_run_write_check.py); likely a killed sandbox probe on a worktree, whose config is shared. Open.
+
+== 4. Fix -- gate self-integrity in .githooks/pre-push ==
+Each gate script must be non-empty AND hash-equal to its HEAD blob before any gate runs: else REFUSED, exit 1, both hashes printed.
+Fails closed when the blob is absent or a hash cannot be computed.
+Arms in a worktree: clean rc 0; emptied rc 1; edited rc 1. A real push (69d381cd) has passed through it.
+
+== 5. Methodology -- tools/logged_exec.py ==
+Logs argv/cwd/time to .git/sairn-exec-log.jsonl BEFORE running.
+Refuses shell-operator args (> >> 2> | && ; <), because it runs without a shell. Exits 3 if a gate or hook file changed.
+Fixtures 8/8. A '>' argument is refused (rc 2) and no file is created.
+Rule: every patch-apply or hook-touching command runs through it.
+
+== OPEN ==
+Michael: the 11:02 patch-apply command line.
+cc: core.bare recurrence (find the probe; restore in finally / a non-shared repo); re-run replay59.sh when memory allows.
+Carried: hank/fourth b56-b58 findings; H1 b85 patches can now proceed.
+
+== TRANSCRIPT ==
+C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\87a27b9f-55e9-45e8-b017-01ed1febac1a.jsonl
+
+== CHANGED ==
+.githooks/pre-push, tools/logged_exec.py (new), tools/tooling_inventory.py, docs/TOOLING-INVENTORY.md, the deliverables.
+
+SHA256 b1513d5140fb34b634d2fdeaae808004a73407ee5b0d7560138396eab02af1ba
+END-OF-REPORT
