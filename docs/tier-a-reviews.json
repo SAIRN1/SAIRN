@@ -8714,6 +8714,28 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-27T15:03:36Z",
+      "opened_at_sha": "a46ed992ec385593bf43fbc8af7726e720b7d8f8",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 5,
+      "resources": [
+        "dnt_patients"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/b52-cap-jsonb-measure.test.js"
+      ],
+      "what": "cody b53: the 64KB default payload cap now measures jsonb text (octet_length(data::text)) instead of compact JSON at api/sd-data.js (every resource), api/sd-sub-data.js, api/_lib/sd-store.js and api/bridge.js. A record at most ~2x its compact size in separators can now be refused at the gate where the table would have refused it. Review: no legitimate client payload near 64KB compact is newly refused in a way the table would have accepted.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-27T15:03:36Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
