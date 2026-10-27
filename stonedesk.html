@@ -1724,7 +1724,7 @@ body.is-exec .exec-only-block{display:block}
   justify-content:center;font-size:10px;font-weight:900;color:#fff;margin:0 auto 5px;
 }
 .sairn-suite-tile-name { font-size:11px;font-weight:700;color:#1E293B; }
-.sairn-suite-tile-desc { font-size:10px;color:#94A3B8;margin-top:2px; }
+.sairn-suite-tile-desc { font-size:10px;color:#64748B;margin-top:2px; } /* b59: was #94A3B8, 2.56:1 on white */
 .sairn-suite-btns { display:flex;gap:8px;flex-wrap:wrap; }
 .sairn-suite-btn {
   padding:7px 13px;background:var(--brand2);color:#fff;border:none;
@@ -19853,11 +19853,11 @@ if(typeof switchCamTab === 'undefined') window.switchCamTab = function(t){  };
   <div class="sairn-suite-tile-name">SAIRNbiz</div>
   <div class="sairn-suite-tile-desc">HR & Payroll</div>
 </div><div class="sairn-suite-tile" onclick="window.open('https://sairn.vercel.app/sairnbuild','_blank')">
-  <div class="sairn-suite-icon" style="background:#F59E0B">SB</div>
+  <div class="sairn-suite-icon" style="background:#B45309">SB</div>
   <div class="sairn-suite-tile-name">SAIRNbuild</div>
   <div class="sairn-suite-tile-desc">GC Projects</div>
 </div><div class="sairn-suite-tile" onclick="window.open('https://sairn.vercel.app/sairnscape','_blank')">
-  <div class="sairn-suite-icon" style="background:#22C55E">SS</div>
+  <div class="sairn-suite-icon" style="background:#15803D">SS</div>
   <div class="sairn-suite-tile-name">SAIRNscape</div>
   <div class="sairn-suite-tile-desc">Exterior</div>
 </div><div class="sairn-suite-tile" onclick="window.open('https://sairn.vercel.app/sairnlaw','_blank')">
@@ -19865,7 +19865,7 @@ if(typeof switchCamTab === 'undefined') window.switchCamTab = function(t){  };
   <div class="sairn-suite-tile-name">SAIRNlaw</div>
   <div class="sairn-suite-tile-desc">Legal</div>
 </div><div class="sairn-suite-tile" onclick="window.open('https://sairn.vercel.app/sairndesign','_blank')">
-  <div class="sairn-suite-icon" style="background:#6366F1">SD</div>
+  <div class="sairn-suite-icon" style="background:#4F46E5">SD</div>
   <div class="sairn-suite-tile-name">SAIRNdesign</div>
   <div class="sairn-suite-tile-desc">Interior Design</div>
 </div><div class="sairn-suite-tile" onclick="window.open('https://sairn.vercel.app/sairnvet','_blank')">
@@ -19873,7 +19873,7 @@ if(typeof switchCamTab === 'undefined') window.switchCamTab = function(t){  };
   <div class="sairn-suite-tile-name">SAIRNvet</div>
   <div class="sairn-suite-tile-desc">Vet Clinics</div>
 </div><div class="sairn-suite-tile" onclick="window.open('https://sairn.vercel.app/sairncare','_blank')">
-  <div class="sairn-suite-icon" style="background:#0D9488">SC</div>
+  <div class="sairn-suite-icon" style="background:#0F766E">SC</div>
   <div class="sairn-suite-tile-name">SAIRNcare</div>
   <div class="sairn-suite-tile-desc">Home Care</div>
 </div><div class="sairn-suite-tile" onclick="window.open('https://sairn.vercel.app/sairnlegacy','_blank')">
@@ -20958,7 +20958,7 @@ styleEl.textContent =
   '.sdm-file-name{font-size:14px;font-weight:600;color:#F0F0FF}' +
   '.sdm-file-size{font-size:11px;color:rgba(240,240,255,0.45)}' +
   '.sdm-prompts{margin-bottom:20px}' +
-  '.sdm-prompts-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(240,240,255,0.4);margin-bottom:10px}' +
+  '.sdm-prompts-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(240,240,255,0.65);margin-bottom:10px}' +
   '.sdm-prompt-chip{display:inline-flex;align-items:center;padding:7px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:100px;font-size:12px;color:rgba(240,240,255,0.7);cursor:pointer;margin:0 6px 8px 0;transition:all .15s}' +
   '.sdm-prompt-chip:hover{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.2);color:#F0F0FF}' +
   '.sdm-prompt-chip.selected{background:rgba(' + hexToRgb(cfg.color) + ',0.12);border-color:rgba(' + hexToRgb(cfg.color) + ',0.35);color:' + cfg.color + '}' +
@@ -21021,7 +21021,7 @@ modal.innerHTML =
       '<div style="font-size:13px;color:rgba(240,240,255,0.5);margin-top:12px">Claude is reading your document...</div>' +
     '</div>' +
 
-    '<button class="sdm-analyze-btn" id="sdm-analyze-btn" onclick="analyzeDocument()">🧠 Analyze This Document →</button>' +
+    '<button aria-disabled="true" class="sdm-analyze-btn" id="sdm-analyze-btn" onclick="analyzeDocument()">🧠 Analyze This Document →</button>' +
     '<div class="sdm-disclaimer">Your document is sent directly to Claude AI for analysis. It is not stored on SAIRN servers. Analysis is AI-assisted guidance — always consult qualified professionals for important decisions.</div>' +
   '</div>';
 
@@ -21142,6 +21142,22 @@ if (customQ) {
 }
 
 
+
+// b59: THE DOCUMENT MODAL'S OWN updateAnalyzeBtn, restored. StoneDesk's copy of
+// this component never carried it (the archived original does). The camera
+// modal's updateAnalyzeBtn is private to ITS IIFE, so every call above threw a
+// ReferenceError (inside a FileReader onload and three handlers -- console
+// only), and #sdm-analyze-btn never became ready: dimmed and unclickable
+// (pointer-events:none) whatever was chosen. aria-disabled tells a screen
+// reader what the dimming tells the eye.
+function updateAnalyzeBtn() {
+  var btn = document.getElementById('sdm-analyze-btn');
+  if (!btn) return;
+  var customQEl = document.getElementById('sdm-custom-q');
+  var ok = !!_docBase64 && (!!_selectedPrompt || !!(customQEl && customQEl.value.trim().length > 0));
+  btn.classList.toggle('ready', ok);
+  btn.setAttribute('aria-disabled', ok ? 'false' : 'true');
+}
 
 // == ANALYZE ===================================================
 window.analyzeDocument = async function() {
@@ -22664,7 +22680,7 @@ st.textContent =
   '.scm-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}' +
   '.scm-col{display:flex;flex-direction:column;gap:10px}' +
   '.scm-col-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px}' +
-  '.scm-field label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:rgba(240,240,255,0.4);display:block;margin-bottom:4px}' +
+  '.scm-field label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:rgba(240,240,255,0.65);display:block;margin-bottom:4px}' +
   '.scm-field input,.scm-field textarea{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F0F0FF;font-size:13px;font-family:Outfit,sans-serif;outline:none;box-sizing:border-box;line-height:1.5}' +
   '.scm-field textarea{resize:vertical;min-height:80px}' +
   '.scm-compare-btn{width:100%;padding:13px;border-none;border-radius:10px;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;letter-spacing:.3px;transition:opacity .15s}' +
@@ -22683,7 +22699,7 @@ modal.innerHTML =
   '</div>' +
   '<div class="scm-body">' +
   '<div class="scm-grid">' +
-  '<div class="scm-col"><div class="scm-col-label" style="color:' + APP_COLOR + '">' + APP_LABELS[0] + '</div>' +
+  '<div class="scm-col"><div class="scm-col-label" style="color:#93B4E6">' + APP_LABELS[0] + '</div>' +
   '<div class="scm-field"><label>Description</label><textarea id="scm-a-desc" placeholder="Describe option A in detail..."></textarea></div>' +
   '<div class="scm-field"><label>Key number or detail</label><input type="text" id="scm-a-num" placeholder="e.g. $1,800/mo, 15-year term, 6.5%..."></div>' +
   '<div class="scm-field"><label>Pros (optional)</label><input type="text" id="scm-a-pro" placeholder="What you like about it..."></div>' +
@@ -24919,13 +24935,13 @@ modal.innerHTML =
   '<img id="scam-upload-preview" alt="Uploaded image" style="max-width:100%;border-radius:12px;display:none;margin-bottom:14px;border:2px solid ' + APP_COLOR + '" loading="lazy">' +
   '</div>' +
   '<div style="width:100%;max-width:480px">' +
-  '<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:rgba(240,240,255,0.35);margin-bottom:8px">What do you want to know?</div>' +
+  '<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:rgba(240,240,255,0.65);margin-bottom:8px">What do you want to know?</div>' +
   '<div class="scam-prompts" id="scam-prompts">' +
   cfg.prompts.map(function(p,i){ return '<span class="scam-chip" onclick="selectCamPrompt(this,'+i+')">'+p+'</span>'; }).join('') +
   '</div>' +
   '<input class="scam-custom" id="scam-custom-q" placeholder="Or type your own question...">' +
-  '<button class="scam-analyze" id="scam-analyze-btn" onclick="analyzeImage()">🧠 Claude — Analyze This →</button>' +
-  '<div style="font-size:11px;color:rgba(240,240,255,0.25);text-align:center;margin-top:10px;line-height:1.6">Images are sent directly to Claude AI · Not stored on SAIRN servers</div>' +
+  '<button aria-disabled="true" class="scam-analyze" id="scam-analyze-btn" onclick="analyzeImage()">🧠 Claude — Analyze This →</button>' +
+  '<div style="font-size:11px;color:rgba(240,240,255,0.65);text-align:center;margin-top:10px;line-height:1.6">Images are sent directly to Claude AI · Not stored on SAIRN servers</div>' +
   '</div>' +
   '</div>';
 document.body.appendChild(modal);
@@ -25046,6 +25062,7 @@ function updateAnalyzeBtn() {
   var hasImage = !!_capturedB64;
   var hasQ     = !!_selectedQ || (cq && cq.value.trim().length > 0);
   btn.classList.toggle('ready', hasImage && hasQ);
+  btn.setAttribute('aria-disabled', (hasImage && hasQ) ? 'false' : 'true'); // b59: the dimming, said to a screen reader
 }
 
 window.analyzeImage = async function() {
@@ -25053,7 +25070,7 @@ window.analyzeImage = async function() {
   var cq = document.getElementById('scam-custom-q');
   var question = _selectedQ || (cq && cq.value.trim()) || 'Please analyze this image.';
   var btn = document.getElementById('scam-analyze-btn');
-  if (btn) { btn.textContent = '⚙️ Analyzing...'; btn.classList.remove('ready'); }
+  if (btn) { btn.textContent = '⚙️ Analyzing...'; btn.classList.remove('ready'); btn.setAttribute('aria-disabled', 'true'); }
 
   try {
     var res = await fetch('https://sairn.vercel.app/api/claude', {
@@ -25088,7 +25105,7 @@ window.analyzeImage = async function() {
     var chatArea = document.getElementById('chatArea') || document.getElementById('messages');
     if (chatArea) chatArea.scrollTop = chatArea.scrollHeight;
   } catch(e) {
-    if (btn) { btn.textContent = '🧠 Claude — Analyze This →'; btn.classList.add('ready'); }
+    if (btn) { btn.textContent = '🧠 Claude — Analyze This →'; btn.classList.add('ready'); btn.setAttribute('aria-disabled', 'false'); }
     showToast('Analysis failed — please try again.');
   }
 };
@@ -25935,14 +25952,14 @@ function custOpenDetail(id) {
   if(matRisk&&matRisk.level==='red')score-=20;
   else if(matRisk&&matRisk.level==='yellow')score-=10;
   score=Math.max(0,score);
-  var healthColor=score>=80?'#16a34a':score>=50?'#ca8a04':'#dc2626';
+  var healthColor=score>=80?'#15803d':score>=50?'#a16207':'#b91c1c'; // b59: each reaches 4.5:1 on white
   var healthLabel=score>=80?'Healthy':score>=50?'Needs Attention':'At Risk';
   var statusLabels={quoted:'Awaiting Approval',approved:'Approved',templated:'Templated',fabricating:'In Fabrication',scheduled:'Scheduled',complete:'Completed'};
   var timeline=(c.timeline||[]).slice().reverse();
   document.getElementById('cdm-body').innerHTML=
     '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px">'+
       '<div class="kpi"><div class="kpi-val" style="color:var(--brand2);font-size:16px">$'+(c.quote||0).toLocaleString()+'</div><div class="kpi-label">Quote Value</div></div>'+
-      '<div class="kpi"><div class="kpi-val" style="color:#16a34a;font-size:16px">$'+totalPaid.toLocaleString()+'</div><div class="kpi-label">Total Paid</div></div>'+
+      '<div class="kpi"><div class="kpi-val" style="color:#15803d;font-size:16px">$'+totalPaid.toLocaleString()+'</div><div class="kpi-label">Total Paid</div></div>'+
       '<div class="kpi"><div class="kpi-val" style="color:#dc2626;font-size:16px">$'+totalOwed.toLocaleString()+'</div><div class="kpi-label">Balance Owed</div></div>'+
       '<div class="kpi"><div class="kpi-val" style="color:'+healthColor+';font-size:16px">'+score+'</div><div class="kpi-label">Health: '+healthLabel+'</div></div>'+
     '</div>'+
@@ -25977,7 +25994,7 @@ function custOpenDetail(id) {
     '</div>'+
     '<div style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:16px">'+
       '<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Job Status</div>'+
-      '<select onchange="custUpdateStatus(\''+escAttrJs(id)+'\',this.value)" style="width:100%;background:var(--bg);border:1.5px solid var(--a);border-radius:8px;padding:10px 12px;font-size:14px;font-weight:700;color:var(--text);outline:none">'+
+      '<select aria-label="Job status" onchange="custUpdateStatus(\''+escAttrJs(id)+'\',this.value)" style="width:100%;background:var(--bg);border:1.5px solid var(--a);border-radius:8px;padding:10px 12px;font-size:14px;font-weight:700;color:var(--text);outline:none">'+
       ['quoted','approved','templated','fabricating','scheduled','complete'].map(function(s){return '<option value="'+escHtml(s)+'"'+(c.status===s?' selected':'')+'>'+escHtml(statusLabels[s])+'</option>';}).join('')+
       '</select>'+
     '</div>'+
@@ -27170,10 +27187,11 @@ function renderVendor(){
         '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+p.cat+' &middot; '+p.sku+'</div></div>'+
       '<span style="font-size:14px;font-weight:800;color:var(--a)">$' + p.price.toFixed(2)+'</span>'+
       '<button onclick="vendorCompare(\'' + escAttrJs(p.id) + '\',\'' + escAttrJs(_activeVendor) + '\')" style="padding:5px 10px;background:#F0FEF6;color:#15803D;border:1px solid #BBF7D0;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">&#129504; Compare</button>'+
-      '<input type="number" class="qty-input" id="vpqty-'+escHtml(p.id)+'" aria-label="Quantity of '+escHtml(p.name)+'" value="'+escHtml(cartQty)+'" min="0" onchange="cartUpdate(\'' + escAttrJs(_activeVendor) + '\',\'' + escAttrJs(p.id) + '\',this.value)">'+
+      '<input type="number" class="qty-input" id="vpqty-'+escHtml(p.id)+'" aria-label="Quantity of '+escHtml(p.name)+'" value="'+escHtml(String(cartQty))+'" min="0" onchange="cartUpdate(\'' + escAttrJs(_activeVendor) + '\',\'' + escAttrJs(p.id) + '\',this.value)">'+
       '<button onclick="cartAdd(\'' + escAttrJs(_activeVendor) + '\',\'' + escAttrJs(p.id) + '\',1)" style="padding:5px 10px;background:var(--a);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">Add</button>'+
     '</div>';
   }).join('');
+  if(typeof sdA11yPass==='function') sdA11yPass(document); // b59: name the rows drawn after navigation
 }
 
 function cartAdd(vKey,productId,qty){
@@ -27235,6 +27253,9 @@ function renderCart(){
   ).join('');
   var vcTotal=document.getElementById('vendor-cart-total');
   if(vcTotal) vcTotal.textContent='Total: $'+total.toFixed(2);
+  // b59: rows drawn AFTER a navigation (cart lines, their x buttons) are named
+  // now, not at the next sbNav -- sdA11yPass skips what it has already done.
+  if(typeof sdA11yPass==='function') sdA11yPass(document);
 }
 
 function vendorBuildAutoOrder(){
@@ -41074,7 +41095,7 @@ var SD_A11Y_EMOJI = /[\u{1F000}-\u{1FAFF}\u{2300}-\u{23FF}\u{2600}-\u{27BF}\u{2B
 var SD_A11Y_EMOJI_RUN = /((?:[\u{1F000}-\u{1FAFF}\u{2300}-\u{23FF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{1F3FB}-\u{1F3FF}]|️|‍)+)/u;
 // b58: the verb in a lone close-glyph button's own handler is its name. First match wins.
 var SD_A11Y_GLYPH_VERBS = [
-  [/cartUpdate\([^)]*,\s*0\)/, 'Remove from cart'], [/dismiss/i, 'Dismiss'], [/delete/i, 'Delete'],
+  [/cartUpdate\([^)]*,\s*0\)/, 'Remove from cart'], [/\.remove\(\)/, 'Close'], [/dismiss/i, 'Dismiss'], [/delete/i, 'Delete'],
   [/remove/i, 'Remove'], [/close|cancel|display\s*=\s*["']none/i, 'Close']
 ];
 var SD_A11Y_BUTTON_HANDLER = /^(shAsk|emailToggleChecklist|setTier|selTrade|showPanel|sdCommsTpl|sdSMSSetTpl|sdIntegQuickAdd|switchDimTab)\(|^document\.getElementById\('[^']+'\)\.click\(\)/;
@@ -41147,7 +41168,8 @@ function sdA11yPass(root) {
   // Controls only; prose and <option> text are untouched (aria-hidden does
   // nothing inside an option).
   root.querySelectorAll('button,a[href],[role=button],[role=tab],summary').forEach(function(c) {
-    if (c.getAttribute('data-sd-emoji')) return;
+    // No once-only skip here (b59): a control's text is often REFILLED after a pass (the vendor website link), so it
+    // is re-checked every pass; sdHideEmoji leaves text already inside an aria-hidden span alone.
     var text = c.textContent || '';
     // A lone close/remove glyph (✕ ✖ ×) names itself from the VERB in its own handler, so NVDA
     // says "Delete, button", not "multiplication x". No verb found -> left as it is.

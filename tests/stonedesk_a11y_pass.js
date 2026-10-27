@@ -180,8 +180,9 @@ console.log('3e. b58: emoji in CONTROLS -- per-control rule, never an unnamed co
   const worded = mk('\u{1F5D1}️ Delete'), titled = mk('✕', { title: 'Close' }), labelled = mk('\u{1F4CB}', { 'aria-label': 'Copy link' }), bare = mk('\u{1F5D1}️');
   const gl = (txt, onclick) => mk(txt, { onclick });
   const closeG = gl('✕', 'tmCloseDetailModal()'), delG = gl('×', "invDelete('x')"), cartG = gl('×', "cartUpdate('V','i',0);renderVendor()"),
-    dismissG = gl('✕', "event.stopPropagation();dismissAlert(3)"), hideG = gl('×', "document.getElementById('m').style.display='none'"), unknownG = gl('×', 'foo()');
-  const ctls = [worded, titled, labelled, bare, closeG, delG, cartG, dismissG, hideG, unknownG];
+    dismissG = gl('✕', "event.stopPropagation();dismissAlert(3)"), hideG = gl('×', "document.getElementById('m').style.display='none'"), unknownG = gl('×', 'foo()'),
+    noticeG = gl('✕', "document.getElementById('sairn-privacy-notice').remove()");
+  const ctls = [worded, titled, labelled, bare, closeG, delG, cartG, dismissG, hideG, unknownG, noticeG];
   const ctx = { getComputedStyle: () => ({ display: 'block' }),
     document: { readyState: 'complete', addEventListener() {}, getElementById: () => null, querySelector: () => null,
       createElement: (t) => El(t.toUpperCase()), createTextNode: (v) => ({ text: v }),
@@ -203,6 +204,7 @@ console.log('3e. b58: emoji in CONTROLS -- per-control rule, never an unnamed co
     nm(closeG) === 'Close' && nm(delG) === 'Delete' && nm(cartG) === 'Remove from cart' && nm(dismissG) === 'Dismiss' && nm(hideG) === 'Close',
     JSON.stringify([closeG, delG, cartG, dismissG, hideG].map(nm)));
   check('X6. no verb in the handler -> no invented name', !('aria-label' in unknownG.attrs));
+  check('X7. element.remove() takes a notice away -- that is Close, not Remove (b59 cart pass)', nm(noticeG) === 'Close', nm(noticeG));
 }
 
 console.log('3d. b58: the vendor quantity box still carries its quantity (hank b52 Tier A finding on 847e89943)');
@@ -213,13 +215,37 @@ console.log('3d. b58: the vendor quantity box still carries its quantity (hank b
   const i = html.indexOf(head);
   if (i < 0 || html.indexOf(head, i + 1) !== -1) { console.log('COULD NOT RUN: vendor qty template found ' + (i < 0 ? 0 : 'more than one') + ' time(s)'); process.exit(2); }
   const expr = html.slice(i, html.indexOf('">\'+', i) + 3);
-  const esc = (x) => String(x).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-  let out = '';
-  try { out = vm.runInNewContext(expr, { escHtml: esc, escAttrJs: (x) => String(x), p: { id: 'gmr001', name: 'Granite <Black>' }, cartQty: 7, _activeVendor: 'V1' }); } catch (e) { out = 'THREW ' + e.message; }
-  const attrs = {}; String(out).replace(/([a-z-]+)="([^"]*)"/g, (m, k, v) => { if (!(k in attrs)) attrs[k] = v; return m; });
+  // b59: the SHIPPED escHtml, not a stand-in -- its String(s||'') is what turned a quantity of 0 into a blank box.
+  const escSrc = (html.match(/function escHtml\(s\)\{[^\n]*\}/) || [''])[0];
+  if (!escSrc) { console.log('COULD NOT RUN: escHtml not found'); process.exit(2); }
+  const render = (qty) => { try { const c = { escAttrJs: (x) => String(x), p: { id: 'gmr001', name: 'Granite <Black>' }, cartQty: qty, _activeVendor: 'V1' }; vm.createContext(c); vm.runInContext(escSrc, c); return vm.runInContext(expr, c); } catch (e) { return 'THREW ' + e.message; } };
+  const attrsOf = (o) => { const a = {}; String(o).replace(/([a-z-]+)="([^"]*)"/g, (m, k, v) => { if (!(k in a)) a[k] = v; return m; }); return a; };
+  const out = render(7), attrs = attrsOf(out);
   check('Q1. the quantity box renders value="7" for a cart quantity of 7', attrs.value === '7', out);
-  check('Q2. ...still named "Quantity of <product>", escaped', attrs['aria-label'] === 'Quantity of Granite &lt;Black>', attrs['aria-label']);
+  check('Q2. ...still named "Quantity of <product>", escaped', attrs['aria-label'] === 'Quantity of Granite &lt;Black&gt;', attrs['aria-label']);
   check('Q3. ...and no stray text between the attributes (well-formed tag)', /^<input( [a-z-]+="[^"]*")+>$/.test(out), out);
+  check('Q4. a quantity of 0 shows "0", not an empty box (the shipped escHtml(0) is empty)', attrsOf(render(0)).value === '0', render(0));
+  const tail = (head) => { const i = html.indexOf(head); return i < 0 ? '' : html.slice(i, html.indexOf('\n}\n', i)); };
+  check('Q5. rows drawn after navigation are named when drawn: renderVendor and renderCart both run sdA11yPass',
+    /sdA11yPass\(document\)/.test(tail('function renderVendor(){')) && /sdA11yPass\(document\)/.test(tail('function renderCart(){')));
+}
+
+console.log('3f. b59: shared sairn-* modals -- the document Analyze button can become ready; contrast');
+{
+  // The document modal called updateAnalyzeBtn() but defined none; the camera modal's is private to ITS IIFE, so every
+  // call threw and #sdm-analyze-btn stayed dimmed and unclickable. The doc component must carry its own.
+  const a = html.indexOf("var _docFile      = null;"), b = html.indexOf('\n})();', a);
+  const doc = a < 0 || b < 0 ? '' : html.slice(a, b);
+  check('D1. the document modal defines its own updateAnalyzeBtn, and it targets #sdm-analyze-btn',
+    /function updateAnalyzeBtn\(\) \{\s*var btn = document\.getElementById\('sdm-analyze-btn'\)/.test(doc), doc ? 'not found in the doc component' : 'doc component not found');
+  check('D2. ...and it says the disabled state to a screen reader (aria-disabled)', /sdm-analyze-btn[\s\S]{0,400}aria-disabled/.test(doc));
+  const lum = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((x) => (x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4)).reduce((s, x, i) => s + x * [0.2126, 0.7152, 0.0722][i], 0);
+  const ratio = (x, y) => { const p = lum(x), q = lum(y); return (Math.max(p, q) + 0.05) / (Math.min(p, q) + 0.05); };
+  const desc = (html.match(/\.sairn-suite-tile-desc \{[^}]*color:(#[0-9A-Fa-f]{6})/) || [])[1];
+  check('C4. suite tile descriptions reach 4.5:1 on white', !!desc && ratio(desc, '#ffffff') >= 4.5, desc);
+  const icons = [...html.matchAll(/class="sairn-suite-icon" style="background:(#[0-9A-Fa-f]{6})"/g)].map((m) => m[1]);
+  const weak = icons.filter((c) => ratio('#ffffff', c) < 4.5);
+  check('C5. white initials on every suite icon reach 4.5:1', icons.length > 0 && weak.length === 0, weak.join(' '));
 }
 
 console.log('3b. b55: the missing-dom-fix stub fields carry real labels');
