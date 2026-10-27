@@ -1795,6 +1795,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b52-cap-jsonb-measure.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "207254acbdc6bcc44bac7c6e1410694382f733a0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/stonedesk_a11y_pass.js",
    "class": "test file",
    "level": "CHANGE",
@@ -4722,6 +4730,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "58fbb240da2451240df8a926d51882d9c7749885",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_condition_coverage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "595b576564e7c84a6a173b3b5b4196688e3bcc41",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -13212,6 +13228,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "ee3354263fc1b4e22dce76c62c2b26b2eb599aa8",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_condition_coverage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "efc645298aec7f05bd282102b3edee8cc7cd5e22",
    "criteria_version": "2026-10-06.1"
   },
   {
