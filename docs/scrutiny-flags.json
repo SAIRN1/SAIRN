@@ -1857,6 +1857,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/vercel_frame_headers.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "21fc838ab275fa51de8b67c539202b20ad436072",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/roofing_claim_gate_single_source.js",
    "class": "test file",
    "level": "CHANGE",
@@ -10239,6 +10247,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b32-rf-jobs-projection.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bb1d93a8871a9b2eebc4d110e5efa7113fabd52f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/criticality_rollup_list_review_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -11998,6 +12014,19 @@
     }
    ],
    "sha": "d8be810aec0a6efeabd8c673e6f5465b7a372b1f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b52-cap-jsonb-measure.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "function arrayHeavyUnder(limit) {"
+    }
+   ],
+   "sha": "d8f47f7ab32b95550560e2ee41cb728368e15a3f",
    "criteria_version": "2026-10-06.1"
   },
   {
