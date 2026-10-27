@@ -7352,6 +7352,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_dora_metrics_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "8e35dce1f3b241dd472dd0711707e94997ab0769",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/b29-stonedesk-sync-honesty.test.js",
    "class": "test file",
    "level": "WEAKENING",
