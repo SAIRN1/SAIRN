@@ -4634,8 +4634,8 @@
       "task": "b54 recordFailure lockout patch and fail-open guard sweep",
       "claimed_at": "2026-10-27T14:12:03Z",
       "claimed_at_epoch": 1793110323.5725157,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-27T14:42:37Z",
       "files": null
     }
   ],
