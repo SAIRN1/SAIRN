@@ -1,0 +1,32 @@
+HANK b54 REPORT -- 2026-10-27
+
+METHODOLOGY: a lockout that cannot be recorded is not a lockout; a fail-open is acceptable only as a written
+decision -- each one is either commented inline or flagged.
+
+1. sd-render.js: inline comment records the KEEP (an unparsable 2xx fails open, cost control). No behaviour change.
+
+2. OPEN guards: b53's two (dnt_providers, dnt-bi) were already closed in dbbf43b6d (verified present).
+   ASSUMED "remaining" = the b52 sweep's two OPEN sd-data folds (lead times ~3001, style profile ~3984).
+   Both now refuse 502 on a non-list prior read. Confirm the reading.
+
+3. R1 FIXED (45ba1d9f7): all 17 PIN *-auth files (11 helper, 6 inline) answer 503 LOCKOUT_UNAVAILABLE + log
+   when the failed-attempt PATCH fails. b54 suite 6/0: D1/D2 driven with controls, S1/S2 pins, M1-M2 red.
+   Residual: an employee_id oracle while writes are broken; a correct PIN still logs in.
+
+4. SWEEP of the sd-render shape: 69 hits -- KEEP 3 / WRONG 6 / ALREADY-CLOSED 60.
+   KEEP, commented (af81fd003):
+   - ai-rate-limit usage-row link;
+   - recordAiUsage;
+   - shared-knowledge counter (an unparsable read overwrites the stored counts -- noted).
+   WRONG, FLAGGED not changed:
+   - W1 auth.js credentialStillActive (deactivation skipped);
+   - W2 claude.js licence gate (Michael);
+   - W3 audit-checkpoint verify false pass;
+   - W4 dental complaint duplicate;
+   - W5 sairncash trial-renew CAS false success;
+   - W6 derive_charges drops billable MAR/ADL/activity events (money).
+
+5. PUSH: 45ba1d9f7, af81fd003, 8b74884e9 LANDED on origin/main, not forced. No override consumed.
+   Pre-existing red suites (identical at origin/main): the leg toctou / session-gate (sairnlegacy.html sdnData,
+   routed to fourth), rf_schedule attribution, law clearance probe, trusttx, exec_msgs, family-contacts,
+   reservation_lock.

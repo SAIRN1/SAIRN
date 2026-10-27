@@ -1,0 +1,18 @@
+HANK b54 DIGEST -- 2026-10-27 -- lockout PATCH checked in 17 auth files; fail-open sweep: 3 kept, 6 flagged
+CONTEXT 54.4% of 1,000,000 -- 544,286 tokens, measured.
+STATUS: 45ba1d9f7 + af81fd003 + 8b74884e9 LANDED on origin/main, NOT FORCED; no override consumed.
+1. sd-render.js: KEEP decision commented inline, no behaviour change.
+2. b53 OPEN guards already closed (dbbf43b6d); closed the b52 leftovers (sd-data lead-time + style folds).
+   Assumption -- confirm.
+3. R1: an unrecordable failed PIN attempt -> 503 LOCKOUT_UNAVAILABLE in all 17 *-auth files.
+   b54 suite 6/0, M1-M2 red.
+4. Sweep, 69 hits: KEEP 3 (commented), WRONG 6 flagged:
+   credentialStillActive, claude.js licence, audit-checkpoint verify, dental complaint dup,
+   sairncash trial-renew, derive_charges (money).
+DECISION-NEEDED (Michael): W2 -- should claude.js allow AI calls when the licence body is unparsable?
+NEXT: dispatch W1 (deactivation) and W6 (money) first; cc informal review of 45ba1d9f7.
+NEXT: fourth -- leg toctou/session-gate red on sairnlegacy.html sdnData.
+CHANGED: 17 api/*-auth.js, api/sd-data.js, api/sd-render.js, api/_lib/ai-rate-limit.js
+CHANGED (tests): new api/b54-lockout-unrecorded-refused.test.js
+EVIDENCE-path: SAIRN-handoff-hank-b54.md, SAIRN-report-hank-b54.txt
+UNVERIFIED: the lockout 503 on the deployed API; the item-2 folds are source pins.
