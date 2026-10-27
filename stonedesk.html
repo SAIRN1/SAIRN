@@ -11616,7 +11616,7 @@ window.sdSafetyPrint=function(){
     <div style="background:var(--surface);border-radius:16px;padding:28px;max-width:600px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
         <h3 style="font-size:18px;font-weight:800;color:var(--navy);margin:0">Upload Template File</h3>
-        <button onclick="tmCloseModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">&#10005;</button>
+        <button aria-label="Close" onclick="tmCloseModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">&#10005;</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
         <div class="fg"><label>Customer Name *</label><input type="text" id="tm-cust-name" placeholder="e.g. Johnson Residence"></div>
@@ -19806,7 +19806,7 @@ if(typeof switchCamTab === 'undefined') window.switchCamTab = function(t){  };
 <div class="sairn-modal" style="max-width:720px">
   <div class="sairn-modal-hdr">
     <div class="sairn-modal-title">📁 Saved Drawings</div>
-    <button class="sairn-modal-close" onclick="document.getElementById('sd-drawings-modal').classList.remove('open')">✕</button>
+    <button class="sairn-modal-close" aria-label="Close" onclick="document.getElementById('sd-drawings-modal').classList.remove('open')">✕</button>
   </div>
   <div id="sd-drawings-body"></div>
 </div>
@@ -19816,7 +19816,7 @@ if(typeof switchCamTab === 'undefined') window.switchCamTab = function(t){  };
 <div class="sairn-modal">
   <div class="sairn-modal-hdr">
     <div class="sairn-modal-title" id="sd-hdm-title">Quote Detail</div>
-    <button class="sairn-modal-close" onclick="document.getElementById('sd-history-detail-modal').classList.remove('open')">✕</button>
+    <button class="sairn-modal-close" aria-label="Close" onclick="document.getElementById('sd-history-detail-modal').classList.remove('open')">✕</button>
   </div>
   <div id="sd-hdm-body"></div>
   <button class="sairn-btn sairn-btn-primary" id="sd-hdm-load-btn" style="width:100%;margin-top:14px" onclick="sdHistoryLoadIntoDrawingTool()">Load into Drawing Tool</button>
@@ -19837,7 +19837,7 @@ if(typeof switchCamTab === 'undefined') window.switchCamTab = function(t){  };
 <div class="sairn-modal">
   <div class="sairn-modal-hdr">
     <div class="sairn-modal-title">🔗 SAIRN Suite</div>
-    <button class="sairn-modal-close" onclick="document.getElementById('sairn-suite-modal').classList.remove('open')">✕</button>
+    <button class="sairn-modal-close" aria-label="Close" onclick="document.getElementById('sairn-suite-modal').classList.remove('open')">✕</button>
   </div>
   <div class="sairn-suite-wrap">
     <div class="sairn-suite-hdr">
@@ -19915,7 +19915,7 @@ if(typeof switchCamTab === 'undefined') window.switchCamTab = function(t){  };
 <div class="sairn-modal">
   <div class="sairn-modal-hdr">
     <div class="sairn-modal-title">⚙️ Pricing Setup</div>
-    <button class="sairn-modal-close" onclick="document.getElementById('sairn-pricing-modal').classList.remove('open')">✕</button>
+    <button class="sairn-modal-close" aria-label="Close" onclick="document.getElementById('sairn-pricing-modal').classList.remove('open')">✕</button>
   </div>
   <div style="font-size:13px;color:#6B7280;margin-bottom:16px">
     Set your rates. Field Quote uses these for every estimate — your pricing, not national averages.
@@ -27170,7 +27170,7 @@ function renderVendor(){
         '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+p.cat+' &middot; '+p.sku+'</div></div>'+
       '<span style="font-size:14px;font-weight:800;color:var(--a)">$' + p.price.toFixed(2)+'</span>'+
       '<button onclick="vendorCompare(\'' + escAttrJs(p.id) + '\',\'' + escAttrJs(_activeVendor) + '\')" style="padding:5px 10px;background:#F0FEF6;color:#15803D;border:1px solid #BBF7D0;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">&#129504; Compare</button>'+
-      '<input type="number" class="qty-input" id="vpqty-'+escHtml(p.id)+'" aria-label="Quantity of '+escHtml(p.name)+'" value=""'+escHtml(cartQty)+'" min="0" onchange="cartUpdate(\'' + escAttrJs(_activeVendor) + '\',\'' + escAttrJs(p.id) + '\',this.value)">'+
+      '<input type="number" class="qty-input" id="vpqty-'+escHtml(p.id)+'" aria-label="Quantity of '+escHtml(p.name)+'" value="'+escHtml(cartQty)+'" min="0" onchange="cartUpdate(\'' + escAttrJs(_activeVendor) + '\',\'' + escAttrJs(p.id) + '\',this.value)">'+
       '<button onclick="cartAdd(\'' + escAttrJs(_activeVendor) + '\',\'' + escAttrJs(p.id) + '\',1)" style="padding:5px 10px;background:var(--a);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">Add</button>'+
     '</div>';
   }).join('');
@@ -41072,6 +41072,11 @@ var SD_A11Y_NAMES = {
 };
 var SD_A11Y_EMOJI = /[\u{1F000}-\u{1FAFF}\u{2300}-\u{23FF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]/u;
 var SD_A11Y_EMOJI_RUN = /((?:[\u{1F000}-\u{1FAFF}\u{2300}-\u{23FF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{1F3FB}-\u{1F3FF}]|️|‍)+)/u;
+// b58: the verb in a lone close-glyph button's own handler is its name. First match wins.
+var SD_A11Y_GLYPH_VERBS = [
+  [/cartUpdate\([^)]*,\s*0\)/, 'Remove from cart'], [/dismiss/i, 'Dismiss'], [/delete/i, 'Delete'],
+  [/remove/i, 'Remove'], [/close|cancel|display\s*=\s*["']none/i, 'Close']
+];
 var SD_A11Y_BUTTON_HANDLER = /^(shAsk|emailToggleChecklist|setTier|selTrade|showPanel|sdCommsTpl|sdSMSSetTpl|sdIntegQuickAdd|switchDimTab)\(|^document\.getElementById\('[^']+'\)\.click\(\)/;
 function sdA11yPass(root) {
   root = root || document;
@@ -41129,18 +41134,53 @@ function sdA11yPass(root) {
   root.querySelectorAll('h1,h2,h3,[role=heading]').forEach(function(h) {
     if (h.getAttribute('data-sd-emoji')) return;
     h.setAttribute('data-sd-emoji', '1');
-    var texts = [], w = document.createTreeWalker(h, 4 /* NodeFilter.SHOW_TEXT */);
-    while (w.nextNode()) texts.push(w.currentNode);
-    texts.forEach(function(t) {
-      if (!SD_A11Y_EMOJI.test(t.nodeValue) || (t.parentNode.closest && t.parentNode.closest('[aria-hidden="true"]'))) return;
-      var frag = document.createDocumentFragment();
-      t.nodeValue.split(SD_A11Y_EMOJI_RUN).forEach(function(part, i) {
-        if (!part) return;
-        if (i % 2) { var sp = document.createElement('span'); sp.setAttribute('aria-hidden', 'true'); sp.textContent = part; frag.appendChild(sp); }
-        else frag.appendChild(document.createTextNode(part));
-      });
-      t.parentNode.replaceChild(frag, t);
+    sdHideEmoji(h);
+  });
+  // b58 -- CONCEPT: OUTSIDE a heading the emoji is sometimes the WHOLE name,
+  // so the rule is per control, and a control is never left with no name:
+  //  * words remain beside the emoji -> hide the emoji (the words name it);
+  //  * emoji only, but the control already has aria-label / aria-labelledby
+  //    -> hide the emoji (the label names it);
+  //  * emoji only, with a title -> the title becomes the aria-label, then hide;
+  //  * emoji only and nothing else -> LEFT READ: its CLDR name ("wastebasket")
+  //    is the only name it has, and hiding it would make an unnamed button.
+  // Controls only; prose and <option> text are untouched (aria-hidden does
+  // nothing inside an option).
+  root.querySelectorAll('button,a[href],[role=button],[role=tab],summary').forEach(function(c) {
+    if (c.getAttribute('data-sd-emoji')) return;
+    var text = c.textContent || '';
+    // A lone close/remove glyph (✕ ✖ ×) names itself from the VERB in its own handler, so NVDA
+    // says "Delete, button", not "multiplication x". No verb found -> left as it is.
+    if (/^\s*[✕✖×]\s*$/.test(text) && !c.getAttribute('aria-label') && !c.getAttribute('aria-labelledby')) {
+      var how = (c.getAttribute('onclick') || '') + ' ' + (c.id || '');
+      for (var g = 0; g < SD_A11Y_GLYPH_VERBS.length; g++) {
+        if (SD_A11Y_GLYPH_VERBS[g][0].test(how)) { c.setAttribute('aria-label', SD_A11Y_GLYPH_VERBS[g][1]); break; }
+      }
+    }
+    if (!SD_A11Y_EMOJI.test(text)) return;
+    c.setAttribute('data-sd-emoji', '1');
+    var words = /[A-Za-z0-9\u00C0-\u024F]/.test(text.split(SD_A11Y_EMOJI_RUN).filter(function(x, i) { return !(i % 2); }).join(''));
+    if (!words && !c.getAttribute('aria-label') && !c.getAttribute('aria-labelledby')) {
+      var title = (c.getAttribute('title') || '').trim();
+      if (!title) return;
+      c.setAttribute('aria-label', title);
+    }
+    sdHideEmoji(c);
+  });
+}
+// Wraps every emoji run in el's text in an aria-hidden span (b56, shared b58).
+function sdHideEmoji(el) {
+  var texts = [], w = document.createTreeWalker(el, 4 /* NodeFilter.SHOW_TEXT */);
+  while (w.nextNode()) texts.push(w.currentNode);
+  texts.forEach(function(t) {
+    if (!SD_A11Y_EMOJI.test(t.nodeValue) || (t.parentNode.closest && t.parentNode.closest('[aria-hidden="true"]'))) return;
+    var frag = document.createDocumentFragment();
+    t.nodeValue.split(SD_A11Y_EMOJI_RUN).forEach(function(part, i) {
+      if (!part) return;
+      if (i % 2) { var sp = document.createElement('span'); sp.setAttribute('aria-hidden', 'true'); sp.textContent = part; frag.appendChild(sp); }
+      else frag.appendChild(document.createTextNode(part));
     });
+    t.parentNode.replaceChild(frag, t);
   });
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function() { sdA11yPass(document); });

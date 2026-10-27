@@ -49,7 +49,7 @@ function El(tag, opts) {
 }
 
 const passSrc = grab('var SD_A11Y_NAMES = {','\nfunction sdA11yPass(root) {').replace(/\nfunction sdA11yPass\(root\) \{$/, '')
-  + '\n' + grab('function sdA11yPass(root) {');
+  + '\n' + grab('function sdA11yPass(root) {') + '\n' + grab('function sdHideEmoji(el) {');
 
 console.log('1. sdA11yPass: labels, keyboard buttons, decorative icons');
 {
@@ -168,6 +168,58 @@ console.log('3c. b57: modal and sub-view controls are named too');
   check('M1. the 14 static modal/sub-view controls each have a written name', block && missing.length === 0, missing.join(' '));
   check('M2. ...and every one of those ids exists in the page (no name for a control that is gone)', absent.length === 0, absent.join(' '));
   check('M3. the slab-bind select, built in a template, names itself', /id="sd-slab-bind-target" aria-label="[^"]+"/.test(html));
+}
+
+console.log('3e. b58: emoji in CONTROLS -- per-control rule, never an unnamed control');
+{
+  const mk = (txt, attrs) => {
+    const c = El('BUTTON', { attrs: attrs || {} }); c.textContent = txt;
+    const t = { nodeValue: txt }; t.parentNode = { closest: () => null, replaceChild: (frag) => { c.out = frag.kids; } };
+    c.texts = [t]; return c;
+  };
+  const worded = mk('\u{1F5D1}️ Delete'), titled = mk('✕', { title: 'Close' }), labelled = mk('\u{1F4CB}', { 'aria-label': 'Copy link' }), bare = mk('\u{1F5D1}️');
+  const gl = (txt, onclick) => mk(txt, { onclick });
+  const closeG = gl('✕', 'tmCloseDetailModal()'), delG = gl('×', "invDelete('x')"), cartG = gl('×', "cartUpdate('V','i',0);renderVendor()"),
+    dismissG = gl('✕', "event.stopPropagation();dismissAlert(3)"), hideG = gl('×', "document.getElementById('m').style.display='none'"), unknownG = gl('×', 'foo()');
+  const ctls = [worded, titled, labelled, bare, closeG, delG, cartG, dismissG, hideG, unknownG];
+  const ctx = { getComputedStyle: () => ({ display: 'block' }),
+    document: { readyState: 'complete', addEventListener() {}, getElementById: () => null, querySelector: () => null,
+      createElement: (t) => El(t.toUpperCase()), createTextNode: (v) => ({ text: v }),
+      createDocumentFragment: () => ({ kids: [], appendChild(x) { this.kids.push(x); } }),
+      createTreeWalker: (h) => { let i = -1; return { get currentNode() { return h.texts[i]; }, nextNode() { i++; return i < h.texts.length; } }; },
+      querySelectorAll: (q) => (q === 'button,a[href],[role=button],[role=tab],summary' ? ctls : []) } };
+  vm.createContext(ctx);
+  vm.runInContext(passSrc.replace(/\nif \(document\.readyState[\s\S]*$/, ''), ctx);
+  let threw = null; try { ctx.sdA11yPass(ctx.document); } catch (e) { threw = e.message; }
+  const hidden = (c) => (c.out || []).some((k) => k.tagName && k.attrs['aria-hidden'] === 'true');
+  check('X1. words beside the emoji: the emoji is hidden, the words name it', !threw && hidden(worded) && (worded.out || []).some((k) => !k.tagName && /Delete/.test(k.text)), threw || JSON.stringify(worded.out));
+  check('X2. emoji only, with a title: the title becomes the name, then the emoji is hidden', titled.attrs['aria-label'] === 'Close' && hidden(titled));
+  check('X3. emoji only, already aria-labelled: the label stands, the emoji is hidden', labelled.attrs['aria-label'] === 'Copy link' && hidden(labelled));
+  check('X4. emoji only and NOTHING else: left read -- hiding it would make an unnamed button', !bare.out && !('aria-label' in bare.attrs));
+  // The open-modal pass found five lone close glyphs left read ("multiplication x"); 28 such buttons exist in the
+  // source, half of them REMOVE or DELETE, not close -- so the name comes from the verb in the button's own handler.
+  const nm = (c) => c.attrs['aria-label'];
+  check('X5. a lone close glyph names itself from the verb in its handler (Close / Delete / Remove from cart / Dismiss)',
+    nm(closeG) === 'Close' && nm(delG) === 'Delete' && nm(cartG) === 'Remove from cart' && nm(dismissG) === 'Dismiss' && nm(hideG) === 'Close',
+    JSON.stringify([closeG, delG, cartG, dismissG, hideG].map(nm)));
+  check('X6. no verb in the handler -> no invented name', !('aria-label' in unknownG.attrs));
+}
+
+console.log('3d. b58: the vendor quantity box still carries its quantity (hank b52 Tier A finding on 847e89943)');
+{
+  // The b54 aria-label edit left value=""'+qty+'" -- an EMPTY value attribute and the quantity as junk after it,
+  // so every box rendered blank. The template line is EVALUATED, not string-matched, and the HTML it yields is parsed.
+  const head = "'<input type=\"number\" class=\"qty-input\" id=\"vpqty-'";
+  const i = html.indexOf(head);
+  if (i < 0 || html.indexOf(head, i + 1) !== -1) { console.log('COULD NOT RUN: vendor qty template found ' + (i < 0 ? 0 : 'more than one') + ' time(s)'); process.exit(2); }
+  const expr = html.slice(i, html.indexOf('">\'+', i) + 3);
+  const esc = (x) => String(x).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  let out = '';
+  try { out = vm.runInNewContext(expr, { escHtml: esc, escAttrJs: (x) => String(x), p: { id: 'gmr001', name: 'Granite <Black>' }, cartQty: 7, _activeVendor: 'V1' }); } catch (e) { out = 'THREW ' + e.message; }
+  const attrs = {}; String(out).replace(/([a-z-]+)="([^"]*)"/g, (m, k, v) => { if (!(k in attrs)) attrs[k] = v; return m; });
+  check('Q1. the quantity box renders value="7" for a cart quantity of 7', attrs.value === '7', out);
+  check('Q2. ...still named "Quantity of <product>", escaped', attrs['aria-label'] === 'Quantity of Granite &lt;Black>', attrs['aria-label']);
+  check('Q3. ...and no stray text between the attributes (well-formed tag)', /^<input( [a-z-]+="[^"]*")+>$/.test(out), out);
 }
 
 console.log('3b. b55: the missing-dom-fix stub fields carry real labels');
