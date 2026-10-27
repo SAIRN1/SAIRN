@@ -38434,52 +38434,6 @@
       "recurrence_open": "A mutation arm proves a test can fail, not that its expected dates are right."
     },
     {
-      "commit": "d8f47f7ab32b",
-      "date": "2026-10-27",
-      "subject": "fix(sd-data, cody b52): a per-resource cap is measured the way its constraint measures -- jsonb text (hover H2 seq1109)",
-      "files": [
-        "api/_lib/jsonb-text-bytes.js",
-        "api/b52-cap-jsonb-measure.test.js",
-        "api/sd-data.js",
-        "docs/sairn-path-manifest.json"
-      ],
-      "lines_added": 249,
-      "lines_removed": 4,
-      "app": "sairndental",
-      "layer": "product",
-      "severity": "low",
-      "detection_method": "hover-audit",
-      "summary": "api/sd-data.js gave dnt_appointments and rf_claim_photos a cap EQUAL to their *_data_size constraints but measured compact JSON, while the constraint measures octet_length(data::text) on jsonb (a space after every ':' and ','). In that window (~29 bytes normal, ~25% array-heavy) a record cleared the gate and the table refused it with an unclassified store error instead of the 413 the equal cap promised (hover H2 seq1109). Per-resource caps now measure jsonb text after the location stamp; b52 test 6/6 incl. an ablation that lets the record through under the old measure.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover2",
-      "injection": {
-        "commit": "7e43c9dab7dc",
-        "date": "2026-10-20",
-        "subject": "b28(cody): the role in the token is not the role in the roster, a photo cap that was never the real ceiling, and a hook that finally runs",
-        "lag_days": 7
-      },
-      "citation_note": "No standing rule names two layers measuring different serialisations of one value; H2 named it (two correct measures of one input need not agree).",
-      "contributing_factors": [
-        {
-          "factor": "The cap was made numerically equal to the constraint without checking the two counted the same serialisation.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Per-resource caps measure jsonb text via api/_lib/jsonb-text-bytes.js."
-        },
-        {
-          "factor": "Arm C6 asserted the cap EQUALS the SQL number, which can never see a difference in what each layer measures.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "b52 arms J2/G1/X compare the two measures on one record."
-        }
-      ],
-      "recurrence_open": "The uniform 64KB default still measures compact JSON; tables whose constraint is 65536 on jsonb text keep a small window there (not routed by H2, not changed here). Exponent-form numbers are measured as JS prints them."
-    },
-    {
       "commit": "45ba1d9f7ee5",
       "date": "2026-10-27",
       "subject": "fix(platform b54): a failed PIN attempt that cannot be recorded is refused 503 -- the lockout can no longer silently never engage",
@@ -38537,6 +38491,50 @@
         }
       ],
       "recurrence_open": "a 503 only on a wrong PIN when the PATCH fails can reveal that an employee_id exists while the write path is broken; a correct PIN is still accepted when the lockout cannot be written"
+    },
+    {
+      "commit": "8bf6165462d1",
+      "date": "2026-10-27",
+      "subject": "fix(stonedesk b58): vendor quantity box shows its quantity again; emoji in controls hidden per control, never leaving a control unnamed",
+      "files": [
+        "stonedesk.html",
+        "tests/stonedesk_a11y_pass.js"
+      ],
+      "lines_added": 110,
+      "lines_removed": 18,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "fourth b58, hank b52 Tier A finding on 847e89943. renderVendor emitted an empty value attribute with the quantity outside it, so the quantity input was blank after every re-render. Fixed, with arms that evaluate the template line. Also a per-control emoji rule and verb-named close glyphs; open-modal axe pass; NVDA 67/67 headings. Suite 42 arms, 6/6 mutants killed.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "847e89943d6d",
+        "date": "2026-10-22",
+        "subject": "fix(stonedesk b54): every select/field named, every panel headed, 56 contrast nodes fixed",
+        "lag_days": 5
+      },
+      "citation_note": "No coding rule covers this class: a hand-escaped string edit to a JS-in-HTML template that produced a malformed attribute and passed syntax checks. Proposed: a template line that is edited gets an arm that evaluates it and parses the tag.",
+      "contributing_factors": [
+        {
+          "factor": "A python heredoc with nested escaped quotes wrote an empty value attribute plus the quantity outside it.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Fixed; Q1-Q3 evaluate the template and parse the tag."
+        },
+        {
+          "factor": "The b54 arms checked the aria-label by string match, not the rendered tag, so the broken value passed.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Arms now evaluate the template line."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. color-contrast x26 in the shared sairn-* modals; 4 modals not visible when forced open; controls rendered after a pass are named only at the next pass."
     },
     {
       "commit": "8e35dce1f3b2",
@@ -38629,6 +38627,52 @@
         }
       ],
       "recurrence_open": "Four milder cases the sweep marked clean-by-rule were not changed: resource_reachability_check per-app totals vs header total, blob_conversion_coverage docstring vs .test.js skip, entitlement_freshness_check EXTERNAL_OWNED, secrets_inventory hard-coded 47/11."
+    },
+    {
+      "commit": "d8f47f7ab32b",
+      "date": "2026-10-27",
+      "subject": "fix(sd-data, cody b52): a per-resource cap is measured the way its constraint measures -- jsonb text (hover H2 seq1109)",
+      "files": [
+        "api/_lib/jsonb-text-bytes.js",
+        "api/b52-cap-jsonb-measure.test.js",
+        "api/sd-data.js",
+        "docs/sairn-path-manifest.json"
+      ],
+      "lines_added": 249,
+      "lines_removed": 4,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": "api/sd-data.js gave dnt_appointments and rf_claim_photos a cap EQUAL to their *_data_size constraints but measured compact JSON, while the constraint measures octet_length(data::text) on jsonb (a space after every ':' and ','). In that window (~29 bytes normal, ~25% array-heavy) a record cleared the gate and the table refused it with an unclassified store error instead of the 413 the equal cap promised (hover H2 seq1109). Per-resource caps now measure jsonb text after the location stamp; b52 test 6/6 incl. an ablation that lets the record through under the old measure.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "commit": "7e43c9dab7dc",
+        "date": "2026-10-20",
+        "subject": "b28(cody): the role in the token is not the role in the roster, a photo cap that was never the real ceiling, and a hook that finally runs",
+        "lag_days": 7
+      },
+      "citation_note": "No standing rule names two layers measuring different serialisations of one value; H2 named it (two correct measures of one input need not agree).",
+      "contributing_factors": [
+        {
+          "factor": "The cap was made numerically equal to the constraint without checking the two counted the same serialisation.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Per-resource caps measure jsonb text via api/_lib/jsonb-text-bytes.js."
+        },
+        {
+          "factor": "Arm C6 asserted the cap EQUALS the SQL number, which can never see a difference in what each layer measures.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "b52 arms J2/G1/X compare the two measures on one record."
+        }
+      ],
+      "recurrence_open": "The uniform 64KB default still measures compact JSON; tables whose constraint is 65536 on jsonb text keep a small window there (not routed by H2, not changed here). Exponent-form numbers are measured as JS prints them."
     }
   ],
   "started": "2026-09-09",
