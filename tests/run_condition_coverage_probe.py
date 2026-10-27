@@ -93,20 +93,28 @@ check('3b  and it is the one on line 3', ops and ops[0]['line'] == 3,
 check('3c  mutating it changes ONLY that operator',
       C.mutate(src, ops[0]['pos'], '&&') == "// a && b\nvar m = 'x || y';\nif (p || q) go();\n")
 
-print('4. it REFUSES to run on a dirty tree')
-dirty = subprocess.run(['git', 'status', '--porcelain'], capture_output=True,
-                       text=True, encoding='utf-8', errors='replace', cwd=REPO).stdout.strip()
-tmpf = None
-if not dirty:
-    tmpf = os.path.join(REPO, 'tools', '_probe_dirty_marker.tmp')
-    io.open(tmpf, 'w', encoding='utf-8').write('x')
-p = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'condition_coverage.py')],
-                   capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
-if tmpf and os.path.exists(tmpf):
-    os.remove(tmpf)
-check('4a  a dirty tree exits 2, not 0 or 1', p.returncode == 2, 'exit %d' % p.returncode)
-check('4b  and it says WHY -- a restore cannot be verified against a modified baseline',
-      'WORKING TREE IS DIRTY' in (p.stdout or ''))
+print('4. it REFUSES to run when a MEASURED engine is modified')
+# RE-AIMED cody b53. This arm made the tree dirty with an UNTRACKED marker and
+# looked for 'WORKING TREE IS DIRTY'. The tool has since scoped its refusal to
+# the engines and suites it measures, ignoring untracked files on purpose (its
+# own comment: one stray file made it unrunnable platform-wide), and reworded
+# the message. So 4b was red on every run: the marker no longer counts as
+# dirt, and the sentence it looked for no longer exists. The arm now dirties
+# a MEASURED engine -- one appended comment line -- and restores it from a
+# byte snapshot, checked byte-identical.
+eng = os.path.join(REPO, C.ENGINES[0][1])
+snap = io.open(eng, 'rb').read()
+try:
+    io.open(eng, 'ab').write(b'\n// run_condition_coverage_probe arm 4: temporary dirt\n')
+    p = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'condition_coverage.py')],
+                       capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
+finally:
+    io.open(eng, 'wb').write(snap)
+check('4a  a modified engine exits 2, not 0 or 1', p.returncode == 2, 'exit %d' % p.returncode)
+check('4b  and it says WHY -- the engine on disk is not the one that would be mutated',
+      'AN ENGINE OR ITS SUITE IS MODIFIED' in (p.stdout or ''), (p.stdout or '')[-300:])
+check('4c  and the engine is byte-identical again after the arm',
+      io.open(eng, 'rb').read() == snap)
 
 print('5. THE PLANTED GAP -- it must find an operand no test covers')
 tmp = tempfile.mkdtemp(prefix='condcov-')
@@ -131,7 +139,10 @@ old_repo, old_engines = C2.REPO, C2.ENGINES
 try:
     C2.REPO = tmp
     C2.ENGINES = [('planted', 'api/_lib/planted.js', 'api/_lib/planted.test.js')]
-    r = C2.sweep('planted', 'api/_lib/planted.js', 'api/_lib/planted.test.js')
+    # root= IS REQUIRED NOW (cody b53): sweep() refuses to default it to REPO,
+    # so this arm crashed with ValueError and never reached 5a-5e. The planted
+    # sandbox IS the root.
+    r = C2.sweep('planted', 'api/_lib/planted.js', 'api/_lib/planted.test.js', root=tmp)
 finally:
     C2.REPO, C2.ENGINES = old_repo, old_engines
 check('5a  both operands were found', r['operands'] == 2, r['operands'])
