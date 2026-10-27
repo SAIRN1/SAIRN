@@ -7300,6 +7300,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/stonedesk_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "8bf6165462d19f7d04ba9385824a088c2463e00f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/b48-sd-agent-error-leak.test.js",
    "class": "test file",
    "level": "WEAKENING",

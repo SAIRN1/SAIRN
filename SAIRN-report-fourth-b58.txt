@@ -1,0 +1,45 @@
+SAIRN REPORT -- fourth b58 -- 2026-10-27
+
+RESULT: all items done, landed (fix 8bf616546) and live at 15:00Z, no
+force, no skip. Handoff: SAIRN-handoff-fourth-b58.md.
+
+1 F3 LIVE DRIVE: CLOSED, FULLY VERIFIED. The b57 UI drive passed, and the
+  removal SQL was run with confirms at 0 rows (Michael, b58). No residue
+  remains.
+
+2 HANK b52 TIER A FINDING                                       8bf616546
+  stonedesk.html:27173 renderVendor: my b54 aria-label edit emitted
+  value=""'+qty+'" -> the quantity box was blank. Fixed.
+  Q1-Q3 evaluate the template and parse the tag; they fail on HEAD.
+  The same shape is absent from my other b54-b57 commits (scanned).
+  Live: a cart qty of 3 renders value="3".
+  Pre-existing: escHtml(0) = '' blanks a quantity of 0 (filed).
+
+3 AIQUOTE NVDA RE-CHECK (raw log nvda_sd58.log): HEARD.
+  ' AI Quote Generator', 'heading', 'level 2'. 67/67 heading lines,
+  0 with an emoji; 0 of 129 button lines contain an emoji. 201 steps,
+  0 refused. The b57 miss did not recur.
+
+4 EMOJI OUTSIDE HEADINGS: PER-CONTROL RULE, applied     8bf616546
+  words beside the emoji -> hide it
+  emoji only + aria-label -> hide it
+  emoji only + title -> the title becomes the aria-label, then hide
+  emoji only and nothing else -> LEFT READ (never an unnamed control)
+  Lone close glyphs (✕ ✖ ×) are named from the verb in their own handler
+  (Close / Delete / Remove / Remove from cart / Dismiss); no verb -> no
+  name. 28 such buttons exist, and half are remove/delete, not close.
+  Open-modal axe (18 modals, 14 visible when forced open): emoji-only left
+  read 5 -> 0; color-contrast x26 in the 4 shared sairn-* modals (filed).
+  Panels: axe 0 on 67. Suite 42 arms; 6/6 mutants killed.
+
+5 npm ci: VERBATIM
+  "Permission to use Bash with command npm ci --ignore-scripts --no-audit
+  --no-fund has been denied."
+  Same as b54. Source: .claude/settings.json permissions.deny, lines
+  143-144: "Bash(npm ci *)", "Bash(npm ci)" (last changed af71d0068,
+  Michael, 2026-10-14). The harness refused it; npm never ran.
+  CHECK 5f and the deny list conflict -> Michael decides.
+
+6 PUSH: landed through 5071a2afc. Rebases twice conflicted on the register
+  re-seat. The skip dropped the record commit, so I re-added it as the
+  last commit and pushed at once.

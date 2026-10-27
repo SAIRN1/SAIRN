@@ -1,0 +1,24 @@
+SAIRN DIGEST -- fourth b58 -- 2026-10-27
+CONTEXT 51.4% of 1,000,000 -- 513,764 tokens, measured.
+STATUS: F3 closed (fully verified); hank's vendor-qty finding fixed live; aiquote heard; emoji per-control rule live; npm ci denied.
+DECISION-NEEDED: npm ci is blocked by .claude/settings.json deny ("Bash(npm ci *)", l.143-144) -- lift it, or run it yourself?
+READ: SAIRN-handoff-fourth-b58.md (whole state). Detail: SAIRN-report-fourth-b58.txt.
+SQL: none this batch.
+CHANGED:
+  8bf616546 stonedesk: renderVendor value attr fixed (hank b52 Tier A); emoji rule per control (words/label/title -> hide,
+            bare -> left read); close glyphs named from handler verb; 42 arms, 6/6 mutants; live: qty 3 renders value="3"
+  5071a2afc register record (re-added after a rebase skip dropped it)
+1 F3 live drive: CLOSED -- UI drive passed (b57), residue removal confirmed 0 rows
+2 NVDA raw log: 67/67 heading lines, 0 emoji; ' AI Quote Generator, heading, level 2' heard; 0/129 buttons with emoji
+3 open-modal axe: 18 modals (14 visible when forced); emoji-only left read 5 -> 0; color-contrast x26 in sairn-* modals
+4 npm ci VERBATIM: "Permission to use Bash with command npm ci --ignore-scripts --no-audit --no-fund has been denied."
+  -- same as b54; harness deny rule, npm never ran
+EVIDENCE-path: tests/stonedesk_a11y_pass.js; scratchpad modal58.json, nvda_sd58.json, vq58b.py.
+NEXT, in order:
+  a decision above (npm ci)
+  b sairn-* modal contrast x26 (shared components -- check other apps first)
+  c the 4 modals not visible when forced: open through real openers, run axe
+  d re-run sdA11yPass after late renderers (cart rows); escHtml(0) blank qty (product call)
+UNVERIFIED: the 4 modals not opened; controls rendered after the last pass.
+PRIVACY: scratchpad nvda_sd58.log holds speech from other windows -- do not share.
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\fd66c7b5-98f7-4e46-ac2a-b0383cde9210.jsonl
