@@ -4429,8 +4429,8 @@
       "task": "b52 cap jsonb measure H2 1109, rf_jobs write-response arms H2 1127, vercel frame headers, live dental staff write, denominator sweep  FILES: api/sd-data.js api/_lib/jsonb-text-bytes.js api/b52-cap-jsonb-measure.test.js api/b32-rf-jobs-projection.test.js vercel.json tests/vercel_frame_headers.js docs/sairn-path-manifest.json docs/live-residue/2026-10-27-cody-b52-dnt-staff-write.json sql/2026-10-27-cody-b52-dnt-residue-removal.sql SAIRN-handoff-cody-b52.md SAIRN-report-cody-b52.txt SAIRN-digest-cody-b52.txt",
       "claimed_at": "2026-10-27T14:23:59Z",
       "claimed_at_epoch": 1793111039.1671395,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-27T14:47:58Z",
       "files": [
         "SAIRN-digest-cody-b52.txt",
         "SAIRN-handoff-cody-b52.md",
