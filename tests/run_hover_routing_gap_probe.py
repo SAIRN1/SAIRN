@@ -212,6 +212,50 @@ ok(len(g) == 1, 'and ENTRY COUNT alone is enough (28 entries after it, 15m old) 
    '-- OR, not AND, because a busy hour buries a finding as effectively as a '
    'quiet day does', g)
 
+
+# ══ PART 3b -- THE TWO VACUOUS STATES (b85, #1698) ═══════════════════════════
+# Found by cc's 2026-10-06 review (7d8c361e8) and still reproducible on
+# 2026-10-22: a log whose `routable` field was renamed, and a log whose ts
+# format changed, both reported clean over findings ten hours stale.
+print(NL + 'PART 3b -- the two vacuous states')
+
+
+def raises_cnr(fn):
+    try:
+        fn()
+    except G.CouldNotRead as exc:
+        return str(exc)
+    return None
+
+
+renamed = [{'seq': i, 'ts': OLD, 'type': 'finding', 'target': 'cody', 'ref': 'x',
+            'routed_resources': ['res_%d' % i]} for i in range(1, 30)]
+msg = raises_cnr(lambda: G.gaps(renamed, INDEX_NONE, now=NOW))
+ok(msg is not None and 'routable' in msg,
+   'FOURTH STATE: 29 findings 10h old under a RENAMED field are COULD-NOT-READ, '
+   'not a clean log (the old code returned [])', msg)
+keyed = [dict(r, routable=['res_%d' % r['seq']]) for r in renamed]
+ok(len(G.gaps(keyed, INDEX_NONE, now=NOW)) == 29,
+   'CONTROL: the same 29 findings with the key present give 29 gaps -- the guard '
+   'is not refuse-everything')
+only_checks = [{'seq': i, 'ts': OLD, 'type': 'check', 'target': 'self'} for i in range(3)]
+ok(G.gaps(only_checks, INDEX_NONE, now=NOW) == [],
+   'CONTROL: a log with no findings and no routable key is still just empty')
+badts = [entry(1, '2026-09-29 02:00:00', routable=['leg_petcases'])]
+g = G.gaps(badts, INDEX_NONE, now=NOW)
+ok(len(g) == 1 and g[0]['age_hours'] is None and 'AGE UNKNOWN' in g[0]['threshold_note'],
+   'FIFTH STATE: a finding 10h old whose ts has a space instead of T is FLAGGED '
+   'with its age marked unknown (the old code returned [])', g)
+goodts = [entry(1, OLD, routable=['leg_petcases'])]
+g = G.gaps(goodts, INDEX_NONE, now=NOW)
+ok(len(g) == 1 and g[0]['age_hours'] == 10.0 and 'AGE UNKNOWN' not in g[0]['threshold_note'],
+   'CONTROL: the same finding with a well-formed ts has age 10.0 and no unknown note', g)
+landed_badts = [entry(1, '2026-09-29 02:00:00', routable=['leg_petcases'])]
+ok(G.gaps(landed_badts, INDEX_ALL, now=NOW) == [],
+   'CONTROL: an undatable finding that HAS landed in the index is still silent')
+ok(raises_cnr(lambda: G.gaps(goodts, INDEX_NONE, now='tomorrow')) is not None,
+   'and an unparseable --now is COULD-NOT-READ rather than every age None')
+
 # ══ PART 4 -- FAIL CLOSED, twice ═══════════════════════════════════════════
 print('\nPART 4 -- fail closed on unknown, never silent')
 
@@ -240,6 +284,14 @@ try:
        'FAIL CLOSED 2: a log present but with NO parseable entry is exit 2 (got '
        '%d) -- a file that reads as zero findings is the shape that turns a '
        'broken reader into a clean report' % rc, out[-400:])
+
+    renamed_log = os.path.join(tmp, 'renamed.jsonl')
+    write_log(renamed_log, [{'seq': 1, 'ts': OLD, 'type': 'finding', 'target': 'cody',
+                             'ref': 'x', 'routed_resources': ['leg_petcases']}])
+    rc, out = run('--log', renamed_log, '--now', NOW)
+    ok(rc == EXIT_COULD_NOT_RUN and 'routable' in out,
+       'FAIL CLOSED 3 (b85): a log whose routable field was renamed is exit 2 through '
+       'main(), not exit 0 (got %d)' % rc, out[-400:])
 
     empty = os.path.join(tmp, 'empty.jsonl')
     io.open(empty, 'w', encoding='utf-8').write('')

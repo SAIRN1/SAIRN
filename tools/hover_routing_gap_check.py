@@ -250,6 +250,23 @@ def gaps(rows, index_text, now=None, stale_hours=STALE_HOURS,
     """Routable findings that have not landed in the index and are past either
     threshold. One finding per (entry, resource) pair."""
     now_dt = _parse_ts(now) if now else datetime.datetime.utcnow()
+    if now and now_dt is None:
+        raise CouldNotRead('the instant to measure age against (%r) is not in the '
+                           'YYYY-MM-DDTHH:MM:SSZ form, so no age can be computed '
+                           'for any finding' % (now,))
+    # ── A LOG WHOSE FIELD WAS RENAMED READS AS "NOTHING TO ROUTE" (b85, #1698) ──
+    # routable_names() looks for the `routable` key. If findings exist and NOT ONE
+    # row carries that key -- renamed, dropped, or a different log schema -- every
+    # entry yields no names and this function returned [] for 29 findings each
+    # ten hours stale: a broken reader reporting a clean log. hover_log.py has
+    # written the key on every row since the field existed (null when unused), so
+    # "no row has it" is a change of shape, never a quiet log. COULD-NOT-READ.
+    _dicts = [e for e in rows if isinstance(e, dict)]
+    if any(e.get('type') == 'finding' for e in _dicts) and not any('routable' in e for e in _dicts):
+        raise CouldNotRead('the log has findings and not one row carries a `routable` '
+                           'key, so no finding can be matched to the index. The log '
+                           'schema changed or the field was renamed; this is not '
+                           '"no unrouted findings".')
     total = len(rows)
     out = []
     for i, e in enumerate(rows):
@@ -262,7 +279,14 @@ def gaps(rows, index_text, now=None, stale_hours=STALE_HOURS,
         if ts is not None and now_dt is not None:
             age_h = (now_dt - ts).total_seconds() / 3600.0
         # EITHER threshold. See the header for why OR and not AND.
-        too_old = age_h is not None and age_h > stale_hours
+        # AN AGE THAT CANNOT BE COMPUTED IS NOT "YOUNG" (b85, #1698). _parse_ts()
+        # accepts exactly YYYY-MM-DDTHH:MM:SSZ and returns None otherwise, and a
+        # None age used to make the hours limb False with no trace: a log whose
+        # timestamp format changed lost that threshold entirely. Unknown age now
+        # counts as past it and is labelled, because the alternative reads a
+        # finding nobody can date as fresh.
+        age_unknown = age_h is None
+        too_old = age_unknown or age_h > stale_hours
         too_buried = behind > stale_entries
         if not (too_old or too_buried):
             continue
@@ -277,7 +301,9 @@ def gaps(rows, index_text, now=None, stale_hours=STALE_HOURS,
                 'age_hours': None if age_h is None else round(age_h, 1),
                 'entries_behind': behind,
                 'target': e.get('target'),
-                'threshold_note': THRESHOLD_NOTE,
+                'threshold_note': (THRESHOLD_NOTE + ' AGE UNKNOWN: this entry\'s ts is '
+                                   'missing or not in the YYYY-MM-DDTHH:MM:SSZ form.'
+                                   if age_unknown else THRESHOLD_NOTE),
             })
     return out
 
@@ -374,15 +400,22 @@ def main(argv=None):
           'Recording a' % withheld)
     print('                             decision not to report IS the decision.')
 
-    found = gaps(rows, index_text, now=args.now)
+    try:
+        found = gaps(rows, index_text, now=args.now)
+    except CouldNotRead as exc:
+        print()
+        print('COULD NOT RUN: %s' % exc)
+        print('This is the THIRD STATE. It is NOT "no unrouted findings".')
+        return EXIT_COULD_NOT_RUN
 
     print()
     if found:
         print('UNROUTED (%d) -- in the auditor\'s log, not in the index:' % len(found))
         for f in found:
             print('  ! seq %-5s %-26s %s' % (f['seq'], f['resource'], f['source']))
-            print('      age %sh, %d entries behind, target %s'
-                  % (f['age_hours'], f['entries_behind'], f['target']))
+            print('      age %s, %d entries behind, target %s'
+                  % ('UNKNOWN' if f['age_hours'] is None else '%sh' % f['age_hours'],
+                     f['entries_behind'], f['target']))
     else:
         print('No routable finding is past either threshold and missing from the '
               'index.')
