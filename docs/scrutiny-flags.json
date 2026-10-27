@@ -4940,6 +4940,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/run_all_tests.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "5e769b4e7c274a71abc76a287f68c6590c88a50f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sairnbiz_z8_display.js",
    "class": "test file",
    "level": "CHANGE",
