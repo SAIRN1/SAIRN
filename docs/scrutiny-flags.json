@@ -1897,6 +1897,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairnsenior_contract_auth_save.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "222ab8ec5487c8c09d3e927c76b84beb752e8401",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/roofing_claim_gate_single_source.js",
    "class": "test file",
    "level": "CHANGE",
@@ -2418,6 +2426,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "2e8e79714cf51c4ba8bdcbd98d2ecb392342f2c4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/stonedesk_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "2f099df5b8a8711ad23f5e45067cde1782d13efc",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -4472,6 +4488,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairnsenior_contract_auth_save.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "523740588e05638f5b543aa0851c62626e4a12b4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/_lib/courtlistener-rate-limit.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -4779,6 +4803,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "57b73400bd6b1b0563c7fb2608dce3471b88602b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnsenior_contract_auth_save.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "5896412e52e6c80b2e2ce95cf4563882c4c744f0",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -5469,6 +5501,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "684f0fcd4f6a3012d547a3a7a0f2bf31b3c22b83",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnsenior_contract_auth_save.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "685ebe97679bbe63a39d1ea796eeb141a39b893b",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -9263,6 +9303,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/stonedesk_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a4306fc618dba11ed6e7fc4648dfa178318fffad",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/mar_billing_grant.test.js",
    "class": "test file",
    "level": "WEAKENING",
@@ -10953,6 +11001,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/stonedesk_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c001ab558d86313c4773028a837840e2b855190e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/b46-route-geocode.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -11669,6 +11725,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/stonedesk_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "cf5497bae1691a7082eb67a714ca21423c9acd5d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/alf-append-only-read-order.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -11833,6 +11897,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "d4ff60efba3b860089e11d982f33a0d39d53283c",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/stonedesk_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d5296514aa15a3606945b238a8dfa3990f76c555",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -12823,6 +12895,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairnsenior_contract_auth_save.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "e69a4e3a388296cea634c6a2f576bcb14f40bf8e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sairnlegacy_countersign_ui.js",
    "class": "test file",
    "level": "CHANGE",
@@ -12844,6 +12924,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "e73afa1faf86bc0092f5e178f817519982e61a8e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/stonedesk_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "e73c9d0444080c3cafee9a96bf08ed9427bb5d0f",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -13729,6 +13817,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "f6c0a0f820591c7183fa1dc015fae2fd70240309",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnsenior_contract_auth_save.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f6ff727903da22a4115d37da27231023b95611d4",
    "criteria_version": "2026-10-06.1"
   },
   {

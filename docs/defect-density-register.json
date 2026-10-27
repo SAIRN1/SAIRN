@@ -38849,6 +38849,100 @@
         }
       ],
       "recurrence_open": "credentialStillActive still answers NO_ACTIVE_CHECK on !ok (an answered 4xx/5xx), by its documented availability decision"
+    },
+    {
+      "commit": "43812bdbbf2b",
+      "date": "2026-10-27",
+      "subject": "fix(sairnsenior b59): a claim draft the server refused is withdrawn, so its visit returns to Ready to bill (H1 #1713)",
+      "files": [
+        "sairnsenior.html",
+        "tests/sairnsenior_contract_auth_save.js"
+      ],
+      "lines_added": 23,
+      "lines_removed": 2,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "hover-audit",
+      "summary": "fourth b59, H1 (hover) #1713, first found by cc b51 in the fourth b49 review. generateClaim kept a refused sen_claims draft; readyToBillVisits counted the visit as billed, so a visit never billed left the list. Refused drafts are now withdrawn and the biller told; no-answer keeps the draft. Suite 20 arms; G4-G6 fail on HEAD.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "39eb41d6e9f0",
+        "date": "2026-10-22",
+        "subject": "review(cc b51): Tier A discharge of fourth b49 (senior/roofing/biz) -- SOUND-WITH-GAPS, a refused sen_claims write stays local (pre-existing, medium)",
+        "lag_days": 5
+      },
+      "citation_note": "No coding rule covers this class: an optimistic local write that is kept when the server refuses it and then feeds another list. Proposed: a local-first save withdraws on refusal.",
+      "contributing_factors": [
+        {
+          "factor": "generateClaim stored the draft before awaiting the server and had no withdrawal on refusal.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Refusal withdraws the draft and re-renders Ready to bill."
+        },
+        {
+          "factor": "The b49 arms checked the toast text, not the ready list, after a refused claim.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "G4-G8 drive readyToBillVisits after each outcome."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. Drafts refused before this fix may still sit on devices with their visits hidden; no sweep exists. Not driven end to end in a browser (needs the rate and authorisation engines)."
+    },
+    {
+      "commit": "e29950026005",
+      "date": "2026-10-27",
+      "subject": "fix(stonedesk b59): document Analyze button works again; sairn-* modal contrast at the root; the 4 unforced modals opened and fixed; zero quantity shows 0; late rows named",
+      "files": [
+        "stonedesk.html",
+        "tests/stonedesk_a11y_pass.js"
+      ],
+      "lines_added": 75,
+      "lines_removed": 27,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "fourth b59. Document modal called updateAnalyzeBtn() with none in its scope (the camera's is IIFE-private): ReferenceError on every call, #sdm-analyze-btn never ready. Restored with aria-disabled. Modal contrast 26 -> 0 at the class rules (StoneDesk-only; other hits are archive snapshots). 4 modals opened via real triggers: customer detail fixed. Quantity 0 shows 0; late cart rows named. Suite 49 arms, 5/5 mutants killed.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "axe-core 4.10.2 open-modal pass + Playwright drive of the document modal, scratchpad modal59.py / open4b_59.py / doc59.py (not in repo)",
+      "found_by_session": null,
+      "injection": {
+        "commit": "57db94fbf375",
+        "date": "2026-06-22",
+        "subject": "Fix JavaScript syntax errors in stonedesk.html - 94/106 scripts passing Node syntax check",
+        "lag_days": 127
+      },
+      "citation_note": "No coding rule covers this class: a copied component that calls a helper its copy does not carry, where the only same-named function is private to another component's IIFE. Proposed: a component's helpers live in its own scope and a probe drives its primary button.",
+      "contributing_factors": [
+        {
+          "factor": "The doc modal was copied without its own updateAnalyzeBtn; the camera one is private to another IIFE.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Doc-scoped updater restored; D1/D2 arms and a driven page check."
+        },
+        {
+          "factor": "Dark-theme component colours used on a light page and low-alpha label text.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Darkened / raised alpha at the class rules; C4/C5 arms."
+        },
+        {
+          "factor": "Errors thrown inside FileReader onload and input handlers only reach the console, so a dead button made no visible error.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Open-modal pass now records page errors and drives the primary button."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. The archive/ snapshots carry the same components (not deployed apps). Other low-alpha dark-theme labels (.sairn-fu-label, .shoff-label) were not flagged by any rendered pass and are unchanged. cartAdd does not re-render the vendor quantity box (pre-existing)."
     }
   ],
   "started": "2026-09-09",
