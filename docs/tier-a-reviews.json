@@ -8691,6 +8691,29 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-10-27T14:59:52Z",
+      "opened_at_sha": "44e517968897f76f1d6feff0ab462c577ee48b5d",
+      "opened_at_sha_basis": "head",
+      "opened_at_sha_extra_files": null,
+      "resources": [
+        "leg_cremations",
+        "leg_invoices"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tools/sairnlegacy_presence_stress.py"
+      ],
+      "what": "cc b58: tools/sairnlegacy_presence_stress.py (new PROBE, read-only) drives the real api/sd-data.js leg_cremations / leg_invoices writes with the real countersignature lock, and the real legComposeStatement(); no product code changed. Review asks: are L1a/L1b/L2a/L3a/L3b real defects and the FAIL MEANS fair.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-10-27T14:59:52Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

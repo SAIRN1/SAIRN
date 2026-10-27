@@ -429,7 +429,7 @@ def drive(ablate=False):
 
 def main(argv):
     as_json = '--json' in argv
-    PP.require_plan(SCENARIOS, ABLATION, __doc__)
+    PP.require_plan(SCENARIOS, ABLATION, __doc__, wave_app='stonedesk')
     out, err = drive()
     if out is None:
         print('COULD NOT RUN: %s' % err)

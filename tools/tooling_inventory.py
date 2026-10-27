@@ -133,6 +133,15 @@ PURPOSES = {
         'names its SITE; route() reads the owner from docs/sairn-path-manifest.json, '
         'and a finding outside the tool session own files is ROUTED to that '
         'owner and NEVER self-registered (may_self_register()).'),
+    'sairnlegacy_presence_stress.py': ('PROBE',
+        'a SAIRNlegacy cremation, invoice or price-list status shown while the '
+        'fact behind it is false: a cremation filed with its countersignature as '
+        'Completed with every authorisation check false or absent (the real '
+        'MODE_ALWAYS lock checks the token, never the record); an invoice stored '
+        'Paid with no payment; a statement printable at a $0 price or a total '
+        'offset to $0 by a negative line. Drives the real handler, lock and '
+        'functions; gated by presence_proof.py; prints routed, launch-wave-tagged '
+        'record specs and registers nothing; --ablate proves the blank-price arm can fail.'),
     'stonedesk_presence_stress.py': ('PROBE',
         'a StoneDesk money / legal / compliance status shown while the fact '
         'behind it is false: sd_approvals stored as Signed with no or an '

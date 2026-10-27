@@ -21,7 +21,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**369 files in `tools/`.** By what actually invokes them:
+**370 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -30,7 +30,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 5 | session-start or prompt hooks, informational |
 | **DECIDED** | 79 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 79 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 99 | nothing runs these at all |
+| **UNWIRED** | 100 | nothing runs these at all |
 
 **THE HOOK-DERIVED HALF OF THE TABLE ABOVE IS THE RECORDED WIRING, NOT THE LIVE ONE.** This clone's `.claude/settings.json` carries an EMPTY `hooks` object, committed on 2026-10-13 after Michael disabled every hook on 2026-10-11 because they were causing agent compaction. The 19 tool wirings behind BLOCKING / REPORT-ONLY / ADVISORY are read from `docs\hooks-disabled-2026-10-13.json`, which records all 23 commands verbatim. **A tool shown as ADVISORY here is wired as a SessionStart or prompt hook in that record and is NOT running in this clone today.** The alternative was believing the zero, and that is what the generator did until 2026-10-16: ADVISORY came out empty, the push gate itself came out SUITE-ONLY, and three arms of `tests/run_tooling_inventory_probe.py` were red against a `--check` that said the document matched the repo -- both ends of that comparison came from the same blind reader.
 
@@ -45,7 +45,7 @@ By what they are, independent of wiring:
 | GUARD | 2 |
 | LIBRARY | 27 |
 | LIVE | 29 |
-| PROBE | 4 |
+| PROBE | 5 |
 | PUSH-GATE | 1 |
 | REPORT | 1 |
 | REPORT-ONLY | 1 |
@@ -511,7 +511,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (99)
+## UNWIRED (100)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -602,6 +602,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `sairnlaw_citator_stress.py` | PROBE | a fabricated or altered case citation that SAIRNlaw presents as real, or never shows: drives the real api/legal-citator.js verify action and the real sairnlaw.html lawCiteGuard path over a fixed corpus (Mata v. Avianca fabrications, wrong court / name / holding on real cites, a fabrication seventh in a draft, a substring collision in one batch), with the CourtListener answer as a declared fixture. Exit 1 on any item verified or unshown; 2 when a control fails. | &mdash; |
 | `sairnlaw_deadline_coverage_gap.py` | CHECKER | a seeded SAIRNlaw deadline jurisdiction with no isolation test, only a neighbour state's incidental arm, or no mutation / sabotage arm, listed oldest-untested first by the first commit of its seed. Cross-cutting readdirSync suites are counted separately and never as isolation. | &mdash; |
 | `sairnlaw_iolta_reconcile_stress.py` | PROBE | a forced bank / trust-ledger / client-ledger discrepancy that the real reconcileTrustLedger() reports as AGREES with nothing flagged, read through sairnlaw.html's own LAW_RECON_STATUS labels: one-cent bank short, an unrecorded deposit, a device-total cent, a mis-typed disbursement, a shortfall parked as a 91-day deposit in transit, a client-to-client misallocation with totals unchanged, a negative client, an unreadable amount, an undated row. Exit 1 on any silent reconcile. | &mdash; |
+| `sairnlegacy_presence_stress.py` | PROBE | a SAIRNlegacy cremation, invoice or price-list status shown while the fact behind it is false: a cremation filed with its countersignature as Completed with every authorisation check false or absent (the real MODE_ALWAYS lock checks the token, never the record); an invoice stored Paid with no payment; a statement printable at a $0 price or a total offset to $0 by a negative line. Drives the real handler, lock and functions; gated by presence_proof.py; prints routed, launch-wave-tagged record specs and registers nothing; --ablate proves the blank-price arm can fail. | &mdash; |
 | `scrutiny_ledger_check.py` | CHECKER | a row in docs/scrutiny-flags.json that is NOT true of the commit it names -- an empty diff, a merge-keyed row, a ref name where a sha belongs. Named as that file's merge_policy validator, so the rebase resolver runs it rather than anyone remembering to | &mdash; |
 | `second_pass_coverage_scan.py` | CHECKER | which flows are only ever tested on their FIRST attempt, and never on a second attempt following an aborted or refused one. The 737 MAX VNAV defect was invisible in steady-state flight and needed a missed approach and THEN an altered path; suites have the same blind spot structurally, because every arm starts from a clean state and almost nothing attempts, gets refused, and attempts again -- which is the state a real user is in whenever anything goes wrong. THE HEADLINE IS THE CROSS-REFERENCE, not the raw list: code that DOCUMENTS a retry/resume/abort path whose suite has no second-pass arm is a claim nobody tested. The raw first-attempt-only list is printed too and is labelled a list to READ, because many actions have no meaningful second attempt and a second pass driven through a helper is invisible here. Arm boundaries are BRACE-MATCHED on masked source -- a fixed slice would pull the next arm's second drive into this one and report coverage that is not there -- and an arm whose extent cannot be established is NOT credited. Position is respected: a refusal asserted after the last drive is not a second attempt. The no-second-pass-sense exemption list is deliberately SHORT, because a long one becomes the escape hatch that makes every finding vanish. A RATCHET on docs/second-pass-coverage.json. | &mdash; |
 | `session_surface_check.py` | REPORTER | a session capability surface nobody recorded -- which skills are on disk, which carry disable-model-invocation, which MCP servers are reachable, and which of either has ever actually been used. Built 2026-10-08 on two measurements: 62 skills on disk with 16 ever invoked across 30 transcripts, and 10 reachable MCP servers with TWO ever called. It is NOT /context and NOT /mcp -- those are client-side commands a model turn cannot invoke -- and it says so rather than implying it replaces them: it reads disk and transcripts, a smaller claim, and cannot see the live prompt, its token cost, or whether a reachable server is authenticated. It NAMES THE SOURCE of its server list instead of claiming completeness, which is why it reports 6 where the prompt lists 10 (claudeAiMcpEverConnected records only servers that have ever connected). --no-usage skips the 4-second transcript walk for the hook path AND PRINTS THAT IT DID, so every "never invoked" reads as COULD-NOT-TELL rather than zero. Writes nothing. Lock: --selftest, 7 arms, 2 negative | &mdash; |
@@ -651,7 +652,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      369   git ls-files tools/
+  tools on disk                      370   git ls-files tools/
   hook entries                        19   docs\hooks-disabled-2026-10-13.json (RECORDED wiring -- this clone's live hooks are the committed disarm, and the record is read rather than the zero being believed)
   push-gate invocations               20   tools\sairn_push_gate_hook.py
   report-only registry                78   report_only_checks.REGISTRY

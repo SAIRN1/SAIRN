@@ -45,6 +45,9 @@ CHECKLIST = (
                'unflagged is a FAIL, not "not applicable".'),
     ('SCOPE', 'Say what is REAL (driven as shipped) and what is a FIXTURE or STUB, in the '
               'tool\'s header and in its output.'),
+    ('LAUNCH-WAVE', 'Name the launch-wave app the tool covers. Every routed record spec carries '
+                    '--app <app> and a [launch-wave:<app>] summary tag, so coverage is countable '
+                    'per app across tools, not per tool (cc b58).'),
     ('ROUTE', 'Name the SITE (repo path, and line) each stress scenario exercises. A FAIL is '
               'ROUTED to that file\'s owner by docs/sairn-path-manifest.json and is NEVER '
               'self-registered: the owner files the register record against their FIX '
@@ -77,6 +80,17 @@ def route(site, repo):
     return None
 
 
+def record_spec(scenario, wave_app, repo, severity='moderate'):
+    """The register record the OWNER files against their fix commit: every
+    field but --commit, tagged with the launch-wave app (cc b58) so coverage is
+    countable per app across tools. Printed by the stress tool; never filed by it."""
+    return {'owner': route(scenario.site, repo), 'site': scenario.site,
+            'args': ['--app', wave_app, '--layer', 'product', '--severity', severity,
+                     '--method', 'fault-injection',
+                     '--summary', '[launch-wave:%s] %s -- %s (site %s)'
+                                  % (wave_app, scenario.sid, scenario.fail_means, scenario.site)]}
+
+
 def may_self_register(site, session, repo):
     """True only when `session` owns the file the finding is in."""
     return route(site, repo) == session
@@ -98,9 +112,11 @@ class Scenario(object):
         self.site = site
 
 
-def plan_problems(scenarios, ablation, scope):
+def plan_problems(scenarios, ablation, scope, wave_app='-'):
     """[] when the plan answers the checklist. Pure."""
     bad = []
+    if not str(wave_app or '').strip():
+        bad.append('no LAUNCH-WAVE app named, so the routed records cannot be tagged by app')
     if not scenarios:
         return ['no scenarios']
     for s in scenarios:
@@ -127,8 +143,8 @@ def plan_problems(scenarios, ablation, scope):
     return bad
 
 
-def require_plan(scenarios, ablation, scope):
-    bad = plan_problems(scenarios, ablation, scope)
+def require_plan(scenarios, ablation, scope, wave_app=None):
+    bad = plan_problems(scenarios, ablation, scope, wave_app)
     if bad:
         print('PLAN REFUSED -- the presence-proof checklist is not answered, so a false '
               'positive could pass silently. COULD NOT RUN:')
@@ -183,6 +199,11 @@ def run_fixtures():
         (route('tests/x.js', repo) == 'cody', 'a tests/ site routes to cody'),
         (not may_self_register('api/sd-data.js:1', 'cc', repo), 'cc may NOT self-register an api/ finding'),
         (may_self_register('tools/x.py:1', 'cc', repo), '...and may register a tools/ finding'),
+        (any('LAUNCH-WAVE' in b for b in plan_problems([ok, st], 'x', 'y', '')),
+         'a plan with no launch-wave app is refused'),
+        ('[launch-wave:stonedesk]' in record_spec(st, 'stonedesk', repo)['args'][-1]
+         and record_spec(st, 'stonedesk', repo)['owner'] == 'fourth',
+         'a record spec carries the launch-wave tag and the routed owner'),
     ]
     return [why for good, why in cases if not good], len(cases)
 
