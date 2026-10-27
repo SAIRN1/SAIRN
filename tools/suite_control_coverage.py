@@ -327,6 +327,29 @@ def _default_probes():
             + sorted(glob.glob(os.path.join(REPO, 'tests', 'faults', '*.js'))))
 
 
+def population_exclusions(probe_paths=None):
+    """What survey()'s default population leaves out, COUNTED (cody b52).
+
+    The headline said "N suite(s) -- tests/*.js and api/*.test.js" and was
+    silent about two exclusions: the `*_mutation_control.js` files dropped as
+    probes (a deliberate rule, stated in survey()), and every test file the
+    two FLAT globs never reach (api/_lib/*.test.js, api/agent/*.test.js,
+    tests/<dir>/*.js). A ratio whose population is smaller than the label
+    says reads as coverage of the larger one.
+    """
+    probes = probe_paths if probe_paths is not None else _default_probes()
+    probe_names = set(os.path.basename(p) for p in probes)
+    flat = (glob.glob(os.path.join(REPO, 'tests', '*.js'))
+            + glob.glob(os.path.join(REPO, 'api', '*.test.js')))
+    as_probe = sorted(os.path.basename(f) for f in flat if os.path.basename(f) in probe_names)
+    deep = (glob.glob(os.path.join(REPO, 'tests', '**', '*.js'), recursive=True)
+            + glob.glob(os.path.join(REPO, 'api', '**', '*.test.js'), recursive=True))
+    flat_set = set(os.path.normpath(f) for f in flat)
+    nested = sorted(os.path.relpath(f, REPO).replace(os.sep, '/') for f in deep
+                    if os.path.normpath(f) not in flat_set and 'node_modules' not in f)
+    return {'excluded_as_probe': as_probe, 'outside_flat_globs': nested}
+
+
 def survey(suite_paths=None, probe_paths=None):
     """{suite basename: [probe basenames]} plus the probes that were parsed."""
     # BOTH DIRECTORIES. A tests/-only universe silently excluded api/, where
@@ -755,8 +778,11 @@ def main(argv):
     inline_n = len([b for b in ctl if '(inline)' in ctl[b]])
     stub_n = len([b for b in ctl if '(inline: module stub)' in ctl[b]])
 
+    excl = population_exclusions()
     if args.json:
         print(json.dumps({'suites': len(names), 'controlled': sorted(ctl),
+                          'excluded_as_probe': excl['excluded_as_probe'],
+                          'outside_flat_globs': excl['outside_flat_globs'],
                           'uncontrolled': uncontrolled,
                           'inline_unverified': inline_unverified,
                           'unreadable_probes': unreadable}, indent=1))
@@ -765,6 +791,9 @@ def main(argv):
     if not args.quiet:
         print('SUITE CONTROL COVERAGE -- report only, nothing gates on this')
         print('  %d suite(s) -- tests/*.js and api/*.test.js' % len(names))
+        print('  NOT IN THAT POPULATION, counted: %d *_mutation_control.js excluded as probes; '
+              '%d .js file(s) in subdirectories the flat globs do not reach (not all are suites)'
+              % (len(excl['excluded_as_probe']), len(excl['outside_flat_globs'])))
         print('  %d have a negative control (a probe that BREAKS the source and '
               'asserts' % len(ctl))
         print('  the suite goes red); %d have never been sabotaged at all.'

@@ -71,6 +71,7 @@ OVERRIDES_READER = re.compile(
 
 SCAN_DIRS = ('tools', 'tests', 'api', 'scripts')
 SKIP_NAMES = {'x-vercel-challenge-token'}   # Vercel's own, not ours
+SKIPPED_ONLY = []                            # filled by scan(), printed by main()
 
 
 class CouldNotTell(Exception):
@@ -107,6 +108,9 @@ def server_header():
 def scan(expected):
     """(senders, wrong) -- files that set a session-ish header, and the bad ones."""
     senders, wrong, stubbed = {}, [], set()
+    # Files whose ONLY session-ish header is in SKIP_NAMES leave the universe;
+    # they are counted here and printed (cody b52) rather than vanishing.
+    SKIPPED_ONLY.clear()
     for d in SCAN_DIRS:
         base = os.path.join(REPO, d)
         if not os.path.isdir(base):
@@ -122,13 +126,16 @@ def scan(expected):
                 except OSError as exc:
                     raise CouldNotTell('%s could not be read (%s) -- NOT a pass'
                                        % (rel, exc))
-                got = set()
+                got, skipped_here = set(), False
                 for m in SESSION_ISH.finditer(src):
                     name = m.group(1).lower()
                     if name in SKIP_NAMES:
+                        skipped_here = True
                         continue
                     got.add(name)
                 if not got:
+                    if skipped_here:
+                        SKIPPED_ONLY.append(rel)
                     continue
                 senders[rel] = sorted(got)
                 # ── A FILE THAT REPLACES tokenFromRequest OWNS ITS HEADER ────
@@ -182,6 +189,8 @@ def main(argv=None):
     print('expected header, DERIVED from api/_lib/auth.js tokenFromRequest(): %r'
           % expected)
     print('')
+    print('NOT IN THE UNIVERSE, counted: %d file(s) whose only session-ish header is'
+          ' in SKIP_NAMES (%s)' % (len(SKIPPED_ONLY), ', '.join(sorted(SKIP_NAMES))))
     print('%d file(s) set a session-ish header, of which %d REPLACE'
           % (len(senders), len(stubbed)))
     print('tokenFromRequest and are exempt by construction -- they never reach')

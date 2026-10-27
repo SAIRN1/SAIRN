@@ -79,11 +79,27 @@ def _code_lines(src):
         yield t
 
 
+# Test files are not request gates and stay out of the population BY RULE;
+# the ones that do mention verifySessionToken( are counted and printed so the
+# exclusion is visible rather than only explained in the docstring (cody b52).
+EXCLUDED_TESTS_WITH_GATE_CALL = []
+
+
 def scan():
     out = {}
+    del EXCLUDED_TESTS_WITH_GATE_CALL[:]
     for root, _dirs, files in os.walk(os.path.join(REPO, 'api')):
         for f in sorted(files):
-            if not f.endswith('.js') or f.endswith('.test.js'):
+            if f.endswith('.test.js'):
+                try:
+                    if 'verifySessionToken(' in io.open(os.path.join(root, f), encoding='utf-8',
+                                                        errors='replace').read():
+                        EXCLUDED_TESTS_WITH_GATE_CALL.append(
+                            os.path.relpath(os.path.join(root, f), REPO).replace(os.sep, '/'))
+                except OSError:
+                    pass
+                continue
+            if not f.endswith('.js'):
                 continue
             p = os.path.join(root, f)
             rel = os.path.relpath(p, REPO).replace(os.sep, '/')
@@ -189,6 +205,9 @@ def main(argv):
     gates_uncovered_in_partial = sum(v['gates'] - v['explicit'] for v in partial.values())
 
     print('SESSION-GATE RE-CHECK COVERAGE')
+    print('  NOT IN THE POPULATION, by rule: %d api/ *.test.js file(s) that call'
+          ' verifySessionToken( -- tests, not request gates'
+          % len(EXCLUDED_TESTS_WITH_GATE_CALL))
     print('%-30s %6s %9s %9s  %s' % ('file', 'gates', 'explicit', 'by-route', 'verdict'))
     for rel in sorted(rows, key=lambda k: -rows[k].get('gates', 0)):
         v = rows[rel]

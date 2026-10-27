@@ -63,8 +63,8 @@ rather than printing a meaningless column.
 
 Exit 0 when every operand is killed, 1 when any survives or any mutation could
 not be applied, 2 when the fixtures fail, the tree is dirty, no throwaway
-worktree can be made, or --report names a source path -- none of which is a
-pass.
+worktree can be made, --report names a source path, or a --limit run judged
+only a clean SUBSET of the operands -- none of which is a pass.
 
     python tools/condition_coverage.py --engine ledger
     python tools/condition_coverage.py --report docs/coverage/cc.json
@@ -355,6 +355,10 @@ def sweep(key, engine, suite, limit=None, root=None):
     before_hash = sha(path)
     src = io.open(path, encoding='utf-8').read()
     ops = operands(src)
+    # A --limit run judges a SUBSET (cody b52). Its population is still the
+    # full operand list, so the full count is kept and printed, and a subset
+    # run can never exit 0 as if the engine were covered.
+    operands_total = len(ops)
     if limit:
         ops = ops[:limit]
     killed, survived, not_applied, results = 0, 0, 0, []
@@ -409,7 +413,8 @@ def sweep(key, engine, suite, limit=None, root=None):
         restored = sha(path) == before_hash
         how = 'git checkout -- (the write-back could not be confirmed)'
     return {'engine': key, 'file': engine, 'suite': suite,
-            'operands': len(ops), 'killed': killed, 'survived': survived,
+            'operands': len(ops), 'operands_total': operands_total,
+            'killed': killed, 'survived': survived,
             'not_applied': not_applied, 'restored_byte_identical': restored,
             'restored_how': how,
             'results': results}
@@ -540,6 +545,11 @@ def main(argv):
             print('  %-17s %5d   %5d   %6d   %9d   %s'
                   % (r['engine'], r['operands'], r['killed'], r['survived'],
                      r['not_applied'], 'yes' if r['restored_byte_identical'] else 'NO !!'))
+            if r['operands'] < r.get('operands_total', r['operands']):
+                print('  %-17s ** SUBSET: %d of %d operand(s) judged (--limit); the other %d'
+                      ' were NOT run -- this is not engine coverage'
+                      % ('', r['operands'], r['operands_total'],
+                         r['operands_total'] - r['operands']))
         for r in out:
             surv = [x for x in r['results'] if x['verdict'] != 'KILLED']
             if not surv:
@@ -558,7 +568,11 @@ def main(argv):
 
     failed = any(r['survived'] or r['not_applied'] or not r['restored_byte_identical']
                  for r in out)
-    return 1 if failed else 0
+    partial = any(r['operands'] < r.get('operands_total', r['operands']) for r in out)
+    if failed:
+        return 1
+    # A clean SUBSET is could-not-tell for the engine, never a pass.
+    return 2 if partial else 0
 
 
 if __name__ == '__main__':

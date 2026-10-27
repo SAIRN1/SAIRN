@@ -217,8 +217,15 @@ def analyse_suite(src):
     return driven - second, second
 
 
+# What scan() leaves out BY RULE, counted so the headline is not silently
+# smaller than its label (cody b52). Filled on every scan().
+EXCLUDED = {'actions': 0, 'suites': 0}
+
+
 def scan():
     results = {}
+    EXCLUDED['actions'] = 0
+    EXCLUDED['suites'] = 0
     for path in suite_files():
         rel = os.path.relpath(path, REPO).replace(os.sep, '/')
         try:
@@ -226,8 +233,16 @@ def scan():
         except OSError as exc:
             raise CouldNotTell('%s could not be read (%s) -- NOT a pass' % (rel, exc))
         first, second = analyse_suite(src)
+        # SYMMETRIC (cody b52). Only `first` was filtered, so a suite whose
+        # only "second pass" was a READ counted as having a second-pass arm.
+        # A verb with no retry sense is out of BOTH sides, and counted.
+        raw = len(first) + len(second)
         first = {a for a in first if a not in NO_SECOND_PASS_SENSE}
+        second = {a for a in second if a not in NO_SECOND_PASS_SENSE}
+        EXCLUDED['actions'] += raw - len(first) - len(second)
         if not first and not second:
+            if raw:
+                EXCLUDED['suites'] += 1
             continue
         results[rel] = {
             'first_only': sorted(first),
@@ -264,6 +279,9 @@ def main(argv=None):
     print('path. First-pass tests all passed. This looks for that blind spot.')
     print('')
     print('%d suite(s) drive an action.' % len(res))
+    print('  NOT COUNTED, by rule (no retry sense: %s): %d action(s); %d suite(s)'
+          ' that drive only those' % ('/'.join(sorted(NO_SECOND_PASS_SENSE)),
+                                      EXCLUDED['actions'], EXCLUDED['suites']))
     print('  suites with ANY second-pass arm                     : %d' % len(any_second))
     print('  actions tested ONLY on a first attempt              : %d' % total_first)
     print('  *** suites that DOCUMENT a retry/resume/abort path')

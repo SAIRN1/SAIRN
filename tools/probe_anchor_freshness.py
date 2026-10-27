@@ -421,10 +421,18 @@ def mutations_anchors(rel):
     except Exception:
         return None
     out = []
+    # A MUTATIONS entry the delegate cannot resolve is COULD NOT CHECK, not
+    # "not an anchor" (cody b52): it used to `continue` and vanish from every
+    # count, while tools/checker_denominator.py counts the same failure as
+    # unreadable -- two tools disagreeing about one probe. It is now counted
+    # on the function and the caller reports it as `skipped`, which CHECK 5e
+    # names. Structural and '@name' arms below stay excluded BY RULE.
+    mutations_anchors.unresolved = 0
     for entry in muts:
         try:
             target, old = mac.resolve(consts, entry)
         except Exception:
+            mutations_anchors.unresolved += 1
             continue
         # A structural arm has no text anchor by construction and is not a
         # freshness question. Counting it would inflate the checked figure with
@@ -473,7 +481,12 @@ def scan():
         anchors, unresolved = anchors_in(tree, names)
         # ── THE MUTATIONS CONVENTION, delegated. See mutations_anchors(). ──
         if re.search(r'^MUTATIONS\s*=', src, re.M):
+            mutations_anchors.unresolved = 0
             extra = mutations_anchors(rel)
+            if extra is not None and mutations_anchors.unresolved:
+                skipped.append((rel, '%d MUTATIONS entr(ies) the delegate could not '
+                                     'resolve -- COULD NOT CHECK, not clean'
+                                % mutations_anchors.unresolved))
             if extra is None:
                 skipped.append((rel, 'declares MUTATIONS and the delegate '
                                      'tools/mutation_anchor_check.py could not '

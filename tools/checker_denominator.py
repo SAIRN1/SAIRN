@@ -97,18 +97,32 @@ def _read(rel):
 # universe the tool derives is the tool grading its own denominator, which is
 # the defect this file exists for one level up.
 
+# What each "checked" leg counted that is NOT in its universe (cody b52). The
+# two anchor rows used to divide a count of one population by a count of
+# another: checked came from an on-disk glob (untracked files included) or
+# from freshness rows (unparseable files included), the universe from
+# `git ls-files` minus unparseable files -- nothing intersected them and
+# nothing capped the ratio. Checked is now the intersection, and the rest is
+# counted here and printed under the table.
+OUTSIDE_UNIVERSE = {}
+
+
 def _probes_declaring_anchors():
+    return len(_probe_set_declaring_anchors())
+
+
+def _probe_set_declaring_anchors():
     """Probe files that declare a mutation anchor in ANY of the three known
     conventions. The universe for BOTH anchor checkers, which is the point:
     they are measured against the same denominator or the zero-overlap gap
     cannot be seen."""
     import ast
     ARM = ('arm', 'mutate', 'sabotage', 'plant')
-    n = 0
+    out = set()
     for rel in _tracked('tests/*.py', 'tests/**/*.py'):
         src = _read(rel)
         if re.search(r'^MUTATIONS\s*=', src, re.M):
-            n += 1
+            out.add(rel)
             continue
         try:
             tree = ast.parse(src)
@@ -129,8 +143,14 @@ def _probes_declaring_anchors():
                 if 'old' in params and 'new' in params:
                     hit = True
         if hit:
-            n += 1
-    return n
+            out.add(rel)
+    return out
+
+
+def _within_universe(name, checked):
+    universe = _probe_set_declaring_anchors()
+    OUTSIDE_UNIVERSE[name] = sorted(checked - universe)
+    return len(checked & universe)
 
 
 def _checked_probe_anchor_freshness():
@@ -139,7 +159,8 @@ def _checked_probe_anchor_freshness():
     res = paf.scan()
     if res is None:
         raise RuntimeError('probe_anchor_freshness.scan() could not run')
-    return len(set(r['probe'].replace(os.sep, '/') for r in res['rows']))
+    return _within_universe('probe_anchor_freshness.py',
+                            set(r['probe'].replace(os.sep, '/') for r in res['rows']))
 
 
 def _checked_mutation_anchor_check():
@@ -155,7 +176,7 @@ def _checked_mutation_anchor_check():
             continue
         if muts:
             seen.add(os.path.relpath(path, REPO).replace(os.sep, '/'))
-    return len(seen)
+    return _within_universe('mutation_anchor_check.py', seen)
 
 
 def _apps():
@@ -720,6 +741,12 @@ def main(argv):
         print('      %s' % v['note'])
         if v.get('why'):
             print('      %s' % v['why'])
+    for name, rels in sorted(OUTSIDE_UNIVERSE.items()):
+        if rels:
+            print('')
+            print('  %s also read %d file(s) OUTSIDE its universe -- not counted in'
+                  ' checked: %s' % (name, len(rels), ', '.join(rels[:8])
+                                    + (' ...' if len(rels) > 8 else '')))
     if errors:
         print('')
         print('COULD NOT MEASURE (%d) -- a third state, never a pass:' % len(errors))
