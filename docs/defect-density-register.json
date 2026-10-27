@@ -38537,6 +38537,98 @@
         }
       ],
       "recurrence_open": "a 503 only on a wrong PIN when the PATCH fails can reveal that an employee_id exists while the write path is broken; a correct PIN is still accepted when the lockout cannot be written"
+    },
+    {
+      "commit": "972fd8bb8fd2",
+      "date": "2026-10-27",
+      "subject": "fix(dora_metrics, cody b52): the change failure rate's numerator is drawn from its denominator",
+      "files": [
+        "docs/sairn-path-manifest.json",
+        "tests/run_dora_metrics_probe.py",
+        "tools/dora_metrics.py"
+      ],
+      "lines_added": 41,
+      "lines_removed": 5,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/dora_metrics.py divided every injection commit in the register (any date, any path) by this window's DEPLOYABLE commits, so injections into docs/tests/tools and outside the window counted against a denominator that excluded them: change failure rate 11.7% printed vs 6.4% true (143 of 2222; 117 of 260 injection commits outside the population). Now in-population over population, with the outside count printed; probe +2 arms red on the old tool.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The CFR block predates this batch; the commit that first divided the two sets was not traced."
+      },
+      "citation_note": "Commits the population could not account for were folded into the numerator rather than counted as outside it.",
+      "contributing_factors": [
+        {
+          "factor": "Numerator and denominator were built from different sets and never intersected.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "failed & deployable-in-window over deployable-in-window; outside count printed."
+        },
+        {
+          "factor": "The control probe asserted the CFR differed from the fix ratio, never that its numerator lay inside its denominator.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Two arms: numerator within denominator, and in + out = all."
+        }
+      ],
+      "recurrence_open": "Other DORA figures (time to restore) were not re-audited for the same set mismatch."
+    },
+    {
+      "commit": "d965f6de12ba",
+      "date": "2026-10-27",
+      "subject": "fix(tools, cody b52): seven status/coverage tools say what their population left out",
+      "files": [
+        "tools/auth_header_name_sweep.py",
+        "tools/checker_denominator.py",
+        "tools/condition_coverage.py",
+        "tools/probe_anchor_freshness.py",
+        "tools/second_pass_coverage_scan.py",
+        "tools/session_recheck_coverage.py",
+        "tools/suite_control_coverage.py"
+      ],
+      "lines_added": 141,
+      "lines_removed": 12,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "Seven tools/ status/coverage scripts printed a ratio or count over a silently reduced or mismatched population (Michael's b52 sweep after hover2's tool_provenance_status.py): suite_control_coverage (13 probes + 195 nested files unannounced), probe_anchor_freshness (unresolvable MUTATIONS entries dropped from every count), checker_denominator (checked and universe from different sets), second_pass_coverage_scan (asymmetric filter, 84 actions/22 suites uncounted), condition_coverage (--limit subset printed as the population and could exit 0), auth_header_name_sweep (2 files uncounted), session_recheck_coverage (9 test files uncounted). Each now counts and prints what it left out.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Seven independent tools, each with its own history; not traced per tool."
+      },
+      "citation_note": "An exclusion the reader cannot see makes a partial population read as the whole one.",
+      "contributing_factors": [
+        {
+          "factor": "Exclusions were applied as code-level filters with no counter, so nothing in the output reflected them.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Each tool counts and prints its exclusions beside the figure they affect."
+        },
+        {
+          "factor": "No checker compares a tool printed population with what its label claims.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "Candidate: a checker_denominator-style row per coverage tool; not built in b52."
+        }
+      ],
+      "recurrence_open": "Four milder cases the sweep marked clean-by-rule were not changed: resource_reachability_check per-app totals vs header total, blob_conversion_coverage docstring vs .test.js skip, entitlement_freshness_check EXTERNAL_OWNED, secrets_inventory hard-coded 47/11."
     }
   ],
   "started": "2026-09-09",
