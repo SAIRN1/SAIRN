@@ -4656,8 +4656,8 @@
       "task": "b56 credentialStillActive refuse answered failure and live verify w3 w4 w5",
       "claimed_at": "2026-10-27T15:18:26Z",
       "claimed_at_epoch": 1793114306.1726544,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-27T15:46:58Z",
       "files": null
     }
   ],
