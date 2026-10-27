@@ -1,0 +1,15 @@
+DIGEST -- cody b53, 2026-10-27. Items 1-3 DONE, 4 REPORTED, 5 NOT A BUILD-AGENT ITEM. PUSH NOT LANDED.
+STATUS: 15 COMMITS LOCAL ONLY (0 behind, clean, green). Retry loop killed by Claude Code for LOW MEMORY; not restarted.
+CHANGED: api/sd-data.js, api/sd-sub-data.js, api/_lib/sd-store.js, api/bridge.js, api/b52 test, tests/run_condition_coverage_probe.py, manifest, register, tier-a. Plus LIVE demo data (item 1).
+LANDED: NONE of b53's commits. Local head 874299cda; first work commit e37425be6.
+ITEM 1 -- dental demo now books: 3 procedures made public (D0120/D1110/D0274), 15 demo provider-hour rows; live slots present.
+  Finding -> hank: public-availability builds slots in UTC, ignores the practice timezone (09:00 shown as 05:00 ET).
+ITEM 2 -- the 64KB default measures jsonb text at all 4 sites; 6/6; api 328/333 green (5 red identically at HEAD).
+ITEM 3 -- condition_coverage probe green 26/0 (probe had fallen behind its tool); import guard added.
+ITEM 4 -- 12 ratio-shape leads in unswept tools/ (worst: run_all_tests counts not-run as pass); NOT fixed, listed in handoff.
+ITEM 5 -- seq1139 13-16 are H2's own tooling; not routable to cody.
+DECISION-NEEDED: Michael -- run `python tools/push_retry.py --loop` in SAIRN-cody (or ok me to); then release the platform claim.
+UNVERIFIED: none of b53 is deployed (unpushed). Item 1 is live data and verified live.
+NEXT: push; hank timezone; ratio leads to cc/cody; Tier A review once landed.
+EVIDENCE-path: SAIRN-handoff-cody-b53.md, SAIRN-report-cody-b53.txt (both committed locally, unpushed)
+CONTEXT 71.7% of 1,000,000 -- 717,090 tokens, measured.

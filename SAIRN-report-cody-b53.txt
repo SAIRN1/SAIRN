@@ -1,0 +1,21 @@
+REPORT -- cody b53, 2026-10-27
+
+NOT LANDED. 15 commits committed locally, 0 behind origin, tree clean, suites green -- every push lost the race to a busy
+  remote during the ~4 min gate, and the background retry loop was STOPPED BY CLAUDE CODE FOR LOW SYSTEM MEMORY mid-rebase.
+  The rebase was completed by hand (nothing half-applied); the loop was not restarted, per the harness note.
+  NEXT: python tools/push_retry.py --loop from SAIRN-cody, then confirm on origin/main and release the platform claim.
+1. DENTAL DEMO BOOKING SEEDED (live data, DNT-PINNACLE-2026): bookable list held 1 stale id -> now PC-DEMO-1/2/3 (D0120,
+   D1110, D0274); no demo provider had hours -> 15 rows PH-DEMO-* Mon-Fri 09:00-17:00. Public availability now lists 3
+   procedures; PV-DEMO-1 shows 240/90/320 slots over two weeks. FINDING (hank): public-availability.js builds slots in UTC
+   and ignores settings.timezone, so 09:00 is served as 09:00Z (05:00 ET) -- pre-existing.
+2. 64KB DEFAULT = JSONB MEASURE at all four sites (sd-data gate, sd-sub-data, sd-store slab/memory, bridge push). b52 test
+   re-aimed 6/6 (65,471 compact / 98,196 jsonb -> 413). api: 328/333 green; the 5 red are red identically at HEAD.
+3. run_condition_coverage_probe GREEN 26/0: arm 4 assumed an untracked marker and old message (tool now scopes to measured
+   engines); arm 5 lacked the now-required root=. Re-aimed + byte-snapshot restore + import guard (5e UNGUARDED cleared).
+4. RATIO SWEEP of unswept tools/ (300 files, ~75 traced): 9 shape-present + 3 minor, REPORTED NOT FIXED and not re-read by me
+   (wrapped at the 80% rule with the push open): run_all_tests not_run counted as pass; flaky_checker_quarantine numerator
+   can exceed registry; checker_confidence pooled history; sairn_reachability 0-falls-through; reliability_growth window
+   mismatch; hover_separation_audit repeat pairs; text_gate_literal_sweep name-matched list; defect_budget_policy all-history
+   over 30-day budget (documented); ownership_evidence_drift net count. Sites in the handoff.
+5. seq1139 items 13-16 = H2's own tooling (tools-hover2): not editable by a build agent; H2 carries them. Nothing done.
+OPEN: push (O1); hank timezone; 12 ratio leads; H2 items; Tier A review after landing; 5 pre-existing api reds.
