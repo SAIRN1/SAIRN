@@ -380,16 +380,19 @@ def injection_refusal(body, context):
     the measurement harness. It looks at EXACTLY what would be sent (the diff body AFTER any
     comment-strip, plus the context), so a comment the b74 policy already removed does not refuse
     a chunk, and a string literal it cannot remove does. FAIL CLOSED: a detector that cannot be
-    imported or run is a refusal, never 'clean' -- the same standard as the rate gate."""
+    imported or run is a refusal, never 'clean' -- the same standard as the rate gate.
+    b89: the detector is detect_reviewer_directed_scoped (comment and string text of the ADDED
+    lines, plus the context, under strict patterns), not the whole-text detector, which flagged
+    28.1% of real Tier 1+2 api js file diffs in b88 (0 of 228 and 0 of 218 on the scoped one)."""
     try:
         import hover_injection_defense as D
-        flagged, cats = D.detect_reviewer_directed(body + chr(10) + (context or ''))
+        flagged, cats, where = D.detect_reviewer_directed_scoped(body, context or '')
     except Exception as e:  # noqa: BLE001
         return ('the reviewer-directed-text check could not run (%s: %s), so the chunk is not sent'
                 % (type(e).__name__, e))
     if flagged:
-        return ('reviewer-directed text (%s) is in what would be sent -- not sent; read this diff '
-                'by hand' % ', '.join(cats))
+        return ('reviewer-directed text (%s, in %s) is in what would be sent -- not sent; read this '
+                'diff by hand' % (', '.join(cats), ', '.join(where)))
     return None
 
 
@@ -1691,16 +1694,16 @@ def selftest():
        'refused too, vendor never called',
        r54.get('status') == 'injection-refused' and calls['ask'] == 0)
     import hover_injection_defense as D_i
-    real_det = D_i.detect_reviewer_directed
+    real_det = D_i.detect_reviewer_directed_scoped
     calls.update(ask=0, wait=0, rec=0)
 
-    def broken_detector(_t):
+    def broken_detector(_t, _c=''):
         raise RuntimeError('detector exploded')
-    D_i.detect_reviewer_directed = broken_detector
+    D_i.detect_reviewer_directed_scoped = broken_detector
     try:
         r53 = review_chunk(X_i, _CountGate(), 'k', 'api/x.js', ok_chunk, ask=counting_ask)
     finally:
-        D_i.detect_reviewer_directed = real_det
+        D_i.detect_reviewer_directed_scoped = real_det
     ck('V53 FAIL CLOSED: a detector that cannot run refuses the chunk (could-not-run is not "clean"), '
        'vendor never called',
        r53.get('status') == 'injection-refused' and 'could not run' in (r53.get('why') or '') and calls['ask'] == 0)
