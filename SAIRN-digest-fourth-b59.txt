@@ -1,0 +1,24 @@
+SAIRN DIGEST -- fourth b59 -- 2026-10-27
+CONTEXT 64.1% of 1,000,000 -- 640,989 tokens, measured.
+STATUS: all 6 items done and live (16:29Z); modal axe 26 -> 0; document Analyze button was dead -- fixed; H1 #1713 fixed.
+DECISION-NEEDED: is archive/branch-lucid-ptolemy-b73vu0/ served by Vercel? It carries the same modals, unfixed.
+READ: SAIRN-handoff-fourth-b59.md (whole state). Detail: SAIRN-report-fourth-b59.txt.
+SQL: none this batch.
+CHANGED:
+  e29950026 stonedesk: sairn-* modal contrast at the class rules (StoneDesk-only; other hits are archive snapshots);
+            doc modal's missing updateAnalyzeBtn restored (button never pressable); 4 modals opened via real triggers,
+            customer detail fixed; qty 0 shows "0"; late cart rows named; 49 arms, 5/5 mutants
+  43812bdbb sairnsenior: refused claim draft withdrawn, visit back in Ready to bill (H1 #1713); 20 arms
+  37e9ebd32 scrutiny: 402c2d8ac048 row re-derived with the gate's writer; 2 orphans (gone from git) dropped
+1 axe: panels 0/67, modals 0/14 + 0/4 via real triggers, vendorcat with cart rows 0
+2 doc Analyze: HEAD threw 'updateAnalyzeBtn is not defined', never ready; fixed -- ready + clickable LIVE
+3 INCIDENT (mine, contained): a timeout on git push killed the gate mid-mutation; law-roles.js mutant restored, never committed
+EVIDENCE-path: tests/stonedesk_a11y_pass.js, tests/sairnsenior_contract_auth_save.js; scratchpad modal59.py, open4b_59.py.
+NEXT, in order:
+  a decision above (archive/)
+  b route 2 pre-existing false scrutiny rows on 3ead2e8618e1 to their author
+  c cartAdd does not re-render the qty box (product call); sweep old refused senior drafts on devices
+  d remaining low-alpha dark-theme labels (.sairn-fu-label, .shoff-label) -- not flagged yet
+UNVERIFIED: senior fix not browser-driven end to end (needs the rate and auth engines).
+RULE: never wrap git push in timeout -- the gate applies mutants and must finish to restore them.
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\fd66c7b5-98f7-4e46-ac2a-b0383cde9210.jsonl

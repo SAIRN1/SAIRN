@@ -1,0 +1,43 @@
+SAIRN REPORT -- fourth b59 -- 2026-10-27
+
+RESULT: all 6 items done and landed (through 79aabe61a); both apps live at
+16:29Z; no force, no skip. Handoff: SAIRN-handoff-fourth-b59.md.
+
+1 SAIRN-* MODAL CONTRAST                                         e29950026
+  SCOPE FIRST: the suite/doc/compare/camera modal markup is in NO live app
+  but stonedesk.html. The 23 other hits are archive/ snapshots. So the fix
+  is StoneDesk-only, made at the class rules. Open-modal axe 26 -> 0.
+  FOUND: the document "Analyze" button could never be pressed. The doc
+  modal called an updateAnalyzeBtn it does not define (the camera's is
+  private to its own IIFE), so it threw and the button was never ready.
+  Restored, with aria-disabled. Driven: HEAD shows 2 errors and never
+  ready; the fix, locally and LIVE, is ready + clickable.
+2 THE 4 UNFORCED MODALS, via real triggers (one LOCAL record seeded per
+  panel, because the audit licence has none; writes blocked). All 4
+  opened. intake, photo and e-sign are axe-clean. In customer detail, a
+  green KPI at 3.29:1 and an unnamed status select were fixed -> 0.
+3 CART ROWS + ZERO QUANTITY. renderVendor/renderCart run sdA11yPass, so
+  late cart rows are named "Remove from cart". Quantity 0 now shows "0"
+  (escHtml(0) was ''). element.remove() glyphs are named "Close". The
+  control emoji rule re-checks every pass.
+  Axe: panels 0/67; modals 0/14 + 0/4; vendorcat with cart rows 0.
+  Suite 42 -> 49 arms; 5/5 mutants killed.
+4 H1 #1713 SAIRNsenior                                           43812bdbb
+  A refused claim draft is now withdrawn and its visit returns to Ready
+  to bill. No answer from the server still keeps the draft. G4-G6 fail
+  on HEAD; all sairnsenior suites are green.
+5 SCRUTINY ROWS                                                  37e9ebd32
+  Rows key COMMITS, not finding ids, so orphans were decided by ancestry.
+  37a43cbca3fc and c8133843ed6d are gone from git -> dropped.
+  402c2d8ac048 is on origin -> its row was RE-DERIVED with the gate's own
+  writer (the hover clone is unreadable to a build agent).
+  Separately: 2 pre-existing false rows on 3ead2e8618e1 (filed).
+6 PUSH: landed after several races.
+  INCIDENT (mine, contained): a 100 s timeout on git push killed the gate
+  mid-mutation and left api/_lib/law-roles.js mutated (law_trusttx
+  paralegal 'r'). It was never committed: each commit was checked file by
+  file. Restored from HEAD; pushes have run with no timeout since.
+
+OPEN: false rows on 3ead2e8618e1; archive/ copies; cartAdd not
+re-rendering the quantity; old refused senior drafts on devices; other
+dark-theme labels.

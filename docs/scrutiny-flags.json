@@ -3577,6 +3577,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairnsenior_contract_auth_save.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "43812bdbbf2b0a4210663e7d836906cea0357d4c",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/b35-accounting-revoke-repeat.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -12741,6 +12749,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "e27a7510b774f2720f98952607c797523e3df674",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/stonedesk_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "e29950026005645ea38987a4fc1e17f701576008",
    "criteria_version": "2026-10-06.1"
   },
   {
