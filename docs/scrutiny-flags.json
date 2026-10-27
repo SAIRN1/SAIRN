@@ -494,6 +494,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/stonedesk_a11y_pass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "063603197b8f30958c83b35f856e7900081d3dbe",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/app_session_isolation.js",
    "class": "test file",
    "level": "WEAKENING",
