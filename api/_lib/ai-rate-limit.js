@@ -409,7 +409,7 @@ async function consumeRacy(client, appId, limit) {
   try {
     const wRows = w.ok ? await w.json() : null;
     if (Array.isArray(wRows) && wRows[0] && wRows[0].id != null) rowId = Number(wRows[0].id);
-  } catch (e) { rowId = null; }
+  } catch (e) { rowId = null; } // KEPT FAIL-OPEN (hank b54 sweep, Michael's sd-render rule): an unparsable 2xx only loses the usage-row link -- metering, it refuses nothing.
 
   return { count: exact, limited: exact >= limit, counted: w.ok, rowId: rowId,
            limitedBy: exact >= limit ? 'app' : null,
@@ -556,6 +556,7 @@ async function recordAiUsage(rowId, usage) {
       if (r.status !== 404) console.error('ai usage: record failed, HTTP', r.status);
       return false;
     }
+    // KEPT FAIL-OPEN (hank b54 sweep): an unparsable 2xx reads as "not recorded" -- best-effort telemetry written after the reply has gone.
     return (await r.json().catch(() => false)) === true;
   } catch (e) {
     console.error('ai usage: record errored (ignored):', e && e.message);

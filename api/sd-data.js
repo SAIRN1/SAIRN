@@ -6619,6 +6619,7 @@ module.exports = async (req, res) => {
           return;
         }
         if (r.ok) {
+          // KEPT FAIL-OPEN (hank b54 sweep): an unparsable/non-list 2xx leaves the empty default, and the upsert below then OVERWRITES the stored topic counts -- accepted for best-effort analytics; flagged in the b54 handoff.
           const rows = await r.json();
           const row = Array.isArray(rows) && rows[0];
           if (row && row.data) current = row.data;
