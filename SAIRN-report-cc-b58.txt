@@ -1,0 +1,71 @@
+REPORT cc b58 -- SAIRNlegacy presence-proof stress + push-gate truncation incident
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-27
+RANGE     4da85144 (tool + checklist + Tier A obligation; the fixture fix folded in), landed 3adf9069..3e8a5215;
+          then the handoff, report and digest. No product code changed. Nothing self-registered. No --force, NO OVERRIDE.
+
+== INCIDENT (cause OPEN) ==
+~11:04 EDT: tools/sairn_push_gate_hook.py became 0 bytes in the working tree (5329 lines deleted).
+At the same time, empty files "cd" and "git" appeared in the clone root.
+While empty, the pre-push gate would have passed any push (fail-open). No push went through it.
+cc's 11:03 command (transcript 15:03:03Z) was a commit, then a 3x loop of add/commit rows, pull --rebase, and
+  git push origin main 2>&1 | tee "$TMPDIR/p58b.txt" | grep -E "\->".
+  Its only '>' characters are 2>/dev/null, 2>&1 x2, and the quoted regex "\->". It names none of the three files.
+Reflog: a commit by another actor at 11:02:39 in this clone -- "Apply H1 b86 ALLOWED entries patch"
+  (tools/hover_auditor_scope_gate.py +42, tools/hover_separation_audit.py +8). Kept, landed as f413c5ea.
+Best read:
+  (1) a command line used to apply that patch, with a redirect parsed onto tokens -- empty files named for
+      segment-first words (cd, git) plus a "> gate" target;
+  (2) a hook stripping quotes from "\->" -- unlikely: no target word, no Bash hooks declared, the same regex has run many times;
+  (3) git checkout during the rebase -- cannot create cd/git.
+Restored on Michael's instruction: git checkout -- the file.
+  diff vs HEAD clean; blob 0e02ddd153559ab7b1ec5e7358b5c70c630b6792 = HEAD; 5329 lines; py_compile ok;
+  selftest 56/56; still clean after every push.
+Evidence: scratchpad\b58-evidence\{cd,git} (0 bytes, 11:04), kept.
+Next: ask the patch applier for their exact command; replay cc's command in a worktree;
+  add a gate self-integrity check (an empty or HEAD-hash-mismatched gate refuses to start); file a bug-class record once root-caused.
+Also: after the restore, the credentials gate refused because 6cfdf32f still carried the fixture literal.
+  I folded my own fix into my own commit via a scripted rebase; the H1 commit was untouched. The next push passed.
+
+== tools/sairnlegacy_presence_stress.py (exit 1) ==
+REAL: sd-data.js handler + MODE_ALWAYS countersign lock + signed session + contentHash; legPriceOf/legComposeStatement.
+STUB: licence and Supabase rows (the b18 harness shape).
+CONTROL-OK L1c  a cremation with every authorisation check recorded, countersigned -> filed
+FAIL       L1a  Completed with authorization_on_file/id_verified/waiting_period_observed/witness_present all false -> 200, filed with countersignature
+FAIL       L1b  Completed with no authorisation fields -> 200, filed
+CONTROL-OK L2c  $5,000 invoice with a $5,000 payment -> Paid
+FAIL       L2a  $5,000 invoice, no payment, status "Paid" -> stored Paid
+CONTROL-OK L3c  priced statement -> printable, total 5000
+PASS       L3e  blank price -> refused PRICE_NOT_ON_FILE
+FAIL       L3a  $0 price (what a blank input saves as) -> printable, total 0
+FAIL       L3b  +5000 / -5000 lines -> printable, total 0
+ABLATION: legPriceOf blank-guard removed -> L3e PASS -> FAIL (observed).
+Surveyed, not driven:
+  confirmPayment :3582 -- a Pre-Need Trust source goes Paid with no plan/funding check and adds to plan.amount_paid.
+  saveCremation :3250 -- Completed is accepted with the authorisation box unchecked.
+
+== ROUTING (not self-registered) ==
+hank:   api/_lib/countersign.js:247, api/sd-data.js:17528 (L1a/L1b); api/sd-data.js:17552 (L2a). Plus the Tier A obligation on leg_cremations/leg_invoices.
+fourth: sairnlegacy.html:3748 (L3a), :3798 (L3b), plus the surveyed :3582 and :3250.
+Each finding has a printed ready-to-file record: --app sairnlegacy, summary tagged [launch-wave:sairnlegacy].
+
+== METHODOLOGY (item 5) ==
+presence_proof.py LAUNCH-WAVE item: require_plan() needs wave_app or exits 2.
+record_spec() emits the owner's --add args with --app and the [launch-wave:<app>] tag. Fixtures 18/18.
+Coverage per app = grep the register for [launch-wave:<app>].
+
+== OPEN ==
+cc: the truncation root cause + the gate self-integrity check.
+hank: L1a/L1b/L2a + the Tier A review. fourth: L3a/L3b + the surveyed two.
+Michael/H1: confirm f413c5ea (applied in cc's clone by another actor; content not reviewed by cc).
+
+== TRANSCRIPT ==
+C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\87a27b9f-55e9-45e8-b017-01ed1febac1a.jsonl
+
+== CHANGED ==
+tools/sairnlegacy_presence_stress.py (new), tools/presence_proof.py, tools/stonedesk_presence_stress.py, tools/tooling_inventory.py,
+docs/TOOLING-INVENTORY.md, docs/tier-a-reviews.json, the deliverables.
+
+SHA256 c2d0bb8d8358e319407841b34d0e07426c96420f3fb43d8c1dc823717882e4f3
+END-OF-REPORT

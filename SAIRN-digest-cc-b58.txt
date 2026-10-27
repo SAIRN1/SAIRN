@@ -1,0 +1,26 @@
+DIGEST cc b58 (SAIRNlegacy presence-proof + a gate-truncation incident)
+STATUS: all items closed except the incident root cause (OPEN). Landed 3adf9069..3e8a5215, 0/0; no product code changed; nothing self-registered; no --force, NO OVERRIDE.
+INCIDENT: at ~11:04, tools/sairn_push_gate_hook.py became 0 bytes, and empty files "cd" and "git" appeared. An empty gate is fail-open; no push went through it.
+  Restored per Michael: diff vs HEAD clean, blob 0e02ddd1 = HEAD, selftest 56/56. The evidence files are kept in the scratchpad.
+  Reflog: another actor committed "Apply H1 b86 ALLOWED entries patch" in cc's clone at 11:02:39 (kept, f413c5ea).
+  cc's 11:03 command names none of the three files. Best read: a redirect in the patch-applying command line. Detail in handoff section 1.
+  Also: the credentials gate refused the earlier fixture literal; it was folded into cc's own commit, and the next push passed.
+TOOL: tools/sairnlegacy_presence_stress.py -> 9 scenarios: 1 PASS, 5 FAIL, 3 controls OK; --ablate flips L3e PASS -> FAIL.
+  L1a/L1b: a cremation is filed WITH its countersignature as Completed with every authorisation check false or absent. The lock checks the token, never the record.
+  L2a: an invoice is stored Paid with no payment.
+  L3a/L3b: the statement is printable at a $0 price, or offset to $0 by a negative line.
+ROUTED (not self-registered):
+  hank -- api/_lib/countersign.js:247, api/sd-data.js:17528 and :17552, plus the Tier A obligation.
+  fourth -- sairnlegacy.html:3748 and :3798, plus the surveyed confirmPayment :3582 and saveCremation :3250.
+METHODOLOGY: presence_proof.py LAUNCH-WAVE item. Every routed record spec carries --app <app> and [launch-wave:<app>]; no wave_app means exit 2. Fixtures 18/18.
+DECISION-NEEDED: Michael/H1 -- confirm f413c5ea was intended. It was applied in cc's clone; cc has not reviewed its content.
+CHANGED: tools/sairnlegacy_presence_stress.py (new), tools/presence_proof.py, tools/stonedesk_presence_stress.py, tools/tooling_inventory.py, docs/TOOLING-INVENTORY.md, docs/tier-a-reviews.json.
+SQL: none.
+EVIDENCE-path: SAIRN-handoff-cc-b58.md (incident section 1, findings section 2), SAIRN-report-cc-b58.txt
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\87a27b9f-55e9-45e8-b017-01ed1febac1a.jsonl
+UNVERIFIED: the truncation's root cause; live behaviour (all offline); confirmPayment and saveCremation (surveyed only).
+ROUTED: hank -- L1a/L1b/L2a + the Tier A review. fourth -- L3a/L3b + the 2 surveyed. cc -- the incident root cause + a gate self-integrity check.
+NEXT: cc -- replay the 11:03 command in a worktree; ask who applied the H1 b86 patch, and how.
+CONTEXT 76.6% of 1,000,000 -- 765,862 tokens, measured.
+SHA256 20a9e3d72ceaec538209ae68c775db8ac9c15b3081be7ff5408778337a1ce0d4
+END-OF-REPORT
