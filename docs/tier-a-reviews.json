@@ -8647,6 +8647,28 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-27T14:26:13Z",
+      "opened_at_sha": "7e79483845df6de9f06218276ef68b06d45848ac",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 3,
+      "resources": [
+        "dnt_appointments"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/b52-cap-jsonb-measure.test.js"
+      ],
+      "what": "cody b52: api/sd-data.js per-resource payload caps (dnt_appointments, rf_claim_photos, rf_claim_agreements, rf_proposals, rf_photos, locations) now measure jsonb text after the dental location stamp, not compact JSON (hover H2 seq1109) -- a record that clears the gate now also clears the table's constraint. api/b32-rf-jobs-projection.test.js gains write-response arms (H2 seq1127). Review: that no legitimate client payload near a cap is newly refused, and the stamp is applied only where the write path stamps.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-27T14:26:13Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
