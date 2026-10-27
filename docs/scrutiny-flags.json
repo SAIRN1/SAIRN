@@ -3387,6 +3387,23 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": ".claude/skills/sairn-hover-auditor/tools/hover_completeness_dispatch_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "disclosed limitation, not assumed away."
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "print('  ok   a resource== pattern inside a // comment (illustrating the shape, "
+    }
+   ],
+   "sha": "402c2d8ac048519ab7d3c4a8437ac05f8ce2abc0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/push_gate/check4_probe.py",
    "class": "test file",
    "level": "WEAKENING",
