@@ -114,6 +114,19 @@ check('...and it is a different number from the CFR, or one of them is wrong',
           - cfr.get('rate_over_deployable', -1)) > 1e-6,
       (doc['fix_commit_proxy']['ratio_over_all_commits'],
        cfr.get('rate_over_deployable')))
+# cody b52: the numerator was every injection commit on record, divided by
+# this window's DEPLOYABLE commits -- two different sets (11.7% read, 6.4%
+# true on 2026-10-27). The rate's numerator must be inside its denominator,
+# and what fell outside must be counted, not dropped.
+check('the CFR numerator is drawn from the SAME population as its denominator',
+      cfr.get('distinct_failed_deploys_in_population', 10 ** 9) <= doc['commits_deployable']
+      and abs(cfr.get('rate_over_deployable', -1) * doc['commits_deployable']
+              - cfr.get('distinct_failed_deploys_in_population', -1)) < 1e-6,
+      cfr)
+check('...and the injection commits OUTSIDE it are counted, so in + out = all',
+      cfr.get('distinct_failed_deploys_in_population', 0)
+      + cfr.get('failed_outside_population', -1) == cfr['distinct_failed_deploys'],
+      cfr)
 
 ttr = doc['time_to_restore']
 check('time to restore reports its own n beside the median',

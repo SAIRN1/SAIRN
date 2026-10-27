@@ -161,8 +161,19 @@ def compute(commits, records):
         cfr['register_records'] = len(records)
         if len(records):
             cfr['injection_coverage'] = len(linked) / float(len(records))
+        # NUMERATOR AND DENOMINATOR OVER ONE SET (cody b52). `failed` is
+        # every injection commit in the register, any date, any path; `dep`
+        # is this window's DEPLOYABLE commits. Dividing one by the other
+        # counted injections into docs/tests/tools, and injections outside
+        # the window, against a denominator that had excluded them. The rate
+        # is now failed-and-deployable-in-window over deployable-in-window,
+        # and what fell outside is counted and printed rather than dropped.
+        dep_ids = set(c[0][:10] for c in dep)
+        failed_in = failed & dep_ids
+        cfr['distinct_failed_deploys_in_population'] = len(failed_in)
+        cfr['failed_outside_population'] = len(failed - dep_ids)
         if len(dep):
-            cfr['rate_over_deployable'] = len(failed) / float(len(dep))
+            cfr['rate_over_deployable'] = len(failed_in) / float(len(dep))
         cfr['coverage_note'] = (
             'computed over the %d of %d records that carry an injection '
             'commit. The rest are NOT backfilled by blame, deliberately: '
@@ -328,10 +339,14 @@ def main(argv):
                   % cfr.get('register_records', 0))
             print('     a failure to the deployment that caused it.')
         else:
-            print('     %.1f%%  -- %d distinct deployment(s) later needed a fix,'
+            print('     %.1f%%  -- %d distinct deployable commit(s) in the window later needed a fix,'
                   % (100 * cfr.get('rate_over_deployable', 0.0),
-                     cfr['distinct_failed_deploys']))
+                     cfr['distinct_failed_deploys_in_population']))
             print('     over %d deployable commit(s).' % r['commits_deployable'])
+            print('     NOT IN THAT FIGURE: %d of the %d injection commit(s) on record are outside'
+                  % (cfr['failed_outside_population'], cfr['distinct_failed_deploys']))
+            print('     the population (non-deployable paths, outside the window, or not')
+            print('     resolvable here) -- counted, not silently divided in.')
             print('     COVERAGE: %s' % cfr['coverage_note'])
             print('     THAT COVERAGE IS THE HEADLINE, NOT THE RATE. A rate')
             print('     computed over %.0f%% of the register is a rate about'
