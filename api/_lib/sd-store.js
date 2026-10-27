@@ -24,6 +24,7 @@ const { validateLicenseKey } = require('./license');
 // on a file with an undefined identifier, so an import missed here would have
 // been a ReferenceError at the first real write and not a syntax error.
 const { storedBlob } = require('./blob');
+const { jsonbTextBytes } = require('./jsonb-text-bytes');
 
 const MAX_PAYLOAD_BYTES = 64 * 1024; // 65536, matches sd-data.js
 
@@ -158,7 +159,8 @@ async function writeSlab(lic, slab) {
   if (!slab || slab.id === undefined || slab.id === null || slab.id === '') {
     throw storeError('BAD_INPUT', 'slab.id is required');
   }
-  const payloadBytes = Buffer.byteLength(JSON.stringify(slab), 'utf8');
+  // Measured as jsonb text, as the table's constraint measures (cody b53).
+  const payloadBytes = jsonbTextBytes(slab);
   if (payloadBytes > MAX_PAYLOAD_BYTES) {
     throw storeError('PAYLOAD_TOO_LARGE', 'Slab payload is ' + payloadBytes + ' bytes; the limit is ' + MAX_PAYLOAD_BYTES + ' (64KB)');
   }
@@ -206,7 +208,7 @@ async function readMemories(lic) {
 
 async function writeMemory(lic, memory) {
   const payload = memory || {};
-  const payloadBytes = Buffer.byteLength(JSON.stringify(payload), 'utf8');
+  const payloadBytes = jsonbTextBytes(payload);
   if (payloadBytes > MAX_PAYLOAD_BYTES) {
     throw storeError('PAYLOAD_TOO_LARGE', 'Memory payload is ' + payloadBytes + ' bytes; the limit is ' + MAX_PAYLOAD_BYTES + ' (64KB)');
   }

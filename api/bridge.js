@@ -121,6 +121,7 @@
 const { validateLicenseKey } = require('./_lib/license');
 const { verifySessionToken, tokenFromRequest, credentialStillActive } = require('./_lib/auth');
 const RESIL = require('./_lib/resilience.js');
+const { jsonbTextBytes } = require('./_lib/jsonb-text-bytes');
 
 // LOOSE ON PURPOSE. Nothing has been measured about these upstreams' real
 // latency or size, and a tight number chosen from nothing trips on ordinary
@@ -542,7 +543,8 @@ async function handlePush(body, res, req) {
     invoices: body.invoices || null,
     employees: body.employees || null
   };
-  const bytes = Buffer.byteLength(JSON.stringify(data), 'utf8');
+  // Measured as jsonb text, the 64KB default's measure since cody b53.
+  const bytes = jsonbTextBytes(data);
   if (bytes > MAX_PUSH_BYTES) {
     res.status(413).json({ error: { code: 'PAYLOAD_TOO_LARGE', message: 'Payload is ' + bytes + ' bytes; the limit is ' + MAX_PUSH_BYTES + ' (64KB)' } });
     return;

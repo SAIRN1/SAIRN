@@ -1059,16 +1059,16 @@ module.exports = async (req, res) => {
   // for the measurement and why this is fail-closed on the verb rather than
   // gated on a classification being right.
   if (action !== 'read') {
-    // A PER-RESOURCE CAP IS THE TABLE'S OWN CONSTRAINT, so it is measured the
-    // way the constraint measures: octet_length(data::text) on jsonb, after
-    // the dental location stamp (cody b52, hover H2 seq1109). Compact JSON
+    // EVERY CAP IS MEASURED THE WAY THE TABLES' CONSTRAINTS MEASURE:
+    // octet_length(data::text) on jsonb, after the dental location stamp.
+    // b52 (hover H2 seq1109) did this for the per-resource caps; b53 extends it
+    // to the 64KB default on Michael's decision, because most tables carry a
+    // 65536 *_data_size constraint measured the same way. Compact JSON
     // undercounts jsonb text by a space per ':' and ',', which let a record
     // past this gate that the database then refused with an unclassified
-    // error. The uniform 64KB default is an API policy, not a constraint, and
-    // keeps its compact measure.
-    const payloadBytes = (PAYLOAD_CAP_BY_RESOURCE[resource] !== undefined)
-      ? jsonbTextBytes(resource.indexOf('dnt_') === 0 ? dntLocation.stampLocation(payload) : payload)
-      : Buffer.byteLength(JSON.stringify(payload), 'utf8');
+    // error.
+    const payloadBytes = jsonbTextBytes(
+      resource.indexOf('dnt_') === 0 ? dntLocation.stampLocation(payload) : payload);
     // PER (RESOURCE, ACTION), falling back to per-resource and then to 64KB --
     // see payloadCapFor() and PAYLOAD_CAP_BY_ACTION above.
     const payloadCap = payloadCapFor(resource, action);

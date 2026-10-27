@@ -38,6 +38,7 @@ const { verifySessionToken, tokenFromRequest, roleSet } = require('./_lib/auth')
 // See api/_lib/blob.js -- COLUMN keys stay per-branch here because which payload
 // fields are real columns is a fact about each table.
 const { storedBlob } = require('./_lib/blob');
+const { jsonbTextBytes } = require('./_lib/jsonb-text-bytes');
 // Attribution for the two management-write branches -- see the notes at
 // `roster`/`write` and `jobs`/`write`. StoneDesk's audit table already exists
 // and is allowlisted in api/_lib/audit.js:40.
@@ -169,7 +170,8 @@ module.exports = async (req, res) => {
   }
 
   if (action === 'write') {
-    const payloadBytes = Buffer.byteLength(JSON.stringify(payload), 'utf8');
+    // Measured as jsonb text, as the table's constraint measures (cody b53).
+    const payloadBytes = jsonbTextBytes(payload);
     if (payloadBytes > SUB_JOB_PAYLOAD_MAX_BYTES) {
       res.status(413).json({
         error: { code: 'PAYLOAD_TOO_LARGE', message: 'Payload is ' + payloadBytes + ' bytes; the limit is ' + SUB_JOB_PAYLOAD_MAX_BYTES + ' bytes' }

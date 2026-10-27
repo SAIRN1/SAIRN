@@ -147,17 +147,29 @@ function arrayHeavyUnder(limit) {
        'G2. a 200KB photo booking, under the ceiling in both measures, is NOT refused by the size gate', res.statusCode + ' ' + eCode(res));
   }
   {
-    // The default cap keeps its compact measure: a non-capped resource is unaffected.
-    const src = SD_DATA_SRC;
-    is(/PAYLOAD_CAP_BY_RESOURCE\[resource\] !== undefined\)\s*\n\s*\? jsonbTextBytes\(/.test(src),
-       'G3. the jsonb measure applies ONLY where a per-resource cap (a table constraint) applies; the 64KB policy default is untouched');
+    // b53 (Michael's decision): the 64KB DEFAULT is measured as jsonb text too.
+    // An array-heavy record under 65,536 compact and over it as jsonb, on a
+    // resource with no per-resource cap, is now refused at the gate.
+    const rec = { id: 'PT-B53', items: [] };
+    const room = 65536 - 64 - Buffer.byteLength(JSON.stringify(rec), 'utf8');
+    rec.items = new Array(Math.floor(room / 2)).fill(1);
+    const c = Buffer.byteLength(JSON.stringify(rec), 'utf8'), j = jsonbTextBytes(rec);
+    const res = mockRes();
+    const realErr = console.error; console.error = function () {};
+    try {
+      await loadHandler(null)({ method: 'POST', headers: { authorization: 'Bearer ' + KEY,
+        'x-sd-auth': signSessionToken({ app: 'sairndental', employee_id: 'emp-1', role: 'owner', license_hash: HASH }) },
+        body: { action: 'write', resource: 'dnt_patients', payload: rec } }, res);
+    } finally { console.error = realErr; }
+    is(c <= 65536 && j > 65536 && res.statusCode === 413 && eCode(res) === 'PAYLOAD_TOO_LARGE',
+       'G3. the 64KB DEFAULT also measures jsonb text (b53): ' + c + ' compact / ' + j + ' jsonb -> 413 at the gate',
+       res.statusCode + ' ' + eCode(res));
   }
 
   // ── X. ABLATION: the compact measure restored -> G1's record clears the gate.
   {
-    const NEW = "    const payloadBytes = (PAYLOAD_CAP_BY_RESOURCE[resource] !== undefined)\n"
-              + "      ? jsonbTextBytes(resource.indexOf('dnt_') === 0 ? dntLocation.stampLocation(payload) : payload)\n"
-              + "      : Buffer.byteLength(JSON.stringify(payload), 'utf8');";
+    const NEW = "    const payloadBytes = jsonbTextBytes(\n"
+              + "      resource.indexOf('dnt_') === 0 ? dntLocation.stampLocation(payload) : payload);";
     const OLD = "    const payloadBytes = Buffer.byteLength(JSON.stringify(payload), 'utf8');";
     if (SD_DATA_SRC.split(NEW).length - 1 !== 1) {
       is(false, 'X. ablation anchor', 'the b52 measure does not occur exactly once in api/sd-data.js');
