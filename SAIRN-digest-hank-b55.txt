@@ -1,0 +1,18 @@
+HANK b55 DIGEST -- 2026-10-27 -- the six WRONG unparsable-2xx fail-opens now fail closed
+CONTEXT 59.4% of 1,000,000 -- 594,197 tokens, measured.
+STATUS: da19dd707 + 86797a9fb LANDED on origin/main, NOT FORCED; no override.
+1. W2: an unreadable licence body -> claude.js 502 LICENCE_UNREADABLE, every mode, logged.
+2. W1: credentialStillActive unreadable 2xx -> ACTIVE_CHECK_UNREADABLE; pre-gate + bridge refuse 502.
+3. W6: derive_charges MAR/ADL/activity reads refuse 502 -- no silently dropped billable events.
+4. W3 audit-checkpoint readers throw; W4 dental dup check 503; W5 trial-renew 502 unconfirmed.
+5. Tests: b55 suite 11/0 (W1/W2 driven, M1-M2 red; the rest source pins).
+   api/ red = 5, all red identically at origin/main.
+6. b54 assumption: b53's 2 OPEN were already closed (dbbf43b6d).
+   So I closed the b52 sweep's 2 OPEN sd-data folds instead (lead times ~3001, style profile ~3984 -> 502).
+DECISION-NEEDED (Michael): confirm item 6.
+DECISION-NEEDED (Michael): should credentialStillActive refuse an answered 4xx/5xx too?
+NEXT: cc informal review of 45ba1d9f7 + da19dd707 (no Tier A obligation opened).
+CHANGED: _lib/license.js, claude.js, _lib/auth.js, sd-data.js, bridge.js, audit-checkpoint.js
+CHANGED: sairndental/public-complaint-submit.js, sairncash/trial-renew.js, new api/b55 test
+EVIDENCE-path: SAIRN-handoff-hank-b55.md, SAIRN-report-hank-b55.txt
+UNVERIFIED: the new refusals on the deployed API; W3-W6 are source pins.

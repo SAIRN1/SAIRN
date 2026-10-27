@@ -1,0 +1,25 @@
+HANK b55 REPORT -- 2026-10-27
+
+METHODOLOGY: the store answered and the answer cannot be read -> refuse. An unreadable 2xx is never "no row",
+"empty", or the transport blip a fail-open was written for.
+
+1. W2 (your decision): _lib/license.js throws UPSTREAM+unparsable on an unreadable licence body; claude.js
+   refuses 502 LICENCE_UNREADABLE in EVERY mode, logged. An unreachable store still fails open (documented).
+2. W1: credentialStillActive -> ACTIVE_CHECK_UNREADABLE on an unparsable/non-list 2xx; the sd-data pre-gate and
+   bridge.js refuse it 502. A transport throw is unchanged (NO_ACTIVE_CHECK).
+3. W6: derive_charges MAR/ADL/activity reads -> 502 READ_FAILED on !ok (except 404/400) or a non-list body.
+4. W3: the audit-checkpoint readers throw on a non-list body (verify can no longer pass unread).
+   W4: the dental complaint duplicate check -> 503.
+   W5: sairncash trial-renew -> 502 RENEWAL_UNCONFIRMED.
+   Tests: b55 suite 11/0 (W1/W2 driven with controls, M1-M2 red; the rest source pins).
+   Full api/ run: only the 5 suites red identically at origin/main.
+5. THE b54 ASSUMPTION, EXACTLY:
+   - The b53 sweep's 2 OPEN guards (sd-data dnt_providers link check, dnt-bi token cap) were ALREADY closed in
+     b53 dbbf43b6d -- nothing remained there.
+   - So I took "remaining OPEN" to mean the 2 sites the b52 63-site sweep left OPEN: sd-data.js supplier
+     lead-time fold (~3001) and style-profile fold (~3984). They fold onto the prior row and upsert, and on a
+     non-list body used to wipe the accumulated stats.
+   - In b54 (45ba1d9f7) both refuse 502 UNREADABLE_PRIOR.
+   - Confirm: the b52 pair was the intended target.
+6. PUSH: da19dd707 + 86797a9fb LANDED on origin/main, not forced. No override. No Tier A obligation (the gate
+   found no Tier A name on a changed line); an informal review is routed to cc.
