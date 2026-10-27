@@ -1,0 +1,20 @@
+{
+  "written_by": "scratchpad dnt_staff_write_b52.py (cody b52; not a repo tool -- this file is its enumeration)",
+  "session": "cody",
+  "batch": "b52",
+  "date": "2026-10-27",
+  "class": "VERIFICATION-WRITING",
+  "licence": "DNT-PINNACLE-2026 (the SAIRNdental demo licence only)",
+  "why_it_had_to_write": "b28 (7e43c9da) raised dnt_appointments' cap so a staff confirm/decline of a photo-bearing booking stops answering 413. Only a staff WRITE above the old 65,536 cap, landing on the deployment, proves it; a refusal arm cannot.",
+  "result": "W1 staff create, 96,419 bytes compact, two photos: 200 | W2 staff decline, whole row with photos: 200 | read-back: Declined, both photos byte-identical in length. The demo practice has 0 publicly bookable procedure types, so the booking was created by the owner (source staff), not via public-book.",
+  "rows": [
+    {
+      "table": "public.dnt_appointments",
+      "id_column": "appointment_id",
+      "id": "AP-B52-LIVE-C68954",
+      "removal_sql_file": "sql/2026-10-27-cody-b52-dnt-residue-removal.sql",
+      "what": "Declined TEST appointment for existing demo patient PT-DEMO-1; no new patient row."
+    }
+  ],
+  "no_tool_here_runs_a_delete": "the sql file is for a human to run"
+}
