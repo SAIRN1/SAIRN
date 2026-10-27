@@ -4648,6 +4648,17 @@
       "status": "released",
       "released_at": "2026-10-27T15:10:19Z",
       "files": null
+    },
+    {
+      "id": "hank-1793114306",
+      "session": "hank",
+      "subject": "active-check",
+      "task": "b56 credentialStillActive refuse answered failure and live verify w3 w4 w5",
+      "claimed_at": "2026-10-27T15:18:26Z",
+      "claimed_at_epoch": 1793114306.1726544,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
