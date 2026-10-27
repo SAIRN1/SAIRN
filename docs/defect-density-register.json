@@ -38539,7 +38539,7 @@
       "recurrence_open": "a 503 only on a wrong PIN when the PATCH fails can reveal that an employee_id exists while the write path is broken; a correct PIN is still accepted when the lockout cannot be written"
     },
     {
-      "commit": "972fd8bb8fd2",
+      "commit": "f3114db3c840",
       "date": "2026-10-27",
       "subject": "fix(dora_metrics, cody b52): the change failure rate's numerator is drawn from its denominator",
       "files": [
@@ -38583,7 +38583,7 @@
       "recurrence_open": "Other DORA figures (time to restore) were not re-audited for the same set mismatch."
     },
     {
-      "commit": "d965f6de12ba",
+      "commit": "6424dd8c8371",
       "date": "2026-10-27",
       "subject": "fix(tools, cody b52): seven status/coverage tools say what their population left out",
       "files": [
