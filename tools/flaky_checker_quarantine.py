@@ -745,14 +745,30 @@ def main(argv):
         # COVERAGE DISCLOSURE. A partial pass that reports only what it reached
         # reads as a clean fleet -- the shape docs/SAIRN-PROCESS-RULES.md 1.7
         # names. The registered-but-unmeasured checkers are counted and listed.
+        # NUMERATOR INSIDE ITS DENOMINATOR (cody b54). `rows` is every checker
+        # the ledger ever measured; the denominator is today's registry. A
+        # deregistered checker counted in "N of M registered" (N could exceed
+        # M), and an unreadable registry printed "N of N" -- full coverage of
+        # nothing. Now: the intersection over the registry, the rest named,
+        # and an unreadable registry is said, not substituted.
+        registry_error = None
         try:
             registered = set(registry_tools())
-        except Exception:
-            registered = set()
+        except Exception as exc:                                  # noqa: BLE001
+            registered, registry_error = set(), '%s: %s' % (type(exc).__name__, exc)
         measured = set(r['tool'] for r in rows)
         unmeasured = sorted(registered - measured)
-        print('  checkers with evidence: %d of %d registered'
-              % (len(rows), len(registered) or len(rows)))
+        if registry_error:
+            print('  checkers with evidence: %d -- REGISTRY UNREADABLE (%s), so no '
+                  'coverage figure' % (len(rows), registry_error[:120]))
+        else:
+            print('  checkers with evidence: %d of %d registered'
+                  % (len(measured & registered), len(registered)))
+            not_registered = sorted(measured - registered)
+            if not_registered:
+                print('  ALSO IN THE LEDGER, NOT REGISTERED (not counted above): %d -- %s'
+                      % (len(not_registered), ', '.join(not_registered[:6])
+                         + (' ...' if len(not_registered) > 6 else '')))
         if unmeasured:
             print('  NOT MEASURED AT ALL   : %d  <- READ THIS BEFORE THE ROWS BELOW.'
                   % len(unmeasured))

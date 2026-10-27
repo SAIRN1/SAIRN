@@ -82,7 +82,15 @@ def stability_band(entry, quarantined=False):
     """
     if not entry:
         return UNKNOWN, 'never measured for flip rate'
-    verdict, rate, runs = FLAKY.classify(entry)
+    # SCOPED TO THE CURRENT TREE, as flaky_checker_quarantine itself does
+    # (cody b54). With no tree argument classify() pools every run in the
+    # checker's history -- the pooled-history bug that tool's own docstring
+    # says it already fixed -- so this confidence was read off a different
+    # population than the quarantine verdict beside it.
+    _tree = getattr(FLAKY, '_B54_TREE', None)
+    if _tree is None:
+        _tree = FLAKY._B54_TREE = FLAKY.tree_hash()
+    verdict, rate, runs = FLAKY.classify(entry, _tree)
     if quarantined:
         return LOW, 'QUARANTINED, flip rate %.3f over %d runs' % (rate, runs)
     if verdict == 'TOO-FEW-RUNS':

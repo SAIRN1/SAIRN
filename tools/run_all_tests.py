@@ -1919,12 +1919,17 @@ def _main_body(quiet, excluded=None):
         for kind, rel, tail in failures:
             print('  FAIL %-5s %-52s %s' % (kind, rel, tail))
     print('')
-    ran = len(js) + len(py) - len(skipped)
+    # NOT RUN IS NOT PASS (cody b54). `ran` subtracted SKIPPED only, so a
+    # pinned run's `not_run` files -- excluded at _run(), never executed --
+    # were counted in "N of M pass", and with no skips the run printed
+    # "ALL M TEST FILES PASS" over files it never ran.
+    ran = len(js) + len(py) - len(skipped) - len(not_run)
     if failures:
         print('%d FAILING TEST FILE(S)' % len(failures))
-    elif skipped:
-        print('%d of %d test files pass; %d SKIPPED and therefore unverified '
-              '-- read the SKIPPED list' % (ran, len(js) + len(py), len(skipped)))
+    elif skipped or not_run:
+        print('%d of %d test files pass; %d SKIPPED and %d NOT RUN are therefore '
+              'unverified -- read those lists' % (ran, len(js) + len(py),
+                                                  len(skipped), len(not_run)))
     elif surprises:
         print('all %d ran clean, but %d file(s) under tests/ were not recognised '
               '-- read the NOT RUN list' % (len(js) + len(py), len(surprises)))

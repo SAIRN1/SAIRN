@@ -241,8 +241,17 @@ def main(argv=None):
         for n in sorted(emp):
             print('   %-34s %-16s %s' % (n, emp[n][0], emp[n][1]))
         print('')
-        print('  ONLY %d of %d gates have an empirical probe. The rest are'
-              % (len(emp), len(found)))
+        # A COULD-NOT-RUN PROBE IS NOT COVERAGE, and a probe whose gate is not
+        # in `found` is not in the denominator (cody b54). Count only probes
+        # that RAN, for gates this sweep found.
+        found_names = set(found) if not isinstance(found, dict) else set(found.keys())
+        ran = [n for n in emp if emp[n][0] != 'COULD-NOT-RUN' and n in found_names]
+        print('  ONLY %d of %d gates have an empirical probe that RAN. The rest are'
+              % (len(ran), len(found)))
+        unrun = sorted(n for n in emp if n not in ran)
+        if unrun:
+            print('  NOT COUNTED: %s (could not run, or not a gate this sweep found)'
+                  % ', '.join(unrun))
         print('  CLASSIFIED, not TESTED, and that difference is the point of this')
         print('  line: a static class is a proxy and the decoy is the property.')
         print('')

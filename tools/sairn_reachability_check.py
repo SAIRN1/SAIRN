@@ -151,7 +151,12 @@ def apply_live(rows, snaps):
         # tools/sairn_dom_snapshot.js. Visibility is the wrong metric: every
         # panel but the active one is display:none by design, so a
         # visibility-based floor never clears anything.
-        seen += int(s.get('panels_with_handlers') or s.get('panels_seen') or 0)
+        # A REAL 0 IS AN ANSWER (cody b54). `a or b` read panels_with_handlers=0
+        # as absent and substituted panels_seen -- the metric the line above
+        # calls wrong -- exactly when the right metric said nothing was wired.
+        # Fall back only when the key is genuinely missing (an old snapshot).
+        _pwh = s.get('panels_with_handlers')
+        seen += int(_pwh if _pwh is not None else (s.get('panels_seen') or 0))
         total += int(s.get('panels_total') or 0)
         gated = gated or bool(s.get('gated'))
     if gated:
