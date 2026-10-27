@@ -62,6 +62,11 @@ import sys
 import tempfile
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Arm 4 appends to a TRACKED engine (and restores it). An import would run
+# that, so an import is refused -- the shape CHECK 5e calls UNGUARDED.
+if __name__ != '__main__':
+    raise ImportError('tests/run_condition_coverage_probe.py modifies a tracked '
+                      'engine in arm 4; run it as a script, never import it')
 sys.path.insert(0, os.path.join(REPO, 'tools'))
 import condition_coverage as C                                  # noqa: E402
 
