@@ -2930,6 +2930,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_condition_coverage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "3a450c7443a1a14e43370af8a02b068a00c11e08",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sairncash_entitlement_gate_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -4937,6 +4945,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "5ede5fb80288c286199ce5be900a7135f7008355",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_condition_coverage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "5f04bec633e5fdaea54c5dc66a1b006bd3d03621",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -13478,6 +13494,14 @@
     }
    ],
    "sha": "f45ea2ba48bbe3a791eff07aa253f7ac0a4ba74b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b52-cap-jsonb-measure.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f45edc2c3826abbf7dc47500e0a0081425c79dfc",
    "criteria_version": "2026-10-06.1"
   },
   {
