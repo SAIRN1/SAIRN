@@ -90,7 +90,14 @@ module.exports = async (req, res) => {
       '&select=complaint_id,access_token&limit=1'), { headers: supabaseHeaders() });
     if (dupRes.ok) {
       const dupRows = await dupRes.json().catch(function () { return null; });
-      if (Array.isArray(dupRows) && dupRows[0]) {
+      // hank b55: an unreadable 2xx is a failed duplicate check, refused like
+      // the !ok branch below -- it used to fall through and file a second one.
+      if (!Array.isArray(dupRows)) {
+        console.error('SAIRNdental public-complaint-submit: duplicate check unreadable -- refusing rather than filing unchecked');
+        res.status(503).json({ error: { code: 'UNAVAILABLE', message: 'Temporarily unavailable -- please call the office or try again shortly' } });
+        return;
+      }
+      if (dupRows[0]) {
         // The SAME answer the original submission got. A patient who clicked
         // twice must see their complaint, not an error about clicking twice.
         res.status(200).json({ ok: true, duplicate_of_recent: true,

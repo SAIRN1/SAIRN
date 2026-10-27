@@ -568,6 +568,11 @@ async function handlePush(body, res, req) {
     res.status(403).json({ error: { code: stillActive.code, message: stillActive.message } });
     return;
   }
+  // hank b55 (W1): an unreadable answer is refused, not pushed on the token alone.
+  if (!stillActive.ok && stillActive.code === 'ACTIVE_CHECK_UNREADABLE') {
+    res.status(502).json({ error: { code: stillActive.code, message: stillActive.message } });
+    return;
+  }
   if (!stillActive.ok) {
     try {
       console.warn('bridge push: active-credential re-check DID NOT RUN ('

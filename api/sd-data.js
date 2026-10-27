@@ -2349,6 +2349,12 @@ module.exports = async (req, res) => {
           : (preIsGated ? (SD_GATE_APP[resource] || 'stonedesk') : preRegistryApp);
         const preScoped = preExpectedApp !== undefined
           && preExpectedApp === preSession.app;
+        // hank b55 (W1): the store answered and the answer could not be read --
+        // refused, never continued on the token alone.
+        if (!preActive.ok && preActive.code === 'ACTIVE_CHECK_UNREADABLE') {
+          res.status(502).json({ error: { code: preActive.code, message: preActive.message } });
+          return;
+        }
         const preHardRefusal = !preActive.ok
           && preActive.code === 'CREDENTIAL_INACTIVE'
           && (preActive.reason === 'inactive' || preScoped);
@@ -13332,8 +13338,22 @@ module.exports = async (req, res) => {
       // are. These rows become INVOICE LINES for one month, which a biller
       // reads chronologically.
       const marR = await fetch(rest('alf_mar?license_hash=eq.' + enc(licHash) + '&resident_id=eq.' + enc(String(payload.resident_id)) + '&select=entry_id,entry_type,data&order=created_at.asc'), { headers });
+      // hank b55 (W6): a billable-event read that fails or cannot be parsed
+      // REFUSES, as the facility rate-card read below always has. It used to
+      // drop the events silently and return charge lines that looked
+      // complete. 404/400 (table not provisioned) still means no events.
+      if (!marR.ok && marR.status !== 404 && marR.status !== 400) {
+        console.error('sd-data: derive_charges read failed, HTTP', marR.status);
+        res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read the medication record (MAR), so no charges were derived.' } });
+        return;
+      }
       if (marR.ok) {
-        const marRows = await marR.json().catch(() => []);
+        const marRows = await marR.json().catch(() => null);
+        if (!Array.isArray(marRows)) {
+          console.error('sd-data: derive_charges read returned a non-array');
+          res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read the medication record (MAR), so no charges were derived.' } });
+          return;
+        }
         (marRows || []).forEach((row) => {
           if (row.entry_type !== 'administration') return;
           const d = row.data || {};
@@ -13373,8 +13393,22 @@ module.exports = async (req, res) => {
       }
       // ADL assessments live inside the resident's own alf_clients record.
       const cliR = await fetch(rest('alf_clients?license_hash=eq.' + enc(licHash) + '&client_id=eq.' + enc(String(payload.resident_id)) + '&select=data'), { headers });
+      // hank b55 (W6): a billable-event read that fails or cannot be parsed
+      // REFUSES, as the facility rate-card read below always has. It used to
+      // drop the events silently and return charge lines that looked
+      // complete. 404/400 (table not provisioned) still means no events.
+      if (!cliR.ok && cliR.status !== 404 && cliR.status !== 400) {
+        console.error('sd-data: derive_charges read failed, HTTP', cliR.status);
+        res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read the resident record (ADL assessments), so no charges were derived.' } });
+        return;
+      }
       if (cliR.ok) {
-        const cliRows = await cliR.json().catch(() => []);
+        const cliRows = await cliR.json().catch(() => null);
+        if (!Array.isArray(cliRows)) {
+          console.error('sd-data: derive_charges read returned a non-array');
+          res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read the resident record (ADL assessments), so no charges were derived.' } });
+          return;
+        }
         const cd = (Array.isArray(cliRows) && cliRows[0] && cliRows[0].data) || {};
         (cd.adl_assessments || []).forEach((a) => {
           events.push({
@@ -13391,8 +13425,22 @@ module.exports = async (req, res) => {
       // an arm named for the whole of it publishes an all-clear over the reads
       // nobody looked at.
       const actR = await fetch(rest('alf_activities?license_hash=eq.' + enc(licHash) + '&select=entry_id,data&order=created_at.asc'), { headers });
+      // hank b55 (W6): a billable-event read that fails or cannot be parsed
+      // REFUSES, as the facility rate-card read below always has. It used to
+      // drop the events silently and return charge lines that looked
+      // complete. 404/400 (table not provisioned) still means no events.
+      if (!actR.ok && actR.status !== 404 && actR.status !== 400) {
+        console.error('sd-data: derive_charges read failed, HTTP', actR.status);
+        res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read the activities log, so no charges were derived.' } });
+        return;
+      }
       if (actR.ok) {
-        const actRows = await actR.json().catch(() => []);
+        const actRows = await actR.json().catch(() => null);
+        if (!Array.isArray(actRows)) {
+          console.error('sd-data: derive_charges read returned a non-array');
+          res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read the activities log, so no charges were derived.' } });
+          return;
+        }
         (actRows || []).forEach((row) => {
           const d = row.data || {};
           const attendees = d.attendees || d.attendee_ids || [];

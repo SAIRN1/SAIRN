@@ -165,8 +165,19 @@ async function validateLicenseKey(key, expectedApp) {
       e.code = 'UPSTREAM';
       throw e;
     }
-    const j = await r.json();
-    return Array.isArray(j) ? j : [];
+    // hank b55 (W2): an OK answer whose body cannot be understood is an
+    // UPSTREAM failure, never "no such licence" and never a pass. Tagged
+    // `unparsable` so a caller that fails open on an OUTAGE (api/claude.js)
+    // can tell this apart and refuse.
+    let j;
+    try { j = await r.json(); } catch (pe) { j = undefined; }
+    if (!Array.isArray(j)) {
+      const e = new Error('license_keys lookup returned an unreadable body');
+      e.code = 'UPSTREAM';
+      e.unparsable = true;
+      throw e;
+    }
+    return j;
   }
 
   let rows = await lookup(key);

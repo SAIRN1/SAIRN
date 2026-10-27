@@ -176,7 +176,15 @@ module.exports = async (req, res) => {
     // the shape this whole sweep is about. `return=representation` is required
     // for the row count to be visible at all.
     const patched = await patchR.json().catch(() => null);
-    if (Array.isArray(patched) && patched.length === 0) {
+    // hank b55: an unreadable answer means the write is UNCONFIRMED -- it used
+    // to fall through to 200 "renewed". Same refusal as agent/register.js.
+    if (!Array.isArray(patched)) {
+      console.error('SAIRNcash trial-renew: patch answer unreadable, renewal unconfirmed');
+      res.status(502).json({ error: { code: 'RENEWAL_UNCONFIRMED',
+        message: 'Whether the trial was renewed could not be confirmed. Re-read the trial before retrying -- a blind retry could extend it twice.' } });
+      return;
+    }
+    if (patched.length === 0) {
       res.status(409).json({ error: { code: 'CONCURRENT_RENEWAL',
         message: 'This trial was renewed by someone else while this request was in flight, so nothing was written. Re-read the trial and decide whether it still needs renewing -- retrying blindly would extend it twice.' } });
       return;

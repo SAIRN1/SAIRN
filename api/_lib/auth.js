@@ -1172,17 +1172,25 @@ async function credentialStillActive(session, licHash, rest, headers) {
   const table = AUTH_TABLE_BY_APP[session.app];
   if (!table) return { ok: false, code: 'NO_ACTIVE_CHECK' };
   let rows;
+  let r;
   try {
-    const r = await fetch(rest(table + '?license_hash=eq.' + encodeURIComponent(licHash) +
+    r = await fetch(rest(table + '?license_hash=eq.' + encodeURIComponent(licHash) +
       '&employee_id=eq.' + encodeURIComponent(session.employee_id) +
       '&select=active&limit=1'), { headers });
-    rows = await r.json();
-    if (!r.ok) return { ok: false, code: 'NO_ACTIVE_CHECK' };
   } catch (e) {
     // A TRANSPORT FAILURE IS NOT A DEACTIVATION. Answering "inactive" here
     // would lock every user out of an app whenever the database blinked, and
     // answering "active" would silently disable the control. Third state.
     return { ok: false, code: 'NO_ACTIVE_CHECK' };
+  }
+  if (!r.ok) return { ok: false, code: 'NO_ACTIVE_CHECK' };
+  // AN UNREADABLE 2xx IS NOT A TRANSPORT FAILURE (hank b55, W1). It used to
+  // land in the catch above, answer NO_ACTIVE_CHECK, and let the caller
+  // proceed on the token alone -- skipping the deactivation check. It has its
+  // own code now, and both callers REFUSE it.
+  try { rows = await r.json(); } catch (e) { rows = undefined; }
+  if (!Array.isArray(rows)) {
+    return { ok: false, code: 'ACTIVE_CHECK_UNREADABLE', message: 'Whether this sign-in is still active could not be checked, so nothing was done. Try again shortly.' };
   }
   // ── TWO WAYS TO FAIL, ONE CODE, AND A `reason` THAT SEPARATES THEM ──────
   // ADDED 2026-09-26, BACKWARD COMPATIBLE ON PURPOSE. `code` is unchanged, so

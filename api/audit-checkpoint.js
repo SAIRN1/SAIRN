@@ -319,7 +319,10 @@ async function lastCheckpoint(table) {
     '&select=window_end,digest&order=window_end.desc&limit=1'), { headers: headers() });
   const body = await r.json().catch(() => null);
   if (!r.ok) { const e = new Error('checkpoint read failed'); e.detail = body; throw e; }
-  return (Array.isArray(body) && body[0]) || null;
+  // hank b55: a non-list 2xx is a failed read, not an empty chain -- it
+  // used to make verify answer ok:true "nothing checkpointed yet".
+  if (!Array.isArray(body)) { const e = new Error('checkpoint read unreadable'); e.detail = body; throw e; }
+  return body[0] || null;
 }
 
 async function earliestRow(table) {
@@ -327,7 +330,8 @@ async function earliestRow(table) {
     { headers: headers() });
   const body = await r.json().catch(() => null);
   if (!r.ok) { const e = new Error('earliest read failed'); e.detail = body; throw e; }
-  return (Array.isArray(body) && body[0] && body[0].created_at) || null;
+  if (!Array.isArray(body)) { const e = new Error('earliest read unreadable'); e.detail = body; throw e; }
+  return (body[0] && body[0].created_at) || null;
 }
 
 async function allCheckpoints(table) {
@@ -336,7 +340,10 @@ async function allCheckpoints(table) {
     { headers: headers() });
   const body = await r.json().catch(() => null);
   if (!r.ok) { const e = new Error('checkpoint read failed'); e.detail = body; throw e; }
-  return Array.isArray(body) ? body : [];
+  // hank b55: a non-list 2xx is a failed read, not an empty chain -- it
+  // used to make verify answer ok:true "nothing checkpointed yet".
+  if (!Array.isArray(body)) { const e = new Error('checkpoint read unreadable'); e.detail = body; throw e; }
+  return body;
 }
 
 async function checkpointTable(table, nowMs) {

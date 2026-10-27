@@ -376,6 +376,16 @@ async function claudeProxyHandler(req, res) {
       // the budget decision below can compare it with the claimed one.
       if (lic.valid && lic.app_id) claudeLicenceApp = lic.app_id;
     } catch (err) {
+      // AN UNREADABLE LICENCE BODY IS REFUSED, IN EVERY MODE (Michael, b55 W2).
+      // The store ANSWERED -- this is not the outage the fail-open below is
+      // for -- and what it said cannot be read, so whether this caller holds
+      // a licence is unknown. Refused and logged.
+      if (err && err.unparsable) {
+        console.error('api/claude auth check: licence body unreadable (refusing): ' + err.message);
+        res.status(502).json({ error: { code: 'LICENCE_UNREADABLE',
+          message: 'Your licence could not be checked just now, so the AI request was not sent. Try again shortly.' } });
+        return;
+      }
       // FAILS OPEN, and says so. An unreachable licence store must not take
       // down every AI feature on the platform -- the same standard every other
       // gate here holds. In enforce mode this is the one path that still
