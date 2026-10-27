@@ -38764,7 +38764,7 @@
       "recurrence_open": "credentialStillActive still answers NO_ACTIVE_CHECK on !ok (an answered 4xx/5xx), by its documented availability decision"
     },
     {
-      "commit": "595b576564e7",
+      "commit": "681afd2ea73f",
       "date": "2026-10-27",
       "subject": "fix(tests, cody b53): run_condition_coverage_probe is green -- arm 4 re-aimed, arm 5 passes the sandbox root",
       "files": [
