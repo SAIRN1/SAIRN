@@ -38478,6 +38478,65 @@
         }
       ],
       "recurrence_open": "The uniform 64KB default still measures compact JSON; tables whose constraint is 65536 on jsonb text keep a small window there (not routed by H2, not changed here). Exponent-form numbers are measured as JS prints them."
+    },
+    {
+      "commit": "45ba1d9f7ee5",
+      "date": "2026-10-27",
+      "subject": "fix(platform b54): a failed PIN attempt that cannot be recorded is refused 503 -- the lockout can no longer silently never engage",
+      "files": [
+        "api/alf-auth.js",
+        "api/b54-lockout-unrecorded-refused.test.js",
+        "api/bld-auth.js",
+        "api/dnt-auth.js",
+        "api/grd-auth.js",
+        "api/law-auth.js",
+        "api/leg-auth.js",
+        "api/mech-auth.js",
+        "api/rf-auth.js",
+        "api/sb-auth.js",
+        "api/sc-auth.js",
+        "api/scp-auth.js",
+        "api/sd-auth.js",
+        "api/sd-data.js",
+        "api/sd-render.js",
+        "api/sd-sub-auth.js",
+        "api/sdn-auth.js",
+        "api/sen-auth.js",
+        "api/sf-auth.js",
+        "api/sv-auth.js"
+      ],
+      "lines_added": 411,
+      "lines_removed": 46,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "All 17 PIN *-auth endpoints wrote the failed attempt with an unchecked PATCH, so a missing UPDATE grant or 5xx meant the lockout never engaged and PIN guessing was unbounded behind a normal 401. Now 503 LOCKOUT_UNAVAILABLE + log. Also two not-Tier-A sd-data folds (lead times, style profile) refuse a non-list prior read. api/b54-lockout-unrecorded-refused.test.js 6/0, M1-M2 red.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the unchecked lockout PATCH was copied into 17 PIN auth endpoints over many batches"
+      },
+      "citation_note": "PR 1.11 shape",
+      "contributing_factors": [
+        {
+          "factor": "the failed-attempt PATCH was wrapped in catch {} // non-fatal and its response never checked, so a failing write left failed_attempts at 0 and the lockout never engaged",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "503 LOCKOUT_UNAVAILABLE and a log line when the PATCH fails, in all 17 files"
+        },
+        {
+          "factor": "the shape was copied file to file with no shared helper for the 6 inline variants",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "fold the 6 inline lockout PATCHes into the shared recordFailure helper"
+        }
+      ],
+      "recurrence_open": "a 503 only on a wrong PIN when the PATCH fails can reveal that an employee_id exists while the write path is broken; a correct PIN is still accepted when the lockout cannot be written"
     }
   ],
   "started": "2026-09-09",
