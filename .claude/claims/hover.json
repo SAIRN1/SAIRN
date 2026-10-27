@@ -1217,6 +1217,17 @@
       "status": "released",
       "released_at": "2026-10-27T14:33:54Z",
       "files": null
+    },
+    {
+      "id": "hover-1793114383",
+      "session": "hover",
+      "subject": "hover",
+      "task": "hover b88: wire the refuse-on-injection detector into hover_vendor_sample review_chunk (#1633), manifest patch plus hover_separation_ci path, idle observation, restore drill at push 88",
+      "claimed_at": "2026-10-27T15:19:43Z",
+      "claimed_at_epoch": 1793114383.76174,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
