@@ -4757,8 +4757,8 @@
       "task": "sairn-modal contrast modal axe cart qty",
       "claimed_at": "2026-10-27T15:17:54Z",
       "claimed_at_epoch": 1793114274.402788,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-27T16:31:17Z",
       "files": null
     },
     {
