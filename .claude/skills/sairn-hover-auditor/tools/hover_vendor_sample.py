@@ -382,7 +382,7 @@ def injection_refusal(body, context):
     a chunk, and a string literal it cannot remove does. FAIL CLOSED: a detector that cannot be
     imported or run is a refusal, never 'clean' -- the same standard as the rate gate.
     b89: the detector is detect_reviewer_directed_scoped (comment and string text of the ADDED
-    lines, plus the context, under strict patterns), not the whole-text detector, which flagged
+    and REMOVED lines (b90), plus the context, under strict patterns), not the whole-text detector, which flagged
     28.1% of real Tier 1+2 api js file diffs in b88 (0 of 228 and 0 of 218 on the scoped one)."""
     try:
         import hover_injection_defense as D
