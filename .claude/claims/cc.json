@@ -4819,8 +4819,8 @@
       "task": "b66 builder-into-auditor deny hook, block log, hook presence check FILES: tools/builder_auditor_deny_hook.py tools/builder_hook_presence.py",
       "claimed_at": "2026-10-28T21:30:21Z",
       "claimed_at_epoch": 1793223021.2094443,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-28T22:54:09Z",
       "files": [
         "tools/builder_auditor_deny_hook.py",
         "tools/builder_hook_presence.py"
