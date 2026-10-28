@@ -37,7 +37,7 @@ HOME = os.path.expanduser('~')
 SKILL_GLOBS = [os.path.join(HOME, '.claude', 'skills', '*', 'SKILL.md')]
 CLAUDE_JSON = os.path.join(HOME, '.claude.json')
 SETTINGS = os.path.join(HOME, '.claude', 'settings.json')
-CRITERIA_VERSION = '2026-10-08.1'
+CRITERIA_VERSION = '2026-10-28.1'  # .1 -> no transcripts / no ~/.claude.json is COULD-NOT-TELL (M22)
 
 # Servers this account can reach. Derived from ~/.claude.json's own
 # claudeAiMcpEverConnected list plus the locally-bundled browser server, because
@@ -82,7 +82,12 @@ def servers():
     ever = []
     raw = _read(CLAUDE_JSON)
     source = 'claudeAiMcpEverConnected in ~/.claude.json'
-    if raw:
+    # A missing or empty file used to keep the source line above, so the list
+    # claimed a file it never read. Say so instead.
+    if not raw:
+        source = ('MISSING or empty ~/.claude.json -- only the locally-bundled '
+                  'server is listed; the claude.ai list is COULD-NOT-TELL')
+    else:
         try:
             ever = json.loads(raw).get('claudeAiMcpEverConnected') or []
         except Exception:                                   # noqa: BLE001
@@ -159,17 +164,24 @@ def report(session, as_json=False, no_usage=False):
 
     readable = [s for s in sks if s['bytes'] is not None]
     gated = [s for s in readable if s['gated']]
-    never = [s for s in readable if sk_used.get(s['name'], 0) == 0]
-    unused_srv = [s for s in svs if sv_used.get(s, 0) == 0]
+    # No transcript read (--no-usage, or none found) means usage is UNKNOWN,
+    # not zero: `never` and `unused_srv` are None then, and every printer below
+    # says COULD-NOT-TELL rather than listing all of them as unused.
+    usage_known = files > 0
+    never = ([s for s in readable if sk_used.get(s['name'], 0) == 0]
+             if usage_known else None)
+    unused_srv = ([s for s in svs if sv_used.get(s, 0) == 0]
+                  if usage_known else None)
 
     if as_json:
         print(json.dumps({
             'criteria_version': CRITERIA_VERSION,
             'session': session,
             'transcripts': {'dir': tdir, 'files': files, 'lines': lines,
-                            'unparseable': bad},
+                            'unparseable': bad, 'usage_known': usage_known},
             'skills': {'on_disk': len(sks), 'unreadable': len(sks) - len(readable),
-                       'gated': len(gated), 'never_invoked': len(never),
+                       'gated': len(gated),
+                       'never_invoked': len(never) if usage_known else None,
                        'invoked': sorted(sk_used.items(), key=lambda x: -x[1])},
             'mcp': {'reachable': svs, 'source': svs_source,
                     'used': sorted(sv_used.items(), key=lambda x: -x[1]),
@@ -196,22 +208,24 @@ def report(session, as_json=False, no_usage=False):
               'COULD-NOT-TELL, not zero.' % tdir)
     print()
     print('SKILLS: %d on disk, %d unreadable, %d gated with '
-          'disable-model-invocation, %d never invoked'
-          % (len(sks), len(sks) - len(readable), len(gated), len(never)))
+          'disable-model-invocation, %s never invoked'
+          % (len(sks), len(sks) - len(readable), len(gated),
+             len(never) if usage_known else 'COULD-NOT-TELL'))
     for s in sorted(sk_used.items(), key=lambda x: -x[1]):
         print('  invoked  %-44s %4d' % (s[0], s[1]))
-    big = sorted((s for s in never), key=lambda s: -(s['bytes'] or 0))[:8]
+    big = sorted((s for s in (never or [])), key=lambda s: -(s['bytes'] or 0))[:8]
     if big:
         print('  largest NEVER invoked (description text every session pays for):')
         for s in big:
             print('    %8d b  %-36s %s' % (s['bytes'], s['name'],
                                            'GATED' if s['gated'] else ''))
     print()
-    print('MCP SERVERS: %d reachable, %d with zero calls' % (len(svs), len(unused_srv)))
+    print('MCP SERVERS: %d reachable, %s with zero calls'
+          % (len(svs), len(unused_srv) if usage_known else 'COULD-NOT-TELL'))
     print('  source of the reachable list: %s' % svs_source)
     for s in sorted(sv_used.items(), key=lambda x: -x[1]):
         print('  used     %-36s %5d call(s)' % (s[0], s[1]))
-    for s in unused_srv:
+    for s in (unused_srv or []):
         print('  ZERO     %-36s' % s)
     print('  THEY CANNOT BE DISABLED FROM A SETTINGS FILE: there is no mcpServers')
     print('  map and no .mcp.json here -- the claude.ai integrations are')
@@ -255,6 +269,41 @@ def selftest():
     arm('NEGATIVE: usage() over a MISSING transcripts dir reports 0 FILES rather '
         'than silently returning empty counters that read as "never used"',
         files == 0 and not sk and not sv, (files, len(sk), len(sv)))
+
+    # report() with usage NOT read must not turn "unknown" into "zero". Before
+    # M22 both of these printed every skill as never invoked and every server
+    # as ZERO, and --json carried the full counts with no flag.
+    import contextlib
+    for label, kw in (('a session with NO transcripts',
+                       {'session': 'no-such-session-xyz'}),
+                      ('--no-usage', {'session': 'cody', 'no_usage': True})):
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            report(as_json=True, **kw)
+        d = json.loads(buf.getvalue())
+        arm('NEGATIVE: --json under %s reports never_invoked and zero_calls as '
+            'None (COULD-NOT-TELL), not a full count' % label,
+            d['skills']['never_invoked'] is None and d['mcp']['zero_calls'] is None
+            and d['transcripts'].get('usage_known') is False,
+            (d['skills']['never_invoked'], d['mcp']['zero_calls']))
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            report(**kw)
+        txt = buf.getvalue()
+        arm('NEGATIVE: ...and the text report under %s prints no ZERO server '
+            'line and says COULD-NOT-TELL' % label,
+            '  ZERO ' not in txt and 'COULD-NOT-TELL never invoked' in txt
+            and 'COULD-NOT-TELL with zero calls' in txt, txt[-400:])
+
+    global CLAUDE_JSON
+    saved = CLAUDE_JSON
+    CLAUDE_JSON = os.path.join(HOME, 'no-such-claude-xyz.json')
+    try:
+        _, src = servers()
+    finally:
+        CLAUDE_JSON = saved
+    arm('NEGATIVE: a MISSING ~/.claude.json is named as MISSING in the source '
+        'line rather than claimed as the source', src.startswith('MISSING'), src)
     print('  criteria lock: %d arms, %d of them negative (criteria %s)'
           % (n, neg, CRITERIA_VERSION))
     return ok

@@ -261,6 +261,13 @@ def main(argv):
         if f.lower().endswith(BINARY_EXT):
             skipped.append(f)
             continue
+        # cody b56 (M14): a path outside the repo is not in ANY revision, so
+        # `cat-file` failed on it and it was reported "deleted by this change"
+        # -- exit 0 for a file nobody read. It is unreadable at a revision.
+        if rev and (os.path.isabs(f) or f == '..' or f.startswith('../')):
+            unreadable.append((f, 'outside the repository, so no revision '
+                                  'holds it -- NOT a deletion'))
+            continue
         try:
             hits = scan_at_rev(rev, f) if rev else scan(f)
         except AbsentAtRev as e:
@@ -293,8 +300,9 @@ def main(argv):
         # the gate's guard compare two unrelated numbers.
         if given:
             print('  files given           : %d' % len(files))
+        # cody b56 (M14): `absent` files were never opened either.
         print('  tracked files scanned : %d'
-              % (len(files) - len(skipped) - len(unreadable)))
+              % (len(files) - len(skipped) - len(unreadable) - len(absent)))
         if skipped:
             print('  skipped as binary (%d, NOT silently): %s'
                   % (len(skipped), ', '.join(sorted(skipped))[:160]))

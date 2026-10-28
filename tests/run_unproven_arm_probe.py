@@ -215,6 +215,58 @@ def main():
 
 
 sys.exit(main())
+=== a2_pos_exit_empty
+passed = 1
+failed = 0
+unproven = 0
+unproven += 1
+print('UNPROVEN  arm 1 -- the gate refused for a foreign reason')
+print('%d passed, %d failed, %d unproven'
+      % (passed, failed, unproven))
+import sys
+sys.exit()
+=== a2_pos_exit_zero
+passed = 1
+failed = 0
+unproven = 0
+unproven += 1
+print('UNPROVEN  arm 1 -- the gate refused for a foreign reason')
+print('%d passed, %d failed, %d unproven'
+      % (passed, failed, unproven))
+import sys
+if failed:
+    sys.exit(1)
+sys.exit(0)
+=== a2_pos_no_exit
+passed = 1
+failed = 0
+unproven = 0
+unproven += 1
+print('UNPROVEN  arm 1 -- the gate refused for a foreign reason')
+print('%d passed, %d failed, %d unproven'
+      % (passed, failed, unproven))
+=== a2_neg_guarded_zero
+passed = 1
+failed = 0
+unproven = 0
+unproven += 1
+print('UNPROVEN  arm 1 -- the gate refused for a foreign reason')
+print('%d passed, %d failed, %d unproven'
+      % (passed, failed, unproven))
+import sys
+if failed:
+    sys.exit(1)
+if unproven:
+    sys.exit(3)
+sys.exit(0)
+=== not_assessed_only
+unproven = 0
+unproven += 1
+print('UNPROVEN  arm 1 -- the gate refused for a foreign reason')
+with open('record.json', 'w') as fh:
+    fh.write('1')
+import sys
+sys.exit(3 if unproven else 0)
 === js_a1_pos
 let pass = 1, fail = 0;
 console.log('UNPROVEN  arm 1 -- foreign refusal');
@@ -444,6 +496,45 @@ def main():
         sigs, _, out = signals_for('js_a1_neg', F['js_a1_neg'], 'y.test.js')
         assert 'A1' not in sigs, 'A1 fired on the correct JS form:\n%s' % out
     arm('4b. A1 STAYS SILENT on the correct .test.js form', js_silent)
+
+    print('')
+    print('3g. THE EXITS A2 NEVER EXAMINED (b55 M10)')
+
+    def _a2_fires_on(fx, fn, shape):
+        def _arm():
+            sigs, _, out = signals_for(fx, F[fx], fn)
+            assert 'A2' in sigs, ('A2 did NOT fire on %s while an unproven '
+                                  'counter is set -- the suite exits 0 with '
+                                  'an unproven arm.\n%s' % (shape, out))
+        return _arm
+    arm('3g-1. A2 FIRES on a bare `sys.exit()`',
+        _a2_fires_on('a2_pos_exit_empty', 'run_k_probe.py', '`sys.exit()`'))
+    arm('3g-2. A2 FIRES when every exit is a literal 0/1',
+        _a2_fires_on('a2_pos_exit_zero', 'run_l_probe.py', '`sys.exit(0)`'))
+    arm('3g-3. A2 FIRES on a file with NO exit at all',
+        _a2_fires_on('a2_pos_no_exit', 'run_m_probe.py', 'no exit at all'))
+
+    def a2_guarded_zero_silent():
+        sigs, _, out = signals_for('a2_neg_guarded_zero',
+                                   F['a2_neg_guarded_zero'], 'run_n_probe.py')
+        assert 'A2' not in sigs, ('A2 fired on `if unproven: sys.exit(3)` '
+                                  'followed by `sys.exit(0)` -- the CORRECT '
+                                  'shape (run_floor_layers_probe.py).\n%s' % out)
+    arm('3g-4. A2 STAYS SILENT when a literal 0 follows an unproven exit 3',
+        a2_guarded_zero_silent)
+
+    def not_assessed_is_2():
+        sigs, code, out = signals_for('not_assessed_only',
+                                      F['not_assessed_only'], 'run_o_probe.py')
+        assert 'NOT ASSESSED (mechanism, no summary)  1' in out, (
+            'fixture did not land in NOT ASSESSED, so this arm tests '
+            'nothing.\n%s' % out)
+        assert code == 2, ('a file NOT ASSESSED for A1 exited %d with no other '
+                           'finding. It printed that the file is not part of a '
+                           'clean verdict and then exited as one.\n%s'
+                           % (code, out))
+    arm('3g-5. a NOT ASSESSED file is exit 2, not NO FINDING exit 0',
+        not_assessed_is_2)
 
     print('')
     print('5. FAILS CLOSED -- an empty scan is exit 2, never a clean 0')

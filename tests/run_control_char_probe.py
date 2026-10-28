@@ -142,6 +142,33 @@ check('an UNTRACKED file with a NUL is NOT reported', (rc, 'scratch' in out),
 rc, out = case('del', {'a.js': b"const x = '\x7f';\n"})
 check('0x7f DEL FAILS', rc, 1)
 
+# ── --rev: an ABSENT path is not scanned, and OUTSIDE the repo is not absent
+# cody b56 (M14). `files scanned` counted absent paths as opened, and a path
+# outside the repo failed `cat-file` and was called "deleted" -- exit 0. The
+# commit is made in the THROWAWAY fixture repo only.
+n[0] += 1
+d = os.path.join(tmp, '%02d-rev' % n[0])
+os.makedirs(d)
+build(d, {'a.js': b"const x = 1;\n"})
+subprocess.run(['git', '-c', 'user.name=probe', '-c', 'user.email=probe@x',
+                'commit', '-q', '-m', 'fixture'], cwd=d, capture_output=True)
+with io.open(os.path.join(d, 'gone.js'), 'wb') as fh:   # on disk, not at HEAD
+    fh.write(b"const y = 2;\n")
+outside = os.path.join(tmp, 'outside.js')
+with io.open(outside, 'wb') as fh:
+    fh.write(b"const z = 3;\n")
+_cc = os.path.join(d, 'tools', 'control_char_check.py')
+r = subprocess.run([sys.executable, _cc, '--rev', 'HEAD', 'a.js', 'gone.js'],
+                   cwd=d, capture_output=True, text=True, encoding='utf-8',
+                   errors='replace')
+check('--rev: an ABSENT path is not counted as scanned (1 of 2, not 2)',
+      'tracked files scanned : 1' in r.stdout, True)
+r = subprocess.run([sys.executable, _cc, '--rev', 'HEAD', 'a.js', outside],
+                   cwd=d, capture_output=True, text=True, encoding='utf-8',
+                   errors='replace')
+check('--rev: a path OUTSIDE the repo is COULD NOT READ, exit 2 -- not "deleted"',
+      (r.returncode, 'NOT IN THIS REVISION' in r.stdout), (2, False))
+
 # ── and the REAL repo is clean, since that is what it is for ──────────────
 r = subprocess.run([sys.executable, TOOL], cwd=REPO, capture_output=True,
                    text=True, encoding='utf-8', errors='replace')

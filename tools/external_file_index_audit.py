@@ -46,7 +46,7 @@ import subprocess
 import sys
 
 INDEX = os.path.join('docs', 'external-files-index.json')
-CRITERIA_VERSION = '2026-10-08.1'
+CRITERIA_VERSION = '2026-10-28.1'  # .1 -> ABSENT committed-count is a finding (M21)
 
 
 def _tracked(repo='.'):
@@ -116,7 +116,14 @@ def audit(index_path=INDEX, repo='.'):
     committed_rows = [s for s in scripts
                       if 'COMMITTED' in str(s.get('status', '')).upper()]
     claimed_c = measured.get('of_those_committed_to_the_repo')
-    if claimed_c is not None and claimed_c != len(committed_rows):
+    # ABSENT is a finding here exactly as it is for the headline above: a
+    # missing key used to fall into the `else` and print "ok", so the figure
+    # it never checked read as one it had.
+    if claimed_c is None:
+        findings.append('COUNTS: _measured.of_those_committed_to_the_repo is '
+                        'ABSENT, so it cannot be checked against the %d '
+                        'COMMITTED rows' % len(committed_rows))
+    elif claimed_c != len(committed_rows):
         findings.append('COUNTS: _measured.of_those_committed_to_the_repo = %r '
                         'but %d script rows carry a COMMITTED status'
                         % (claimed_c, len(committed_rows)))
@@ -329,6 +336,15 @@ def selftest():
     arm('COUNTS fires on an ABSENT headline figure rather than treating a '
         'missing key as agreement',
         any(x.startswith('COUNTS') and 'ABSENT' in x for x in f), f)
+    os.unlink(p)
+
+    missing_c = json.loads(json.dumps(fixed))
+    del missing_c['_measured']['of_those_committed_to_the_repo']
+    p = write(missing_c)
+    f, _, _ = audit(p)
+    arm('COUNTS fires on an ABSENT committed-count figure too, rather than '
+        'printing "ok" for a figure it never checked',
+        any('of_those_committed_to_the_repo is ABSENT' in x for x in f), f)
     os.unlink(p)
 
     # COMMITTED, both directions.

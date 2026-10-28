@@ -791,6 +791,7 @@ def main(argv):
         return EXIT_COULD_NOT_RUN
 
     findings, cleared, unparsed, multi = [], [], [], 0
+    no_pop = []    # cody b56 (M13): multi-door, but nothing was compared
     # ── WHAT THE TABLE EXTENSION ACTUALLY RESOLVED, MEASURED NOT ASSERTED ───
     # Every file is read TWICE -- once with table dispatch resolved and once
     # with it off -- and the delta is printed. This is discipline 12: remove the
@@ -820,6 +821,8 @@ def main(argv):
             gained.append((rel, new_doors, new_pop, v_old, verdict))
         if len(dm) >= 2:
             multi += 1
+        if verdict == CLEAN_NO_POP:
+            no_pop.append(rel)
         if verdict == FINDING:
             findings.append((rel, sorted(dm), detail))
         else:
@@ -828,13 +831,21 @@ def main(argv):
     if not a.quiet:
         print('read %d tool(s); %d have TWO OR MORE real-data entry points and '
               'are the population this checks' % (len(files), multi))
+        # cody b56 (M13): CLEAN_NO_POP tools have two doors but fewer than two
+        # that enumerate anything, so NOTHING was compared on them. They were
+        # in this numerator; they are now counted out of it and named.
+        checked = multi - len(no_pop)
         print('\nCHECKED / UNIVERSE: %d of %d tools in tools/ (%.0f%%) have more '
               'than one\n  real-data door and could diverge at all. The other %d '
               'have one door or none,\n  and a single door cannot disagree with '
               'itself -- that is not coverage, it is\n  the population being '
               'genuinely smaller than the directory.'
-              % (multi, len(files), (100.0 * multi / len(files)) if files else 0,
+              % (checked, len(files), (100.0 * checked / len(files)) if files else 0,
                  len(files) - multi))
+        print('  MULTI-DOOR, COMPARED NOTHING: %d -- fewer than two doors '
+              'enumerate a population,\n  so these are NOT in CHECKED above: %s'
+              % (len(no_pop), ', '.join(os.path.basename(r) for r in no_pop)
+                 or 'none'))
         print('  EXCLUDED BY NAME, not by omission: %s read no real state, so a '
               'tool whose\n  only extra flag is one of those has ONE door.'
               % ', '.join(ISOLATED_FLAGS[:3]))

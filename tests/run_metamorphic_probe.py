@@ -215,6 +215,35 @@ def main():
         check('and it names what it does NOT own, on every run',
               'comment_sensitivity_check.py' in p.stdout and
               'flaky_checker_quarantine.py' in p.stdout, True)
+
+        # ── 9. A CHECKER THAT DID NOT ANSWER IS NOT A COMPARISON (M11) ───────
+        # cody b56. run() returned whatever exit code came back, so a checker
+        # that crashed the same way on both sides "held" SAME, and a finding
+        # that became a crash on the transform passed NO_ERASE.
+        print('\n9. a crashing / exit-2 checker lands in COULD NOT RUN, not in held')
+        io.open(os.path.join(tools, 'crash_fixture_check.py'), 'w',
+                encoding='utf-8').write('raise RuntimeError("boom")\n')
+        io.open(os.path.join(tools, 'cnr_fixture_check.py'), 'w',
+                encoding='utf-8').write('import sys\nsys.exit(2)\n')
+        io.open(os.path.join(tools, 'dup_crash_fixture_check.py'), 'w',
+                encoding='utf-8').write(
+            'import io, sys\n'
+            'src = io.open(sys.argv[1], encoding="utf-8").read()\n'
+            'sys.exit(2 if src.count("PLANTED_DEFECT") > 1 else 1)\n')
+        for fx in ('crash_fixture_check.py', 'cnr_fixture_check.py'):
+            rows9, cnr9 = M.measure(['fixture_app.html'], checkers=[fx],
+                                    tools_dir=tools, target_root=tmp)
+            check('%s: no comparison row is recorded as held' % fx,
+                  [r['relation'] for r in rows9 if r['holds']], [])
+            check('%s: ...and the baseline is named in COULD NOT RUN' % fx,
+                  any('(baseline)' in c for c in cnr9), True)
+        rows9, cnr9 = M.measure(['fixture_app.html'],
+                                checkers=['dup_crash_fixture_check.py'],
+                                tools_dir=tools, target_root=tmp)
+        check('a finding that became exit 2 on `duplicate` is NOT a held NO_ERASE',
+              [r for r in rows9 if r['relation'] == 'duplicate'], [])
+        check('...it is COULD NOT RUN for that relation',
+              any('relation duplicate' in c for c in cnr9), True)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
@@ -354,6 +383,24 @@ def main():
         check('...and the fixture really does have two different verdicts, so '
               'the arm above is not passing on a corpus that cannot collide',
               len(set(_real_classify(u)[0] for _l, u in _collide)) > 1, True)
+    finally:
+        M.SUBJECTS = _real_subjects
+
+    # ── P8: AN UNEXERCISED RELATION IS NOT CLEAN (M12) ───────────────────
+    # cody b56. A relation with 0 applicable comparisons was only a printed
+    # label -- hidden under --quiet/--json -- and the run exited 0 CLEAN. The
+    # P7 corpus has no HTML entity in it, so `entity` is a no-op on every unit.
+    try:
+        M.SUBJECTS = [('collision', _collide_corpus,
+                       lambda u: _real_classify(u)[0], M._r_text, 'two units, one label')]
+        rows8, _c8, _d8 = M.measure_prose()
+        check('PRECONDITION: `entity` has 0 applicable comparisons on this corpus',
+              [r for r in rows8 if r['relation'] == 'entity' and r['applicable']], [])
+        f8, cnr8 = M._prose_report(True)
+        check('the unexercised relation is named in COULD NOT RUN',
+              any(c.startswith('entity: UNEXERCISED') for c in cnr8), True)
+        check('...so the run exits 2, not 0 CLEAN',
+              K.finish(f8, cnr8, quiet=True), K.EXIT_COULD_NOT_RUN)
     finally:
         M.SUBJECTS = _real_subjects
 

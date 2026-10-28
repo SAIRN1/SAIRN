@@ -805,6 +805,39 @@ check('I4. "could not tell" is never a licence to delete -- _pid_alive returns '
       'True for a pid it cannot ask about',
       D._pid_alive(os.getpid()) is True)
 
+# ── I5. A FAILED OVERLAY DIFF IS COULD NOT RUN, NOT A SWEEP OF HEAD (M23) ──
+# make_sandbox() ignored the return code of `git diff --name-only HEAD`, so a
+# failed diff overlaid nothing and the sweep judged HEAD while claiming the
+# working tree. Only that one git call is made to fail; every other call goes
+# through, so a None here is the overlay guard's and nothing else's.
+_real_run = D.subprocess.run
+
+
+def _diff_fails(cmd, *a, **kw):
+    if isinstance(cmd, list) and 'diff' in cmd and '--name-only' in cmd:
+        return subprocess.CompletedProcess(cmd, 128, '', 'fatal: probe I5')
+    return _real_run(cmd, *a, **kw)
+
+
+_before_i5 = set(_sandboxes())
+D.subprocess.run = _diff_fails
+try:
+    _i5 = D.make_sandbox()
+finally:
+    D.subprocess.run = _real_run
+check('I5. a FAILED `git diff --name-only HEAD` overlay makes make_sandbox() '
+      'return None (COULD NOT RUN) rather than a copy of HEAD',
+      _i5 is None, _i5)
+if _i5:
+    D.drop_sandbox(_i5)
+check('I5b. ...and the refused sandbox is DROPPED, not left registered',
+      set(_sandboxes()) <= _before_i5, sorted(set(_sandboxes()) - _before_i5))
+_i5ok = D.make_sandbox()
+check('I5c. CONTROL: with git diff working, make_sandbox() still returns a '
+      'sandbox, so I5 is not a make_sandbox that refuses everything',
+      _i5ok is not None, _i5ok)
+D.drop_sandbox(_i5ok)
+
 # ── J. THE ESCAPE CHECK MUST NOT ACCUSE AN INNOCENT TOOL ────────────────────
 # Measured 2026-10-06: the escape check fired against
 # tools/primitive_obsession_check.py 23 minutes into a 151-tool run and VOIDED

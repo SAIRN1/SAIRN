@@ -274,6 +274,57 @@ for _p in (_bad_js, _good_js, _cmt_js):
     except OSError:
         pass
 
+# ── F. THE COUNTS THAT COULD ONLY EVER SAY ZERO OR 100% (b55 M4-M6) ─────────
+section('F. the limit count, the coverage figure and NOT JUDGED are measured')
+# M4: strip_comments(src, rel) put `rel` in `strings=`, blanking the label the
+# exhaustive test reads, so "OF WHICH N carry an exhaustive label" was always 0.
+_bare_js = tmpfile("assert.ok(rows, 'every row is present');\n", suffix='.js')
+_rcF, _outF = run('--paths', _bare_js)
+check('F1. a JS bare truthiness under an EXHAUSTIVE label is counted in the '
+      'registered-limit figure -- "OF WHICH 1", not a structural 0',
+      re.search(r'bare-truthiness\s+assert call\(s\).*?OF WHICH 1\b', _outF, re.S)
+      is not None, _outF[:1400])
+_real_bu = A.js_bare_unjudged
+def _boom(_s):
+    raise RuntimeError('planted')
+try:
+    A.js_bare_unjudged = _boom
+    _res = A.scan([], js_paths=[_bare_js])
+finally:
+    A.js_bare_unjudged = _real_bu
+check('F2. a CRASH in the limit count is COULD NOT RUN (unparsed), never a '
+      '(0, 0) that reads as "the limit costs nothing"',
+      any('planted' in u for u in _res[4]), _res[4])
+# M5: printed `_checked of _checked` -- 100% whatever was unparsed.
+_ok_py = tmpfile("check('at least one row', len(rows) >= 1, 'd')\n")
+_bad_py = tmpfile("def check(  :\n    pass\n")
+_rcF, _outF = run('--paths', _ok_py, _bad_py)
+check('F3. one file read and one that does not parse -> CHECKED / UNIVERSE is '
+      '1 of 2, not 2 of 2 (100%)',
+      re.search(r'CHECKED / UNIVERSE: 1 of 2\b', _outF) is not None
+      and _rcF == A.EXIT_COULD_NOT_RUN,
+      (_rcF, re.findall(r'CHECKED / UNIVERSE: [^\n]*', _outF)))
+# M6: CLEAN_NO_COMPARE is unreachable, so NOT JUDGED always printed 0 while the
+# arms that really go unjudged were `continue`d and counted nowhere.
+_nj = tmpfile("check('every row is present', got, want)\n"
+              "print('every row', n)\n")
+_rcF, _outF = run('--paths', _nj)
+check('F4. a Python callee-compares arm `check(LABEL, got, want)` counts as 1 '
+      'NOT JUDGED -- and a non-assertion `print(...)` is not counted',
+      re.search(r'0 arm\(s\) judged, 1 NOT JUDGED', _outF) is not None,
+      re.findall(r'read [^\n]*', _outF))
+_nj_js = tmpfile("assert.strictEqual(a, b, 'every row is present');\n",
+                 suffix='.js')
+_rcF, _outF = run('--paths', _nj_js)
+check('F5. the JS callee-compares form `assert.strictEqual(a, b, LABEL)` counts '
+      'as 1 NOT JUDGED', re.search(r'0 arm\(s\) judged, 1 NOT JUDGED', _outF)
+      is not None, re.findall(r'read [^\n]*', _outF))
+for _p in (_bare_js, _ok_py, _bad_py, _nj, _nj_js):
+    try:
+        os.unlink(_p)
+    except OSError:
+        pass
+
 # ── E. THE 2026-09-29 RULES, AND THE REGEX THAT COULD NEVER MATCH ──────────
 # The fourteen NOT-JUDGED arms were read one at a time. Every one was decidable,
 # so the bucket is gone rather than explained -- but the rule that removed it
@@ -326,11 +377,18 @@ check('E3b. ...AND THAT RULE IS SCOPED TO THE NO-OPERATOR BRANCH. Applied to '
       A.classify('fixture invalid: every row must be present',
                  [__import__('ast').GtE()]))
 
-check('E4. THE REAL RUN REPORTS ZERO NOT JUDGED. The bucket was 14 and every '
-      'one was read individually; if it is ever non-zero again the number is '
-      'unexplained and that is the thing this arm exists to stop',
+# E4 REWRITTEN b55 (M6). It asserted the real run's NOT JUDGED figure is 0, and
+# it was green only because that figure was STRUCTURALLY 0: CLEAN_NO_COMPARE is
+# unreachable and the arms that really go unjudged (the callee-compares form
+# `check(LABEL, got, want)` / `assert.strictEqual(a, b, LABEL)`) were dropped
+# uncounted. The 14 bare-truthiness arms the old arm protected are JUDGED now
+# (FINDING_BARE), which E3/the fixture lock hold. What must be true is that the
+# figure is a MEASUREMENT: the corpus carries the callee-compares form, so a 0
+# here is the dead counter coming back.
+check('E4. THE REAL RUN COUNTS ITS NOT JUDGED ARMS -- a non-zero measured '
+      'figure, because a 0 here is the counter that could never move',
       re.search(r'(\d+) NOT JUDGED', out) is not None
-      and int(re.search(r'(\d+) NOT JUDGED', out).group(1)) == 0,
+      and int(re.search(r'(\d+) NOT JUDGED', out).group(1)) > 0,
       re.search(r'(\d+) NOT JUDGED', out).group(0)
       if re.search(r'(\d+) NOT JUDGED', out) else out[:300])
 
@@ -342,10 +400,17 @@ check('E5. THE ONE REGISTERED LIMIT IS PRINTED WITH BOTH ITS FIGURES, and the '
       and re.search(r'OF WHICH (\d+)', out) is not None,
       out[:1400])
 _ex = re.search(r'OF WHICH (\d+)', out)
-check('E5b. ...and while that second figure is 0 the limit costs nothing. If '
-      'this goes red the JS extractor needs the bare-truthiness shape, and the '
-      'output says so rather than this control quietly passing',
-      _ex is not None and int(_ex.group(1)) == 0,
+# E5b SAID "== 0" AND WAS GREEN ONLY BECAUSE OF M4 (cody b58). The count was
+# structurally 0 -- `strip_comments(src, rel)` blanked every string body -- so
+# the limit looked free. Fixed, it measures 35: JS bare-truthiness asserts that
+# DO carry an exhaustive label and are not judged. Extending the JS extractor
+# to judge that shape is open work (cody b58 handoff), not done here; until it
+# is, the measured cost is the ceiling, so the limit cannot GROW unseen.
+E5B_CEILING = 35
+check('E5b. ...and the measured cost of the limit has not grown past %d (b58). If '
+      'this goes red, more exhaustive labels sit on a shape the JS extractor '
+      'cannot judge -- extend it rather than raise this number' % E5B_CEILING,
+      _ex is not None and int(_ex.group(1)) <= E5B_CEILING,
       _ex.group(0) if _ex else 'no registered-limit line at all')
 
 # ── D. ANCHOR ARMS -- what tells us the day this control stops testing ──────

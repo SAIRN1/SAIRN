@@ -234,6 +234,56 @@ check('D6. --propose PRINTS a guard and the output says out loud that it does '
       'DOES NOT APPLY' in out_p and 'EXIT_COULD_NOT_RUN' in out_p,
       out_p[-500:])
 
+# ── F. A 2 THAT IS NOT AN EXIT, AND A CLEAN WITHOUT ITS DENOMINATOR (b55) ───
+section('F. only a real exit 2 is a guard; CLEAN carries the could-not-tell count')
+_HEAD = ("def sources():\n"
+         "    return subprocess.run(['git', 'ls-files', '*.py']).stdout.split()\n"
+         "def main(argv):\n"
+         "    files = sources()\n"
+         "    if not files:\n")
+_TAIL = "    print('read %d file(s)' % len(files))\n"
+for _body, _want, _why in (
+        ("        print(json.dumps({}, indent=2))\n        return 0\n",
+         Z.WRONG_EXIT, '`indent=2` is not an exit'),
+        ("        print('x'.ljust(20))\n        return 0\n",
+         Z.WRONG_EXIT, '`.ljust(20)` is not an exit'),
+        ("        print(200)\n        return 0\n",
+         Z.WRONG_EXIT, 'a literal 200 is not an exit'),
+        ("        sys.exit(2)\n", Z.GUARDED, 'CONTROL: sys.exit(2) IS the guard'),
+        ("        return C.EXIT_COULD_NOT_RUN\n", Z.GUARDED,
+         'CONTROL: a qualified EXIT_COULD_NOT_RUN is the guard')):
+    _v = verdict(_HEAD + _body + _TAIL)
+    check('F1. %s -> %s (M7)' % (_why, _want), _v == _want, _v)
+
+import contextlib                                                 # noqa: E402
+import tempfile                                                   # noqa: E402
+_tmpd = tempfile.mkdtemp(prefix='pz-')
+_g = os.path.join(_tmpd, 'guarded_tool.py')
+_n = os.path.join(_tmpd, 'no_corpus_tool.py')
+io.open(_g, 'w', encoding='utf-8').write(
+    _HEAD + "        return EXIT_COULD_NOT_RUN\n" + _TAIL)
+io.open(_n, 'w', encoding='utf-8').write("def main(argv):\n    return 0\n")
+_real_tf = Z.tool_files
+try:
+    Z.tool_files = lambda: [_g, _n]
+    _b1, _b2 = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(_b1):
+        _rc1 = Z.main([])
+    with contextlib.redirect_stdout(_b2):
+        _rc2 = Z.main(['--quiet'])
+finally:
+    Z.tool_files = _real_tf
+    for _p in (_g, _n):
+        os.unlink(_p)
+    os.rmdir(_tmpd)
+check('F2. 1 judged + 1 could-not-tell: the CLEAN line itself says only 1 of 2 '
+      'were judged (M8) -- exit stays 0, it is a coverage limit not a failed read',
+      _rc1 == 0 and 'ONLY 1 of 2 tools were judged' in _b1.getvalue(),
+      (_rc1, _b1.getvalue()[-400:]))
+check('F3. ...and --quiet still prints the COULD NOT TELL count rather than '
+      'hiding it (M8)',
+      'COULD NOT TELL: 1 of 2' in _b2.getvalue(), (_rc2, _b2.getvalue()))
+
 # ── E. ANCHOR ARMS -- what tells us the day this control stops testing ──────
 section('E. the anchors this control depends on (discipline 8)')
 _s = io.open(TOOL, encoding='utf-8').read()

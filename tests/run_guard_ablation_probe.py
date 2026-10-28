@@ -145,6 +145,32 @@ check('CONTROL: the set is a SUBSET of the tests on disk, not all of them -- a '
       'derivation that returned everything would be a glob with extra steps',
       len(ss) < 400, len(ss))
 
+print('\n5b. A PARTIAL RUN IS NOT A PASS (b55 M3)')
+# main() returned 0 unconditionally, with COULD-NOT-RUN gates and with a subject
+# that moved under the run; a gate where only SOME observers ran was plain
+# SILENT, and "N suites, none noticed" counted the ones that never ran.
+sv = getattr(G, 'silent_verdict', None)
+ec = getattr(G, 'exit_code', None)
+check('the verdict and exit-code decisions exist as testable functions',
+      sv is not None and ec is not None, 'silent_verdict/exit_code missing')
+if sv is not None and ec is not None:
+    v = sv(5, ['a.js', 'b.js'])
+    check('2 of 5 observers could not run -> SILENT-PARTIAL, not SILENT',
+          v[0] == 'SILENT-PARTIAL', v)
+    check('...and it counts the 3 that RAN, not all 5',
+          v[1].startswith('3 of 5 suites ran'), v)
+    check('CONTROL: every observer ran -> plain SILENT', sv(5, [])[0] == 'SILENT',
+          sv(5, []))
+    ok_rows = [{'verdict': 'LOAD-BEARING'}, {'verdict': 'SILENT'}]
+    check('CONTROL: LOAD-BEARING + SILENT on a still subject -> exit 0',
+          ec(ok_rows, False) == 0, ec(ok_rows, False))
+    check('a COULD-NOT-RUN gate -> exit 2',
+          ec(ok_rows + [{'verdict': 'COULD-NOT-RUN'}], False) == 2)
+    check('a SILENT-PARTIAL gate -> exit 2',
+          ec(ok_rows + [{'verdict': 'SILENT-PARTIAL'}], False) == 2)
+    check('a subject that changed during the run -> exit 2',
+          ec(ok_rows, True) == 2)
+
 print('\n6. THIS PROBE DID NOT TOUCH THE TREE')
 AFTER = porcelain()
 check('git status is readable at both ends', BEFORE is not None and AFTER is not None)

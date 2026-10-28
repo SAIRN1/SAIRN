@@ -414,6 +414,17 @@ def run(tool_path, target, relation=None):
                          (' from relation %r' % relation) if relation else ''))
     except OSError as e:
         return None, 'could not launch: %s' % e
+    # cody b56 (M11): a checker that CRASHED, or said COULD NOT RUN (exit 2),
+    # did not answer. Two identical crashes normalise to equal output, so
+    # SAME "held" -- and a finding (exit 1) turning into a crash on the
+    # transform passed NO_ERASE. Neither is a comparison of two answers.
+    if (p.returncode not in (0, 1)
+            or 'Traceback (most recent call last)' in (p.stderr or '')):
+        return None, ('the checker did not answer: exit %d%s'
+                      % (p.returncode,
+                         ', traceback on stderr'
+                         if 'Traceback (most recent call last)' in (p.stderr or '')
+                         else ''))
     return p.returncode, normalise((p.stdout or '') + (p.stderr or ''), target)
 
 
@@ -1446,6 +1457,14 @@ def _prose_report(silent):
                   % (rel, n, v,
                      '   <-- UNEXERCISED, a coverage gap rather than a pass'
                      if not n else ''))
+    # cody b56 (M12): UNEXERCISED was only the printed label above -- hidden
+    # under --quiet/--json -- and the run still exited 0 CLEAN. A relation
+    # compared ZERO times measured nothing, so it goes to could-not-run.
+    cnr = list(cnr) + [
+        '%s: UNEXERCISED -- 0 applicable comparisons, so this rewording '
+        'measured nothing' % rel
+        for rel, _fn, _why in PROSE_RELATIONS
+        if not any(r['relation'] == rel for r in applicable)]
     return (['%s/%s, rewording %s: the verdict MOVED -- %s'
              % (r['subject'], r['unit'], r['relation'], r['why'])
              for r in bad], cnr)

@@ -415,10 +415,15 @@ def load_claim_files(repo=REPO):
     for fn in sorted(os.listdir(d)):
         if not fn.endswith(".json"):
             continue
+        # NAMED AND FATAL, NOT SKIPPED (M18). `continue` here dropped a whole
+        # session's claims unnamed, so its paths routed as UNOWNED -- an owner
+        # this tool never looked for reported as one that does not exist.
         try:
             rec = json.load(open(os.path.join(d, fn), encoding="utf-8"))
-        except ValueError:
-            continue
+        except ValueError as exc:
+            die(".claude/claims/%s will not parse as JSON (%s), so that "
+                "session's FILES declarations cannot be read and every path it "
+                "owns would route as UNOWNED" % (fn, str(exc)[:120]))
         rec.setdefault("session", fn[:-5])
         docs.append(rec)
     return claim_sets_from_docs(docs)
@@ -470,6 +475,13 @@ def mentions_in_active_work(path, aw):
 
 
 # ── main ───────────────────────────────────────────────────────────────────
+# Triage verdicts. ROUTED rows need an owner; NOT_ROUTED rows are counted and
+# printed but not routed (an ARTIFACT is the suite's harness, not a failure).
+# Any other value is fatal: a verdict nobody declared is not one to guess at.
+ROUTED_VERDICTS = ("REAL", "COULD-NOT-RUN")
+NOT_ROUTED_VERDICTS = ("ARTIFACT",)
+
+
 def build(triage, repo=REPO):
     res_app, apps = load_registry(repo)
     deriver = AppDeriver(res_app, apps)
@@ -480,17 +492,29 @@ def build(triage, repo=REPO):
     if not os.path.isfile(triage):
         die("triage file %s not found" % triage)
     rows = []
+    verdicts = collections.Counter()
     with open(triage, encoding="utf-8", newline="") as f:
         rdr = csv.DictReader(f, delimiter="\t")
         if not rdr.fieldnames or "verdict" not in rdr.fieldnames or "test" not in rdr.fieldnames:
             die("%s has no `verdict`/`test` columns -- this is not a triage TSV"
                 % triage)
         for r in rdr:
-            if r.get("verdict") == "REAL":
+            v = r.get("verdict")
+            verdicts[v] += 1
+            # COULD-NOT-RUN IS ROUTED, NOT DROPPED (M18). A suite that could
+            # not run is unverified and needs an owner as much as one that
+            # failed -- before this, 7 of the default triage's 86 rows left the
+            # population with no count anywhere in the output.
+            if v in ROUTED_VERDICTS:
                 rows.append(r)
+            elif v not in NOT_ROUTED_VERDICTS:
+                die("%s carries verdict %r on %s, which this tool does not know "
+                    "how to route -- refusing rather than dropping it"
+                    % (triage, v, r.get("test")))
     if not rows:
-        die("%s holds zero REAL rows. An empty population is reported as COULD "
-            "NOT RUN rather than as a clean routing table" % triage)
+        die("%s holds zero REAL or COULD-NOT-RUN rows. An empty population is "
+            "reported as COULD NOT RUN rather than as a clean routing table"
+            % triage)
 
     out = []
     for r in rows:
@@ -513,7 +537,8 @@ def build(triage, repo=REPO):
         else:
             route = "next claim naming this path"
         out.append(dict(
-            suite=path, kind=r.get("kind", ""), rc=r.get("rc", ""),
+            suite=path, verdict=r.get("verdict", ""),
+            kind=r.get("kind", ""), rc=r.get("rc", ""),
             seconds=r.get("seconds", ""),
             app=app, app_basis=basis,
             app_confidence=AppDeriver.confidence(app, basis, detail),
@@ -522,7 +547,7 @@ def build(triage, repo=REPO):
             mentioned_in_active_work=("+".join(mentions) if mentions else "none"),
             route_to=route, suite_reason=r.get("suite_reason", ""),
         ))
-    return out, om_meta, res_app, apps
+    return out, om_meta, res_app, apps, verdicts
 
 
 def hank_owners(repo=REPO):
@@ -572,12 +597,13 @@ def write_outputs(out, outdir):
         for app in order:
             grp = sorted(byapp[app], key=lambda o: o["suite"])
             f.write("### %s -- %d of %d\n\n" % (app, len(grp), n))
-            f.write("| suite | kind | rc | app basis / confidence | owner (declared) "
-                    "| owner basis | mentioned in active-work | route to |\n")
-            f.write("|---|---|---:|---|---|---|---|---|\n")
+            f.write("| suite | verdict | kind | rc | app basis / confidence "
+                    "| owner (declared) | owner basis | mentioned in active-work "
+                    "| route to |\n")
+            f.write("|---|---|---|---:|---|---|---|---|---|\n")
             for o in grp:
-                f.write("| `%s` | %s | %s | %s / %s | %s | %s | %s | %s |\n" % (
-                    md_cell(o["suite"]), o["kind"], o["rc"],
+                f.write("| `%s` | %s | %s | %s | %s / %s | %s | %s | %s | %s |\n" % (
+                    md_cell(o["suite"]), o["verdict"], o["kind"], o["rc"],
                     md_cell(o["app_basis"]), md_cell(o["app_confidence"]),
                     ("**%s**" % o["owner"]) if o["owner"] != "UNOWNED" else "UNOWNED",
                     md_cell(o["owner_basis"]), md_cell(o["mentioned_in_active_work"]),
@@ -610,12 +636,24 @@ def main(argv=None):
     if a.fixtures:
         return 0
 
-    out, om_meta, res_app, apps = build(a.triage)
+    out, om_meta, res_app, apps, verdicts = build(a.triage)
     print("registry: %d resources, %d declared app name(s), %d owning at least one"
           % (len(res_app), len(apps), len(set(res_app.values()))))
     print("owner map: criteria %s, %s tool entries"
           % (om_meta.get("criteria"), om_meta.get("tools")))
-    print("triage: %s -- %d REAL row(s)" % (a.triage, len(out)))
+    print("triage: %s -- %d row(s) by verdict: %s"
+          % (a.triage, sum(verdicts.values()),
+             ", ".join("%s %d" % kv for kv in sorted(verdicts.items()))))
+    print("  routed %d (%s); NOT routed: %s"
+          % (len(out), " + ".join(ROUTED_VERDICTS),
+             ", ".join("%s %d" % (v, verdicts.get(v, 0))
+                       for v in NOT_ROUTED_VERDICTS)))
+    cnr = sorted(o["suite"] for o in out if o["verdict"] == "COULD-NOT-RUN")
+    if cnr:
+        print("  COULD-NOT-RUN suites (%d) -- unverified, routed below with the "
+              "rest, NOT a pass:" % len(cnr))
+        for s in cnr:
+            print("    ? %s" % s)
 
     print("\nBY APP (derived)")
     for k, v in sorted(collections.Counter(o["app"] for o in out).items(),

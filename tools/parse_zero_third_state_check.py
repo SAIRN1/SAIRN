@@ -226,9 +226,23 @@ def _exits_could_not_run(body_nodes, funcs, depth=1):
     reported as the defect, because the checker looked only at the lexical body
     -- the same one-level blindness entry_point_scope_check shipped with.
     """
-    dumped = ast.dump(ast.Module(body=list(body_nodes), type_ignores=[]))
-    if 'EXIT_COULD_NOT_RUN' in dumped or 'value=2' in dumped:
-        return True
+    # AN EXIT, NOT A SUBSTRING. `'value=2' in ast.dump(...)` also matched
+    # `indent=2`, `.ljust(20)` and `200`, so `print(json.dumps({}, indent=2));
+    # return 0` read as GUARDED. Only a `return` or an exit call whose argument
+    # IS 2 / EXIT_COULD_NOT_RUN counts.
+    for n in body_nodes:
+        for s in ast.walk(n):
+            if isinstance(s, ast.Return):
+                arg = s.value
+            elif (isinstance(s, ast.Call) and s.args
+                  and _callee(s) in ('exit', '_exit', 'SystemExit')):
+                arg = s.args[0]
+            else:
+                continue
+            if (isinstance(arg, ast.Constant) and arg.value == 2) \
+                    or getattr(arg, 'id', None) == 'EXIT_COULD_NOT_RUN' \
+                    or getattr(arg, 'attr', None) == 'EXIT_COULD_NOT_RUN':
+                return True
     if depth <= 0:
         return False
     for n in body_nodes:
@@ -388,6 +402,19 @@ def main(argv):
      'RESOLVED TWO HOPS: `files = suite_files()` -> `tracked()` -> git ls-files. '
      'At one level of resolution this repo\'s two biggest corpora were both '
      'invisible and the tool would have reported a small clean population'),
+    ("""
+def sources():
+    return subprocess.run(['git', 'ls-files', '*.py']).stdout.split()
+def main(argv):
+    files = sources()
+    if not files:
+        print(json.dumps({}, indent=2).ljust(20))
+        return 0
+    print('read %d file(s)' % len(files))
+""", WRONG_EXIT,
+     'A 2 THAT IS NOT AN EXIT (b55 M7). `value=2` in ast.dump() matched '
+     '`indent=2`, and would match `.ljust(20)`, so this `return 0` read as '
+     'GUARDED and could reach CLEAN'),
 )
 
 
@@ -527,12 +554,24 @@ def main(argv):
                 print('\n%s  (after `%s = %s(...)`)' % (rel, var, callee))
                 print(PROPOSAL % {'var': var, 'msg': PROPOSAL_MSG})
 
+    # THE COULD-NOT-TELL COUNT IS PRINTED EVEN UNDER --quiet, and the clean line
+    # carries it. It was neither: a run that judged 12 of 362 tools said CLEAN,
+    # exit 0, and --quiet hid even the number. They are not passed to finish()
+    # as could_not_run -- the tool DID read them and found no corpus variable it
+    # can locate, which is a coverage limit, not a failed read -- but a verdict
+    # must never be readable without its denominator.
+    if a.quiet and no_corpus:
+        print('COULD NOT TELL: %d of %d tools carry no corpus variable this can '
+              'judge -- NOT cleared' % (len(no_corpus), len(files)))
     return finish(
         ['%s  `%s` <- %s()  %s' % (rel, var, callee, verdict)
          for rel, var, callee, verdict in findings],
         could_not_run=unparsed, quiet=a.quiet,
         clean_line='\nCLEAN -- every corpus variable this could locate exits '
-                   'COULD NOT RUN when its\nenumeration returns nothing.')
+                   'COULD NOT RUN when its\nenumeration returns nothing. '
+                   'ONLY %d of %d tools were judged; the other %d are\n'
+                   'COULD NOT TELL and are NOT cleared by this line.'
+                   % (checked, len(files), len(no_corpus)))
 
 
 if __name__ == '__main__':

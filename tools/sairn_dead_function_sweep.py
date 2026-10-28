@@ -231,6 +231,11 @@ def index_identifiers(code):
     return idx
 
 
+class UntrustedStrip(Exception):
+    """Comment stripping blanked past the size guard. The file's findings are
+    NOT a result -- raised rather than printed, so no caller can count them."""
+
+
 def sweep(path):
     raw = open(path, encoding='utf-8', errors='replace').read()
     code = strip_comments(raw)
@@ -242,10 +247,14 @@ def sweep(path):
     # read as a result.
     blanked = sum(1 for a, b in zip(raw, code) if a != b)
     pct = 100.0 * blanked / max(1, len(raw))
+    #
+    # RAISED, NOT PRINTED (M20, 2026-10-28). This used to print a WARNING and
+    # then carry on: the file still printed `clean`, its counts went into
+    # TOTAL_*, and the run exited 0 -- the guard's own verdict was ignored by
+    # the line after it.
     if pct > 25:
-        print('WARNING %s: comment stripping blanked %.1f%% of the file -- a '
-              'delimiter has almost certainly run away. Findings below are NOT '
-              'trustworthy.' % (os.path.basename(path), pct))
+        raise UntrustedStrip('comment stripping blanked %.1f%% of the file -- '
+                             'a delimiter has almost certainly run away' % pct)
     defs = definitions(code)
     idx = index_identifiers(code)
     dead, export_only = [], []
@@ -272,9 +281,18 @@ def sweep(path):
 
 
 def main(paths):
+    """0 = swept every file (DEAD rows are a report, not a failure);
+    2 = at least one file UNTRUSTED and left out of the totals."""
     total_defs = total_dead = 0
+    untrusted = []
     for path in paths:
-        defs, dead, export_only = sweep(path)
+        try:
+            defs, dead, export_only = sweep(path)
+        except UntrustedStrip as e:
+            untrusted.append((os.path.basename(path), str(e)))
+            print('UNTRUSTED %-24s %s -- NOT swept, NOT in the totals'
+                  % (os.path.basename(path), e))
+            continue
         total_defs += len(defs)
         total_dead += len(dead)
         status = 'DEAD:%-3d' % len(dead) if dead else 'clean   '
@@ -288,6 +306,12 @@ def main(paths):
     print('TOTAL_DEAD:%d' % total_dead)
     print('Comments stripped before counting. DEAD = the definition is the only '
           'occurrence of the name. Verify each site by hand before deleting.')
+    if untrusted:
+        print('COULD NOT RUN on %d of %d file(s) -- UNTRUSTED, excluded from the '
+              'totals above, which are a FLOOR: %s'
+              % (len(untrusted), len(paths), ', '.join(n for n, _ in untrusted)))
+        return 2
+    return 0
 
 
 # ── THE DEFAULT CORPUS IS ANCHORED, AND AN EMPTY ONE IS A REFUSAL ──────────
@@ -319,4 +343,4 @@ if __name__ == '__main__':
                 'pass.\n' % REPO)
             sys.exit(2)
     print('FILES SWEPT: %d' % len(args))
-    main(args)
+    sys.exit(main(args))

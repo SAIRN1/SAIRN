@@ -53,7 +53,8 @@ refuses that fold everywhere else.
 
   exit 0  scanned, no finding
   exit 1  at least one finding (REPORT-ONLY -- not a gate)
-  exit 2  COULD NOT RUN -- nothing was compared
+  exit 2  COULD NOT RUN -- nothing was compared, OR any file was NOT ASSESSED
+          for A1 (then any findings printed are a floor, not a total)
 """
 
 import os
@@ -425,6 +426,20 @@ def analyse(path, src):
                     'the exit expression `%s` names a failure counter or an '
                     'outcome flag and no unproven counter, so this suite exits '
                     '0 with unproven arms recorded.' % expr.strip()[:80]))
+        # THE EXITS THE LOOP ABOVE NEVER EXAMINED (b55 M10). `sys.exit()` was
+        # skipped as empty, `sys.exit(0)` names no counter, and a file with no
+        # exit at all has nothing to loop over -- all three exit 0 with an
+        # unproven arm recorded. File-level, so the correct
+        # `if unproven: sys.exit(3)` ... `sys.exit(0)` shape stays silent: it
+        # fires only when EVERY exit is empty or a literal 0/1, or there is none.
+        if all(expr.strip() in ('', '0', '1') for _, expr in exits):
+            findings.append((
+                'A2', exits[-1][0] if exits else
+                (emits[0] if emits else setters[0])[0],
+                'every exit in this file is empty or a literal 0/1%s, so no '
+                'exit path can carry the unproven state and this suite exits '
+                '0 with unproven arms recorded.'
+                % ('' if exits else ' -- there is NO exit at all')))
 
     if summary_carries and not setters:
         lineno = next((n for n, text in summaries
@@ -602,6 +617,15 @@ def main(argv):
             print('UNREADABLE  %s -- %s' % (path, err))
 
     print('')
+    if not_assessed:
+        # THE THIRD STATE WINS, as in checker_kit.finish(). It printed NO
+        # FINDING and exited 0 with these files named above as not part of a
+        # clean verdict -- the exit code said the opposite of the text.
+        print('COULD NOT RUN (partly): %d file(s) NOT ASSESSED for A1. %d '
+              'FINDING(S) over %d file(s) are a FLOOR, not a total. Exit 2.'
+              % (len(not_assessed), len(all_findings) + len(unreadable),
+                 len(files)))
+        return 2
     if all_findings or unreadable:
         print('%d FINDING(S) over %d file(s). REPORT-ONLY -- this does not block '
               'a push.' % (len(all_findings) + len(unreadable), len(files)))

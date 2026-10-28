@@ -165,8 +165,10 @@ def attribute(name, claims):
     return 'UNATTRIBUTED'
 
 
-def worktrees(claims):
-    ok, out = git(['worktree', 'list', '--porcelain'])
+def worktrees(claims, tree=None):
+    # `tree` exists so the selftest drives THIS function on a fixture repo
+    # (cody b56, M15) -- its LIVE/ORPHAN arms used to test os.path.isdir.
+    ok, out = git(['worktree', 'list', '--porcelain'], tree=tree)
     if ok is not True:
         return None
     rows = []
@@ -174,7 +176,7 @@ def worktrees(claims):
         if not line.startswith('worktree '):
             continue
         p = line[len('worktree '):].strip()
-        if os.path.abspath(p) == os.path.abspath(REPO):
+        if os.path.abspath(p) == os.path.abspath(tree or REPO):
             continue                        # the main worktree is not a leak
         name = os.path.basename(p.rstrip('/\\'))
         exists = os.path.isdir(p)
@@ -339,12 +341,18 @@ def _fixtures():
         subprocess.run(['git', '-C', r, 'worktree', 'add', '-q', '--detach', wt],
                        capture_output=True, text=True, encoding='utf-8',
                        errors='replace')
+        # cody b56 (M15): these two arms asserted os.path.isdir(wt) and never
+        # called worktrees(), so the "negative" was true by construction and
+        # ORPHAN detection was never exercised. They ask worktrees() now.
+        def _wt_state():
+            rows = worktrees(None, tree=r) or []
+            return [w['state'] for w in rows if w['name'] == 'wt-live-aaaaa']
         arm('a worktree whose directory EXISTS is LIVE -- the paired positive',
-            os.path.isdir(wt))
+            _wt_state() == ['LIVE'], _wt_state())
         shutil.rmtree(wt, ignore_errors=True)
-        arm('NEGATIVE: and one whose directory is GONE is still REGISTERED, '
-            'which is exactly what `git worktree prune` does not tell you',
-            not os.path.isdir(wt))
+        arm('NEGATIVE: and one whose directory is GONE is still REGISTERED and '
+            'reported ORPHAN, which is exactly what `git worktree prune` does '
+            'not tell you', _wt_state() == ['ORPHAN'], _wt_state())
 
         tb = git(['status'], tree=r, bound=0)
         arm('A TIMEOUT IS COULD NOT TELL, never ok -- a health check that says '

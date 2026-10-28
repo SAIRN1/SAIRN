@@ -452,10 +452,32 @@ def selftest():
             if os.path.isfile(real):
                 with open(real, 'rb') as fh:
                     before = hashlib.sha256(fh.read()).hexdigest()
-            rc = run_guarded(['git', 'config', '--global', 'sairn.planted',
-                              'yes'], r, quiet=True)
+            # cody b56 (M16): this arm passed when `git config --global` FAILED
+            # and nothing was written anywhere. The wrapped command now proves
+            # the write landed in the THROWAWAY file, and its exit is read
+            # back through --rc-file rather than assumed.
+            probe = (
+                'import os, subprocess, sys\n'
+                'p = subprocess.run(["git", "config", "--global", '
+                '"sairn.planted", "yes"])\n'
+                'if p.returncode: sys.exit(p.returncode)\n'
+                'g = os.environ.get("GIT_CONFIG_GLOBAL", "")\n'
+                'real = os.path.join(os.path.expanduser("~"), ".gitconfig")\n'
+                'ok = (g and os.path.abspath(g) != os.path.abspath(real)\n'
+                '      and "planted = yes" in open(g).read())\n'
+                'sys.exit(0 if ok else 7)\n')
+            rc_path = os.path.join(tmp, 'arm6.rc')
+            rc = run_guarded([sys.executable, '-c', probe], r,
+                             rc_file=rc_path, quiet=True)
             assert rc == 0, ('a --global write changed the REPO state, which '
                              'this arm did not expect (rc=%d)' % rc)
+            with io.open(rc_path, encoding='utf-8') as fh:
+                inner = fh.read().strip()
+            assert inner == '0', (
+                'the wrapped `git config --global` did not write the key into '
+                'the THROWAWAY global file (inner exit %s), so "the real file '
+                'is unchanged" below would be true of a write that never '
+                'happened' % inner)
             after = None
             if os.path.isfile(real):
                 with open(real, 'rb') as fh:

@@ -128,15 +128,32 @@ def rank(expr, line):
 
 
 def scan():
+    """Rows, or None when the scan did not fully run.
+
+    None covers a failed git, an EMPTY file list and any file that could not
+    be read -- each is a scan that did not look at everything, and a list of
+    rows from it would read as complete. `scan_full()` says which.
+    """
+    r = scan_full()
+    if r is None or r[2] or not r[1]:
+        return None
+    return r[0]
+
+
+def scan_full():
+    """(rows, files, skipped) -- or None if git failed. `skipped` is
+    [(path, error)] for every file that could not be read: NAMED, never
+    dropped, because a dropped file reads exactly like a clean one."""
     files = tracked()
     if files is None:
         return None
-    rows = []
+    rows, skipped = [], []
     for rel in files:
         try:
             body = io.open(os.path.join(REPO, rel), encoding='utf-8',
                            errors='replace').read()
-        except OSError:
+        except OSError as exc:
+            skipped.append((rel, '%s' % exc.__class__.__name__))
             continue
         for m in CAP_RE.finditer(body):
             rest = m.group('rest') or m.group('rest2') or ''
@@ -153,7 +170,7 @@ def scan():
                          'expr': m.group(0).strip()[:120],
                          'context': line[:200],
                          'rank': rank(m.group(0), line)})
-    return rows
+    return rows, files, skipped
 
 
 def selftest():
@@ -239,6 +256,33 @@ def selftest():
         live is not None and len(live) > 0,
         'the live scan produced %s rows -- with zero, a clean result would mean '
         'nothing' % (len(live) if live is not None else 'no'))
+
+    # ── NOT-RUN IS NOT CLEAN (M19). Before the fix an unreadable file was
+    # `continue`d unnamed and an EMPTY tracked() list exited 0 CLEAN with no
+    # file count. tracked() is swapped for a fixture list; main() is the
+    # subject because it is what a caller reads.
+    import contextlib
+    g = globals()
+    saved = g['tracked']
+
+    def rc_with(files, argv):
+        g['tracked'] = lambda: files
+        buf = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(buf), \
+                    contextlib.redirect_stderr(buf):
+                return main(argv), buf.getvalue()
+        finally:
+            g['tracked'] = saved
+
+    for argv in ([], ['--json']):
+        rc, txt = rc_with([], argv)
+        arm('NEGATIVE: an EMPTY tracked list exits 2 COULD NOT RUN, not 0 '
+            'CLEAN %s' % (argv or ''), rc == 2, (rc, txt[-200:]))
+        rc, txt = rc_with(['no-such-file-xyz.js'], argv)
+        arm('NEGATIVE: an UNREADABLE file exits 2 and is NAMED, not dropped %s'
+            % (argv or ''), rc == 2 and 'no-such-file-xyz.js' in txt,
+            (rc, txt[-200:]))
     return out, bad
 
 
@@ -251,23 +295,44 @@ def main(argv):
         print('  %s' % ('ALL ARMS PASS' if not bad else '%d ARM(S) FAILED' % bad))
         return 1 if bad else 0
 
-    rows = scan()
-    if rows is None:
+    full = scan_full()
+    if full is None:
         print('COULD NOT RUN: git ls-files failed, so the file list is unknown '
               'and NOTHING was scanned. Zero findings here is not a clean '
               'sweep.', file=sys.stderr)
         return 2
+    rows, files, skipped = full
+    if not files:
+        print('COULD NOT RUN: git ls-files returned NO .js/.html files, so '
+              'NOTHING was scanned. Zero findings here is not a clean sweep.',
+              file=sys.stderr)
+        return 2
+    # Unreadable files are named and force exit 2 AFTER the report, so the
+    # rows that were found still print -- as a floor, not a total.
+    def _partial():
+        if not skipped:
+            return None
+        print('COULD NOT RUN: %d of %d file(s) could not be read and were NOT '
+              'scanned -- the rows above are a FLOOR, not a total:'
+              % (len(skipped), len(files)), file=sys.stderr)
+        for rel, why in skipped:
+            print('  ? %s (%s)' % (rel, why), file=sys.stderr)
+        return 2
 
     if '--json' in argv:
         print(json.dumps({'criteria_version': CRITERIA_VERSION, 'rows': rows,
+                          'scanned': len(files) - len(skipped),
+                          'skipped': [list(s) for s in skipped],
                           'blind_spots': BLIND_SPOTS}, indent=1))
-        return 1 if any(r['rank'] != 'LOW' for r in rows) else 0
+        return _partial() or (1 if any(r['rank'] != 'LOW' for r in rows) else 0)
 
     order = {'HIGH': 0, 'MEDIUM': 1, 'LOW': 2}
     rows.sort(key=lambda r: (order[r['rank']], r['file'], r['line']))
     print('OVERRUN INVERSION SCAN -- a cap on a ratio that turns an overrun '
           'into completion')
     print('  criteria %s' % CRITERIA_VERSION)
+    print('  scanned %d of %d tracked .js/.html file(s), %d unreadable'
+          % (len(files) - len(skipped), len(files), len(skipped)))
     for k in ('HIGH', 'MEDIUM', 'LOW'):
         print('  %-6s %d' % (k, sum(1 for r in rows if r['rank'] == k)))
     print('')
@@ -288,7 +353,7 @@ def main(argv):
     print('WHAT THIS CANNOT SEE:')
     for b in BLIND_SPOTS:
         print('  - %s' % b)
-    return 1 if any(r['rank'] != 'LOW' for r in rows) else 0
+    return _partial() or (1 if any(r['rank'] != 'LOW' for r in rows) else 0)
 
 
 if __name__ == '__main__':

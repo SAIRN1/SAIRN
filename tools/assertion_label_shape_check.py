@@ -421,8 +421,15 @@ def _ops_in(node):
     return out
 
 
-def arms(src):
+def arms(src, skipped=None):
     """(line, label, ops, kind) for every readable assertion in `src`.
+
+    `skipped`, when a list, collects the line of every ASSERTION site that
+    yields NO arm -- a labelled assertion-named call (see _assertion_name) with
+    no comparison in the condition slot, i.e. `check(LABEL, got, want)`, or an
+    `assert` whose message is not a literal. Those are NOT JUDGED, and dropping
+    them uncounted made that figure structurally 0. A labelled call that is
+    not an assertion (`print('x', n)`) is not an arm and is not counted.
 
     Two shapes only, both from the parse tree:
       * `assert <cond>, '<label>'`
@@ -437,6 +444,8 @@ def arms(src):
             label = _str_of(node.msg) if node.msg is not None else None
             if label is not None:
                 out.append((node.lineno, label, _ops_in(node.test), 'assert'))
+            elif node.msg is not None and skipped is not None:
+                skipped.append(node.lineno)
             continue
         if not isinstance(node, ast.Call) or len(node.args) < 2:
             continue
@@ -469,7 +478,19 @@ def arms(src):
         ops = _ops_in(cand) if cand is not None else []
         if ops:
             out.append((node.lineno, label, ops, 'call'))
+        elif skipped is not None and _assertion_name(node.func):
+            skipped.append(node.lineno)
     return out
+
+
+def _assertion_name(func):
+    """True for a callee named like an assertion: the JS_CALLS names, or any
+    name starting `assert`. Used ONLY for the NOT JUDGED count, never to
+    decide what is read -- arms() still reads every signature."""
+    name = func.id if isinstance(func, ast.Name) else (
+        func.attr if isinstance(func, ast.Attribute) else '')
+    return (name.startswith('assert')
+            or name in {c.split('.')[-1] for c in JS_CALLS})
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -720,8 +741,15 @@ def _is_quoted(raw):
     return len(raw) >= 2 and raw[0] in QUOTES and raw[-1] == raw[0]
 
 
-def js_arms(src):
+def js_arms(src, skipped=None):
     """(line, label, ops, kind) per readable assertion, or None if unreadable.
+
+    `skipped`, when a list, collects the line of every LABELLED assertion call
+    that yields no arm (not exactly one operator-bearing argument -- the
+    callee-compares form), so NOT JUDGED is a count rather than a silent
+    `continue`. A call with no literal label is NOT counted: from the call site
+    alone an unlabelled `assert.strictEqual(a, b)` and a variable label
+    `assert.ok(x, msg)` look the same, and only the second is an arm.
 
     Mirrors arms() for Python: an arm is a call carrying BOTH a string literal and
     a separate ADJACENT argument containing a comparison. Anything else is NOT
@@ -814,6 +842,8 @@ def js_arms(src):
                 if _js_ops(_strip_element_predicates(body_b[a:b])):
                     carriers.append(n)
             if len(carriers) != 1:
+                if skipped is not None:
+                    skipped.append(blank.count(chr(10), 0, i) + 1)
                 continue
             cand = body_b[args[carriers[0]][0]:args[carriers[0]][1]]
             ops = _js_ops(_strip_element_predicates(cand))
@@ -1236,12 +1266,20 @@ def scan(paths, js_paths=()):
         except OSError as e:
             unparsed.append('%s -- could not read: %s' % (rel, e))
             continue
-        got = js_arms(src)
+        _skipped = []
+        got = js_arms(src, skipped=_skipped)
         # THE REGISTERED LIMIT, COUNTED ON THE SAME BYTES THE RUN READS.
+        # Comments only: the label IS a string, so blanking string bodies
+        # (what `strip_comments(src, rel)` did -- `rel` landed in `strings=`)
+        # made the exhaustive figure structurally 0. A crash is COULD NOT RUN,
+        # never a (0, 0) that reads as "the limit costs nothing".
         try:
-            _b, _e = js_bare_unjudged(strip_comments(src, rel))
-        except Exception:                                      # noqa: BLE001
-            _b, _e = 0, 0
+            _b, _e = js_bare_unjudged(strip_comments(src))
+        except Exception as e:                                 # noqa: BLE001
+            unparsed.append('%s -- the registered-limit count crashed: %s: %s'
+                            % (rel, type(e).__name__, e))
+            continue
+        not_judged += len(_skipped)
         js_bare += _b
         js_bare_exhaustive += _e
         if got is None:
@@ -1269,11 +1307,13 @@ def scan(paths, js_paths=()):
         except OSError as e:
             unparsed.append('%s -- could not read: %s' % (rel, e))
             continue
+        _skipped = []
         try:
-            got = arms(src)
+            got = arms(src, skipped=_skipped)
         except SyntaxError as e:
             unparsed.append('%s -- does not parse: %s' % (rel, e))
             continue
+        not_judged += len(_skipped)
         for line, label, ops, kind in got:
             verdict = classify(label, ops)
             if verdict in (FINDING, FINDING_BARE):
@@ -1351,7 +1391,8 @@ def main(argv):
 
     if not a.quiet:
         print('read %d Python and %d JavaScript suite file(s); %d arm(s) '
-              'judged, %d NOT JUDGED (no comparison at the call site)'
+              'judged, %d NOT JUDGED (no comparison at the call site, or a '
+              'label that is not a literal)'
               % (len(paths), len(js_paths),
                  len(confirmed) + len(advisory) + len(clean_rows), not_judged))
         # ── CHECKED / UNIVERSE, PRINTED AS TWO NUMBERS WITH A NAMED GAP ──────
@@ -1359,9 +1400,15 @@ def main(argv):
         # PYTHON ONLY, so the honest denominator is not "the test suite" -- it is
         # the test suite split into what this tool can parse and what it cannot,
         # with both counted from git rather than estimated.
-        _checked = len(paths) + len(js_paths)
-        print('\nCHECKED / UNIVERSE: %d of %d suite files (%.0f%%).'
-              % (_checked, _checked, 100.0 if _checked else 0))
+        # The numerator is the files actually READ; every unparsed entry is one
+        # file that was not (scan() appends exactly one and `continue`s). It
+        # printed `_checked of _checked` -- always 100%, unparsed included.
+        _universe = len(paths) + len(js_paths)
+        _checked = _universe - len(unparsed)
+        print('\nCHECKED / UNIVERSE: %d of %d suite files (%.0f%%)%s.'
+              % (_checked, _universe,
+                 100.0 * _checked / _universe if _universe else 0,
+                 '; %d COULD NOT BE READ' % len(unparsed) if unparsed else ''))
         print('  THE JAVASCRIPT GAP IS CLOSED AS OF 2026-09-29. It was 343 of 807 '
               '(43%), and the\n  464 uncovered files were named in this header as a '
               'CAPABILITY gap rather than a\n  sampling choice. Ranked by assertion '

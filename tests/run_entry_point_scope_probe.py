@@ -225,6 +225,29 @@ check('D4. the isolated flags are named in the output, so the exclusion is '
       '--fixtures' in out and 'EXCLUDED BY NAME' in out, out[:600])
 check('D5. exit is 0, 1 or 2 and nothing else', rc in (0, 1, 2), rc)
 
+# cody b56 (M13): a multi-door tool whose doors enumerate nothing (CLEAN_NO_POP)
+# compared NOTHING, and it was counted in CHECKED. The expected count is taken
+# from classify() over the same file list, not from the output under test.
+_np = 0
+for _rel in E.tool_files():
+    try:
+        _v, _ = E.classify(E.doors(io.open(os.path.join(REPO, _rel),
+                                            encoding='utf-8',
+                                            errors='replace').read()))
+    except (OSError, SyntaxError):
+        continue
+    _np += (_v == E.CLEAN_NO_POP)
+_cn = re.search(r'MULTI-DOOR, COMPARED NOTHING: (\d+)', out)
+check('D6. multi-door tools that compared nothing are NAMED with their own count, '
+      'and that count matches classify() over the same files',
+      _cn is not None and int(_cn.group(1)) == _np,
+      (_cn.group(0) if _cn else 'no COMPARED NOTHING line', _np))
+check('D6b. ...and they are OUT of the CHECKED numerator: checked == multi-door '
+      'minus compared-nothing',
+      bool(_m) and _cu is not None
+      and int(_cu.group(1)) == int(_m.group(2)) - _np,
+      (_cu.group(0) if _cu else None, _m.group(0) if _m else None, _np))
+
 # ── E. ANCHOR ARMS -- what tells us the day this control stops testing ──────
 section('E. the anchors this control depends on (discipline 8)')
 _src = io.open(TOOL, encoding='utf-8').read()

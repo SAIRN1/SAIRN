@@ -377,12 +377,11 @@ def main(argv):
                                 'verdict': 'COULD-NOT-RUN', 'noticed_by': None,
                                 'could_not_run': could_not})
             else:
-                extra = ('; %d of them COULD NOT RUN and are NOT evidence'
-                         % len(could_not)) if could_not else ''
-                print('  ?      %-38s :%-6d SILENT         %d suites, none '
-                      'noticed%s' % (name, line, len(green), extra))
+                v = silent_verdict(len(green), could_not)
+                print('  ?      %-38s :%-6d %-14s %s'
+                      % (name, line, v[0], v[1]))
                 results.append({'role_table': name, 'line': line,
-                                'verdict': 'SILENT', 'noticed_by': None,
+                                'verdict': v[0], 'noticed_by': None,
                                 'could_not_run': could_not})
             sys.stdout.flush()
 
@@ -416,10 +415,13 @@ def main(argv):
 
     lb = [r for r in results if r['verdict'] == 'LOAD-BEARING']
     si = [r for r in results if r['verdict'] == 'SILENT']
+    sp = [r for r in results if r['verdict'] == 'SILENT-PARTIAL']
     cn = [r for r in results if r['verdict'] == 'COULD-NOT-RUN']
     print('\n  LOAD-BEARING  %d' % len(lb))
     print('  SILENT        %d   <- redundant OR untested; this tool cannot tell'
           % len(si))
+    print('  SILENT-PARTIAL %d  <- none of the observers that RAN noticed; '
+          'some did not run' % len(sp))
     print('  COULD-NOT-RUN %d   <- never counted as either' % len(cn))
     if si:
         print('\n  Each SILENT gate is a QUESTION, not a verdict. For each, ask:')
@@ -433,6 +435,31 @@ def main(argv):
             json.dumps({'subject': SUBJECT.replace(os.sep, '/'),
                         'results': results}, indent=1))
         print('\n  wrote ' + jsonout)
+    return exit_code(results, stale)
+
+
+def silent_verdict(n_green, could_not):
+    """-> (verdict, detail) for a gate no observer noticed.
+
+    The count is of the observers that RAN. "N suites, none noticed" used to
+    count the ones that could not run as well, and a gate where only some
+    observers ran was called plain SILENT -- a claim about the guard made on
+    evidence that was partly never gathered.
+    """
+    ran = n_green - len(could_not)
+    if could_not:
+        return ('SILENT-PARTIAL', '%d of %d suites ran, none noticed; %d COULD '
+                'NOT RUN and are NOT evidence' % (ran, n_green, len(could_not)))
+    return ('SILENT', '%d suites, none noticed' % ran)
+
+
+def exit_code(results, stale):
+    """0 only when every gate got a full answer against a subject that held
+    still. A COULD-NOT-RUN or SILENT-PARTIAL gate, or a subject that moved
+    under the run, is exit 2: part of the work did not happen as reported."""
+    if stale or any(r['verdict'] in ('COULD-NOT-RUN', 'SILENT-PARTIAL')
+                    for r in results):
+        return 2
     return 0
 
 

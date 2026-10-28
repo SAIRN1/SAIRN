@@ -309,6 +309,10 @@ def _verdict(partial=False):
         return 1
     if unk:
         return 2
+    if partial:
+        # Sections C-E (the Check 29 write and read-back) never ran. A run
+        # that skipped them is COULD NOT RUN, not a pass of the whole script.
+        return 2
     return 0
 
 

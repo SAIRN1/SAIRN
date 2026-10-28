@@ -760,6 +760,12 @@ def make_sandbox():
     dirty = subprocess.run(['git', '-C', REPO, 'diff', '--name-only', 'HEAD'],
                            capture_output=True, text=True, encoding='utf-8',
                            errors='replace')
+    # A failed diff is an UNKNOWN dirty set, not an empty one. Read as empty it
+    # overlaid nothing and the sweep judged HEAD under the working tree's name
+    # (M23, 2026-10-28) -- so it is COULD NOT RUN, like every other step here.
+    if dirty.returncode != 0:
+        drop_sandbox(work)
+        return None
     for rel in (dirty.stdout or '').split('\n'):
         rel = rel.strip()
         if not rel:
