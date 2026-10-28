@@ -1,0 +1,16 @@
+DIGEST -- cody b58, 2026-10-28. Items 1,2,3,5 DONE; item 4 stopped at a floor (Michael's call).
+STATUS: API (api/sd-data.js mech write branches), TOOLS, TESTS, DOCS. NO SQL. NO LIVE DATA WRITES.
+CHANGED: api/sd-data.js; 17 cody tools/ checkers + tools/pure_base_skip.py (new); 16 tests (5 new); docs (C3, register, tier-a, manifest, derived).
+LANDED: work tip 70c7e1b86 (full gate) + M17 tip 3d46219db (pure-base skip by tools/pure_base_skip.py). Authored Michael Dibert.
+ITEM 1 -- server half of the premature ack was REAL: 4 mech write branches said ok with no stored row. Now 502 WRITE_UNCONFIRMED.
+  Silent-skip and silent-hydrate: none server-side. 22-arm test with ablation. Live: deploy READY, endpoint 401 as expected.
+ITEM 2 -- mech uses only 'write' (4 sites); all write/read sites loud. Same ok-with-null shape at 3 non-mech sd-data sites: routed.
+ITEM 3 -- b55 MEDIUM M2-M23 + M17 all closed, each with an arm red on the old code. Some exits move 0/1 -> 2 (see report).
+ITEM 4 -- floor 543/903. The 42 files this run covered: 7 ok, 33 FAIL, 2 SKIP; killed on low memory. 33-failure rate NOT triaged.
+ITEM 5 -- C3 enforced: tools/pure_base_skip.py, re-gate set derived from the hook (41 tools), 22-arm probe with ablations.
+DECISION-NEEDED: Michael/cody -- dead_function_sweep 25% guard now exits 2 on sairnbiz/sairncash/sairnsenior (recalibrate?).
+  cc -- discharge Tier A for the b58 mech write change (5 resources) and b57; call pure_base_skip.py from push_retry.py.
+UNVERIFIED: the [] (no row echoed) arm live; 30 of the 33 reds.
+NEXT: cody -- triage the 33 reds by last-green diff; b55 M1 hover_separation; WRITE_RE verbs; JS extractor (35).
+EVIDENCE-path: SAIRN-handoff-cody-b58.md, SAIRN-report-cody-b58.txt, docs/recurring-bug-classes-2.md (C3)
+CONTEXT 31.7% of 1,000,000 -- 316,942 tokens, measured.

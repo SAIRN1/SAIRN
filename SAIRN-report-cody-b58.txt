@@ -1,0 +1,55 @@
+SAIRN REPORT -- cody b58 (2026-10-28)
+=====================================
+Handoff: SAIRN-handoff-cody-b58.md.
+
+1. SAIRNMECHANICAL SERVER WRITE PATH: A REAL DEFECT, FIXED.
+   - There is no api/sd-mech-data.js. The server is api/sd-data.js, with resources registered in api/_resources/sairnmechanical.js.
+   - The premature ack existed on the server. All four mech write branches answered ok when the store returned no row:
+     - MECH_RECORDS (quotes/checks/docs/takeoffs) returned the payload as if stored;
+     - assets, insurance and credentials returned data:null.
+   - All four now answer 502 WRITE_UNCONFIRMED, through wroteRow() + refuseUnstoredWrite().
+   - Silent skip: none on the server. Silent hydrate: none on the server.
+   - Test: tests/sd_data_mech_write_unconfirmed.js, 22 arms. Its ablation makes all 7 resources answer ok on the old code.
+   - Of 144 sd-data POST suites, 8 are red, and all 8 are equally red at HEAD.
+   - Live:
+     - deployment for 70c7e1b86 READY;
+     - a POST to /api/sd-data for mech_site_assets and mech_quotes answers a structured 401;
+     - the [] arm cannot be driven live, so it is UNVERIFIED live and covered by the test.
+
+2. WRITE_RE SWEEP.
+   - sairnmechanical uses only 'write', at 4 sites.
+   - All write and read sites are loud now that the server's ok is real.
+   - The same ok-with-null shape exists outside mech, at three sd-data sites (supplier_lead_times, sd_approvals, alf_family_contacts). Routed.
+   - WRITE_RE still lacks soft_delete, upsert and delete. Routed (O8).
+
+3. b55 MEDIUM LEFTOVERS: ALL CLOSED.
+   - M2-M23, plus M17. Each has an arm that is red on the pre-fix code, and every probe was re-run independently.
+   - Exit-code changes that callers will see, each a could-not-run that was being reported as a pass:
+     - unproven_arm live run: 1 -> 2;
+     - dead_function_sweep default run: 0 -> 2 (three apps are over its 25% guard; O4);
+     - verify_citator_feedback PARTIAL: 0 -> 2;
+     - guard_ablation: 0 -> 2 on a partial run.
+   - assertion_label_shape now counts 35 (was 0). The E5b arm pins 35 as a ceiling (O6).
+   - M1 (hover_separation_audit) was not on the routed list and is still open (O5).
+
+4. run_all_tests CONTINUATION: STOPPED AT A FLOOR.
+   - Population is 903. This run covered 42 files: 7 ok, 33 FAIL, 2 SKIPPED. Then it was killed on low memory.
+   - FLOOR 543/903 passing.
+   - The 33-failure rate is recorded as measured. 3 of the 33 are confirmed red in the live clone too; the other 30 are not triaged (O2).
+   - Not restarted, per Michael.
+
+5. C3 IS ENFORCED AND TEST-COVERED.
+   - tools/pure_base_skip.py: 0 skip, 1 gate, 2 could not decide (which also gates).
+   - The re-gate set is derived from the hook: 41 tools.
+   - tests/run_pure_base_skip_probe.py, 22 arms including ablations.
+   - Used live on this batch's last push: try 2 was a pure-base skip with the re-check green, and it was logged.
+
+6. PUSH: LANDED.
+   - Main work: tip 70c7e1b86. M17: tip 3d46219db. All commits are authored by Michael Dibert.
+   - Gate blocks, each fixed at the cause:
+     - register feed;
+     - probe anchor (helper text restored);
+     - Tier A (opened, assigned to cc);
+     - derived docs;
+     - path scope (Michael approved the 19-path cody override, following b57).
+   - This deliverables commit is pushed with the same script.
