@@ -42,6 +42,7 @@ counted.
     python tools/builder_hook_presence.py                  # check; exit 0 / 1 finding / 2 could not run
     python tools/builder_hook_presence.py --session-start  # the same, phrased for the start-of-session context
     python tools/builder_hook_presence.py --install        # copy + wire into every builder clone, then check
+    python tools/builder_hook_presence.py --install --only cc,hank   # just these clones
     python tools/builder_hook_presence.py --selftest
 """
 import hashlib
@@ -53,7 +54,7 @@ import subprocess
 import sys
 import tempfile
 
-CRITERIA_VERSION = '2026-10-28.b66.3'
+CRITERIA_VERSION = '2026-10-28.b67.1'
 EXIT_OK, EXIT_FINDING, EXIT_COULD_NOT_RUN = 0, 1, 2
 
 HOOK = 'builder_auditor_deny_hook.py'
@@ -240,8 +241,16 @@ def atomic_write(path, data):
         raise
 
 
-def install(repo=REPO):
+def install(repo=REPO, only=None):
+    """`only`: install into these builder clones and no others (cc b67, to hold
+    back a clone whose agent is mid-edit in a file the new copy refuses; the
+    presence check keeps reporting that clone STALE until it is done)."""
     clones, _absent = builders(repo)
+    if only:
+        unknown = sorted(set(only) - set(clones))
+        if unknown:
+            raise CouldNotRun('--only names no builder clone: %s' % ', '.join(unknown))
+        clones = dict((k, v) for k, v in clones.items() if k in only)
     ref, ref_from = reference(clones)
     match = matcher(ref)
     for f in FILES:
@@ -369,6 +378,11 @@ def selftest():
                 arm('install REFUSES an unlanded local copy', False, 'installed')
             except CouldNotRun:
                 arm('install REFUSES an unlanded local copy', True)
+            try:
+                install(a, only=['nobody'])
+                arm('--only naming no builder clone is refused', False, 'installed')
+            except CouldNotRun:
+                arm('--only naming no builder clone is refused', True)
             for nm in ('aa', 'bb'):
                 git(os.path.join(t, 'SAIRN-%s' % nm), 'update-ref', '-d', 'refs/remotes/origin/main')
             rc, lines = run_check(a, us)
@@ -386,7 +400,7 @@ def main(argv):
         return selftest()
     if '--install' in argv:
         try:
-            install()
+            install(only=argv[argv.index('--only') + 1].split(',') if '--only' in argv else None)
         except CouldNotRun as e:
             print('INSTALL REFUSED -- %s' % e)
             return EXIT_COULD_NOT_RUN

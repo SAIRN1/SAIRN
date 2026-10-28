@@ -106,7 +106,7 @@ import shlex
 import subprocess
 import sys
 
-CRITERIA_VERSION = '2026-10-28.b66.3'
+CRITERIA_VERSION = '2026-10-28.b67.1'
 
 WRITE_TOOLS = ('Edit', 'Write', 'MultiEdit', 'NotebookEdit')
 COMMAND_TOOLS = ('Bash', 'PowerShell', 'Monitor')
@@ -173,9 +173,129 @@ def build_scope(dirs):
     return path_res, text_res, rel
 
 
+# ── THE AUDITOR CLONES' TRACKED TOOLS: WRITE-ONLY SCOPE (cc b67) ────────────
+# Michael's ruling, 2026-10-28, b67 item 1, which closes the b66
+# DECISION-NEEDED: builders are also blocked from WRITING the files the auditor
+# clones track as theirs. That is the mirror of the auditor's own deny-list.
+# The list is the one the auditor clones themselves read:
+# ~/SAIRN-SESSION-LOCKS/hover-scope-manifest.json `allowed_prefixes`. It is
+# read at run time over a built-in floor of the five triad and routing-gap
+# files, minus three groups:
+#   * the shared ledgers (docs/sairn-path-manifest.json `shared_ledgers`).
+#     The defect register is on the auditor's list AND every builder must
+#     write it, and the push gate's register-feed check demands that;
+#   * anything already in the FULL scope above (the skill dir, the
+#     hover<N> claim files);
+#   * directory entries. A prefix here would be a wildcard over tools/.
+# WRITE-ONLY, NOT FULL. A builder may still read and RUN these:
+# tools/hover_separation_audit.py is the push gate's own detect layer. So
+# these paths get no plain text pass. What is refused: an Edit/Write target,
+# a write target of a mutating command or redirect, an explicit git pathspec
+# that would rewrite the file, a patch target, and code text that names the
+# path AND carries a write call (wo_text_hits).
+BUILTIN_AUDITOR_TRACKED = ('tools/hover_auditor_scope_gate.py', 'tools/hover_separation_audit.py',
+                           'tools/hover_separation_ci.py', 'tools/hover_routing_gap_check.py',
+                           'tests/run_hover_routing_gap_probe.py')
+HOVER_SCOPE_MANIFEST = os.path.join(os.path.expanduser('~'), 'SAIRN-SESSION-LOCKS',
+                                    'hover-scope-manifest.json')
+
+
+def tracked_auditor_paths(hover_manifest=HOVER_SCOPE_MANIFEST, path_manifest=MANIFEST):
+    """-> (paths, manifest_was_read). Repo-relative, forward slashes."""
+    def load(p, key):
+        try:
+            v = json.loads(io.open(p, encoding='utf-8').read())[key]
+            return [e for e in v if isinstance(e, str)], True
+        except (OSError, ValueError, KeyError, TypeError):
+            return [], False
+    allowed, read_ok = load(hover_manifest, 'allowed_prefixes')
+    shared, _ = load(path_manifest, 'shared_ledgers')
+    out = set(BUILTIN_AUDITOR_TRACKED)
+    for a in allowed:
+        a = a.replace('\\', '/').lstrip('./')
+        if (not a or a.endswith('/') or a in shared
+                or re.match(r'^\.claude/(?:skills/|claims/hover[0-9]*\.json$)', a)):
+            continue
+        out.add(a)
+    return tuple(sorted(out)), read_ok
+
+
+AUDITOR_TRACKED, HOVER_MANIFEST_READ = tracked_auditor_paths()
+WO_PATTERNS = tuple(re.compile('/' + re.escape(p.lower()) + '$') for p in AUDITOR_TRACKED)
+
+
+def wo_hit(p):
+    n = norm(p)
+    return any(rx.search(n) for rx in WO_PATTERNS)
+
+
+def resolved_wo_hits(p, base):
+    full = p if os.path.isabs(p) else os.path.join(base, p)
+    out = []
+    for cand in (full, os.path.realpath(full)):
+        if wo_hit(cand) and cand not in out:
+            out.append(cand)
+    return out
+
+
+def wo_text_hits(text):
+    """An auditor-tracked path that code text WRITES: the path literal is the
+    TARGET of a write call, not merely present beside one.
+
+    The first version refused any text naming the path plus any write call.
+    The b67 baseline replay found two real cody heredocs that rewrote
+    docs/sairn-path-manifest.json while listing hover tool paths as DATA, so
+    the path must now sit inside the call that writes. A path held in a
+    variable (p='tools/x.py'; open(p,'w')) is not seen; that limit is stated
+    in the header and not hidden."""
+    low = text.replace('\\', '/')
+    out = []
+    for p in AUDITOR_TRACKED:
+        q = r"['\"][^'\"]*" + re.escape(p) + r"['\"]"
+        pats = (r"open\s*\(\s*" + q + r"\s*,\s*['\"][^'\"]*[wax+]",
+                r"Path\s*\(\s*" + q + r"\s*\)\s*\.\s*(?:write_text|write_bytes|unlink|rename|replace|touch|open\s*\(\s*['\"][^'\"]*[wax+])",
+                r"(?:writeFileSync|appendFileSync|createWriteStream|unlinkSync)\s*\(\s*" + q,
+                r"(?:renameSync|copyFileSync)\s*\([^)]*,\s*" + q,
+                r"shutil\.(?:copy\w*|move)\s*\([^)]*,\s*" + q,
+                r"os\.(?:replace|rename)\s*\([^)]*,\s*" + q,
+                r"os\.(?:remove|unlink)\s*\(\s*" + q,
+                r"(?:Set-Content|Add-Content|Out-File|Remove-Item)\s+(?:-(?:Literal)?Path\s+)?['\"]?[^'\"\s]*" + re.escape(p))
+        if any(re.search(x, low, re.I) for x in pats):
+            out.append(p)
+    return out
+
+
+def index_only(sub, words):
+    return ((sub == 'restore' and ({'--staged', '-S'} & set(words))
+             and not ({'--worktree', '-W'} & set(words)))
+            or (sub == 'rm' and '--cached' in words))
+
+
+def write_targets(prog, sub, words, redirect_out):
+    """The words of one command that are WRITTEN, as opposed to read. Used only
+    for the write-only scope: `cp tools/hover_x.py /tmp/y` reads the auditor
+    file and writes /tmp/y."""
+    args = [w for w in words[1:] if w and not w.startswith('-')]
+    t = set(redirect_out)
+    if prog == 'git':
+        if sub in GIT_PATHSPEC_SUBS and not index_only(sub, words):
+            t.update(a for a in args if a != sub)
+        return t
+    if prog == 'sed':
+        return t | (set(args) if any(w.startswith('-i') or w == '--in-place' for w in words) else set())
+    if prog in ('cp', 'install', 'ln', 'rsync', 'copy-item'):
+        return t | set(args[-1:])
+    if prog == 'dd':
+        return t | set(w[3:] for w in words if w.startswith('of='))
+    if prog in MUTATING:
+        return t | set(args)
+    return t
+
+
 MANIFEST_DIRS = manifest_auditor_paths()
 AUDITOR_DIRS = tuple(sorted(set(BUILTIN_AUDITOR_DIRS) | set(MANIFEST_DIRS or ())))
 PATH_PATTERNS, TEXT_PATTERNS, REL_GLOBS = build_scope(AUDITOR_DIRS)
+REL_GLOBS = REL_GLOBS + AUDITOR_TRACKED          # ancestors/globs of the write-only scope too
 GIT_PATHSPEC_SUBS = ('checkout', 'restore', 'rm', 'mv', 'clean', 'stash')
 # A glob that EXPANDS onto an auditor path is refused only for these, or when it
 # is a redirect target. `cat .claude/claims/*.json` is a read and expands onto
@@ -329,7 +449,8 @@ def patch_targets(path, root):
         m = re.match(r'^diff --git a/(\S+) b/(\S+)', ln)
         if m:
             out.extend(m.groups())
-    return [t for t in out if t != '/dev/null' and path_hit(os.path.join(root, t))]
+    return [t for t in out if t != '/dev/null'
+            and (path_hit(os.path.join(root, t)) or wo_hit(os.path.join(root, t)))]
 
 
 def is_tracked(path):
@@ -389,6 +510,7 @@ def inspect_command(cmd, cwd):
     `.claude\\skills` as escapes and loses the separators.
     """
     hits = [('command-text', h) for h in text_hits(cmd)]
+    hits += [('code text writes an auditor-tracked path', h) for h in wo_text_hits(cmd)]
     for variant in (cmd, cmd.replace('\\', '/')):
         hits.extend(h for h in _inspect_tokens(variant, cwd) if h not in hits)
     # A script reached some other way than as the interpreter's first
@@ -404,7 +526,7 @@ def inspect_command(cmd, cwd):
                     body = io.open(full, encoding='utf-8', errors='replace').read()
                 except OSError as e:
                     raise CouldNotRun('script %s could not be read (%s)' % (full, e))
-                found = text_hits(body)
+                found = text_hits(body) + wo_text_hits(body)
                 if found and not is_tracked(full):
                     hits.extend(('untracked-script %s' % m, h) for h in found
                                 if ('untracked-script %s' % m, h) not in hits)
@@ -451,7 +573,7 @@ def _inspect_tokens(cmd, cwd):
                     raise CouldNotRun('script %s could not be read (%s)' % (full, e))
                 # Scan first, ask git second: the git call is the slow part and
                 # only a script that names an auditor path needs it.
-                found = text_hits(body)
+                found = text_hits(body) + wo_text_hits(body)
                 if found and not is_tracked(full):
                     for h in found:
                         hits.append(('%s untracked-script %s' % (prog, s), h))
@@ -465,6 +587,11 @@ def _inspect_tokens(cmd, cwd):
                 i += 1
             sub = words[i] if i < len(words) else None
         call = 'git %s' % sub if sub else prog
+        for val in write_targets(prog, sub, words, redirect_out):
+            b = git_base if prog == 'git' else base
+            if val and not val.startswith(':'):
+                for p in resolved_wo_hits(val, b):
+                    hits.append((call + ' (auditor-tracked)', p))
         for w in words[1:]:
             val = w.split('=', 1)[1] if w.startswith('-') and '=' in w else w
             if not val or val.startswith('-'):
@@ -521,7 +648,8 @@ def decide(payload):
         p = ti.get('file_path') or ti.get('notebook_path')
         if not p:
             raise CouldNotRun('%s call with no file_path' % tool)
-        return [(tool, h) for h in resolved_hits(p, cwd)]
+        return ([(tool, h) for h in resolved_hits(p, cwd)]
+                + [(tool + ' (auditor-tracked)', h) for h in resolved_wo_hits(p, cwd)])
     if tool in COMMAND_TOOLS:
         cmd = ti.get('command')
         if cmd is None and tool == 'Monitor':
@@ -790,6 +918,48 @@ def selftest():
                                                          '/c/docs/hover-audit-log/a', '/c/docs/hover-evidence/b')))
         arm('THE LIVE MANIFEST was read and its entries are in scope (not only the floor)',
             MANIFEST_DIRS is not None and set(MANIFEST_DIRS) <= set(AUDITOR_DIRS), (MANIFEST, MANIFEST_DIRS))
+        # ── WRITE-ONLY SCOPE: the auditor clones' tracked tools (cc b67) ──
+        T = 'tools/hover_separation_ci.py'
+        arm('WO: Edit on an auditor-tracked tool is refused', bool(d('Edit', file_path=T)))
+        arm('WO: Write of tests/run_hover_routing_gap_probe.py is refused', bool(d('Write', file_path='tests/run_hover_routing_gap_probe.py')))
+        arm('WO: echo >> into one is refused', bool(d('Bash', command='echo x >> tools/hover_auditor_scope_gate.py')))
+        arm('WO: sed -i on one is refused', bool(d('Bash', command="sed -i 's/a/b/' tools/hover_separation_audit.py")))
+        arm('WO: cp ONTO one is refused', bool(d('Bash', command='cp /tmp/x.py tools/hover_routing_gap_check.py')))
+        arm('WO: git checkout -- <one> (an explicit rewrite) is refused', bool(d('Bash', command='git checkout -- ' + T)))
+        arm("WO: python -c open(<one>,'w') is refused", bool(d('Bash', command="python -c \"open('%s','w').write('')\"" % T)))
+        arm('WO: a heredoc that writes one is refused',
+            bool(d('Bash', command="python - <<'EOF'\nimport pathlib\npathlib.Path('%s').write_text('x')\nEOF" % T)))
+        arm('WO-ALLOW: a heredoc that writes ANOTHER file and only names one as data is allowed (b67 baseline shape)',
+            d('Bash', command="python - <<'EOF'\nimport io\nfiles=['%s']\nio.open('docs/sairn-path-manifest.json','w').write(repr(files))\nEOF" % T) == [],
+            d('Bash', command="python - <<'EOF'\nimport io\nfiles=['%s']\nio.open('docs/sairn-path-manifest.json','w').write(repr(files))\nEOF" % T))
+        arm('WO: os.replace(tmp, <one>) is refused', bool(d('Bash', command="python -c \"import os; os.replace('x.tmp', '%s')\"" % T)))
+        arm('WO: git show HEAD:<one> > <one> (a real b6x shape) is refused',
+            bool(d('Bash', command='git show HEAD:%s > %s' % (T, T))))
+        wo_patch = os.path.join(t, 'wo.diff')
+        io.open(wo_patch, 'w').write('diff --git a/%s b/%s\n+++ b/%s\n' % (T, T, T))
+        arm('WO: git apply of a patch on one is refused', bool(d('Bash', command='git apply %s' % wo_patch)))
+        arm('WO-ALLOW: RUNNING one is allowed (the push gate runs the detect layer)',
+            d('Bash', command='python tools/hover_separation_audit.py --check') == [], d('Bash', command='python tools/hover_separation_audit.py --check'))
+        arm('WO-ALLOW: reading one (cat, grep, sed -n) is allowed',
+            all(d('Bash', command=c) == [] for c in ('cat ' + T, 'grep -n x ' + T, "sed -n '1,5p' " + T)))
+        arm('WO-ALLOW: cp FROM one to elsewhere is allowed', d('Bash', command='cp %s /tmp/copy.py' % T) == [])
+        arm("WO-ALLOW: python -c open(<one>).read() is allowed", d('Bash', command="python -c \"print(open('%s').read())\"" % T) == [])
+        arm('WO-ALLOW: the defect register (on the auditor list, a SHARED ledger) stays writable',
+            d('Edit', file_path='docs/defect-density-register.json') == [])
+        hm = os.path.join(t, 'hover-scope.json')
+        pm = os.path.join(t, 'path-manifest.json')
+        io.open(hm, 'w').write(json.dumps({'allowed_prefixes': [
+            '.claude/skills/%s-auditor/' % ('sairn-' + 'ho' 'ver'), 'docs/defect-density-register.json',
+            '.claude/claims/%s.json' % ('ho' 'ver'), 'tools/zz_new_auditor_tool.py']}))
+        io.open(pm, 'w').write(json.dumps({'shared_ledgers': ['docs/defect-density-register.json']}))
+        got, ok_read = tracked_auditor_paths(hm, pm)
+        arm('WO: a file ADDED to the hover-scope manifest joins the scope; ledgers, dirs and claims do not',
+            ok_read and 'tools/zz_new_auditor_tool.py' in got and 'docs/defect-density-register.json' not in got
+            and not any(g.startswith('.claude/') for g in got), got)
+        got2, ok2 = tracked_auditor_paths(os.path.join(t, 'absent.json'), pm)
+        arm('WO: an unreadable hover-scope manifest leaves the built-in floor, and says it was not read',
+            not ok2 and set(BUILTIN_AUDITOR_TRACKED) <= set(got2), (ok2, got2))
+        arm('WO: THE LIVE hover-scope manifest was read', HOVER_MANIFEST_READ, HOVER_SCOPE_MANIFEST)
         arm('Read-type tools are not inspected', decide({'tool_name': 'Read', 'tool_input': {'file_path': os.path.join(skill, 'SKILL.md')}, 'cwd': clone}) == [])
         arm('a builder-to-builder edit (another clone) is allowed', d('Edit', file_path=r'C:\Users\x\Documents\SAIRN-hank\tools\a.py') == [])
         # FAIL CLOSED
