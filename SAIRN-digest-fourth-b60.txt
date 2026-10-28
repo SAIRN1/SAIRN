@@ -1,0 +1,22 @@
+SAIRN DIGEST -- fourth b60 -- 2026-10-28
+CONTEXT 20.4% of 1,000,000 -- 204,154 tokens, measured.
+STATUS: 5 of 6 done, landed through 13983d58c and live at 11:34Z (byte-identical to origin). Item 6 gate guard is HELD (claim overlap).
+DECISION-NEEDED: go-ahead to add a guard-run journal to tools/sairn_push_gate_hook.py. cody holds platform (b55, live).
+READ: SAIRN-handoff-fourth-b60.md (whole state). Detail: SAIRN-report-fourth-b60.txt.
+SQL: none this batch.
+CHANGED:
+  998b9cb03 scrutiny: 4 false rows (not 2), author fourth b11/12 2026-10-07, folded into f2ee7be0d; ledger exit 1 -> 0
+  21ad938e1 sairnsenior: local-only claim drafts re-sent; refused -> withdrawn, visit back; no answer -> kept;
+            skipped at the 1000-row cap; no double billing; 29 arms, 5/5 mutants
+  56ec80530 stonedesk: .sairn-fu-label/.shoff-label -> var(--muted), 1.03:1 -> 5.52:1 (rows dormant)
+  13983d58c register: records for both fixes
+1 idleCompaction:false present in ~/.claude/settings.json; no restore needed; standing first action
+2 archive/: dropped (not served)
+3 cartAdd: NO DEFECT -- my b59 driver read the value attribute; the box shows 0 -> 1 -> 2 (screenshot)
+4 RULE: never wrap git push in timeout -- saved to memory; this batch pushed bare
+NEXT, in order:
+  a item 6 guard (design in handoff): journal around GUARD_TESTS; on the next run deny on leftover mutants
+  b .sairn-fu-chip / .shoff-btn carry the same dark colours (dormant)
+UNVERIFIED: the senior sweep is not browser-driven against the live server (it needs a real refused draft on a device; 29 vm arms cover it).
+EVIDENCE-path: tests/sairnsenior_contract_auth_save.js; scratchpad cart60.py, labels60.py.
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\fd66c7b5-98f7-4e46-ac2a-b0383cde9210.jsonl

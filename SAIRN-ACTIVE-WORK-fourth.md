@@ -2271,3 +2271,14 @@ Full account: `docs/handoff-fourth-2026-10-08.md`, `docs/2026-10-07-fourth-route
 - sairnbiz audit (`8e4cb106`): PTD Art 7, WTD + C-55/18 (no day seven), VAT Art 226 (Date.now() ids), GDPR Art 9.
 
 Full account: `SAIRN-handoff-fourth-b41.md`.
+
+## batch b60 -- 2026-10-28, CLOSED 5/6, item 6 HELD (claim overlap, flagged back)
+
+- idleCompaction: `~/.claude/settings.json` has `"idleCompaction": false`. Checked as the batch's first action and now a standing first action every batch.
+- scrutiny (`998b9cb03`): the false rows numbered 4, not 2, and all four were fourth's own from 2026-10-07. Folded into `f2ee7be0d`. Ledger check exit 1 -> 0.
+- cartAdd: no defect. My b59 driver read the value attribute instead of the property; the box shows 0 -> 1 -> 2.
+- sairnsenior (`21ad938e1`): local-only claim drafts are re-sent. Refused ones are withdrawn, unanswered ones kept. The sweep is skipped when a read hits the 1000-row cap, and a draft is never double-billed. 29 arms.
+- stonedesk (`56ec80530`): .sairn-fu-label and .shoff-label now use var(--muted), 1.03:1 -> 5.52:1. The rows are dormant.
+- STANDING RULE: never wrap `git push` in `timeout`. The gate's guard suites write mutants and restore them in `finally`, and a kill skips that. Saved to memory. The gate-level journal guard is held because cody holds `platform`; the design is in the handoff.
+
+Full account: `SAIRN-handoff-fourth-b60.md`.

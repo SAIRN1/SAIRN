@@ -1,0 +1,64 @@
+SAIRN REPORT -- fourth b60 -- 2026-10-28
+
+RESULT: 5 of 6 items are done and landed (through 13983d58c, no force, no
+skip), and both apps are live at 11:34Z, byte-identical to origin. Item 6's
+gate-level guard is HELD on a claim overlap and flagged back. Handoff:
+SAIRN-handoff-fourth-b60.md.
+
+1 idleCompaction (first action)
+  ~/.claude/settings.json: "idleCompaction": false. It parses as JSON, is a
+  top-level key and has the value False. No restore was needed. Now a standing
+  first action every batch.
+
+2 archive/branch-lucid-ptolemy-b73vu0/: dropped, per Michael (not served).
+
+3 FALSE SCRUTINY ROWS                                             998b9cb03
+  There were FOUR, not the two I reported in b59. Paths:
+  tests/run_tier_a_review_gate_probe.py and tools/tier_a_review_gate.py.
+  Two rows were keyed to 2a3a95c20d55 (added by 9d028eb00) and two to
+  3ead2e8618e1 (re-keyed by 780004db9). Neither commit touches either file.
+  AUTHOR: fourth, batch 11/12 on 2026-10-07. The git author "fx" is shared
+  by every clone; docs/2026-10-07-fourth-routed.md:61 says "FIXED BY ME at
+  f2ee7be0".
+  FOLD-IN TARGET: f2ee7be0d, the landed change. All 4 rows were dropped and
+  the 2 re-derived there with the gate's own writer.
+  Ledger check: before, CONTRADICTED 4 (exit 1); after, 0 (exit 0).
+
+4a cartAdd quantity box: NO DEFECT -- my b59 finding was wrong.
+  Driven in a browser: the box shows 0 -> 1 -> 2 after each Add, and the
+  screenshot shows "2". My b59 driver read getAttribute('value'), which is
+  the HTML default, not what the box displays. Nothing was changed.
+
+4b REFUSED SENIOR DRAFTS ON DEVICES                               21ad938e1
+  On each claims hydrate, every draft that is on the device and not on the
+  server is re-sent:
+  - accepted -> it stays (it is on the server now);
+  - refused -> withdrawn, its visit is back in Ready to bill, and the biller
+    is told;
+  - no answer -> kept.
+  The synced map cannot separate these cases (its bootstrap seeded every
+  local id), so the server is asked again. A read at the 1000-row cap sweeps
+  nothing. If the server already bills the visit under another claim, the
+  draft is withdrawn with NO write, so the visit is not billed twice.
+  Tests: 20 -> 29 arms; HEAD exits 2; 5/5 mutants killed; every sairnsenior
+  suite and the hydrate probes are green.
+
+5 DARK-THEME LABELS                                               56ec80530
+  .sairn-fu-label and .shoff-label used rgba(240,240,255,0.3), a colour meant
+  for a dark surface. Rendered into the light #ai-chat, axe measured 1.03:1;
+  with var(--muted) it measures 5.52:1. LATENT: both rows are dormant,
+  because the addMsg hooks never install. The chips and buttons carry the
+  same colours; they are named in the handoff and were not changed.
+
+6 NEVER TIMEOUT A PUSH -- HELD, FLAGGED BACK
+  The shared push gate is platform, and cody holds a live platform claim
+  (b55), so I stopped this item under the claim-overlap rule.
+  Done instead: the rule is in my memory (loaded every session), and this
+  batch was pushed bare, with no timeout.
+  Ready design, in the handoff: a guard-run journal in the gate. If a run is
+  killed (by a timeout or anything else), the next push sees files that were
+  clean and are now changed, and denies with the restore command. The
+  command is proposed, never applied.
+
+DECISION NEEDED: go-ahead for the item 6 gate guard, or cody to release
+platform.

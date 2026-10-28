@@ -1851,6 +1851,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairnsenior_contract_auth_save.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "21ad938e1c6f00b364bedfe0449f04cd7937284e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/sairn_push_gate_hook.py",
    "class": "push-gate logic",
    "level": "WEAKENING",
