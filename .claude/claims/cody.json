@@ -4467,6 +4467,17 @@
         "docs/sairn-path-manifest.json",
         "tests/run_condition_coverage_probe.py"
       ]
+    },
+    {
+      "id": "cody-1793186663",
+      "session": "cody",
+      "subject": "platform",
+      "task": "b55 checker_confidence hardening and tools not-run sweep",
+      "claimed_at": "2026-10-28T11:24:23Z",
+      "claimed_at_epoch": 1793186663.5067565,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
