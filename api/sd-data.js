@@ -3443,7 +3443,11 @@ module.exports = async (req, res) => {
         return;
       }
       if (!r.ok) return upstream(res, rows);
-      res.status(200).json({ ok: true, provisioned: true, data: (Array.isArray(rows) && rows[0]) || null });
+      // NO ROW BACK IS NOT A SAVE (cody b58). This answered ok with data:null,
+      // and the app clears the form on ok -- so a write the store did not echo
+      // lost the technician's entry behind a success.
+      if (wroteRow(rows) !== 'WROTE') { refuseUnconfirmedWrite(res, 'this site asset', NO_ROW_BACK); return; }
+      res.status(200).json({ ok: true, provisioned: true, data: rows[0] });
       return;
     }
 
@@ -3663,7 +3667,8 @@ module.exports = async (req, res) => {
         return;
       }
       if (!wr.ok) return upstream(res, insRows);
-      res.status(200).json({ ok: true, provisioned: true, data: (Array.isArray(insRows) && insRows[0]) || null });
+      if (wroteRow(insRows) !== 'WROTE') { refuseUnconfirmedWrite(res, 'this insurance policy', NO_ROW_BACK); return; }
+      res.status(200).json({ ok: true, provisioned: true, data: insRows[0] });
       return;
     }
 
@@ -3792,7 +3797,8 @@ module.exports = async (req, res) => {
         return;
       }
       if (!r.ok) return upstream(res, rows);
-      res.status(200).json({ ok: true, provisioned: true, data: (Array.isArray(rows) && rows[0]) || null });
+      if (wroteRow(rows) !== 'WROTE') { refuseUnconfirmedWrite(res, 'this credential', NO_ROW_BACK); return; }
+      res.status(200).json({ ok: true, provisioned: true, data: rows[0] });
       return;
     }
 
@@ -18929,11 +18935,14 @@ module.exports = async (req, res) => {
       if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNmechanical record tables are not set up yet \u2014 run sql/sairnmechanical_records_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
-      // `mPayload`, NOT `payload`, on the fallback arm. Returning the raw
-      // request body would hand the client back the UNREDACTED text it sent
-      // whenever the store did not echo a row -- so the app would render, and
-      // re-cache locally, exactly what this branch just stripped.
-      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : mPayload });
+      // NO FALLBACK ARM ANY MORE (cody b58). When the store did not echo a row
+      // this answered ok with `mPayload`, so mechPushOne() reported a backup
+      // that the store had not confirmed and saveDoc() said "synced". Under
+      // return=representation an upsert that stored a row returns it; anything
+      // else is not a confirmation. (The fallback was `mPayload`, not `payload`,
+      // so it never handed back unredacted text -- and now there is none.)
+      if (wroteRow(rows) !== 'WROTE') { refuseUnconfirmedWrite(res, resource, NO_ROW_BACK); return; }
+      res.status(200).json({ ok: true, data: rows[0].data });
       return;
     }
 
@@ -20803,9 +20812,12 @@ function wroteRow(rows) {
   return 'WROTE';
 }
 
-function refuseUnconfirmedWrite(res, what) {
+// `why` replaces the opening clause for a caller whose answer WAS read and was
+// not a stored row -- an upsert that came back `[]` (cody b58, the mech writes).
+const NO_ROW_BACK = 'The data store answered the save without returning the stored row';
+function refuseUnconfirmedWrite(res, what, why) {
   res.status(502).json({ error: { code: 'WRITE_UNCONFIRMED',
-    message: 'The data store accepted the request but its answer could not be read, so '
+    message: (why || 'The data store accepted the request but its answer could not be read') + ', so '
       + 'whether the change to ' + what + ' was saved is UNKNOWN -- it was not confirmed '
       + 'and it was not refused. Refresh and check the current value before trying again.' } });
 }
