@@ -1,6 +1,6 @@
 HANK b61 DIGEST -- 2026-10-28 -- post-restart reorientation; origin blob re-read; fx identity check
-CONTEXT 10.5% of 1,000,000 -- 105,243 tokens, measured.
-STATUS: docs-only batch; no code changed; claims held: none.
+CONTEXT 14.9% of 1,000,000 -- 148,569 tokens, measured.
+STATUS: push_retry C1 fix plus docs; claim tools is released after landing.
 1. The dispatch premise was WRONG.
    - 0 commits ahead after fetch. All b60 commits were already on origin.
    - There is no fx-identity commit. The push retry was not run: there was nothing to push.
@@ -8,9 +8,13 @@ STATUS: docs-only batch; no code changed; claims held: none.
    - The placeholder check exited 0 over 310 SQL blobs. backup_reader_role is declared operator input.
    - The non-SQL b60 blobs have 0 markers.
 3. fx identity: CLEAN (no local user.*, mikied68, core.bare false). committer_identity_check exited 0.
-4. Window corrected from 200,000 to 1,000,000 (Michael). The first push lost a ref-lock race twice; one authorised retry.
+4. Window corrected from 200,000 to 1,000,000 (Michael).
+5. Push race (C1): 3/3 bare pushes lost `cannot lock ref`. Fixed in push_retry --loop.
+   - Fast retry, no gate re-run, when the patch-ids are unchanged and the incoming commits are disjoint. Logged.
+   - Selftest repaired; 15 C1 arms; 4 mutants red.
+6. Finding: 79c4f10cf on origin is authored fx@example.invalid (not hank's).
 DECISION-NEEDED (Michael): P1 trial gate client-side; R1 presence signal (both from b60).
 NEXT: T1 cc Tier A on cdf71e894; A1 ALF recovery SQL; G1 cody/fourth fx identity.
-CHANGED: none (code); b61 handoff, report, digest only.
+CHANGED: tools/push_retry.py, docs/recurring-bug-classes-2.md (C1), b61 handoff/report/digest.
 EVIDENCE-path: SAIRN-handoff-hank-b61.md
 UNVERIFIED: none new.

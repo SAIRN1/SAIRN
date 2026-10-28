@@ -18,5 +18,14 @@ HANK b61 REPORT -- 2026-10-28 -- post-restart reorientation
 5. Methodology: no unlabeled exit 1 occurred. Both exit 2s printed their reasons.
    - Context window: corrected from 200,000 to 1,000,000, per Michael. Re-measured at 10.5%, 105,243 tokens.
    - The b61 push was refused twice by a ref-lock race (labelled). After the stop, Michael authorised one more retry.
-6. Open items: carried unchanged from b60 (T1, P1, R1, A1, G1, U1). See the handoff, section 6.
+6. Push race (C1), fixed in tools/push_retry.py --loop:
+   - After a full-gate pass is lost to a race: fetch, rebase, then re-compare the patch-ids. If ours are unchanged and
+     the incoming commits are disjoint from our files and from the gate's inputs, push --no-verify. Each such skip is
+     logged to BYPASS-LOG.
+   - 5 attempts by default.
+   - The selftest was broken before this batch (79c4f10cf stub TypeError) and is now fixed: all arms pass, 15 of them
+     new C1 arms, and 4 mutants are red.
+   - recurring-bug-classes-2 C1 has the hank occurrence and the standing pattern for all 4 build agents.
+   - Finding: 79c4f10cf is on origin authored fx@example.invalid. It is not hank's (G1).
+7. Open items: carried unchanged from b60 (T1, P1, R1, A1, G1, U1). See the handoff, section 6.
 Evidence: SAIRN-handoff-hank-b61.md

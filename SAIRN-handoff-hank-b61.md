@@ -50,8 +50,36 @@ This handoff was written before the report. Nothing is half-finished.
   labelled (`cannot lock ref ... expected <old tip>`), not unlabelled. Per the bounded-retry rule it stopped, and
   Michael authorised one more fetch, rebase and push.
 
+## 4b. THE PUSH RACE, FIXED IN THE TOOL (Michael's third b61 dispatch)
+- **The race:**
+  - Three bare-`git push` attempts were all refused with `cannot lock ref` after the gate PASSED.
+  - origin moved during each gate run. This is the same class as cody's b53–b56 (C1).
+- **The fix is in `tools/push_retry.py --loop`.** It is the durable form of cody b56's scratchpad `push_fast.sh`.
+  - After a full-gate pass is lost to a race, the next attempt fetches, rebases and re-compares the outgoing
+    `git patch-id --stable` set.
+  - It skips the gate (`--no-verify`) only if all three hold:
+    1. the patch-id set is unchanged;
+    2. the incoming commits touch none of our files;
+    3. the incoming commits touch none of the gate's inputs (CRITICALITY-TIERS, the gate hook, `.githooks/`).
+  - Anything unreadable gets the full gate.
+  - Every skip is a `docs/BYPASS-LOG.jsonl` row.
+  - The default is 5 attempts.
+- **A pre-existing break was also fixed:** `--selftest` was crashing with a TypeError before this batch.
+  - The cause: `79c4f10cf` added `timeout=None` to the push call, and the selftest's git stub took no kwargs.
+  - It now passes all arms, including 15 new C1 arms.
+  - 4 mutants are red: no patch-id compare, no overlap check, a skip armed after a gate refusal, and a skip never armed.
+- **`docs/recurring-bug-classes-2.md` C1:**
+  - adds the hank b61 occurrence;
+  - closes the "skip is in a scratchpad script" item;
+  - records the standing pattern: all 4 build agents push via `push_retry.py --loop`.
+- **Finding for the identity owner (G1):** `79c4f10cf` landed on origin today authored `fx <fx@example.invalid>`. A probe
+  identity is still committing in some clone. This clone is clean, and that commit is not hank's.
+- **Residual, not fixed:** a skipped push does not re-run the whole-tree checks against the new base. The fold step does
+  regenerate the derived docs after each rebase. Condition 3 bounds the risk but does not remove it. The real fix is
+  gate duration or a merge queue (C1).
+
 ## 5. CLAIMS HELD
-None.
+`tools` (push_retry C1). It is released after the push lands.
 
 ## 6. OPEN, AND THE EXACT NEXT STEP (carried from b60, unchanged)
 | # | open | owner | next step |
