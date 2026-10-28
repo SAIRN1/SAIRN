@@ -4790,8 +4790,8 @@
       "task": "b60 sweep refused claim drafts on devices",
       "claimed_at": "2026-10-28T11:05:58Z",
       "claimed_at_epoch": 1793185558.3262658,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-28T11:37:47Z",
       "files": null
     }
   ],
