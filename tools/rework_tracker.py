@@ -478,6 +478,15 @@ def _fixtures():
     # EVERY COMMIT IS READ (cody b55). Bodied commits on either side of an
     # empty-bodied one: the doubled-separator split read 2 of these 4.
     tg = tempfile.mkdtemp(prefix='rework_git_')
+    # NO INHERITED GIT_DIR (cody b57). Under a pre-push hook from a linked
+    # worktree git exports an ABSOLUTE GIT_DIR, which beats -C: the init
+    # below would re-initialise the REAL repository and these four empty
+    # commits would land on its HEAD as `fx` -- the 2026-10-27 identity leak
+    # (cc b60, 58801d4c7), with commits added. Dropped for the whole block,
+    # _src_git included, and put back after.
+    _git_env = {k: os.environ.pop(k) for k in
+                ('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_COMMON_DIR')
+                if k in os.environ}
     try:
         g = ['git', '-C', tg, '-c', 'user.name=fx', '-c', 'user.email=fx@fx',
              '-c', 'commit.gpgsign=false']
@@ -496,6 +505,7 @@ def _fixtures():
             (whyg, len(evg)))
     finally:
         shutil.rmtree(tg, ignore_errors=True)
+        os.environ.update(_git_env)
 
     arm('week derivation is ISO and rejects a non-date',
         _week('2026-10-06T12:00:00Z') == '2026-W41' and _week('nope') is None,

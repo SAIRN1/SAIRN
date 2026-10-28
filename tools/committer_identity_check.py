@@ -49,7 +49,12 @@ DASH_C_RE = re.compile(r"['\"]user\.(?:email|name)=([^'\"]+)['\"]")
 def probe_identities():
     """Every identity value this repo's own probes hand to git, with its source."""
     found = {}
-    for root, dirs, files in os.walk(os.path.join(REPO, 'tests')):
+    # tools/ TOO (cody b57). The identity that leaked into SAIRN-cody's local
+    # config on 2026-10-27 -- `fx <fx@local>`, 90 commits -- came from
+    # tools/copy_exactly_gate.py's blind-lock fixtures, which this walk never
+    # read, so `fx@local` was not on the throwaway list at all.
+    for root, dirs, files in [w for top in ('tests', 'tools')
+                              for w in os.walk(os.path.join(REPO, top))]:
         dirs[:] = [d for d in dirs if d != '__pycache__']
         for f in files:
             if not f.endswith(('.py', '.js')):
@@ -97,7 +102,7 @@ def main(argv):
 
     print('committer identity check')
     print('  this clone commits as : %s <%s>' % (name or '<unset>', email or '<unset>'))
-    print('  probe identities found in tests/ : %d' % len(ids))
+    print('  probe identities found in tests/ and tools/ : %d' % len(ids))
     if full:
         for v in sorted(ids):
             print('    %-28s %s' % (v, ', '.join(sorted(ids[v]))))
