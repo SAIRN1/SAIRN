@@ -4868,8 +4868,8 @@
       "task": "b64 worldwide competitive-gap audit doc only, no app edit FILES: docs/cloud-research/sairnmechanical-worldwide-competitive-gap-audit-2026-10-28.md docs/cloud-research/sairnbuild-worldwide-competitive-gap-audit-2026-10-28.md",
       "claimed_at": "2026-10-28T23:32:43Z",
       "claimed_at_epoch": 1793230363.8016398,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-28T23:55:52Z",
       "files": [
         "docs/cloud-research/sairnbuild-worldwide-competitive-gap-audit-2026-10-28.md",
         "docs/cloud-research/sairnmechanical-worldwide-competitive-gap-audit-2026-10-28.md"
