@@ -4692,6 +4692,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "hank-1793208296",
+      "session": "hank",
+      "subject": "sairnsenior",
+      "task": "readiness caregiver hr field strip ticket 1274",
+      "claimed_at": "2026-10-28T17:24:56Z",
+      "claimed_at_epoch": 1793208296.6550736,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
