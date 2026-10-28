@@ -220,9 +220,13 @@ section('2. the fix is not a mute button');
 test('a REAL write still reaches the server', () => {
   const c = harness();
   c.__writes.length = 0;
-  c.st('sv_controlled', [{ drug: 'REAL ENTRY', schedule: 'IV', onHand: 5, unit: 'mg', lastTransaction: '', witness: '' }]);
+  // sv_patients, not sv_controlled (fourth b64): an sv_controlled push now asks
+  // api/sv-witness.js for a token FIRST, so its write is not synchronous and
+  // cannot be read on the next line. This suite tests the seed suppression,
+  // not the register; tests/sairnvet_witness_token_client.js covers the latter.
+  c.st('sv_patients', [{ id: 'REAL ENTRY', name: 'Real Patient' }]);
   assert.strictEqual(c.__writes.length, 1, 'a genuine write was suppressed too');
-  assert.strictEqual(c.__writes[0].resource, 'sv_controlled');
+  assert.strictEqual(c.__writes[0].resource, 'sv_patients');
   assert.strictEqual(c.__writes[0].id, 'REAL ENTRY');
 });
 
@@ -232,7 +236,7 @@ test('a real write straight after a seed is still pushed', () => {
   const c = harness();
   c.getControlledLog();
   c.__writes.length = 0;
-  c.st('sv_controlled', [{ drug: 'AFTER SEED', schedule: 'IV', onHand: 1, unit: 'mg', lastTransaction: '', witness: '' }]);
+  c.st('sv_patients', [{ id: 'AFTER SEED', name: 'After Seed' }]);
   assert.strictEqual(c.__writes.length, 1, 'the suppression outlived the seed');
 });
 
@@ -244,7 +248,7 @@ test('a saver that THROWS does not leave the backup suppressed', () => {
   const boom = () => { throw new Error('storage exploded'); };
   assert.throws(() => c.svSeedStore(boom, []), /storage exploded/);
   c.__writes.length = 0;
-  c.st('sv_controlled', [{ drug: 'AFTER THROW', schedule: 'IV', onHand: 1, unit: 'mg', lastTransaction: '', witness: '' }]);
+  c.st('sv_patients', [{ id: 'AFTER THROW', name: 'After Throw' }]);
   assert.strictEqual(c.__writes.length, 1, 'a throwing seed left svSyncSuppressed true');
 });
 
@@ -288,7 +292,7 @@ test('a consult with NO photo is not marked as if it had one', () => {
 test('every other resource is passed through untouched', () => {
   const c = harness();
   c.__writes.length = 0;
-  c.st('sv_controlled', [{ drug: 'D', schedule: 'IV', onHand: 1, image: 'not-a-photo-field' }]);
+  c.st('sv_patients', [{ id: 'D', image: 'not-a-photo-field' }]);   // sv_patients: see the note in section 2 (fourth b64)
   assert.strictEqual(c.__writes[0].payload.image, 'not-a-photo-field',
     'the strip list leaked to a resource it does not name');
 });

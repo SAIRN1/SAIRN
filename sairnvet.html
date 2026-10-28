@@ -2430,14 +2430,33 @@ function svPushOne(key,rec,label){
   // guard rather than the point of it. try/catch gets the same protection against
   // svLoad() failing or JSON.stringify() hitting a circular record, with no
   // change to when the request leaves.
-  var call;
-  try{ call=Promise.resolve(svData('write',key,rec)); }
+  var call, witnessWhy='';
+  try{
+    // sv_controlled ONLY: the server will not take this write without a
+    // witness token for this exact record, so ask for one first (fourth b64).
+    // Every other collection keeps the synchronous call the comment above
+    // explains.
+    if(key==='sv_controlled'){
+      call=svWitnessRequest(key,rec).then(function(w){
+        if(!w||!w.token){ witnessWhy=(w&&w.code)||'no confirmation'; return null; }
+        return svData('write',key,rec,false,{'X-SV-Witness':w.token});
+      });
+    } else {
+      call=Promise.resolve(svData('write',key,rec));
+    }
+  }
   catch(e){ call=Promise.reject(e); }
   call=call.then(function(r){ settled=true; return r; },
                  function(e){ settled=true; return SV_PUSH_REJECTED; });
   return Promise.race([call,timed]).then(function(r){
     if(r===SV_PUSH_REJECTED) return refused('the connection failed');
     if(r===SV_PUSH_TIMEOUT)  return refused('no answer in '+(SV_PUSH_TIMEOUT_MS/1000)+'s');
+    if(r===null && witnessWhy){
+      // A register entry that stayed on this device is said ON SCREEN, not
+      // only in the console: this is the DEA-relevant record.
+      try{ showToast('Controlled-substance entry for '+label+' is saved on this device only -- the server would not confirm it ('+witnessWhy+').','error',8000); }catch(e){}
+      return refused('the witness confirmation was refused: '+witnessWhy);
+    }
     if(r===null)             return refused('the server refused it');
     return r;
   });
@@ -7856,6 +7875,18 @@ function logControlledUse(){
   var dateStr = localToday();
   var txnText = dateStr+' — '+amount+(entry?entry.unit:'')+' used'+(patient?', patient '+patient:'')+(witness?' (witnessed: '+witness+')':'');
 
+  // THE CONFIRMATION THE WITNESS TOKEN ATTESTS (fourth b64). The server will
+  // only take this entry with a token requested by a signed-in veterinarian
+  // for this exact record (svPushOne -> svWitnessRequest). That token is the
+  // record of THIS confirmation, so the entry is shown and confirmed here,
+  // before anything is written.
+  if(!confirm('Confirm this controlled-substance entry as the signed-in veterinarian:\n\n'+
+              drugName+(effectiveSchedule?' (Schedule '+effectiveSchedule+')':'')+'\n'+txnText+
+              '\n\nYour confirmation is recorded with the entry on the server.')){
+    logDoseAudit({type:'controlled_log_cancelled', drug:drugName});
+    return;
+  }
+
   var prevOnHand, prevLastTransaction, prevWitness, isNewEntry = !entry;
   if(entry){
     prevOnHand = entry.onHand;
@@ -8952,7 +8983,12 @@ function generateSOAP(){
     // Not fixed by inventing an identity the app does not have. The value is
     // stored under a name that says what it is, and the column is relabelled.
     var recordedRole = (document.getElementById('userRole')?document.getElementById('userRole').textContent:'').trim()||'unspecified';
+    // THE NOTE ITSELF IS PART OF THE RECORD (fourth b64). Until now only the
+    // first 60 characters of the complaint were stored: the full note went to
+    // the screen and nowhere else, and sign-off marked that empty record
+    // "Reviewed". `note` is exactly the text the vet reviewed on screen.
     list.push({id:id, date:localToday(), patient:patient, complaint:subj.slice(0,60),
+               subjective:subj, objective:obj, note:result,
                recorded_by_role:recordedRole, author:recordedRole, status:'Draft'});
     saveSoapNotes(list);
     soapPendingNote = {id:id, genStart:genStart};
@@ -10534,6 +10570,7 @@ window.scribeAcceptDraft = function(){
     date: localToday(),
     patient: patient,
     complaint: text.slice(0,60),
+    note: text,   // the accepted draft itself; it is cleared from the screen below (fourth b64)
     recorded_by_role: (scEl('userRole') ? scEl('userRole').textContent : '').trim() || 'unspecified',
     status: 'Reviewed',
     reviewed_at: new Date().toISOString(),
@@ -10718,7 +10755,35 @@ function svFetchTimeoutSignal(){
 // sairn-differential-review exists to refuse. `null` still means THE READ
 // FAILED in both modes, so the failed-vs-empty distinction every caller
 // already relies on is untouched.
-function svData(action, resource, payload, wantEnvelope) {
+// ── THE WITNESS TOKEN, WHICH THIS APP NEVER ASKED FOR (fourth b64) ─────────
+// api/sd-data.js refuses every sv_controlled write without an X-SV-Witness
+// token (api/sv-witness.js requireWitness), and until now nothing in this file
+// requested one -- so the controlled-substance register could only ever live
+// on the device. The token is bound to a hash of the EXACT outbound record, so
+// it is requested for the record svPushOne() is about to send, after the
+// signed-in veterinarian has confirmed that record in logControlledUse().
+// Resolves {token} or {code}; never rejects.
+var SV_WITNESS_API = 'https://sairn.vercel.app/api/sv-witness';
+function svWitnessRequest(resource, payload) {
+  var lic = svLoad('license', '');
+  if (!lic) return Promise.resolve({ code: 'NO_LICENSE' });
+  var headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + lic };
+  var tok = svTok();
+  if (tok) headers['X-SD-Auth'] = tok;
+  return fetch(SV_WITNESS_API, {
+    signal: svFetchTimeoutSignal(),
+    method: 'POST',
+    headers: headers,
+    body: JSON.stringify({ action: 'request', resource: resource, payload: payload })
+  }).then(function(r) {
+    return r.json().then(function(d) {
+      if (r.ok && d && d.ok && d.token) return { token: d.token };
+      return { code: (d && d.error && (d.error.code || d.error.message)) || ('HTTP ' + r.status) };
+    });
+  }).catch(function() { return { code: 'NETWORK' }; });
+}
+
+function svData(action, resource, payload, wantEnvelope, extraHeaders) {
   var lic = svLoad('license', '');
   if (!lic) return Promise.resolve(null);
   // X-SD-Auth ADDED 2026-09-21 (hover2). Until today this transport sent only
@@ -10733,6 +10798,7 @@ function svData(action, resource, payload, wantEnvelope) {
   var headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + lic };
   var svTokNow = svTok();
   if (svTokNow) headers['X-SD-Auth'] = svTokNow;
+  if (extraHeaders) Object.keys(extraHeaders).forEach(function(k) { headers[k] = extraHeaders[k]; });
   return fetch(SV_DATA_API, {
     signal: svFetchTimeoutSignal(),
     method: 'POST',
