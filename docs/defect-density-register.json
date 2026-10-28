@@ -38945,7 +38945,7 @@
       "recurrence_open": "NOT CLOSED. The archive/ snapshots carry the same components (not deployed apps). Other low-alpha dark-theme labels (.sairn-fu-label, .shoff-label) were not flagged by any rendered pass and are unchanged. cartAdd does not re-render the vendor quantity box (pre-existing)."
     },
     {
-      "commit": "a8d986697ffc",
+      "commit": "58801d4c79d8",
       "date": "2026-10-28",
       "subject": "fix(gates, cc b60): copy-exactly fixtures re-initialised the SHARED repo from a worktree push -- the core.bare=true source",
       "files": [
