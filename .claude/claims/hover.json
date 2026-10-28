@@ -1272,6 +1272,17 @@
       "status": "released",
       "released_at": "2026-10-28T16:52:07Z",
       "files": null
+    },
+    {
+      "id": "hover-1793207907",
+      "session": "hover",
+      "subject": "hover",
+      "task": "hover auditor b93 tier1 scan unread tier b rows groq pass planted bug",
+      "claimed_at": "2026-10-28T17:18:27Z",
+      "claimed_at_epoch": 1793207907.6416109,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
