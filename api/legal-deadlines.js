@@ -87,7 +87,8 @@ const JURISDICTION_LABELS = {
   // without this line turns that suite RED rather than shipping a bare "me".
   me: 'Maine',
   // With the Alaska seed (hank b63), for the same reason as Maine above.
-  ak: 'Alaska'
+  ak: 'Alaska',
+  nd: 'North Dakota'
 };
 const DOMAIN_LABELS = {
   'civil-litigation': 'Civil litigation',
