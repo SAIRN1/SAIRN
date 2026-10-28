@@ -191,26 +191,38 @@ def _batch(text):
 
 # ── THE SOURCES. Each returns (events, unread_reason) and never both. ───────
 def _src_git(repo):
+    # ONE RECORD PER COMMIT, SPLIT ON A MARKER AT ITS START (cody b55). This
+    # split the stream on a DOUBLED \x1e, which only occurs after a commit
+    # whose body is EMPTY -- so every commit with a body after the first in a
+    # run was discarded as parts[2:]. Measured: 3,524 of 10,587 commits read,
+    # and the source still returned no unread reason. The parsed count is now
+    # checked against git's own, and a shortfall is an unread reason.
     try:
         r = subprocess.run(['git', '-C', repo, 'log', '--no-merges',
-                            '--format=%H%x1f%cI%x1f%s%x1e%b%x1e'],
+                            '--format=%x1d%H%x1f%cI%x1f%s%x1e%b'],
+                           capture_output=True, text=True, encoding='utf-8',
+                           errors='replace', timeout=GIT_TIMEOUT)
+        n = subprocess.run(['git', '-C', repo, 'rev-list', '--no-merges',
+                            '--count', 'HEAD'],
                            capture_output=True, text=True, encoding='utf-8',
                            errors='replace', timeout=GIT_TIMEOUT)
     except (OSError, subprocess.SubprocessError) as e:
         return ([], 'git log failed: %s: %s' % (type(e).__name__, e))
     if r.returncode != 0:
         return ([], 'git log exited %d: %s' % (r.returncode, (r.stderr or '')[:200]))
-    out, events = r.stdout or '', []
-    # One record per commit: header\x1fdate\x1fsubject\x1ebody\x1e
-    for chunk in out.split('\x1e\x1e'):
+    if n.returncode != 0 or not (n.stdout or '').strip().isdigit():
+        return ([], 'git rev-list --count exited %d, so the commits read cannot '
+                    'be checked against the commits that exist' % n.returncode)
+    out, events, parsed = r.stdout or '', [], 0
+    # One record per commit: \x1dsha\x1fdate\x1fsubject\x1ebody
+    for chunk in out.split('\x1d'):
         if not chunk.strip():
             continue
-        parts = chunk.split('\x1e')
-        head = parts[0]
-        body = parts[1] if len(parts) > 1 else ''
+        head, _sep, body = chunk.partition('\x1e')
         bits = head.split('\x1f')
         if len(bits) < 3:
             continue
+        parsed += 1
         sha, when, subject = bits[0].strip(), bits[1].strip(), bits[2]
         text = subject + '\n' + body
         for tag in classify(text):
@@ -218,6 +230,10 @@ def _src_git(repo):
                            'when': when, 'week': _week(when),
                            'batch': _batch(text),
                            'quote': _quote(text, tag)})
+    expected = int(n.stdout.strip())
+    if parsed != expected:
+        return ([], 'git log parsed %d commit(s) of the %d git counts -- a '
+                    'partial read is not a rework rate' % (parsed, expected))
     return (events, None)
 
 
@@ -458,6 +474,28 @@ def _fixtures():
             (ev4, why4))
     finally:
         shutil.rmtree(td, ignore_errors=True)
+
+    # EVERY COMMIT IS READ (cody b55). Bodied commits on either side of an
+    # empty-bodied one: the doubled-separator split read 2 of these 4.
+    tg = tempfile.mkdtemp(prefix='rework_git_')
+    try:
+        g = ['git', '-C', tg, '-c', 'user.name=fx', '-c', 'user.email=fx@fx',
+             '-c', 'commit.gpgsign=false']
+        subprocess.run(['git', 'init', '-q', tg], capture_output=True)
+        # Each body carries one COLLISION shape, so events count the commits
+        # READ; the empty-bodied third carries it in its subject.
+        c = pos['COLLISION']
+        for msg in (['-m', 'one', '-m', c], ['-m', 'two', '-m', c],
+                    ['-m', c], ['-m', 'four', '-m', c]):
+            subprocess.run(g + ['commit', '-q', '--allow-empty'] + msg,
+                           capture_output=True)
+        evg, whyg = _src_git(tg)
+        arm('git: all 4 commits are read, bodied ones around an empty body '
+            'included -- the doubled-separator split read 2 of them',
+            whyg is None and len([e for e in evg if e['tag'] == 'COLLISION']) == 4,
+            (whyg, len(evg)))
+    finally:
+        shutil.rmtree(tg, ignore_errors=True)
 
     arm('week derivation is ISO and rejects a non-date',
         _week('2026-10-06T12:00:00Z') == '2026-W41' and _week('nope') is None,

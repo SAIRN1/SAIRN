@@ -273,6 +273,11 @@ DEAD_EVEN_ON_OUTPUT = ('DEAD EVEN ON THE REAL RUN -- no lock, no control, and '
                        'neutralising it does not change a byte of the output')
 NO_EVIDENCE = ('COULD NOT TELL -- no lock, no control, and the real run could '
                'not be compared either')
+# cody b55: run() returns None on a timeout or an exception, and `None !=
+# base[label]` is True, so a hung or crashed ablation run was counted LIVE --
+# "exercised" -- and could carry the sweep to CLEAN. Its own verdict now.
+RUN_FAILED = ('COULD NOT TELL -- the ablation run or its baseline timed out or '
+              'raised, so nothing was compared')
 # ── THE WORDING IS THE FIX, NOT A LABEL ON IT ──────────────────────────────
 # The first version of this verdict still OPENED with "no lock and no control",
 # which is the sentence it exists to stop printing: a reader skimming the left
@@ -1127,16 +1132,19 @@ def sweep_tool(tool, work, verbose=False, corpus_timeout=None):
                 else:
                     rows.append((name, DEAD_EVEN_ON_OUTPUT))
                 continue
-            moved = False
+            moved = failed = False
             for label, argv in cmds:
                 rc = run(argv, work)
+                if rc is None or base.get(label) is None:
+                    failed = True
+                    break
                 if rc != base.get(label):
                     moved = True
                     if verbose:
                         print('     %-26s %s: %s -> %s'
                               % (name, label, base.get(label), rc))
                     break
-            rows.append((name, LIVE if moved else DEAD))
+            rows.append((name, RUN_FAILED if failed else (LIVE if moved else DEAD)))
     finally:
         io.open(path, 'w', encoding='utf-8', newline='').write(orig)
         after = io.open(path, encoding='utf-8', newline='').read()
@@ -1250,6 +1258,7 @@ def main(argv):
     # keeps the old population reachable so the two figures stay comparable
     # and nobody has to guess which one a past document was quoting.
     rows, out_of_registry = None, 0
+    universe_unreadable = []
     if a.tool:
         tools = [a.tool]
     elif a.registry_only:
@@ -1282,6 +1291,11 @@ def main(argv):
             return EXIT_COULD_NOT_RUN
         tools = universe_tools(rows)
         out_of_registry = len([t for t, s, _, _ in rows if s == 'OUT_REG'])
+        # cody b55: a tool that does not parse, or could not be read, was
+        # dropped by universe_tools() unnamed and uncounted, and the rest of
+        # the sweep could still exit 0. It is part of the population.
+        universe_unreadable = [(t, why) for t, s, _, why in rows
+                               if s == 'UNREADABLE']
 
     if not tools:
         if not a.quiet:
@@ -1310,6 +1324,13 @@ def main(argv):
         seg_label = ('  SEGMENT %d of %d -- %d of %d tool(s). THIS IS A SLICE; '
                      'its findings are not\n  the platform figure.'
                      % (i_s, n_s, len(tools), whole))
+        # cody b55: the empty-population refusal above ran BEFORE the slice,
+        # so `--tool X --segment 2/2` swept zero tools and exited 0 CLEAN.
+        if not tools:
+            if not a.quiet:
+                print('\nCOULD NOT RUN -- segment %d of %d holds no tool. A '
+                      'sweep of zero tools is not clean.' % (i_s, n_s))
+            return EXIT_COULD_NOT_RUN
 
     # ── EVERY MUTATION FROM HERE DOWN HAPPENS IN A COPY ────────────────────
     # And if the copy cannot be made, this run does not happen. There is no
@@ -1334,7 +1355,7 @@ def main(argv):
 
     dead, live, unknown, unreadable = [], 0, [], []
     live_corpus, dead_output, writes = 0, [], []
-    nondet, noreset, slow, unbounded = [], [], [], []
+    nondet, noreset, slow, unbounded, runfail = [], [], [], [], []
     try:
         for t in tools:
             # THE SANDBOX CAN BE GONE, and it used to surface as a traceback
@@ -1388,6 +1409,8 @@ def main(argv):
                     slow.append((t, name))
                 elif verdict.startswith('COULD NOT RUN: NO BOUND'):
                     unbounded.append((t, name))
+                elif verdict == RUN_FAILED:
+                    runfail.append((t, name))
                 else:
                     unknown.append((t, name))
     finally:
@@ -1395,7 +1418,7 @@ def main(argv):
 
     total = (len(dead) + live + len(unknown) + live_corpus
              + len(dead_output) + len(writes) + len(nondet) + len(noreset)
-             + len(slow) + len(unbounded))
+             + len(slow) + len(unbounded) + len(runfail))
     if not a.quiet:
         if a.tool:
             src_label = 'named on the command line'
@@ -1432,7 +1455,7 @@ def main(argv):
                  live + len(dead), live, len(dead),
                  live_corpus + len(dead_output), live_corpus, len(dead_output),
                  len(unknown) + len(writes) + len(nondet) + len(noreset)
-                 + len(slow) + len(unbounded)))
+                 + len(slow) + len(unbounded) + len(runfail)))
         if slow:
             print('  OF THOSE, %d belong to a tool whose real run DID NOT '
                   'FINISH in %ds.\n  THE EVIDENCE EXISTS and this sweep '
@@ -1472,7 +1495,14 @@ def main(argv):
            'control" -- the evidence exists; re-ask with --corpus-timeout at 2x'
            % (t, n, 2 * tool_bound(t, a.corpus_timeout)) for t, n in slow]
         + ['%s %s -- COULD NOT RUN: NO BOUND CAN BE SET, measured >420s without '
-           'finishing; a harness, not a checker' % (t, n) for t, n in unbounded],
+           'finishing; a harness, not a checker' % (t, n) for t, n in unbounded]
+        # cody b55: these three were printed (or not, under --quiet) and never
+        # reached the exit code, so `--tool typo.py` was CLEAN, exit 0.
+        + ['%s %s -- %s' % (t, n, RUN_FAILED) for t, n in runfail]
+        + ['%s -- COULD NOT READ the tool in the sandbox, so none of its rules '
+           'was swept' % t for t in unreadable]
+        + ['%s -- UNREADABLE in the population (%s), so none of its rules was '
+           'swept' % (t, why) for t, why in universe_unreadable],
         quiet=a.quiet,
         clean_line='\nCLEAN -- every module-level rule whose tool ships '
                    'evidence is exercised by it.')

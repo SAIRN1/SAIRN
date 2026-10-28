@@ -281,6 +281,13 @@ def check_tiers(path, path_cache, sha_memo):
                            % os.path.relpath(path, REPO))
     src = io.open(path, encoding='utf-8', errors='replace').read()
     known = set(re.findall(r'^\| `([a-z0-9_]+)` \|', src, re.M))
+    # cody b55: a register that parses to ZERO rows (the row shape changed)
+    # was silent, and the zero-results guard in main() only fires when BOTH
+    # registers are empty -- so the other one could carry the run to 0.
+    if not known:
+        raise CouldNotTell('%s yielded ZERO register rows -- its row shape no '
+                           'longer matches, nothing was checked'
+                           % os.path.relpath(path, REPO))
     results = []
     for line in src.split('\n'):
         m = re.match(r'^\| `([a-z0-9_]+)` \|', line)
@@ -305,6 +312,11 @@ def check_reviews(path, path_cache, sha_memo):
         data = json.load(io.open(path, encoding='utf-8'))
     except Exception as e:
         raise CouldNotTell('%s is unreadable: %s' % (path, e))
+    # An EMPTY list is a register with no reviews yet; a MISSING key is a
+    # register whose shape changed, read as zero reviews (cody b55).
+    if not isinstance(data, dict) or not isinstance(data.get('records'), list):
+        raise CouldNotTell('%s has no `records` list -- its shape changed, '
+                           'nothing was checked' % os.path.relpath(path, REPO))
     results = []
     for r in data.get('records') or []:
         rid = 'reviews/%s@%s' % (r.get('author_session'), r.get('opened_at'))
@@ -554,10 +566,18 @@ def main(argv):
         print('by this landing -- that is a decision with an owner, not a side')
         print('effect.')
 
-    if could_not and not results:
+    # cody b55: this read `if could_not and not results`, so ONE register
+    # missing or unparseable while the other yielded clean results exited 0.
+    # Could-not-tell wins, as checker_kit.finish() has it: findings from a
+    # partial run are a floor, not an answer.
+    if could_not:
         return 2
     if drifted:
         return 1
+    # And UNVERIFIABLE is "never folded into pass" in the report above; with
+    # nothing drifted it was exactly that, exit 0.
+    if unver:
+        return 2
     if not results:
         sys.stderr.write('COULD NOT TELL: both registers parsed and yielded '
                          'ZERO checkable citations -- nothing was measured, '

@@ -94,6 +94,29 @@ check('registers present but ZERO checkable citations is exit 2 -- nothing '
       'measured must never read as all-clean',
       rc == 2 and 'ZERO checkable' in out, 'rc=%s' % rc)
 
+# ── ONE REGISTER MISSING IS NOT A CLEAN RUN (cody b55) ─────────────────────
+# The tool returned 2 only when could-not-tell AND no results, so a missing
+# reviews register beside a clean tiers register exited 0.
+rc, out = run_in(make_tree(20, tiers_row=ROW_OK, reviews=None))
+check('ONE register absent beside a clean one is exit 2, not 0 -- half the '
+      'check did not run', rc == 2 and 'does not exist' in out, 'rc=%s' % rc)
+rc, out = run_in(make_tree(21, tiers_row=ROW_OK, reviews={'renamed': []}))
+check('a reviews register with no `records` list is exit 2 -- a renamed key '
+      'is not zero reviews', rc == 2 and 'no `records` list' in out, 'rc=%s' % rc)
+rc, out = run_in(make_tree(22, tiers_row='| fx_res | A | B | w | r | `app.js:20` |',
+                           reviews={'records': []}))
+check('a tiers register whose rows no longer match the row shape is exit 2 '
+      'naming ZERO register rows', rc == 2 and 'ZERO register rows' in out,
+      'rc=%s' % rc)
+rc, out = run_in(make_tree(23, tiers_row='| `fx_res` | **A** | **B** | w | r | '
+                           'see `app.js:5` and `app.js:20` with `realThing()` |',
+                           reviews={'records': []}))
+check('CONTROL for the next arm: this fixture yields an UNVERIFIABLE cite',
+      'UNVERIFIABLE' in out, out[-300:])
+check('UNVERIFIABLE with nothing drifted is exit 2, not 0 -- the report says '
+      '"never folded into pass" and the exit code now agrees',
+      rc == 2, 'rc=%s' % rc)
+
 rc, out = run_in(make_tree(5, tiers_row=ROW_OK, reviews={'records': [
     {'author_session': 'x', 'opened_at': 'T1',
      'files': ['ghost.js'], 'what': '', 'verdict': ''}]}))
