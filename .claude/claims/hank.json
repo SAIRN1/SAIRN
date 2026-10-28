@@ -4667,8 +4667,8 @@
       "task": "alf audit owner recovery sc pinnacle trial",
       "claimed_at": "2026-10-28T11:21:45Z",
       "claimed_at_epoch": 1793186505.5809183,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-28T11:27:04Z",
       "files": null
     }
   ],
