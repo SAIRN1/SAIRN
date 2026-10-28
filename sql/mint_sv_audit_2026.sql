@@ -1,0 +1,49 @@
+-- sql/mint_sv_audit_2026.sql
+--
+-- CONCEPT. A live test that WRITES to SAIRNvet's controlled-substance register
+-- needs a licence that holds no customer data and is never shown to a prospect.
+-- Minting that licence is ONE idempotent insert into public.license_keys and
+-- nothing else.
+--
+-- Mints SV-AUDIT-2026 (app_id sairnvet). SAIRNvet has never had an audit
+-- licence: tools/audit_licence.py records SV-AUDIT-2026 as 401 ABSENT,
+-- measured 2026-09-29. Same shape, same reason and same `on conflict` as
+-- sql/mint_sen_audit_2026.sql.
+--
+-- WHY IT IS NEEDED (fourth b64): the sv_controlled witness-token fix
+-- (svPushOne -> api/sv-witness.js `request` -> api/sd-data.js write with
+-- X-SV-Witness) has to be driven LIVE once before anyone believes it, in both
+-- directions:
+--   * a confirmed entry by a prescriber -> 200, one row in sv_controlled;
+--   * the same write with NO token      -> 403 WITNESS_REQUIRED, no row.
+-- Those writes are permanent (the register has no removal path), so they must
+-- not land on SV-PINNACLE-2026, the demo-facing licence.
+--
+-- NO CREDENTIAL ROW. This file touches ONLY public.license_keys, so it cannot
+-- reach the zero-active-provisioner state that CLAUDE.md PR 3.4 guards. The
+-- account is created AFTER, through the app's own bootstrap action, which works
+-- precisely because the licence has no credential rows yet
+-- (api/sv-auth.js PROVISIONING_ROLES = ['owner']):
+--
+--   POST https://sairn.vercel.app/api/sv-auth
+--     Authorization: Bearer SV-AUDIT-2026
+--     {"action":"bootstrap","employee_id":"audit-owner",
+--      "display_name":"Audit Owner","pin":"<choose one>"}
+--
+--   401 INVALID_LICENSE     -> this file has not run
+--   200 {"ok":true,...}     -> ready; owner is a prescriber role, so it can witness
+--   409 ALREADY_PROVISIONED -> already bootstrapped; do NOT delete rows to force it
+--
+-- The witness tables must exist on the project (sql/sairnvet_witness_schema.sql);
+-- if they do not, the live write answers 503 NOT_PROVISIONED and nothing is filed.
+--
+-- IF RUN TWICE: the second run inserts nothing and changes nothing. `on conflict
+-- (key) do nothing` leaves the existing row exactly as it is, including its
+-- status, so a licence someone has since suspended STAYS suspended.
+--
+-- AFTER RUNNING: add SV-AUDIT-2026 to KNOWN_AUDIT_KEYS in tools/audit_licence.py
+-- with the measurement that proved it exists (cc's file).
+
+insert into public.license_keys (key, status, customer_email, app_id, plan, stripe_subscription_id)
+values ('SV-AUDIT-2026', 'active', 'audit@sairnvet.example', 'sairnvet', 'demo', null)
+on conflict (key) do nothing;
