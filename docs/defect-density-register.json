@@ -38474,6 +38474,50 @@
       "recurrence_open": "Other probes that assert a tool message verbatim can drift the same way; not swept."
     },
     {
+      "commit": "43812bdbbf2b",
+      "date": "2026-10-27",
+      "subject": "fix(sairnsenior b59): a claim draft the server refused is withdrawn, so its visit returns to Ready to bill (H1 #1713)",
+      "files": [
+        "sairnsenior.html",
+        "tests/sairnsenior_contract_auth_save.js"
+      ],
+      "lines_added": 23,
+      "lines_removed": 2,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "hover-audit",
+      "summary": "fourth b59, H1 (hover) #1713, first found by cc b51 in the fourth b49 review. generateClaim kept a refused sen_claims draft; readyToBillVisits counted the visit as billed, so a visit never billed left the list. Refused drafts are now withdrawn and the biller told; no-answer keeps the draft. Suite 20 arms; G4-G6 fail on HEAD.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "39eb41d6e9f0",
+        "date": "2026-10-22",
+        "subject": "review(cc b51): Tier A discharge of fourth b49 (senior/roofing/biz) -- SOUND-WITH-GAPS, a refused sen_claims write stays local (pre-existing, medium)",
+        "lag_days": 5
+      },
+      "citation_note": "No coding rule covers this class: an optimistic local write that is kept when the server refuses it and then feeds another list. Proposed: a local-first save withdraws on refusal.",
+      "contributing_factors": [
+        {
+          "factor": "generateClaim stored the draft before awaiting the server and had no withdrawal on refusal.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Refusal withdraws the draft and re-renders Ready to bill."
+        },
+        {
+          "factor": "The b49 arms checked the toast text, not the ready list, after a refused claim.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "G4-G8 drive readyToBillVisits after each outcome."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. Drafts refused before this fix may still sit on devices with their visits hidden; no sweep exists. Not driven end to end in a browser (needs the rate and authorisation engines)."
+    },
+    {
       "commit": "45ba1d9f7ee5",
       "date": "2026-10-27",
       "subject": "fix(platform b54): a failed PIN attempt that cannot be recorded is refused 503 -- the lockout can no longer silently never engage",
@@ -38531,53 +38575,6 @@
         }
       ],
       "recurrence_open": "a 503 only on a wrong PIN when the PATCH fails can reveal that an employee_id exists while the write path is broken; a correct PIN is still accepted when the lockout cannot be written"
-    },
-    {
-      "commit": "ae2600407d29",
-      "date": "2026-10-27",
-      "subject": "fix(tools, cody b54): five ratios no longer count what did not run, or what is outside the denominator",
-      "files": [
-        "docs/sairn-path-manifest.json",
-        "tools/checker_confidence.py",
-        "tools/flaky_checker_quarantine.py",
-        "tools/run_all_tests.py",
-        "tools/sairn_reachability_check.py",
-        "tools/text_gate_literal_sweep.py"
-      ],
-      "lines_added": 61,
-      "lines_removed": 17,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "Five tools/ ratios counted what did not run or what lay outside the denominator: run_all_tests counted a pinned run's not_run files as passing (and could print ALL M PASS); text_gate_literal_sweep counted COULD-NOT-RUN probes as coverage; flaky_checker_quarantine divided all-history checkers by today's registry and printed N of N on an unreadable registry; sairn_reachability_check let a real 0 fall through to the wrong metric; checker_confidence pooled all history. Fixed in one commit, each printing what it excluded.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "Five tools with separate histories; not traced per tool."
-      },
-      "citation_note": "Did-not-run and could-not-tell were folded into pass or into the numerator.",
-      "contributing_factors": [
-        {
-          "factor": "Numerators were built from a different or wider population than the denominator, or treated not-run as pass.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Each ratio now intersects its sets and prints the excluded count."
-        },
-        {
-          "factor": "No standing check compares a tool numerator population with its denominator.",
-          "kind": "detection",
-          "action_status": "planned",
-          "action": "Seven further leads routed (b54 handoff); a generic check is not built."
-        }
-      ],
-      "recurrence_open": "Seven b53 leads remain unfixed: reliability_growth, hover_separation_audit, defect_budget_policy, ownership_evidence_drift, gate1_verify, live_probe_residue_audit, cron_beat_refusal_check."
     },
     {
       "commit": "8bf6165462d1",
@@ -38666,6 +38663,53 @@
         }
       ],
       "recurrence_open": "Other DORA figures (time to restore) were not re-audited for the same set mismatch."
+    },
+    {
+      "commit": "ae2600407d29",
+      "date": "2026-10-27",
+      "subject": "fix(tools, cody b54): five ratios no longer count what did not run, or what is outside the denominator",
+      "files": [
+        "docs/sairn-path-manifest.json",
+        "tools/checker_confidence.py",
+        "tools/flaky_checker_quarantine.py",
+        "tools/run_all_tests.py",
+        "tools/sairn_reachability_check.py",
+        "tools/text_gate_literal_sweep.py"
+      ],
+      "lines_added": 61,
+      "lines_removed": 17,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "Five tools/ ratios counted what did not run or what lay outside the denominator: run_all_tests counted a pinned run's not_run files as passing (and could print ALL M PASS); text_gate_literal_sweep counted COULD-NOT-RUN probes as coverage; flaky_checker_quarantine divided all-history checkers by today's registry and printed N of N on an unreadable registry; sairn_reachability_check let a real 0 fall through to the wrong metric; checker_confidence pooled all history. Fixed in one commit, each printing what it excluded.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Five tools with separate histories; not traced per tool."
+      },
+      "citation_note": "Did-not-run and could-not-tell were folded into pass or into the numerator.",
+      "contributing_factors": [
+        {
+          "factor": "Numerators were built from a different or wider population than the denominator, or treated not-run as pass.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Each ratio now intersects its sets and prints the excluded count."
+        },
+        {
+          "factor": "No standing check compares a tool numerator population with its denominator.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "Seven further leads routed (b54 handoff); a generic check is not built."
+        }
+      ],
+      "recurrence_open": "Seven b53 leads remain unfixed: reliability_growth, hover_separation_audit, defect_budget_policy, ownership_evidence_drift, gate1_verify, live_probe_residue_audit, cron_beat_refusal_check."
     },
     {
       "commit": "c2c39263d96a",
@@ -38851,50 +38895,6 @@
       "recurrence_open": "credentialStillActive still answers NO_ACTIVE_CHECK on !ok (an answered 4xx/5xx), by its documented availability decision"
     },
     {
-      "commit": "43812bdbbf2b",
-      "date": "2026-10-27",
-      "subject": "fix(sairnsenior b59): a claim draft the server refused is withdrawn, so its visit returns to Ready to bill (H1 #1713)",
-      "files": [
-        "sairnsenior.html",
-        "tests/sairnsenior_contract_auth_save.js"
-      ],
-      "lines_added": 23,
-      "lines_removed": 2,
-      "app": "sairnsenior",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "hover-audit",
-      "summary": "fourth b59, H1 (hover) #1713, first found by cc b51 in the fourth b49 review. generateClaim kept a refused sen_claims draft; readyToBillVisits counted the visit as billed, so a visit never billed left the list. Refused drafts are now withdrawn and the biller told; no-answer keeps the draft. Suite 20 arms; G4-G6 fail on HEAD.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover",
-      "injection": {
-        "commit": "39eb41d6e9f0",
-        "date": "2026-10-22",
-        "subject": "review(cc b51): Tier A discharge of fourth b49 (senior/roofing/biz) -- SOUND-WITH-GAPS, a refused sen_claims write stays local (pre-existing, medium)",
-        "lag_days": 5
-      },
-      "citation_note": "No coding rule covers this class: an optimistic local write that is kept when the server refuses it and then feeds another list. Proposed: a local-first save withdraws on refusal.",
-      "contributing_factors": [
-        {
-          "factor": "generateClaim stored the draft before awaiting the server and had no withdrawal on refusal.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Refusal withdraws the draft and re-renders Ready to bill."
-        },
-        {
-          "factor": "The b49 arms checked the toast text, not the ready list, after a refused claim.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "G4-G8 drive readyToBillVisits after each outcome."
-        }
-      ],
-      "recurrence_open": "NOT CLOSED. Drafts refused before this fix may still sit on devices with their visits hidden; no sweep exists. Not driven end to end in a browser (needs the rate and authorisation engines)."
-    },
-    {
       "commit": "e29950026005",
       "date": "2026-10-27",
       "subject": "fix(stonedesk b59): document Analyze button works again; sairn-* modal contrast at the root; the 4 unforced modals opened and fixed; zero quantity shows 0; late rows named",
@@ -38943,6 +38943,62 @@
         }
       ],
       "recurrence_open": "NOT CLOSED. The archive/ snapshots carry the same components (not deployed apps). Other low-alpha dark-theme labels (.sairn-fu-label, .shoff-label) were not flagged by any rendered pass and are unchanged. cartAdd does not re-render the vendor quantity box (pre-existing)."
+    },
+    {
+      "commit": "a8d986697ffc",
+      "date": "2026-10-28",
+      "subject": "fix(gates, cc b60): copy-exactly fixtures re-initialised the SHARED repo from a worktree push -- the core.bare=true source",
+      "files": [
+        ".githooks/pre-push",
+        "tests/run_core_bare_kill_probe.py",
+        "tools/capped_run.py",
+        "tools/copy_exactly_gate.py",
+        "tools/logged_exec.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 425,
+      "lines_removed": 3,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "probe-control",
+      "summary": "cc b60. tools/copy_exactly_gate.py runs its blind-lock fixtures on every pre-push; the first line is git -C <tempdir> init. git exports an ABSOLUTE GIT_DIR to a pre-push hook from a linked worktree and GIT_DIR beats -C, so the init re-initialised the real repo: core.bare=true and user.name/email=fx in the SHARED .git/config, and the fixtures then failed so every worktree push was refused. Source of the b59 core.bare event and of cc's fx identity since 12:06 on 10-27. Fixed in the hook (unset) and the gate (env drop + finally restore); kill probe 10/10, ablation 4/10.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "scratchpad gitdir_hyp2.py (real push --dry-run from a worktree with an env-dumping pre-push hook), then tests/run_core_bare_kill_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "e2222a4011d3",
+        "date": "2026-09-26",
+        "subject": "feat(gate): item 43 stops being a convention -- and the first thing it catches is this session's own propagation",
+        "lag_days": 32
+      },
+      "citation_note": "A gate fixture that could not tell it was writing the live repo, and a gate that then refused every worktree push as COULD NOT RUN.",
+      "contributing_factors": [
+        {
+          "factor": "the fixture's git calls inherited the hook's GIT_DIR, which overrides -C",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "pre-push unsets GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE/GIT_COMMON_DIR; run_fixtures drops them for the fixture run"
+        },
+        {
+          "factor": "a linked worktree shares .git/config, so a write from a replay worktree lands in the live clone",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "incident replays use a git clone --local (own config) under tools/capped_run.py, stated in the b60 handoff"
+        },
+        {
+          "factor": "check8_probe saw this exact corruption on 2026-10-06 and was fixed by moving to a clone, without naming the writer, so the gate kept doing it",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/run_core_bare_kill_probe.py drives the real gate under a worktree GIT_DIR, with a teeth arm"
+        }
+      ],
+      "recurrence_open": "Any OTHER hook-spawned tool that runs git in a temp dir is covered only by the hook-level unset; a tool invoked by a different hook or wrapper that exports GIT_DIR is not."
     }
   ],
   "started": "2026-09-09",
