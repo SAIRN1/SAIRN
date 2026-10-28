@@ -4812,8 +4812,8 @@
       "task": "b61 push timeout guard tool and pre-push hook wiring",
       "claimed_at": "2026-10-28T17:25:57Z",
       "claimed_at_epoch": 1793208357.7575953,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-28T19:21:39Z",
       "files": null
     }
   ],
