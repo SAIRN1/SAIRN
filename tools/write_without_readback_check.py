@@ -88,7 +88,12 @@ PLATFORM_RESOURCES = {
     'employee_profile', 'style_profile', 'exec_context', 'supplier_lead_times',
 }
 
-WRITE_RE = re.compile(r"\w*Data\(\s*'write'\s*,\s*'(\w+)'")
+# 'write_batch' TOO (cody b57). stonedesk moved sd_customers to
+# sdData('write_batch', 'sd_customers', ...) and the resource fell out of the
+# write set without a word -- 33 -> 32 in write_readback_shape_probe arm2,
+# which read like the app had shrunk. A write this cannot see is a write whose
+# read-back is never checked: the not-run class, inside the resolver.
+WRITE_RE = re.compile(r"\w*Data\(\s*'write(?:_batch)?'\s*,\s*'(\w+)'")
 # A GENERIC WRITE IS AS INVISIBLE AS A GENERIC READ, and that blind spot is
 # what produced both COULD NOT TELL results on 2026-09-05. Resolved 2026-09-05
 # after reading both loops by hand -- see resolve_generic_writes().
@@ -708,6 +713,10 @@ FIXTURES = [
       function save(q) { window.xPushRecord('x_quotes', q); }
     """, lambda a: a is not None
          and any('xPushOne' in r for r in a['reasons'])),
+    ('a write_batch is a write -- stonedesk sd_customers fell out unseen',
+     'WRITE_RE', """
+      function save(rows) { sdData('write_batch', 'x_customers', { records: rows }); }
+    """, lambda a: a is not None and 'x_customers' in a['writes']),
     ('...but not when the same writer is also called directly',
      'unresolved_generic_writers', """
       function xPushOne(resource, rec) { return appData('write', resource, rec); }

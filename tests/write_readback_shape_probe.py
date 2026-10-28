@@ -196,12 +196,20 @@ results['arm4_negative_gate_still_works'] = {'zz_a', 'zz_b'} <= W.resolve_generi
 # a3c44c24). Re-baselined together with local_only_shape_probe and
 # local_only_self_evidence_probe: all three pin counts against sairnbiz.html and
 # one fixed on its own leaves the other two looking like separate defects.
+# RE-BASELINED cody b57, each one READ first rather than accepted:
+#   sairncare 9 -> 10: alf_claim_routes, the billing-determination record
+#     (3c28b9eac, 2026-09-18), written AND read by alfData.
+#   sairnmechanical 2 -> 3: mech_insurance_policies, business insurance/COI
+#     (72ba22610, 2026-09-25), written AND read by mechData.
+# Real features with their read-back, not masked regressions. (stonedesk's
+# 33 -> 32 in arm2 WAS one -- a write_batch the resolver could not see -- and
+# was fixed in the tool, not re-baselined.)
 BASELINE = {
     'sairnbiz.html': ('13', '13'), 'sairnbuild.html': ('32', '32'),
-    'sairncare.html': ('9', '9'), 'sairncode.html': ('28', '28'),
+    'sairncare.html': ('10', '10'), 'sairncode.html': ('28', '28'),
     'sairndental.html': ('20', '20'), 'sairndesign.html': ('18', '18'),
     'sairngrounds.html': ('30', '30'), 'sairnlaw.html': ('19', '19'),
-    'sairnlegacy.html': ('36', '36'), 'sairnmechanical.html': ('2', '2'),
+    'sairnlegacy.html': ('36', '36'), 'sairnmechanical.html': ('3', '3'),
     'sairnscape.html': ('12', '12'), 'sairnsenior.html': ('15', '15'),
 }
 drift = []
