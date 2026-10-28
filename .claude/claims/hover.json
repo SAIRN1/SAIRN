@@ -1294,6 +1294,17 @@
       "status": "released",
       "released_at": "2026-10-28T17:50:14Z",
       "files": null
+    },
+    {
+      "id": "hover-1793210437",
+      "session": "hover",
+      "subject": "hover",
+      "task": "hover auditor b95 ccm cda tier1 scan tier b rotation mirror 96 drill",
+      "claimed_at": "2026-10-28T18:00:37Z",
+      "claimed_at_epoch": 1793210437.6260722,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
