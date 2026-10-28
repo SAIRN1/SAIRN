@@ -4831,6 +4831,22 @@
         "docs/sairn-path-manifest.json",
         "tools/claim_state_recheck.py"
       ]
+    },
+    {
+      "id": "fourth-1793226409",
+      "session": "fourth",
+      "subject": "platform",
+      "task": "b63 push_timeout_guard live-drive mode, worldwide competitive-gap audits sairnroofing sairnsenior sairnvet FILES: tools/push_timeout_guard.py docs/cloud-research/sairnroofing-worldwide-competitive-gap-audit-2026-10-28.md docs/cloud-research/sairnsenior-worldwide-competitive-gap-audit-2026-10-28.md docs/cloud-research/sairnvet-worldwide-competitive-gap-audit-2026-10-28.md",
+      "claimed_at": "2026-10-28T22:26:49Z",
+      "claimed_at_epoch": 1793226409.0504115,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/cloud-research/sairnroofing-worldwide-competitive-gap-audit-2026-10-28.md",
+        "docs/cloud-research/sairnsenior-worldwide-competitive-gap-audit-2026-10-28.md",
+        "docs/cloud-research/sairnvet-worldwide-competitive-gap-audit-2026-10-28.md",
+        "tools/push_timeout_guard.py"
+      ]
     }
   ],
   "refusals": [
@@ -5153,6 +5169,19 @@
       ],
       "source": "status-registry",
       "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-28T22:26:23Z",
+      "my_subject": "platform",
+      "my_task": "b63 push_timeout_guard live-drive mode, worldwide competitive-gap audits sairnroofing sairnmechanical sairnsenior FILES: tools/push_timeout_guard.py docs/cloud-research/sairnroofing-worldwide-competitive-gap-audit-2026-10-28.md docs/cloud-research/sairnmechanical-worldwide-competitive-gap-audit-2026-10-28.md docs/cloud-research/sairnsenior-worldwide-competitive-gap-audit-2026-10-28.md",
+      "other_session": "cody",
+      "other_subject": "sairnmechanical",
+      "other_task": "server write path audit write_re sweep",
+      "other_claimed_at": "2026-10-28T21:17:03Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same app: sairnmechanical",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
