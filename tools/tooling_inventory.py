@@ -1962,6 +1962,15 @@ PURPOSES = {
         'push through a git() helper that sets one (it found push_retry.py:1060 '
         'on its first run). Cannot see the Claude Bash tool\'s own timeout or a '
         'hand kill; that needs the run journal routed to cody (b61)'),
+    'claim_state_recheck.py': ('CHECKER',
+        'a pushed commit that touches the push wiring (.githooks/pre-push and '
+        'every tools/*.py it invokes), docs/ or an <app>.html while ANOTHER '
+        'session holds an ACTIVE claim on that path -- FILES list names it, or '
+        'the claim subject is the app. Runs in .githooks/pre-push per commit '
+        'in the outgoing range, so the b61 by-hand claim re-read happens on '
+        'every push. Shared ledgers exempt; fails CLOSED when the claims '
+        'cannot be read; SAIRN_CLAIM_GOAHEAD waives one named claim id. '
+        'Cannot see a claim fresher than the last fetch (fourth b62)'),
     'push_retry.py': ('TOOL',
         'an amend that is about to run in a tree where HEAD is not what the '
         'author thinks it is -- and it REFUSES rather than warns. Five clones '

@@ -83,7 +83,7 @@ REFS=$(cat)
 # is a refusal.
 for g in tools/hover_auditor_scope_gate.py tools/register_feed_gate.py \
          tools/copy_exactly_gate.py tools/sairn_push_gate_hook.py \
-         tools/push_timeout_guard.py; do
+         tools/push_timeout_guard.py tools/claim_state_recheck.py; do
     f="$ROOT/$g"
     if [ ! -s "$f" ]; then
         echo "REFUSED (gate self-integrity): $g is missing or EMPTY. An empty gate passes"
@@ -106,6 +106,14 @@ done
 # `finally`; a timeout that kills it mid-gate skips the restore (fourth b59:
 # api/_lib/law-roles.js left mutated). Refused here, while nothing has run.
 "$PY" "$ROOT/tools/push_timeout_guard.py" --pre-push || exit 1
+
+# ── EVERY COMMIT RE-CHECKED AGAINST THE CURRENT CLAIM STATE (fourth b62) ───
+# A commit touching this hook, a gate it runs, docs/ or an <app>.html is
+# refused while another session holds an ACTIVE claim on that path. b61 did
+# this by hand, once; this asks it at every push. Exit 2 (could not read the
+# claims) refuses too: an unread claim record is not an empty one.
+printf '%s
+' "$REFS" | "$PY" "$ROOT/tools/claim_state_recheck.py" --pre-push || exit 1
 
 # ── HOVER AUDITOR SCOPE GATE, and ONLY in the auditor's own clone ───────────
 # The marker is in .git/, so it is not versioned and no build clone inherits it.

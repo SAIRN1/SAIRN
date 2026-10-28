@@ -96,6 +96,7 @@
     ],
     "fourth": [
       "tools/push_timeout_guard.py",
+      "tools/claim_state_recheck.py",
       "tests/run_push_timeout_guard_probe.py",
       "tools/push_retry.py",
       "tools/tooling_inventory.py",
