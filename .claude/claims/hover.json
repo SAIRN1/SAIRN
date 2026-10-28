@@ -1324,8 +1324,8 @@
       "task": "b97 review SQL placeholder push check and sc demo trial exemption, sampler SQL chunk 413 fix, scan rotation FILES: .claude/skills/sairn-hover-auditor/",
       "claimed_at": "2026-10-28T19:57:23Z",
       "claimed_at_epoch": 1793217443.063573,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-28T20:33:15Z",
       "files": null
     }
   ],
