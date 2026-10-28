@@ -162,7 +162,7 @@ from checker_kit import (EXIT_COULD_NOT_RUN, finish,               # noqa: E402
                          strip_comments, tracked)
 
 CONTROLLED_BY = ['tests/run_assertion_label_shape_probe.py']
-CRITERIA_VERSION = '2026-09-29.2'
+CRITERIA_VERSION = '2026-10-28.1'
 
 # ── THE CRITERIA ─────────────────────────────────────────────────────────────
 # An EXHAUSTIVE claim: the label says the arm covers a whole population.
@@ -741,6 +741,51 @@ def _is_quoted(raw):
     return len(raw) >= 2 and raw[0] in QUOTES and raw[-1] == raw[0]
 
 
+# ── WHICH JS CALLS ARE THE PYTHON `assert` STATEMENT, AND WHICH ARE NOT ─────
+# Python judges a bare truthiness ONLY on the `assert` statement, whose two
+# slots -- test and msg -- are fixed by the grammar. A CALL with a label and no
+# comparison (`check(label, x)`) is NOT JUDGED there, because the call site
+# cannot say whether the callee compares. The JS mirror is therefore the one
+# call whose slots are fixed by its API: node's `assert.ok(value, message)`.
+# The local ok()/check()/eq()/ck() helpers have per-file signatures (the header
+# lists five) and stay NOT JUDGED, as their Python counterparts do. A bare
+# `assert(value, message)` is the same API, and is not listed only because
+# the tracked JS suites carry none (measured 2026-10-28: 0 calls).
+JS_TRUTHY_CALLS = ('assert.ok',)
+
+
+def _js_bare_condition(name, args, label_i, body_b):
+    """True when this call is a BARE TRUTHINESS the Python path would judge.
+
+    `assert.ok(value, message)`: the label in the message slot (index 1), the
+    value in slot 0, nothing else -- AND THE VALUE A PLAIN REFERENCE: `rows`,
+    `r.body.rows`, `ctx.TIERS[k]`. The Python rule's own stated reason is "ONE
+    row satisfies it": the truthiness of a VALUE stands in for a population
+    being present. A PREDICATE does not -- `!x`, `/re/.test(src)`, `fn(tok)`,
+    `a && !b` each test one subject, and node assert messages on them are
+    written as the FAILURE that follows (`'a throwing console breaks every
+    write'`). Without this restriction the first real run (2026-10-28) judged
+    28 such calls CONFIRMED and all 28 were false on reading the source. It is
+    a tightening: it can only leave an arm NOT JUDGED, never move a verdict.
+
+    A plain reference cannot be a function or a call, so `.every(...)` -- the
+    JS spelling of Python's `all()`, locked NOT JUDGED in JS_FIXTURES since
+    2026-09-29 -- stays NOT JUDGED. (The Python assert path does NOT honour its
+    own `all()` exemption: `assert all(...), 'every x'` reaches classify() with
+    no ops and comes back FINDING_BARE. That inconsistency is the Python half's
+    and is not copied here.)
+    """
+    if name not in JS_TRUTHY_CALLS or label_i != 1 or len(args) != 2:
+        return False
+    return JS_PLAIN_VALUE.match(body_b[args[0][0]:args[0][1]]) is not None
+
+
+# An identifier, then any run of `.name`, `?.name` or `[index]`. Read on the
+# string-blanked copy, so a quoted index cannot carry a call or an operator in.
+JS_PLAIN_VALUE = re.compile(
+    r'^\s*[A-Za-z_$][\w$]*(?:\s*\??\.\s*[A-Za-z_$][\w$]*|\s*\[[^\[\]()]*\])*\s*$')
+
+
 def js_arms(src, skipped=None):
     """(line, label, ops, kind) per readable assertion, or None if unreadable.
 
@@ -841,6 +886,17 @@ def js_arms(src, skipped=None):
                     continue
                 if _js_ops(_strip_element_predicates(body_b[a:b])):
                     carriers.append(n)
+            # ── THE BARE TRUTHINESS, JUDGED AS THE PYTHON `assert` IS (2026-10-28) ─
+            # Zero carriers on node's `assert.ok(value, message)` is not the
+            # callee-compares form: the callee compares nothing, it tests the one
+            # value for truthiness. That is exactly Python's `assert <cond>,
+            # '<label>'`, which arms() hands to classify() with NO operators, and
+            # js_classify() already carries the same no-operator branch. So the
+            # arm is emitted with ops=[] and judged by the SAME rules -- failure
+            # description, exhaustive word, declared one-sidedness, FINDING_BARE.
+            if not carriers and _js_bare_condition(name, args, label_i, body_b):
+                out.append((blank.count(chr(10), 0, i) + 1, label, [], 'js'))
+                continue
             if len(carriers) != 1:
                 if skipped is not None:
                     skipped.append(blank.count(chr(10), 0, i) + 1)
@@ -870,6 +926,13 @@ def js_bare_unjudged(stripped):
     for m in JS_BARE_CALL.finditer(stripped):
         cond, label = m.group(1), m.group(3)
         if any(o in cond for o in JS_OPERATOR_TEXT):
+            continue
+        # JUDGED SINCE 2026-10-28 (see _js_bare_condition), so no longer part
+        # of the limit. Counting it here would report as unjudged an arm the
+        # same run has already judged. ONLY the plain-reference shape leaves:
+        # an assert.ok PREDICATE is still not judged and is still counted.
+        if (m.group(0).split('(', 1)[0].strip() in JS_TRUTHY_CALLS
+                and JS_PLAIN_VALUE.match(cond)):
             continue
         bare += 1
         if EXHAUSTIVE.search(label or ''):
@@ -915,12 +978,25 @@ def js_classify(label, ops):
 # registered limit from an unreported gap. It was DEAD to this lock: neutralise
 # it and the counter silently returns (0, 0), which reads as "the limit costs
 # nothing" -- the most reassuring possible wrong answer.
+# SOURCES CHANGED 2026-10-28, expectations not. The first two read `assert.ok(`,
+# which is JUDGED now and correctly leaves the limit -- so they would have gone
+# red for the right reason. Neither discipline-1 kind: the expected verdict was
+# not wrong and the fixture was not bent to output; the SUBJECT moved, so the
+# still-unjudged local `ok(` helper carries the same two cases, and the third
+# row below locks the move itself.
 BARE_COUNT_FIXTURES = (
-    ("assert.ok(rows, 'every row is present');", (1, 1),
+    ("ok(rows, 'every row is present');", (1, 1),
      'a bare truthiness with an EXHAUSTIVE label is the case that would end the '
      'limit, and it must be counted in BOTH figures'),
-    ("assert.ok(rows, 'at least one row');", (1, 0),
+    ("ok(rows, 'at least one row');", (1, 0),
      'a bare truthiness with an honest label counts in the first figure only'),
+    ("assert.ok(rows, 'every row is present');", (0, 0),
+     'assert.ok IS JUDGED since 2026-10-28, so it is not part of the limit -- '
+     'counting it would report an arm the same run judged as unjudged'),
+    ("assert.ok(!r.rejected, 'every write survives');", (1, 1),
+     '...but ONLY the plain-reference shape is judged. An assert.ok PREDICATE '
+     'still yields no arm, so it must stay in the limit -- dropping every '
+     'assert.ok from the count would hide it in no bucket at all'),
     ("assert.ok(rows.length >= 3, 'every row is present');", (0, 0),
      'a call WITH an operator is not bare and must not be counted at all, or '
      'the limit figure inflates with arms the tool already judges'),
@@ -929,6 +1005,54 @@ BARE_COUNT_FIXTURES = (
      'every case here returns (0, 0), which is why the third arm alone could '
      'not have caught it'),
 )
+
+
+# ── THE JS BARE-TRUTHINESS RULE IS CAPPED AT ADVISORY (2026-10-28) ──────────
+# MEASURED PRECISION: 0 true of 4 CONFIRMED on the real tree, 2026-10-28 --
+# bld_draws_role_arms.test.js:128, witness_countersign.js:409,
+# licence_rekey_isolation.js:170 and tiered_pricing_commission.js:89, each a
+# failure narrative or an adverbial `exactly` on reading the source. A rule
+# with no measured true positive does not get to fail a run, so its rows stay
+# JUDGED (and out of the registered-limit figure) but are printed ADVISORY.
+# PROMOTION TO CONFIRMED NEEDS A MEASURED TRUE POSITIVE: a real row, read at
+# the source and judged a true over-claim -- not a fixture, not an argument.
+# In JS FINDING_BARE is reached only through _js_bare_condition, so the cap
+# touches nothing else; the Python FINDING_BARE path is not capped.
+JS_BARE_CAP_WHY = ('JS BARE TRUTHINESS, capped at ADVISORY: this rule measured '
+                   '0 true of 4 CONFIRMED on 2026-10-28 and is not promoted '
+                   'until a true positive is measured')
+
+
+def js_tier(label, verdict):
+    """tier() for a JS arm, with the bare-truthiness cap applied."""
+    if verdict == FINDING_BARE:
+        return ADVISORY, JS_BARE_CAP_WHY
+    return tier(label)
+
+
+JS_TIER_FIXTURES = (
+    ("assert.ok(rows, 'every row is present');", ADVISORY,
+     'THE CAP: an over-claiming assert.ok bare truthiness -- which tier() alone '
+     'calls CONFIRMED -- comes back ADVISORY until a true positive is measured'),
+    ("assert.ok(rows.length >= 3, 'every row is present');", CONFIRMED,
+     '...and the cap is scoped to the bare rule: the one-sided JS floor, which '
+     'has measured true positives, is still CONFIRMED'),
+)
+
+
+def run_js_tier_fixtures(verbose=False):
+    bad = []
+    for src, want, why in JS_TIER_FIXTURES:
+        a = js_arms(src)
+        if not a:
+            bad.append('JS TIER: no arm extracted -- %s' % why)
+            continue
+        got, _w = js_tier(a[0][1], js_classify(a[0][1], a[0][2]))
+        if got != want:
+            bad.append('JS TIER: expected %s, got %s -- %s' % (want, got, why))
+        elif verbose:
+            print('  ok   %-9s %s' % (want, why))
+    return bad
 
 
 def run_bare_count_fixtures(verbose=False):
@@ -943,22 +1067,36 @@ def run_bare_count_fixtures(verbose=False):
 
 
 JS_FIXTURES = (
-    # ── THE ONE ASYMMETRY BETWEEN THE TWO PATHS, MEASURED AND NAMED ────────
+    # ── THE ASYMMETRY BETWEEN THE TWO PATHS, CLOSED 2026-10-28 ─────────────
     # The Python path judges a BARE TRUTHINESS -- `assert rows, 'every row is
     # present'` -- because `ast` hands it the label whatever the condition looks
-    # like. The JS extractor requires an operator-bearing argument, so a bare
-    # truthiness yields NO ARM AT ALL and js_classify is never reached.
+    # like. Until 2026-10-28 the JS extractor required an operator-bearing
+    # argument, so a bare truthiness yielded NO ARM and was carried as a
+    # REGISTERED LIMIT. "Zero of 1,811 carry an exhaustive label" was the
+    # reason; the zero was structural (M4, cody b58), and fixed it read 35.
     #
-    # MEASURED BEFORE DECIDING NOT TO CLOSE IT: 1,811 bare-truthiness assert
-    # calls across 468 JS suite files, of which ZERO carry an exhaustive label.
-    # Extending the extractor would add 1,811 arms and find nothing today. So
-    # this is a REGISTERED LIMIT rather than a gap, and the two figures are
-    # RE-MEASURED AND PRINTED on every real run -- if that zero ever moves, the
-    # header says so instead of this comment quietly going stale.
-    ("assert.ok(rows, 'every row is present');", None,
-     'A BARE TRUTHINESS IN JS YIELDS NO ARM. Locked as the tool BEHAVES rather '
-     'than as one might wish, so the day the extractor changes this fixture is '
-     'what moves'),
+    # The first fixture below was locked as None "so the day the extractor
+    # changes this fixture is what moves". It moved: None -> FINDING_BARE. Not
+    # a discipline-1 correction of either kind -- the expectation recorded the
+    # old behaviour on purpose, and the behaviour changed.
+    ("assert.ok(rows, 'every row is present');", FINDING_BARE,
+     'A BARE TRUTHINESS UNDER A UNIVERSAL LABEL IS THE DEFECT in JS as in '
+     'Python: ONE row satisfies it'),
+    ("assert.ok(rows, 'at least one row is present');", CLEAN_NO_EXHAUSTIVE,
+     'THE SILENT HALF: the same bare truthiness under an HONEST label is the '
+     'correct shape, or the rule is "has no operator"'),
+    ("assert.ok(other, 'fixture invalid: every rf_ Tier A row to borrow');",
+     CLEAN_FAILURE_DESC,
+     'a FAILURE DESCRIPTION is not a claim, in JS exactly as in Python -- the '
+     'shared no-operator branch, reached from the JS extractor'),
+    ("check(rows, 'every row is present');", None,
+     'the LOCAL helpers stay NOT JUDGED, as Python check(label, x) does: their '
+     'signatures vary per file, so the call site cannot say the callee tests '
+     'truthiness. Only assert.ok has slots fixed by its API'),
+    ("assert.ok(!/currency/.test(code), 'every amount here is USD');", None,
+     'A PREDICATE IS NOT A BARE VALUE. Its truthiness is a test on one subject, '
+     'not a population being present, and node messages on it narrate the '
+     'failure -- 28 of 28 such rows on the first real run were false'),
     ("assert.ok(rows.length >= 12, 'every section yields requirements');",
      FINDING, 'the named shape, in JS: a universal label behind a floor'),
     ("assert.ok(rows.length === 12, 'every section yields requirements');",
@@ -1292,7 +1430,7 @@ def scan(paths, js_paths=()):
         for line, label, ops, kind in got:
             verdict = js_classify(label, ops)
             if verdict in (FINDING, FINDING_BARE):
-                t, why = tier(label)
+                t, why = js_tier(label, verdict)
                 (confirmed if t == CONFIRMED else advisory).append(
                     (rel, line, kind, label, why, verdict))
             elif verdict == CLEAN_NO_COMPARE:
@@ -1347,9 +1485,10 @@ def main(argv):
     verbose = a.fixtures and not a.quiet
     bad = (run_fixtures(verbose=verbose) + run_tier_fixtures(verbose=verbose)
            + run_js_fixtures(verbose=verbose)
+           + run_js_tier_fixtures(verbose=verbose)
            + run_bare_count_fixtures(verbose=verbose))
     total_fx = (len(FIXTURES) + len(TIER_FIXTURES) + len(JS_FIXTURES)
-                + len(BARE_COUNT_FIXTURES))
+                + len(JS_TIER_FIXTURES) + len(BARE_COUNT_FIXTURES))
     if bad:
         if not a.quiet:
             print('\nCRITERIA LOCK FAILED -- %d of %d fixtures misclassified.'
@@ -1432,15 +1571,21 @@ def main(argv):
         # operator-bearing argument, so those yield no arm at all. That is a
         # LIMIT and not a gap only for as long as the second number stays zero,
         # so both are derived from the same bytes this run read.
+        # assert.ok ON A PLAIN VALUE IS JUDGED since 2026-10-28 and is not in
+        # these figures; what is left is named in the line itself.
         print('  ONE REGISTERED LIMIT, re-measured every run: %d JavaScript '
-              'bare-truthiness\n  assert call(s) yield no arm (the Python path '
-              'judges that shape), OF WHICH %d\n  carry an exhaustive label. %s'
+              'bare-truthiness\n  call(s) yield no arm -- assert.ok on a plain '
+              'value IS judged; a local ok()/\n  check()/eq() helper, an '
+              'assert.ok PREDICATE, and a value-comparison assert.X\n  whose '
+              'literal is its expected value are not -- OF WHICH %d\n  carry an '
+              'exhaustive label. %s'
               % (js_bare, js_bare_exhaustive,
                  'While that is 0 the limit costs nothing; the day it moves, '
                  'this line\n  says so instead of a comment going quietly '
                  'stale.' if js_bare_exhaustive == 0 else
-                 'THAT IS NO LONGER ZERO -- the limit now hides real arms and '
-                 'the JS\n  extractor needs the bare-truthiness shape.'))
+                 'THAT IS NOT ZERO -- those rows are unjudged, not clean; '
+                 'tests/run_assertion_label_shape_probe.py\n  E5b pins the '
+                 'figure so it cannot grow unseen.'))
         for n in notes:
             print('  excluded: %s' % n)
         # TWO NUMBERS, NEVER SUMMED. Printed BEFORE the findings so a reader

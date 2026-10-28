@@ -278,12 +278,29 @@ for _p in (_bad_js, _good_js, _cmt_js):
 section('F. the limit count, the coverage figure and NOT JUDGED are measured')
 # M4: strip_comments(src, rel) put `rel` in `strings=`, blanking the label the
 # exhaustive test reads, so "OF WHICH N carry an exhaustive label" was always 0.
-_bare_js = tmpfile("assert.ok(rows, 'every row is present');\n", suffix='.js')
+# SOURCE CHANGED 2026-10-28 from `assert.ok(` to the local `ok(` helper:
+# assert.ok on a plain value is JUDGED now and correctly leaves the limit, so
+# the still-unjudged shape carries this arm. F1b holds the judged half.
+_bare_js = tmpfile("ok(rows, 'every row is present');\n", suffix='.js')
 _rcF, _outF = run('--paths', _bare_js)
 check('F1. a JS bare truthiness under an EXHAUSTIVE label is counted in the '
       'registered-limit figure -- "OF WHICH 1", not a structural 0',
-      re.search(r'bare-truthiness\s+assert call\(s\).*?OF WHICH 1\b', _outF, re.S)
+      re.search(r'bare-truthiness\s+call\(s\).*?OF WHICH 1\b', _outF, re.S)
       is not None, _outF[:1400])
+_bare_ok_js = tmpfile("assert.ok(rows, 'every row is present');\n",
+                      suffix='.js')
+_rcF1b, _outF1b = run('--paths', _bare_ok_js)
+# EXPECTATION CHANGED 2026-10-28 (same day): exit 1 -> exit 0 with an ADVISORY
+# row. The rule measured 0 true of 4 CONFIRMED on the real tree and is capped
+# at ADVISORY until a true positive is measured (JS_BARE_CAP_WHY in the tool).
+check('F1b. ...and assert.ok(value, LABEL) IS JUDGED end to end: the real CLI '
+      'prints it as a capped ADVISORY BARE TRUTHINESS row naming the file, '
+      'exits 0 because the cap keeps it out of CONFIRMED, and its limit figure '
+      'is 0, so it sits in exactly one bucket',
+      _rcF1b == 0 and os.path.basename(_bare_ok_js) in _outF1b
+      and 'ADVISORY (1)' in _outF1b and 'BARE TRUTHINESS' in _outF1b
+      and re.search(r'OF WHICH 0\b', _outF1b) is not None,
+      (_rcF1b, _outF1b[-600:]))
 _real_bu = A.js_bare_unjudged
 def _boom(_s):
     raise RuntimeError('planted')
@@ -319,7 +336,7 @@ _rcF, _outF = run('--paths', _nj_js)
 check('F5. the JS callee-compares form `assert.strictEqual(a, b, LABEL)` counts '
       'as 1 NOT JUDGED', re.search(r'0 arm\(s\) judged, 1 NOT JUDGED', _outF)
       is not None, re.findall(r'read [^\n]*', _outF))
-for _p in (_bare_js, _ok_py, _bad_py, _nj, _nj_js):
+for _p in (_bare_js, _bare_ok_js, _ok_py, _bad_py, _nj, _nj_js):
     try:
         os.unlink(_p)
     except OSError:
@@ -402,14 +419,25 @@ check('E5. THE ONE REGISTERED LIMIT IS PRINTED WITH BOTH ITS FIGURES, and the '
 _ex = re.search(r'OF WHICH (\d+)', out)
 # E5b SAID "== 0" AND WAS GREEN ONLY BECAUSE OF M4 (cody b58). The count was
 # structurally 0 -- `strip_comments(src, rel)` blanked every string body -- so
-# the limit looked free. Fixed, it measures 35: JS bare-truthiness asserts that
-# DO carry an exhaustive label and are not judged. Extending the JS extractor
-# to judge that shape is open work (cody b58 handoff), not done here; until it
-# is, the measured cost is the ceiling, so the limit cannot GROW unseen.
-E5B_CEILING = 35
-check('E5b. ...and the measured cost of the limit has not grown past %d (b58). If '
-      'this goes red, more exhaustive labels sit on a shape the JS extractor '
-      'cannot judge -- extend it rather than raise this number' % E5B_CEILING,
+# the limit looked free. Fixed, it measured 35, pinned here as the ceiling.
+#
+# 2026-10-28: the JS extractor now JUDGES assert.ok(<plain value>, LABEL), the
+# mirror of Python's `assert x, 'label'`, and that shape left the count: 35 ->
+# 27. NOT 0 -- what remains is unjudged ON PURPOSE, measured by callee:
+#   15  assert.strictEqual / notStrictEqual(x, 'none') -- the literal is the
+#       EXPECTED VALUE, not a label; JS_BARE_CALL's `assert.<name>` alternative
+#       over-counts them. Callee-compares form, which Python does not judge.
+#    6  local ok(...) helpers -- per-file signatures, so the call site cannot
+#       say the callee tests truthiness; Python's check(label, x) is likewise
+#       NOT JUDGED.
+#    6  assert.ok PREDICATES (`!r.rejected`, `a && a.opts`) -- a predicate is
+#       not a population being present; judging that shape gave 28 of 28 false
+#       positives on the first real run, so it is left out by design.
+E5B_CEILING = 27
+check('E5b. ...and the measured cost of the limit has not grown past %d '
+      '(2026-10-28; 35 in b58). If this goes red, more exhaustive labels sit on '
+      'a shape the JS extractor does not judge -- read them rather than raise '
+      'this number' % E5B_CEILING,
       _ex is not None and int(_ex.group(1)) <= E5B_CEILING,
       _ex.group(0) if _ex else 'no registered-limit line at all')
 
