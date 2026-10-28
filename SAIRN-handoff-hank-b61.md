@@ -74,6 +74,11 @@ This handoff was written before the report. Nothing is half-finished.
   - records the standing pattern: all 4 build agents push via `push_retry.py --loop`.
 - **Finding for the identity owner (G1):** `79c4f10cf` landed on origin today authored `fx <fx@example.invalid>`. A probe
   identity is still committing in some clone. This clone is clean, and that commit is not hank's.
+- **BLOCKED ON cc: `python tools/push_retry.py --loop` must be added to the shared builder allow-list by cc, who owns
+  it, before any agent can use it.**
+  - The auto-mode classifier denied hank's run of it, without a reason. The likely cause is the `--no-verify` path.
+  - hank did NOT add it to the list.
+  - Until it is added, pushes stay on plain `git push` (full gate, racy).
 - **Residual, not fixed:** a skipped push does not re-run the whole-tree checks against the new base. The fold step does
   regenerate the derived docs after each rebase. Condition 3 bounds the risk but does not remove it. The real fix is
   gate duration or a merge queue (C1).
