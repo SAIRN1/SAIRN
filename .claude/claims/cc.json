@@ -4839,6 +4839,21 @@
         "sairnsenior.html",
         "tests/sairnsenior_caregiver_scope_purge.js"
       ]
+    },
+    {
+      "id": "cc-1793229162",
+      "session": "cc",
+      "subject": "platform",
+      "task": "b67 deny hook auditor tracked paths, watchdog tool FILES: tools/builder_auditor_deny_hook.py tools/builder_hook_presence.py tools/sairn_watchdog.py",
+      "claimed_at": "2026-10-28T23:12:42Z",
+      "claimed_at_epoch": 1793229162.4436626,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "tools/builder_auditor_deny_hook.py",
+        "tools/builder_hook_presence.py",
+        "tools/sairn_watchdog.py"
+      ]
     }
   ],
   "refusals": [
