@@ -126,6 +126,13 @@ module.exports = async (req, res) => {
   }
 
   const licHash = lic.license_hash;
+  // ── TRIAL EXEMPTION IS DECIDED HERE, NEVER IN THE BROWSER (hank b60, Michael's S2) ──
+  // sairncode.html's checkTrialGate() hides the app 30 days after first sign-in.
+  // Demo/internal licences (plan 'demo': SC-PINNACLE-2026, SC-AUDIT-2026 and their
+  // sairn-demo-owner / audit admin accounts) are exempt. Every other plan, and a
+  // missing one, hits the gate. The client only skips the gate on an explicit
+  // trial_exempt === true from this response, so an absent field fails closed.
+  const trialExempt = lic.plan_tier === 'demo';
   const headers = { apikey: SERVICE_KEY, Authorization: 'Bearer ' + SERVICE_KEY, 'Content-Type': 'application/json' };
   const rest = (path) => SUPABASE_URL + '/rest/v1/' + path;
   const enc = encodeURIComponent;
@@ -165,7 +172,7 @@ module.exports = async (req, res) => {
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       const token = signSessionToken({ employee_id, role: 'admin', license_hash: licHash, app: APP });
-      res.status(200).json({ ok: true, token, role: 'admin', employee_id });
+      res.status(200).json({ ok: true, token, role: 'admin', employee_id, trial_exempt: trialExempt });
       return;
     }
 
@@ -232,7 +239,7 @@ module.exports = async (req, res) => {
         } catch (e) { /* non-fatal */ }
       }
       const token = signSessionToken({ employee_id: row.employee_id, role: row.role, license_hash: licHash, app: APP });
-      res.status(200).json({ ok: true, token, role: row.role, employee_id: row.employee_id });
+      res.status(200).json({ ok: true, token, role: row.role, employee_id: row.employee_id, trial_exempt: trialExempt });
       return;
     }
 

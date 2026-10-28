@@ -3478,7 +3478,12 @@ function scLicenceGuard(k) {
         // login (never a fabricated countdown). Checked on every successful
         // login, before the app is revealed. Same proven pattern as
         // stonedesk.html's checkTrialGate().
-        function checkTrialGate() {
+        // hank b60 (S2): demo/internal licences are exempt, decided by the SERVER
+        // (api/sc-auth.js trial_exempt, true only for plan 'demo'). Anything but an
+        // explicit true -- a customer licence, an older server, a missing field --
+        // runs the real gate below.
+        function checkTrialGate(trialExempt) {
+            if (trialExempt === true) return true;
             var TRIAL_KEY = 'sc_trial_start';
             var TRIAL_DAYS = 30;
             var startMs = parseInt(localStorage.getItem(TRIAL_KEY), 10);
@@ -3552,7 +3557,7 @@ function scLicenceGuard(k) {
                 err.textContent = (result.error && result.error.message) || 'Sign-in failed';
                 return;
             }
-            await scOnAuthenticated(result.token, result.role, result.employee_id);
+            await scOnAuthenticated(result.token, result.role, result.employee_id, result.trial_exempt === true);
         }
 
         async function scBootstrap() {
@@ -3570,15 +3575,15 @@ function scLicenceGuard(k) {
                 err.textContent = (result.error && result.error.message) || 'Setup failed';
                 return;
             }
-            await scOnAuthenticated(result.token, result.role, result.employee_id);
+            await scOnAuthenticated(result.token, result.role, result.employee_id, result.trial_exempt === true);
         }
 
-        async function scOnAuthenticated(token, role, employee_id) {
+        async function scOnAuthenticated(token, role, employee_id, trialExempt) {
             currentRole = role;
             localStorage.setItem('sc_session_token', token);
             localStorage.setItem('sc_role', role);
             localStorage.setItem('sc_employee_id', employee_id);
-            if (!checkTrialGate()) return;
+            if (!checkTrialGate(trialExempt)) return;
             document.getElementById('pin').classList.remove('on');
             document.getElementById('app').classList.add('on');
             document.getElementById('huser').textContent = employee_id + ' (' + role + ')';
