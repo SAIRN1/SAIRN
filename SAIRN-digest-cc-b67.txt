@@ -1,0 +1,19 @@
+DIGEST cc b67
+STATUS: all six items closed; landed 1455a09e, c2b3a90b, 78fb2cae, 972fc7e8, fd275b3c (+ chores, this handoff). No override/skip/--force.
+ITEM 1-2: deny hook now refuses builder WRITES to the auditor clones' tracked tools (live hover-scope-manifest over a 5-file floor, minus shared ledgers);
+  read/run allowed. 94 arms, layers ablated. Baseline replay 5,874 real calls: +13 refusals, 11 real writes, 2 FPs -> narrowed; final 83 calls -> 8, all writes.
+  LIVE cc: Edit, git checkout, python os.replace on tools/hover_separation_ci.py REFUSED, tree clean. cc/hank/fourth refreshed; cody HELD (live hover_separation claim).
+ITEM 3: #1756 sairnsenior.html purges out-of-scope caregiver rows + withheld HR fields on merge; 13/13, ablation -5; served page == repo, test passes on it.
+ITEM 4: cody b57 Tier A (mechBackup, 8259a6dd) discharged SOUND-WITH-GAPS (low); 4 test gaps routed. Not the d6b37bb1 item (still cody's).
+ITEM 5: tools/sairn_watchdog.py -- OVERLAP / STALE-CLAIM / NEXT-DRIFT (heuristic labelled) -> watchdog-findings.json; 14 arms; built, not operated.
+DECISION-NEEDED: Michael -- cody's live b59 claim covers hover_separation work that is now auditor-tracked: hover's, or a ruling?
+UNVERIFIED: #1756 on an authenticated caregiver device (stored audit credentials not readable this session).
+CHANGED: sairnsenior.html, tests/sairnsenior_caregiver_scope_purge.js, tools/builder_auditor_deny_hook.py, tools/builder_hook_presence.py,
+  tools/sairn_watchdog.py, tools/tooling_inventory.py, docs/{tier-a-reviews.json,defect-density-register.json,sairn-path-manifest.json,derived docs}.
+SQL: none.
+EVIDENCE-path: SAIRN-handoff-cc-b67.md, SAIRN-report-cc-b67.txt, ~/SAIRN-SESSION-LOCKS/deny-blocks.log
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\52164776-0b08-422d-94e1-7a56daf3eaaa.jsonl
+OPEN: refresh cody hook copy after its claim releases; cody -- mechBackup test gaps + b58-broken redaction probe; H1 -- O_BINARY.
+NEXT: Michael answers the hover_separation question; then `python tools/builder_hook_presence.py --install` for cody.
+CONTEXT 53.4% of 1,000,000 -- 534,444 tokens, measured.
+END-OF-REPORT

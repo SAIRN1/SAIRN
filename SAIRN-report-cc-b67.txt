@@ -1,0 +1,39 @@
+SAIRN report -- cc b67 -- 2026-10-28
+
+Landed: 1455a09e, c2b3a90b, 78fb2cae, 972fc7e8 and fd275b3c, plus
+bookkeeping commits and this handoff. No override, no skip, no --force.
+
+1+2 WRITE-ONLY AUDITOR SCOPE
+  - The hook now refuses builder WRITES to the auditor clones' tracked tools.
+    The list is the live hover-scope-manifest over a floor of 5 files, minus
+    shared ledgers. Reading and running them stay allowed.
+  - 94 arms, every layer ablated.
+  - Baseline replay of 5,874 real calls: 13 new refusals, 11 of them real
+    writes. The 2 false positives (data-only heredocs) drove the narrowing.
+    On the final code: 83 matching calls, 8 refusals, all real writes.
+  - LIVE on cc: an Edit, a git checkout and a python os.replace on
+    tools/hover_separation_ci.py were all REFUSED; running it was allowed;
+    the tree was unchanged.
+  - Rolled out to cc, hank and fourth with the settings files byte-identical.
+    cody is HELD at b66 while its live b59 claim covers hover_separation.
+
+3 #1756
+  - sairnsenior.html purges caregiver rows outside the server's declared
+    scope, and the withheld HR fields, on merge.
+  - 13/13 arms; ablation fails 5; the existing suites are green.
+  - The b17 lift guard caught my comment apostrophe, which I fixed.
+  - LIVE: the served page equals the repo copy and passes the test.
+  - An authenticated device run is UNVERIFIED: the credentials were not
+    readable.
+
+4 CODY b57: the Tier A mechBackup record (8259a6dd) is discharged
+  SOUND-WITH-GAPS (low). Four test gaps are routed to cody. Note: this is not
+  the d6b37bb1 item in cc's own b57 handoff, which stays with cody.
+
+5 WATCHDOG: tools/sairn_watchdog.py flags OVERLAP, STALE-CLAIM and NEXT-DRIFT
+  (the heuristic half is labelled) and writes watchdog-findings.json. 14
+  arms. Not operated.
+
+OPEN: refresh cody's hook copy after its claim releases; Michael or cody to
+decide where the hover_separation work goes; cody to close the mechBackup
+test gaps; a live device run of #1756.
