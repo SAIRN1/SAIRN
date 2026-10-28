@@ -4779,8 +4779,8 @@
       "task": "b60 cartAdd qty rerender, sairn-fu-label shoff-label dark contrast",
       "claimed_at": "2026-10-28T11:03:31Z",
       "claimed_at_epoch": 1793185411.8233356,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-28T11:36:35Z",
       "files": null
     },
     {
