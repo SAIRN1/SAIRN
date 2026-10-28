@@ -4784,8 +4784,8 @@
       "task": "live blocks audit credentials sen_settings rf_settings alf_facility",
       "claimed_at": "2026-10-28T17:32:44Z",
       "claimed_at_epoch": 1793208764.3666048,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-28T17:51:19Z",
       "files": null
     }
   ],
