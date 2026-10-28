@@ -93,7 +93,20 @@ PLATFORM_RESOURCES = {
 # write set without a word -- 33 -> 32 in write_readback_shape_probe arm2,
 # which read like the app had shrunk. A write this cannot see is a write whose
 # read-back is never checked: the not-run class, inside the resolver.
-WRITE_RE = re.compile(r"\w*Data\(\s*'write(?:_batch)?'\s*,\s*'(\w+)'")
+#
+# AND EVERY OTHER CLIENT VERB THAT MUTATES (cody b59). Swept over every
+# `\w*Data('<verb>', ...)` and `action:'<verb>', resource:` in *.html, each
+# verb checked against its api/sd-data.js branch for a POST/PATCH/DELETE:
+#   mutate  write 317, write_batch 1, soft_delete 27, delete 4,
+#           approve_clock_correction 1 (sen_visits)
+#   compute read, readiness, eligibility, optimize, payroll, family_mar,
+#           therapy_accumulator, evaluate, route, derive_charges,
+#           assess_damage, reconcile -- no write inside their branches
+#   other   `request` on alf_mar goes to api/sairncare-witness.js, not here.
+# Widening changed no finding on 2026-10-28 (every soft-deleted, deleted or
+# approved resource is also `write`n); it closes the day one is not.
+MUTATING_VERBS = ('write', 'write_batch', 'soft_delete', 'delete', 'approve_clock_correction')
+WRITE_RE = re.compile(r"\w*Data\(\s*'(?:%s)'\s*,\s*'(\w+)'" % '|'.join(MUTATING_VERBS))
 # A GENERIC WRITE IS AS INVISIBLE AS A GENERIC READ, and that blind spot is
 # what produced both COULD NOT TELL results on 2026-09-05. Resolved 2026-09-05
 # after reading both loops by hand -- see resolve_generic_writes().
@@ -117,7 +130,7 @@ WRAPPER_RE = re.compile(r"function\s+(\w*Data)\s*\(")
 # reproduced the tool's blind spot instead of testing it. A check that shares
 # the checker's assumption verifies nothing.
 READ_OBJ_RE = re.compile(r"action:\s*'read'\s*,\s*resource:\s*'(\w+)'")
-WRITE_OBJ_RE = re.compile(r"action:\s*'write'\s*,\s*resource:\s*'(\w+)'")
+WRITE_OBJ_RE = re.compile(r"action:\s*'(?:%s)'\s*,\s*resource:\s*'(\w+)'" % '|'.join(MUTATING_VERBS))
 
 
 def strip_comments(src):
@@ -623,6 +636,24 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # then moves without anybody deciding.
 FIXTURES = [
     # (name, rule it pins, source, assertion on audit()'s record)
+    # b59: one arm per mutating verb beyond write, and one compute verb that
+    # must NOT count -- the verb list is a criterion, so it is locked here.
+    ('soft_delete only, never read', 'WRITE_RE', """
+      function appData(action, resource, rec) { return post(action, resource, rec); }
+      function drop(r) { appData('soft_delete', 'x_notes', r); }
+    """, lambda a: a is not None and a['missing'] == ['x_notes']),
+    ('delete only, never read', 'WRITE_RE', """
+      function appData(action, resource, rec) { return post(action, resource, rec); }
+      function drop(r) { appData('delete', 'x_rules', r); }
+    """, lambda a: a is not None and a['missing'] == ['x_rules']),
+    ('approve_clock_correction only, never read', 'WRITE_RE', """
+      function appData(action, resource, rec) { return post(action, resource, rec); }
+      function ok(r) { appData('approve_clock_correction', 'x_visits', r); }
+    """, lambda a: a is not None and a['missing'] == ['x_visits']),
+    ('object-literal compute verb (evaluate) is NOT a write', 'WRITE_OBJ_RE', """
+      function appPostRaw(body) { return fetch('/api/x', {body: body}); }
+      function check(r) { appPostRaw({ action: 'evaluate', resource: 'x_certs', rec: r }); }
+    """, lambda a: a is None or a['missing'] == []),
     ('positional literal write, never read', 'WRITE_RE', """
       function appData(action, resource, rec) { return post(action, resource, rec); }
       function saveJob(r) { appData('write', 'x_jobs', r); }
