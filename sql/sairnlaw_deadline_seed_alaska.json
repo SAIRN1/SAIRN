@@ -1,0 +1,370 @@
+{
+  "_readme": [
+    "SAIRNlaw deadline engine seed -- Alaska (Alaska Rules of Civil Procedure; Appellate Rule 204).",
+    "Gate: docs/sairnlaw-alaska-deadline-seed-gate.md (hank b63, 2026-10-28). Every value was read verbatim from",
+    "courts.alaska.gov civ.pdf / app.pdf on 2026-10-28 and is quoted in its row. Nothing was carried from",
+    "another state. Every reading not compelled by the text resolves EARLY; see the gate, sections 3-5."
+  ],
+  "rules": [
+    {
+      "rule_id": "ak-civ-r-12a-answer-to-complaint",
+      "jurisdiction": "ak",
+      "domain": "civil-litigation",
+      "label": "Answer to a complaint (Alaska)",
+      "trigger_event": "service_of_summons_and_complaint",
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "ak_civ_r_6a",
+      "authority": {
+        "citation": "Alaska R. Civ. P. 12(a)",
+        "url": "https://courts.alaska.gov/rules/docs/civ.pdf",
+        "quote": "A defendant shall serve an answer within 20 days after the service of the summons and complaint upon that defendant, unless otherwise directed when service of process is made pursuant to Rule 4(e).",
+        "note": "NO service_extension, by the rule's own words: 6(c) excludes \"documents served under Civil Rule 4(h)\", and 4(h) is Service of Process by Mail; personal service is not mail at all. \"unless otherwise directed when service of process is made pursuant to Rule 4(e)\" (publication/posting) is an order the engine cannot see. effective_from is 2022-11-29, the last amendment to Civil Rule 6 in its own history line (SCO 1995), which is the computation text read; this rule's own amendment history was NOT traced. A matter triggered before that date should have the then-current text confirmed by hand.",
+        "retrieved_at": "2026-10-28"
+      },
+      "effective_from": "2022-11-29",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "ak-civ-r-12a-answer-to-crossclaim",
+      "jurisdiction": "ak",
+      "domain": "civil-litigation",
+      "label": "Answer to a cross-claim (Alaska)",
+      "trigger_event": "service_of_pleading_stating_crossclaim",
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "ak_civ_r_6a",
+      "authority": {
+        "citation": "Alaska R. Civ. P. 12(a)",
+        "url": "https://courts.alaska.gov/rules/docs/civ.pdf",
+        "quote": "A party served with a pleading stating a cross-claim against that party shall serve an answer thereto within 20 days after the service upon that party.",
+        "note": "Served between parties, so the 6(c) mail extension reaches it. effective_from is 2022-11-29, the last amendment to Civil Rule 6 in its own history line (SCO 1995), which is the computation text read; this rule's own amendment history was NOT traced. A matter triggered before that date should have the then-current text confirmed by hand.",
+        "retrieved_at": "2026-10-28"
+      },
+      "effective_from": "2022-11-29",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null,
+      "service_extension": {
+        "standard": "ak_civ_r_6c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "note": "Alaska R. Civ. P. 6(c): \"the document is served or distributed by non-electronic mail, three calendar days shall be added to the prescribed period.\" NON-ELECTRONIC MAIL ONLY -- e-mail and e-filing earn nothing. \"Added to the prescribed period\": the days lengthen the period and one rollover runs at the end. \"no additional time shall be added if a court order specifies a particular calendar date\" -- an order the engine cannot see."
+      }
+    },
+    {
+      "rule_id": "ak-civ-r-12a-reply-to-counterclaim",
+      "jurisdiction": "ak",
+      "domain": "civil-litigation",
+      "label": "Reply to a counterclaim (Alaska)",
+      "trigger_event": "service_of_answer_containing_counterclaim",
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "ak_civ_r_6a",
+      "authority": {
+        "citation": "Alaska R. Civ. P. 12(a)",
+        "url": "https://courts.alaska.gov/rules/docs/civ.pdf",
+        "quote": "The plaintiff shall serve a reply to a counterclaim in the answer within 20 days after service of the answer",
+        "note": "The court-ordered-reply limb (\"within 20 days after service of the order, unless the order otherwise directs\") is not seeded. effective_from is 2022-11-29, the last amendment to Civil Rule 6 in its own history line (SCO 1995), which is the computation text read; this rule's own amendment history was NOT traced. A matter triggered before that date should have the then-current text confirmed by hand.",
+        "retrieved_at": "2026-10-28"
+      },
+      "effective_from": "2022-11-29",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null,
+      "service_extension": {
+        "standard": "ak_civ_r_6c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "note": "Alaska R. Civ. P. 6(c): \"the document is served or distributed by non-electronic mail, three calendar days shall be added to the prescribed period.\" NON-ELECTRONIC MAIL ONLY -- e-mail and e-filing earn nothing. \"Added to the prescribed period\": the days lengthen the period and one rollover runs at the end. \"no additional time shall be added if a court order specifies a particular calendar date\" -- an order the engine cannot see."
+      }
+    },
+    {
+      "rule_id": "ak-civ-r-12a-state-answer",
+      "jurisdiction": "ak",
+      "domain": "civil-litigation",
+      "label": "Answer by the State, an officer or an agency (Alaska)",
+      "trigger_event": "service_of_summons_and_complaint_on_attorney_general",
+      "count": {
+        "value": 40,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "ak_civ_r_6a",
+      "authority": {
+        "citation": "Alaska R. Civ. P. 12(a)",
+        "url": "https://courts.alaska.gov/rules/docs/civ.pdf",
+        "quote": "The state or an officer or agency thereof shall serve an answer to the complaint or to a cross-claim, or a reply to a counterclaim, within 40 days after the service upon the attorney general of the pleading in which the claim is asserted.",
+        "note": "NO service_extension: service upon the attorney general of the complaint is service of process, the same reasoning as the 12(a) answer row. A cross-claim or counterclaim against the State served by mail between parties might earn 6(c); that limb is not seeded, so omitting the days can only be EARLY. effective_from is 2022-11-29, the last amendment to Civil Rule 6 in its own history line (SCO 1995), which is the computation text read; this rule's own amendment history was NOT traced. A matter triggered before that date should have the then-current text confirmed by hand.",
+        "retrieved_at": "2026-10-28"
+      },
+      "effective_from": "2022-11-29",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "ak-civ-r-33a3-interrogatory-answers",
+      "jurisdiction": "ak",
+      "domain": "civil-litigation",
+      "label": "Answers and objections to interrogatories (Alaska)",
+      "trigger_event": "service_of_interrogatories",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "ak_civ_r_6a",
+      "authority": {
+        "citation": "Alaska R. Civ. P. 33(a)(3)",
+        "url": "https://courts.alaska.gov/rules/docs/civ.pdf",
+        "quote": "The party upon whom the interrogatories have been served shall serve a copy of the answers, and objections if any, within 30 days after the service of the interrogatories.",
+        "note": "\"A shorter or longer time may be directed by the court or ... agreed to in writing by the parties subject to Rule 29\" -- neither is visible to the engine. effective_from is 2022-11-29, the last amendment to Civil Rule 6 in its own history line (SCO 1995), which is the computation text read; this rule's own amendment history was NOT traced. A matter triggered before that date should have the then-current text confirmed by hand.",
+        "retrieved_at": "2026-10-28"
+      },
+      "effective_from": "2022-11-29",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null,
+      "service_extension": {
+        "standard": "ak_civ_r_6c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "note": "Alaska R. Civ. P. 6(c): \"the document is served or distributed by non-electronic mail, three calendar days shall be added to the prescribed period.\" NON-ELECTRONIC MAIL ONLY -- e-mail and e-filing earn nothing. \"Added to the prescribed period\": the days lengthen the period and one rollover runs at the end. \"no additional time shall be added if a court order specifies a particular calendar date\" -- an order the engine cannot see."
+      }
+    },
+    {
+      "rule_id": "ak-civ-r-34b-production-response",
+      "jurisdiction": "ak",
+      "domain": "civil-litigation",
+      "label": "Written response to a request for production (Alaska)",
+      "trigger_event": "service_of_request_for_production",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "ak_civ_r_6a",
+      "authority": {
+        "citation": "Alaska R. Civ. P. 34(b)",
+        "url": "https://courts.alaska.gov/rules/docs/civ.pdf",
+        "quote": "The party upon whom the request is served shall serve a written response within 30 days after the service of the request.",
+        "note": "Court-directed or agreed times are not visible to the engine. effective_from is 2022-11-29, the last amendment to Civil Rule 6 in its own history line (SCO 1995), which is the computation text read; this rule's own amendment history was NOT traced. A matter triggered before that date should have the then-current text confirmed by hand.",
+        "retrieved_at": "2026-10-28"
+      },
+      "effective_from": "2022-11-29",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null,
+      "service_extension": {
+        "standard": "ak_civ_r_6c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "note": "Alaska R. Civ. P. 6(c): \"the document is served or distributed by non-electronic mail, three calendar days shall be added to the prescribed period.\" NON-ELECTRONIC MAIL ONLY -- e-mail and e-filing earn nothing. \"Added to the prescribed period\": the days lengthen the period and one rollover runs at the end. \"no additional time shall be added if a court order specifies a particular calendar date\" -- an order the engine cannot see."
+      }
+    },
+    {
+      "rule_id": "ak-civ-r-36a-admission-response",
+      "jurisdiction": "ak",
+      "domain": "civil-litigation",
+      "label": "Response to a request for admission (Alaska)",
+      "trigger_event": "service_of_request_for_admission",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "ak_civ_r_6a",
+      "authority": {
+        "citation": "Alaska R. Civ. P. 36(a)",
+        "url": "https://courts.alaska.gov/rules/docs/civ.pdf",
+        "quote": "The matter is admitted unless, within 30 days after service of the request, or within such shorter or longer time as the court may allow or as the parties may agree to in writing, subject to Rule 29, the party to whom the request is directed serves upon the party requesting the admission a written answer or objection",
+        "note": "A missed date ADMITS the matter -- the row least tolerant of a late answer, which is why the extension is mail-only and nothing wider. effective_from is 2022-11-29, the last amendment to Civil Rule 6 in its own history line (SCO 1995), which is the computation text read; this rule's own amendment history was NOT traced. A matter triggered before that date should have the then-current text confirmed by hand.",
+        "retrieved_at": "2026-10-28"
+      },
+      "effective_from": "2022-11-29",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null,
+      "service_extension": {
+        "standard": "ak_civ_r_6c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "note": "Alaska R. Civ. P. 6(c): \"the document is served or distributed by non-electronic mail, three calendar days shall be added to the prescribed period.\" NON-ELECTRONIC MAIL ONLY -- e-mail and e-filing earn nothing. \"Added to the prescribed period\": the days lengthen the period and one rollover runs at the end. \"no additional time shall be added if a court order specifies a particular calendar date\" -- an order the engine cannot see."
+      }
+    },
+    {
+      "rule_id": "ak-civ-r-77c2-opposition-to-motion",
+      "jurisdiction": "ak",
+      "domain": "civil-litigation",
+      "label": "Opposition to a motion (Alaska)",
+      "trigger_event": "service_of_motion",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "ak_civ_r_6a",
+      "authority": {
+        "citation": "Alaska R. Civ. P. 77(c)(2)",
+        "url": "https://courts.alaska.gov/rules/docs/civ.pdf",
+        "quote": "The time for filing opposition to the motion or other application shall be 10 days from the date of service of the motion or application, except as follows:",
+        "note": "THE PLAIN LIMB ONLY. Not seeded, each EARLY-safe: (A) a motion served before the answer is due, where opposition is due at the LATER of 10 days or the answer date; (B) dispositive motions, see the 77(c)(2)(B) row; (C) motions under rules with their own response times. \"Unless otherwise ordered by the court or otherwise stipulated by the parties with court approval\" is not visible to the engine. effective_from is 2022-11-29, the last amendment to Civil Rule 6 in its own history line (SCO 1995), which is the computation text read; this rule's own amendment history was NOT traced. A matter triggered before that date should have the then-current text confirmed by hand.",
+        "retrieved_at": "2026-10-28"
+      },
+      "effective_from": "2022-11-29",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null,
+      "service_extension": {
+        "standard": "ak_civ_r_6c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "note": "Alaska R. Civ. P. 6(c): \"the document is served or distributed by non-electronic mail, three calendar days shall be added to the prescribed period.\" NON-ELECTRONIC MAIL ONLY -- e-mail and e-filing earn nothing. \"Added to the prescribed period\": the days lengthen the period and one rollover runs at the end. \"no additional time shall be added if a court order specifies a particular calendar date\" -- an order the engine cannot see."
+      }
+    },
+    {
+      "rule_id": "ak-civ-r-77c2b-opposition-to-dispositive-motion",
+      "jurisdiction": "ak",
+      "domain": "civil-litigation",
+      "label": "Opposition to a motion to dismiss, for summary judgment or for judgment on the pleadings (Alaska)",
+      "trigger_event": "service_of_dispositive_motion",
+      "count": {
+        "value": 15,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "ak_civ_r_6a",
+      "authority": {
+        "citation": "Alaska R. Civ. P. 77(c)(2)(B)",
+        "url": "https://courts.alaska.gov/rules/docs/civ.pdf",
+        "quote": "for motions to dismiss, motions for summary judgment and motions for judgment on the pleadings, the time for filing opposition shall be either 15 days from the date of service or, if the plaintiff is the movant, the date the defendant's answer is due under the rules, whichever is later",
+        "note": "THE 15-DAY LIMB. Where the plaintiff is the movant the deadline is the LATER of 15 days or the answer date; this row returns the 15-day date, which is earlier-or-equal, never later. effective_from is 2022-11-29, the last amendment to Civil Rule 6 in its own history line (SCO 1995), which is the computation text read; this rule's own amendment history was NOT traced. A matter triggered before that date should have the then-current text confirmed by hand.",
+        "retrieved_at": "2026-10-28"
+      },
+      "effective_from": "2022-11-29",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null,
+      "service_extension": {
+        "standard": "ak_civ_r_6c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "note": "Alaska R. Civ. P. 6(c): \"the document is served or distributed by non-electronic mail, three calendar days shall be added to the prescribed period.\" NON-ELECTRONIC MAIL ONLY -- e-mail and e-filing earn nothing. \"Added to the prescribed period\": the days lengthen the period and one rollover runs at the end. \"no additional time shall be added if a court order specifies a particular calendar date\" -- an order the engine cannot see."
+      }
+    },
+    {
+      "rule_id": "ak-civ-r-77d-reply",
+      "jurisdiction": "ak",
+      "domain": "civil-litigation",
+      "label": "Reply in support of a motion (Alaska)",
+      "trigger_event": "service_of_opposition_to_motion",
+      "count": {
+        "value": 5,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "ak_civ_r_6a",
+      "authority": {
+        "citation": "Alaska R. Civ. P. 77(d)",
+        "url": "https://courts.alaska.gov/rules/docs/civ.pdf",
+        "quote": "Reply and supplemental materials and memoranda, if any, may be served and filed by the moving party within five days of the date of the service of the opposition to the motion.",
+        "note": "FIVE DAYS IS UNDER SEVEN, so Rule 6(a) excludes intermediate Saturdays, Sundays and legal holidays -- tested on the base 5, \"not counting any period for mailing added under subsection (c)\". The 3 mail days are then added to the period and one rollover runs at the end. effective_from is 2022-11-29, the last amendment to Civil Rule 6 in its own history line (SCO 1995), which is the computation text read; this rule's own amendment history was NOT traced. A matter triggered before that date should have the then-current text confirmed by hand.",
+        "retrieved_at": "2026-10-28"
+      },
+      "effective_from": "2022-11-29",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null,
+      "service_extension": {
+        "standard": "ak_civ_r_6c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "note": "Alaska R. Civ. P. 6(c): \"the document is served or distributed by non-electronic mail, three calendar days shall be added to the prescribed period.\" NON-ELECTRONIC MAIL ONLY -- e-mail and e-filing earn nothing. \"Added to the prescribed period\": the days lengthen the period and one rollover runs at the end. \"no additional time shall be added if a court order specifies a particular calendar date\" -- an order the engine cannot see."
+      }
+    },
+    {
+      "rule_id": "ak-civ-r-59b-motion-for-new-trial",
+      "jurisdiction": "ak",
+      "domain": "civil-litigation",
+      "label": "Motion for a new trial (Alaska)",
+      "trigger_event": "clerk_certificate_of_distribution_of_judgment",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "ak_civ_r_6a",
+      "authority": {
+        "citation": "Alaska R. Civ. P. 59(b)",
+        "url": "https://courts.alaska.gov/rules/docs/civ.pdf",
+        "quote": "A motion for a new trial shall be served not later than 10 days after the date shown in the clerk's certificate of distribution on the judgment.",
+        "note": "NO service_extension, BY READING, AND IT IS THE EARLY ONE. 6(c) reaches \"distribution\" by non-electronic mail, so 3 days may well be added when the judgment was mailed -- but 6(b) forbids enlarging 59(b), and adding days the rule may not give is LATE on a deadline nothing can extend. The bundled lawyer's question carries it. Trigger is the DATE SHOWN in the clerk's certificate, not the date of entry. effective_from is 2022-11-29, the last amendment to Civil Rule 6 in its own history line (SCO 1995), which is the computation text read; this rule's own amendment history was NOT traced. A matter triggered before that date should have the then-current text confirmed by hand.",
+        "retrieved_at": "2026-10-28"
+      },
+      "effective_from": "2022-11-29",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "ak-app-r-204a1-notice-of-appeal",
+      "jurisdiction": "ak",
+      "domain": "appellate",
+      "label": "Notice of appeal to the Supreme Court (Alaska)",
+      "trigger_event": "clerk_certificate_of_distribution_of_judgment",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "ak_app_r_502a",
+      "authority": {
+        "citation": "Alaska R. App. P. 204(a)(1)",
+        "url": "https://courts.alaska.gov/rules/docs/app.pdf",
+        "quote": "The notice of appeal shall be filed within 30 days from the date shown in the clerk's certificate of distribution on the judgment appealed from, unless a shorter time for filing a notice of appeal applies as provided by Rules 216-219, or unless a different time applies as provided in AS 23.30.128(g).",
+        "note": "NO service_extension, BY READING (EARLY): App. R. 502(c) adds three days for a document \"distributed by mail\", which may reach a mailed judgment; an appeal filed late is lost, so the days are omitted and disclosed. Rules 216-219 shorter periods and the 204(a)(2) cross-appeal 14-day limb are not seeded. effective_from is 2022-11-29, the last amendment to Civil Rule 6 in its own history line (SCO 1995), which is the computation text read; this rule's own amendment history was NOT traced. A matter triggered before that date should have the then-current text confirmed by hand.",
+        "retrieved_at": "2026-10-28"
+      },
+      "effective_from": "2022-11-29",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    }
+  ]
+}

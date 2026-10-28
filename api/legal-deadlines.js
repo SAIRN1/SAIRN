@@ -85,7 +85,9 @@ const JURISDICTION_LABELS = {
   // api/_lib/deadline-jurisdiction-labels.test.js derives the jurisdiction set
   // from the seed files on disk, so landing sql/sairnlaw_deadline_seed_maine.json
   // without this line turns that suite RED rather than shipping a bare "me".
-  me: 'Maine'
+  me: 'Maine',
+  // With the Alaska seed (hank b63), for the same reason as Maine above.
+  ak: 'Alaska'
 };
 const DOMAIN_LABELS = {
   'civil-litigation': 'Civil litigation',

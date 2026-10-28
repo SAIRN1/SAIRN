@@ -1443,6 +1443,25 @@ var COMPUTATION_STANDARDS = {
     short_period_exclusion_days: 7,
     base_period_suffix: '', months_years_suffix: '',
     rollover_suffix_forward: '', rollover_suffix_backward: '' },
+  // ── ALASKA (hank b63): OHIO'S MECHANISM, AND THE UNDER-7 TEST IS SAID ──
+  // Alaska R. Civ. P. 6(a), verbatim: "When the period of time prescribed or
+  // allowed is less than seven days, not counting any period for mailing added
+  // under subsection (c) of this rule, intermediate Saturdays, Sundays, and
+  // legal holidays shall be excluded in the computation. A half holiday shall
+  // be considered as other days and not as a holiday." The base count is
+  // tested, which is what `countValue < short_period_exclusion_days` already
+  // does. App. R. 502(a) is the same text ("Sundays and holidays") and has its
+  // own entry so the appellate row cites its own rule. THE CLOSED-COURT
+  // "legal holiday" SENTENCE PRINTED BESIDE RULE 6 IS RESCINDED SCO 1875 NOTE
+  // TEXT and is deliberately absent. docs/sairnlaw-alaska-deadline-seed-gate.md.
+  ak_civ_r_6a: { label: 'Alaska R. Civ. P. 6(a)', impl: 'ohio_civ_r_6a',
+    short_period_exclusion_days: 7,
+    base_period_suffix: '', months_years_suffix: '',
+    rollover_suffix_forward: '', rollover_suffix_backward: '' },
+  ak_app_r_502a: { label: 'Alaska R. App. P. 502(a)', impl: 'ohio_civ_r_6a',
+    short_period_exclusion_days: 7,
+    base_period_suffix: '', months_years_suffix: '',
+    rollover_suffix_forward: '', rollover_suffix_backward: '' },
   // ── MINNESOTA: DAYS ARE DAYS, AND THE EXCLUSION IS OPT-IN PER RULE ───────
   // Minn. R. Civ. P. 6.01(a), verbatim on the parts that decide these fields:
   //
@@ -2458,6 +2477,12 @@ var JURISDICTION_COVERAGE = {
   // MISSOURI. Two gaps, both EARLY, and one of them is a divergence between a
   // statute and what the state administratively observes -- a shape no other
   // jurisdiction in this table has yet.
+  ak: {
+    complete: false,
+    direction: 'early',
+    summary: 'Three Alaska days that may be legal holidays for time computation are NOT encoded -- MLK Day, the Friday before a Saturday holiday, and proclamation days -- and no row adds Rule 6(c) mail days to a deadline running from the clerk\'s certificate of distribution. This date may be EARLIER than the true deadline, never later.',
+    detail: 'The calendar encodes Saturdays, Sundays and the AS 44.12.010 legal holidays, with the AS 44.12.020 Monday after a Sunday holiday. Each omission below can only make a date EARLIER: (1) MARTIN LUTHER KING, JR. DAY. AS 44.12.010(a)(2) lists it "as provided in (b)", and (b) makes it a legal holiday "for employment purposes" for state employees on collective-bargaining terms, so whether it is a legal holiday for a court deadline is a question of law; a deadline landing on it is shown on that Monday. (2) THE FRIDAY BEFORE A SATURDAY HOLIDAY. AS 44.12.025 makes it a legal holiday "for officers and employees of the state" only -- for example Friday 3 July 2026. (3) PROCLAMATION DAYS under AS 44.12.010(a)(14), which cannot be derived in advance. (4) MAIL DAYS ON DISTRIBUTION-TRIGGERED ROWS. Civil Rule 6(c) and Appellate Rule 502(c) add three days after a document is "distributed by" mail, which may reach a mailed judgment, but Civil Rule 6(b) forbids enlarging Rule 59(b) and a late notice of appeal is lost, so the Rule 59(b) and Appellate Rule 204(a)(1) rows add none. A court closure is NOT a legal holiday: the closed-court sentence printed beside Civil Rule 6 is the text of rescinded SCO 1875. If a computed date falls on MLK Day, the Friday before a Saturday holiday, or runs from a mailed judgment, confirm before relying on it.'
+  },
   mo: {
     complete: false,
     direction: 'early',
@@ -3386,6 +3411,21 @@ var SERVICE_EXTENSION_STANDARDS = {
   // Massachusetts, and NOT the federal after-expiry order.
   mo_rule_44_01_d: {
     label: 'Mo. R. Civ. P. 44.01(d)',
+    sequence: 'add_to_period_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) { return method === 'mail'; }
+  },
+  // ── ALASKA: NON-ELECTRONIC MAIL ONLY, ADDED TO THE PERIOD (hank b63) ────
+  // Alaska R. Civ. P. 6(c), verbatim: "Whenever a party has the right or is
+  // required to act within a prescribed period after the service or
+  // distribution of a document, other than documents served under Civil Rule
+  // 4(h), and the document is served or distributed by non-electronic mail,
+  // three calendar days shall be added to the prescribed period." E-mail and
+  // e-filing earn nothing. 4(h) is Service of Process by Mail, so the answer
+  // row carries no extension; the distribution-triggered rows carry none by
+  // the EARLY reading disclosed in JURISDICTION_COVERAGE.ak.
+  ak_civ_r_6c: {
+    label: 'Alaska R. Civ. P. 6(c)',
     sequence: 'add_to_period_then_roll',
     shape: 'enumerated_allowlist',
     qualifies: function (method) { return method === 'mail'; }

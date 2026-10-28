@@ -1,0 +1,481 @@
+{
+  "_readme": [
+    "SAIRNlaw holiday calendars -- Alaska, 2026-2031. Derived from AS 44.12.010/.020; see each authority.note."
+  ],
+  "holiday_calendars": [
+    {
+      "jurisdiction": "ak",
+      "year": 2026,
+      "authority": {
+        "citation": "AS 44.12.010 and 44.12.020 (legal holidays), supplying \"legal holiday\" for Alaska R. Civ. P. 6(a) and App. R. 502(a)",
+        "url": "https://www.akleg.gov/basis/statutes.asp?media=print&secStart=44.12.010&secEnd=44.12.030",
+        "computation_url": "https://courts.alaska.gov/rules/docs/civ.pdf",
+        "note": "DERIVED FROM THE STATUTE by date arithmetic. AS 44.12.010 is titled \"Legal holidays\" -- the exact phrase Rule 6(a) uses. DELIBERATELY ABSENT, each EARLY: MLK Day ((a)(2) is \"as provided in (b)\", and (b) is employment-only and collective-bargaining-conditional); the AS 44.12.025 Saturday->Friday shift (\"for officers and employees of the state\"); proclamation days ((a)(14)). PRESENT: the AS 44.12.020 Sunday->Monday shift, which is unscoped. Court closures are NOT legal holidays: the closed-court sentence printed beside Rule 6 is rescinded SCO 1875 note text. See JURISDICTION_COVERAGE.ak and docs/sairnlaw-alaska-deadline-seed-gate.md.",
+        "retrieved_at": "2026-10-28"
+      },
+      "dates": [
+        {
+          "date": "2026-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(1) fixed date 2026-01-01"
+        },
+        {
+          "date": "2026-02-16",
+          "name": "Presidents' Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(3) third Monday in February 2026-02-16"
+        },
+        {
+          "date": "2026-03-30",
+          "name": "Seward's Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(4) last Monday of March 2026-03-30"
+        },
+        {
+          "date": "2026-05-25",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(5) last Monday in May 2026-05-25"
+        },
+        {
+          "date": "2026-06-19",
+          "name": "Juneteenth Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(6) fixed date 2026-06-19"
+        },
+        {
+          "date": "2026-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(7) fixed date 2026-07-04"
+        },
+        {
+          "date": "2026-09-07",
+          "name": "Labor Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(8) first Monday in September 2026-09-07"
+        },
+        {
+          "date": "2026-10-19",
+          "name": "Alaska Day (Sunday shift)",
+          "kind": "declared",
+          "derivation": "AS 44.12.020: Alaska Day falls on Sunday 2026-10-18, so the following Monday is also a legal holiday"
+        },
+        {
+          "date": "2026-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(10) fixed date 2026-11-11"
+        },
+        {
+          "date": "2026-11-26",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(11) fourth Thursday in November 2026-11-26"
+        },
+        {
+          "date": "2026-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(12) fixed date 2026-12-25"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "ak",
+      "year": 2027,
+      "authority": {
+        "citation": "AS 44.12.010 and 44.12.020 (legal holidays), supplying \"legal holiday\" for Alaska R. Civ. P. 6(a) and App. R. 502(a)",
+        "url": "https://www.akleg.gov/basis/statutes.asp?media=print&secStart=44.12.010&secEnd=44.12.030",
+        "computation_url": "https://courts.alaska.gov/rules/docs/civ.pdf",
+        "note": "DERIVED FROM THE STATUTE by date arithmetic. AS 44.12.010 is titled \"Legal holidays\" -- the exact phrase Rule 6(a) uses. DELIBERATELY ABSENT, each EARLY: MLK Day ((a)(2) is \"as provided in (b)\", and (b) is employment-only and collective-bargaining-conditional); the AS 44.12.025 Saturday->Friday shift (\"for officers and employees of the state\"); proclamation days ((a)(14)). PRESENT: the AS 44.12.020 Sunday->Monday shift, which is unscoped. Court closures are NOT legal holidays: the closed-court sentence printed beside Rule 6 is rescinded SCO 1875 note text. See JURISDICTION_COVERAGE.ak and docs/sairnlaw-alaska-deadline-seed-gate.md.",
+        "retrieved_at": "2026-10-28"
+      },
+      "dates": [
+        {
+          "date": "2027-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(1) fixed date 2027-01-01"
+        },
+        {
+          "date": "2027-02-15",
+          "name": "Presidents' Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(3) third Monday in February 2027-02-15"
+        },
+        {
+          "date": "2027-03-29",
+          "name": "Seward's Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(4) last Monday of March 2027-03-29"
+        },
+        {
+          "date": "2027-05-31",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(5) last Monday in May 2027-05-31"
+        },
+        {
+          "date": "2027-06-19",
+          "name": "Juneteenth Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(6) fixed date 2027-06-19"
+        },
+        {
+          "date": "2027-07-05",
+          "name": "Independence Day (Sunday shift)",
+          "kind": "declared",
+          "derivation": "AS 44.12.020: Independence Day falls on Sunday 2027-07-04, so the following Monday is also a legal holiday"
+        },
+        {
+          "date": "2027-09-06",
+          "name": "Labor Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(8) first Monday in September 2027-09-06"
+        },
+        {
+          "date": "2027-10-18",
+          "name": "Alaska Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(9) fixed date 2027-10-18"
+        },
+        {
+          "date": "2027-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(10) fixed date 2027-11-11"
+        },
+        {
+          "date": "2027-11-25",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(11) fourth Thursday in November 2027-11-25"
+        },
+        {
+          "date": "2027-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(12) fixed date 2027-12-25"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "ak",
+      "year": 2028,
+      "authority": {
+        "citation": "AS 44.12.010 and 44.12.020 (legal holidays), supplying \"legal holiday\" for Alaska R. Civ. P. 6(a) and App. R. 502(a)",
+        "url": "https://www.akleg.gov/basis/statutes.asp?media=print&secStart=44.12.010&secEnd=44.12.030",
+        "computation_url": "https://courts.alaska.gov/rules/docs/civ.pdf",
+        "note": "DERIVED FROM THE STATUTE by date arithmetic. AS 44.12.010 is titled \"Legal holidays\" -- the exact phrase Rule 6(a) uses. DELIBERATELY ABSENT, each EARLY: MLK Day ((a)(2) is \"as provided in (b)\", and (b) is employment-only and collective-bargaining-conditional); the AS 44.12.025 Saturday->Friday shift (\"for officers and employees of the state\"); proclamation days ((a)(14)). PRESENT: the AS 44.12.020 Sunday->Monday shift, which is unscoped. Court closures are NOT legal holidays: the closed-court sentence printed beside Rule 6 is rescinded SCO 1875 note text. See JURISDICTION_COVERAGE.ak and docs/sairnlaw-alaska-deadline-seed-gate.md.",
+        "retrieved_at": "2026-10-28"
+      },
+      "dates": [
+        {
+          "date": "2028-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(1) fixed date 2028-01-01"
+        },
+        {
+          "date": "2028-02-21",
+          "name": "Presidents' Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(3) third Monday in February 2028-02-21"
+        },
+        {
+          "date": "2028-03-27",
+          "name": "Seward's Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(4) last Monday of March 2028-03-27"
+        },
+        {
+          "date": "2028-05-29",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(5) last Monday in May 2028-05-29"
+        },
+        {
+          "date": "2028-06-19",
+          "name": "Juneteenth Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(6) fixed date 2028-06-19"
+        },
+        {
+          "date": "2028-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(7) fixed date 2028-07-04"
+        },
+        {
+          "date": "2028-09-04",
+          "name": "Labor Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(8) first Monday in September 2028-09-04"
+        },
+        {
+          "date": "2028-10-18",
+          "name": "Alaska Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(9) fixed date 2028-10-18"
+        },
+        {
+          "date": "2028-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(10) fixed date 2028-11-11"
+        },
+        {
+          "date": "2028-11-23",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(11) fourth Thursday in November 2028-11-23"
+        },
+        {
+          "date": "2028-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(12) fixed date 2028-12-25"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "ak",
+      "year": 2029,
+      "authority": {
+        "citation": "AS 44.12.010 and 44.12.020 (legal holidays), supplying \"legal holiday\" for Alaska R. Civ. P. 6(a) and App. R. 502(a)",
+        "url": "https://www.akleg.gov/basis/statutes.asp?media=print&secStart=44.12.010&secEnd=44.12.030",
+        "computation_url": "https://courts.alaska.gov/rules/docs/civ.pdf",
+        "note": "DERIVED FROM THE STATUTE by date arithmetic. AS 44.12.010 is titled \"Legal holidays\" -- the exact phrase Rule 6(a) uses. DELIBERATELY ABSENT, each EARLY: MLK Day ((a)(2) is \"as provided in (b)\", and (b) is employment-only and collective-bargaining-conditional); the AS 44.12.025 Saturday->Friday shift (\"for officers and employees of the state\"); proclamation days ((a)(14)). PRESENT: the AS 44.12.020 Sunday->Monday shift, which is unscoped. Court closures are NOT legal holidays: the closed-court sentence printed beside Rule 6 is rescinded SCO 1875 note text. See JURISDICTION_COVERAGE.ak and docs/sairnlaw-alaska-deadline-seed-gate.md.",
+        "retrieved_at": "2026-10-28"
+      },
+      "dates": [
+        {
+          "date": "2029-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(1) fixed date 2029-01-01"
+        },
+        {
+          "date": "2029-02-19",
+          "name": "Presidents' Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(3) third Monday in February 2029-02-19"
+        },
+        {
+          "date": "2029-03-26",
+          "name": "Seward's Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(4) last Monday of March 2029-03-26"
+        },
+        {
+          "date": "2029-05-28",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(5) last Monday in May 2029-05-28"
+        },
+        {
+          "date": "2029-06-19",
+          "name": "Juneteenth Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(6) fixed date 2029-06-19"
+        },
+        {
+          "date": "2029-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(7) fixed date 2029-07-04"
+        },
+        {
+          "date": "2029-09-03",
+          "name": "Labor Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(8) first Monday in September 2029-09-03"
+        },
+        {
+          "date": "2029-10-18",
+          "name": "Alaska Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(9) fixed date 2029-10-18"
+        },
+        {
+          "date": "2029-11-12",
+          "name": "Veterans' Day (Sunday shift)",
+          "kind": "declared",
+          "derivation": "AS 44.12.020: Veterans' Day falls on Sunday 2029-11-11, so the following Monday is also a legal holiday"
+        },
+        {
+          "date": "2029-11-22",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(11) fourth Thursday in November 2029-11-22"
+        },
+        {
+          "date": "2029-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(12) fixed date 2029-12-25"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "ak",
+      "year": 2030,
+      "authority": {
+        "citation": "AS 44.12.010 and 44.12.020 (legal holidays), supplying \"legal holiday\" for Alaska R. Civ. P. 6(a) and App. R. 502(a)",
+        "url": "https://www.akleg.gov/basis/statutes.asp?media=print&secStart=44.12.010&secEnd=44.12.030",
+        "computation_url": "https://courts.alaska.gov/rules/docs/civ.pdf",
+        "note": "DERIVED FROM THE STATUTE by date arithmetic. AS 44.12.010 is titled \"Legal holidays\" -- the exact phrase Rule 6(a) uses. DELIBERATELY ABSENT, each EARLY: MLK Day ((a)(2) is \"as provided in (b)\", and (b) is employment-only and collective-bargaining-conditional); the AS 44.12.025 Saturday->Friday shift (\"for officers and employees of the state\"); proclamation days ((a)(14)). PRESENT: the AS 44.12.020 Sunday->Monday shift, which is unscoped. Court closures are NOT legal holidays: the closed-court sentence printed beside Rule 6 is rescinded SCO 1875 note text. See JURISDICTION_COVERAGE.ak and docs/sairnlaw-alaska-deadline-seed-gate.md.",
+        "retrieved_at": "2026-10-28"
+      },
+      "dates": [
+        {
+          "date": "2030-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(1) fixed date 2030-01-01"
+        },
+        {
+          "date": "2030-02-18",
+          "name": "Presidents' Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(3) third Monday in February 2030-02-18"
+        },
+        {
+          "date": "2030-03-25",
+          "name": "Seward's Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(4) last Monday of March 2030-03-25"
+        },
+        {
+          "date": "2030-05-27",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(5) last Monday in May 2030-05-27"
+        },
+        {
+          "date": "2030-06-19",
+          "name": "Juneteenth Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(6) fixed date 2030-06-19"
+        },
+        {
+          "date": "2030-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(7) fixed date 2030-07-04"
+        },
+        {
+          "date": "2030-09-02",
+          "name": "Labor Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(8) first Monday in September 2030-09-02"
+        },
+        {
+          "date": "2030-10-18",
+          "name": "Alaska Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(9) fixed date 2030-10-18"
+        },
+        {
+          "date": "2030-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(10) fixed date 2030-11-11"
+        },
+        {
+          "date": "2030-11-28",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(11) fourth Thursday in November 2030-11-28"
+        },
+        {
+          "date": "2030-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(12) fixed date 2030-12-25"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "ak",
+      "year": 2031,
+      "authority": {
+        "citation": "AS 44.12.010 and 44.12.020 (legal holidays), supplying \"legal holiday\" for Alaska R. Civ. P. 6(a) and App. R. 502(a)",
+        "url": "https://www.akleg.gov/basis/statutes.asp?media=print&secStart=44.12.010&secEnd=44.12.030",
+        "computation_url": "https://courts.alaska.gov/rules/docs/civ.pdf",
+        "note": "DERIVED FROM THE STATUTE by date arithmetic. AS 44.12.010 is titled \"Legal holidays\" -- the exact phrase Rule 6(a) uses. DELIBERATELY ABSENT, each EARLY: MLK Day ((a)(2) is \"as provided in (b)\", and (b) is employment-only and collective-bargaining-conditional); the AS 44.12.025 Saturday->Friday shift (\"for officers and employees of the state\"); proclamation days ((a)(14)). PRESENT: the AS 44.12.020 Sunday->Monday shift, which is unscoped. Court closures are NOT legal holidays: the closed-court sentence printed beside Rule 6 is rescinded SCO 1875 note text. See JURISDICTION_COVERAGE.ak and docs/sairnlaw-alaska-deadline-seed-gate.md.",
+        "retrieved_at": "2026-10-28"
+      },
+      "dates": [
+        {
+          "date": "2031-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(1) fixed date 2031-01-01"
+        },
+        {
+          "date": "2031-02-17",
+          "name": "Presidents' Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(3) third Monday in February 2031-02-17"
+        },
+        {
+          "date": "2031-03-31",
+          "name": "Seward's Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(4) last Monday of March 2031-03-31"
+        },
+        {
+          "date": "2031-05-26",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(5) last Monday in May 2031-05-26"
+        },
+        {
+          "date": "2031-06-19",
+          "name": "Juneteenth Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(6) fixed date 2031-06-19"
+        },
+        {
+          "date": "2031-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(7) fixed date 2031-07-04"
+        },
+        {
+          "date": "2031-09-01",
+          "name": "Labor Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(8) first Monday in September 2031-09-01"
+        },
+        {
+          "date": "2031-10-18",
+          "name": "Alaska Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(9) fixed date 2031-10-18"
+        },
+        {
+          "date": "2031-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(10) fixed date 2031-11-11"
+        },
+        {
+          "date": "2031-11-27",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(11) fourth Thursday in November 2031-11-27"
+        },
+        {
+          "date": "2031-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "derivation": "AS 44.12.010(a)(12) fixed date 2031-12-25"
+        }
+      ]
+    }
+  ]
+}
