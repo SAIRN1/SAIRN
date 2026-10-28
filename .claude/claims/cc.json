@@ -4765,6 +4765,17 @@
       "status": "released",
       "released_at": "2026-10-28T12:38:00Z",
       "files": null
+    },
+    {
+      "id": "cc-1793206321",
+      "session": "cc",
+      "subject": "sairnsenior",
+      "task": "SEN audit licence role credentials provisioning live field scope",
+      "claimed_at": "2026-10-28T16:52:01Z",
+      "claimed_at_epoch": 1793206321.454158,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
