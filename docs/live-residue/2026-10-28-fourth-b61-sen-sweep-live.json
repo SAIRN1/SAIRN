@@ -1,0 +1,18 @@
+{
+ "written_by": "scratchpad sweep61.py (fourth b61; not a repo tool -- this file is its enumeration)",
+ "session": "fourth",
+ "batch": "b61",
+ "date": "2026-10-28",
+ "class": "VERIFICATION-REFUSED-WRITE",
+ "approved_by": "Michael, b61 item 3 (and the b61 continue message): a real browser-driven test of the sairnsenior claim-draft sweep against the live server, a real refused-draft case",
+ "licence": "SEN-AUDIT-2026 (audit licence), signed in as audit-owner / owner through the real login screen",
+ "url": "https://sairn.vercel.app/sairnsenior.html (live, byte-identical to origin/main at the b60 check)",
+ "device_state_seeded": "after login, in the browser's own storage only: one completed visit VIS-B61-LIVETEST and one draft claim CLM-B61-LIVETEST for it with a 70,000-character note -- the state a pre-b59 refusal left on a device",
+ "result_refused": "Billing opened -> live read sen_claims HTTP 200 (0 rows) -> live write sen_claims id=CLM-B61-LIVETEST HTTP 413 PAYLOAD_TOO_LARGE 'Payload is 70240 bytes; the limit is 65536 for sen_claims/write' -> draft withdrawn from the device -> VIS-B61-LIVETEST back in Ready to bill (KPI 1, table row 'B61 Live Test') -> toast '1 claim draft was only on this device and the server would not take it -- withdrawn. Ready to bill now shows every visit with no claim on the server.' -> 0 page errors",
+ "result_no_answer": "same state, the draft's re-send aborted in the browser (server never answered) -> draft KEPT, visit stays out of Ready to bill, no toast, 0 page errors",
+ "other_writes": "every other write was aborted before leaving the browser; the only request that reached the server's write path is the refused one above",
+ "rows_created": [],
+ "why_zero": "the API refuses an over-cap payload with 413 before any store; the second run's live read (after the first run's refusal) returned 0 rows",
+ "confirm_sql_file": "sql/zz_confirm_b61_sen_sweep_no_residue.sql",
+ "no_tool_here_runs_a_delete": "there is nothing to delete; the confirm file is select-only"
+}
