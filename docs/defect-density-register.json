@@ -39557,7 +39557,7 @@
       "recurrence_open": "No mechanical check yet refuses a placeholder token in a sql/ file at push time; the re-read is a discipline, not a gate."
     },
     {
-      "commit": "bb7ad2e43195",
+      "commit": "d21bf39aaf89",
       "date": "2026-10-28",
       "subject": "fix(sairnvet, fourth b64): the SOAP record stores the note; the controlled-drug push asks for the witness token the server requires",
       "files": [
