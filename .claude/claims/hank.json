@@ -4678,8 +4678,8 @@
       "task": "alf audit owner recovery real pin hash",
       "claimed_at": "2026-10-28T12:07:05Z",
       "claimed_at_epoch": 1793189225.5531147,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-28T12:23:16Z",
       "files": null
     }
   ],
