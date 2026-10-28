@@ -175,6 +175,95 @@
       }
     },
     {
+      "id": "sen_branches.read",
+      "app": "sairnsenior",
+      "anchor": "if (resource === 'sen_branches' && (action === 'read' || action === 'write')) {",
+      "request": {
+        "action": "read",
+        "resource": "sen_branches"
+      },
+      "declared_from": "the 2026-10-14 b9 tiering decision: management sees the whole branch row; every other role sees id, name, state and active only -- an ALLOWLIST, so a field added later is withheld by default (a caregiver's roster row names a branch and must resolve it)",
+      "caller": "emp-self",
+      "tables": {
+        "sen_branches": [
+          {
+            "tag": "br",
+            "branch_id": null,
+            "data": {
+              "name": null,
+              "state": null,
+              "active": null,
+              "address": null,
+              "phone": null,
+              "updatedBy": null,
+              "updatedByRole": null
+            }
+          }
+        ]
+      },
+      "sets": {
+        "PUBLIC": [
+          "branch_id",
+          "name",
+          "state",
+          "active"
+        ]
+      },
+      "roles": {
+        "owner": {
+          "see": [
+            "br.*"
+          ]
+        },
+        "billing": {
+          "see": [
+            "br.*"
+          ]
+        },
+        "scheduler": {
+          "see": [
+            "br.@PUBLIC"
+          ]
+        },
+        "coordinator": {
+          "see": [
+            "br.@PUBLIC"
+          ]
+        },
+        "caregiver": {
+          "see": [
+            "br.@PUBLIC"
+          ]
+        }
+      },
+      "live": {
+        "licence_env": "SEN_AUDIT_LICENSE",
+        "auth_path": "/api/sen-auth",
+        "creds": {
+          "owner": [
+            "SEN_OWNER_EMP",
+            "SEN_OWNER_PIN"
+          ],
+          "billing": [
+            "SEN_BILLING_EMP",
+            "SEN_BILLING_PIN"
+          ],
+          "scheduler": [
+            "SEN_SCHEDULER_EMP",
+            "SEN_SCHEDULER_PIN"
+          ],
+          "coordinator": [
+            "SEN_COORDINATOR_EMP",
+            "SEN_COORDINATOR_PIN"
+          ],
+          "caregiver": [
+            "SEN_CAREGIVER_EMP",
+            "SEN_CAREGIVER_PIN"
+          ]
+        }
+      }
+    },
+    {
       "id": "sen_settings.read",
       "app": "sairnsenior",
       "anchor": "if (resource === 'sen_settings' && action === 'read')",

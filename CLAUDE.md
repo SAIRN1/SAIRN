@@ -415,18 +415,23 @@ side** — the 80% figure existed in writing only inside
 and the four build agents did not. This section is the source. Do not
 re-derive any of it from a handoff.
 
-- **Wrap up at 80% of REAL context, and real means measured:**
+- **Wrap up at 85% of REAL context, and real means measured:**
 
       python tools/context_verify.py --digest-line
 
-  80% is a **wrap-up trigger, not a hard cutoff** — the handoff, report and
-  digest all have to fit inside the remaining 20%, so the trigger fires while
+  **85%, not 80%: Michael raised it on 2026-10-20** (commit `0ac259bf`). The
+  locked values are `THRESHOLD = 85.0` in `tools/builder_context_watch.py` and
+  `RED_AT_BUILD = 85` in `tools/sairn_status_line.py`, and this line said 80
+  until cc b64. Read those two constants rather than this sentence if they ever
+  disagree. 85% is a **wrap-up trigger, not a hard cutoff** — the handoff,
+  report and digest all have to fit inside the remaining 15%, so the trigger
+  fires while
   there is still room to write them. The tool is the source of the digest's
   `CONTEXT` line and nothing else should ever write one (push-gate CHECK 5c
   enforces that). It is **exit 2 COULD NOT RUN** until the window is declared
   once per clone-and-session — `--provision-window <tokens>` — because an
   inferred window makes the percentage ambiguous while the token count stays
-  exact. cc breached this in b25 (81.9%) and b26 (89.0%).
+  exact. cc breached the 80% rule then in force in b25 (81.9%) and b26 (89.0%).
 - **The digest is 30 lines maximum, and that is now the ONLY digest ceiling.**
   It is a **routing** document — what the next session has to know and where to
   look — not a second report. If it does not fit, the content belongs in the

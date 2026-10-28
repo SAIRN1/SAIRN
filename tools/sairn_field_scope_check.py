@@ -141,7 +141,7 @@ def validate(rules):
     """Every way a declaration can be malformed, named by rule and key, before
     anything is driven. A typo'd key would otherwise be IGNORED: a "see_fields"
     the judge never reads is a role that is checked against nothing."""
-    bad, ids = [], set()
+    bad, ids, reqs = [], set(), {}
     for n, r in enumerate(rules):
         start = len(bad)
         if not isinstance(r, dict):
@@ -156,6 +156,11 @@ def validate(rules):
         if r.get('id') in ids:
             bad.append('%s: duplicate id' % where)
         ids.add(r.get('id'))
+        rk = json.dumps(r.get('request'), sort_keys=True)
+        if rk in reqs:
+            bad.append('%s: the same request as rule %s -- two declarations of one read cannot '
+                       'both be the design' % (where, reqs[rk]))
+        reqs.setdefault(rk, r.get('id'))
         req = r.get('request')
         if req is not None and not (isinstance(req, dict) and isinstance(req.get('resource'), str)
                                     and isinstance(req.get('action'), str)):
@@ -285,13 +290,37 @@ def drive(root, cases, env=None):
 
 
 # ── COVERAGE: every declared redaction in the source has a rule ────────────
+def _starts(lines):
+    """Every dispatch line: (index, resource, [actions]).
+
+    COMPOUND DISPATCH COUNTS (cc b64). The first version matched only
+    `resource === 'x' && action === 'y'` on one line, so the 26 branches written
+    `resource === 'x' && (action === 'read' || action === 'write')` -- some over
+    two lines -- were never scanned, and sen_branches' tiered read was a declared
+    redaction that no rule covered. The head is read up to the line opening the
+    block."""
+    out = []
+    for i, l in enumerate(lines):
+        if not re.match(r'\s*(\}\s*else\s*)?if \(', l) or "resource === '" not in l:
+            continue
+        head, j = l, i
+        while not head.rstrip().endswith('{') and j < i + 3 and j + 1 < len(lines):
+            j += 1
+            head += ' ' + lines[j]
+        m = re.search(r"resource === '([a-z0-9_]+)'", head)
+        acts = re.findall(r"action === '([a-z0-9_-]+)'", head)
+        if m and acts:
+            out.append((i, m.group(1), acts))
+    return out
+
+
 def discover(src):
     lines = src.split('\n')
-    starts = [(i, m.group(1), m.group(2)) for i, l in enumerate(lines)
-              for m in [BRANCH_RE.search(l)] if m and re.match(r'\s*(\}\s*else\s*)?if \(', l)]
+    starts = _starts(lines)
     found = []
-    for k, (i, res, act) in enumerate(starts):
-        if act not in READ_ACTIONS:
+    for k, (i, res, acts) in enumerate(starts):
+        act = next((a for a in acts if a in READ_ACTIONS), None)
+        if act is None:
             continue
         j = starts[k + 1][0] if k + 1 < len(starts) else len(lines)
         body = '\n'.join(lines[i:j])
@@ -300,7 +329,10 @@ def discover(src):
             sig.append('role')
         if re.search(r'\b[a-z_]+_(visible|scope)\s*:|\btiered\s*:', body):
             sig.append('flag')
-        if re.search(r'delete out\[|_FIELDS\b', body):
+        # A field list being APPLIED, not the word: 'MISSING_FIELDS' is an error
+        # code and SV_LOCAL_ONLY_FIELDS a write-side list, and both made the b64
+        # widening report two branches with no redaction at all.
+        if re.search(r'delete out\[|_FIELDS\.forEach\(', body):
             sig.append('fields')
         if sig:
             app = re.search(r"verifySessionToken\([^;]*?'([a-z]+)'\)", body)
@@ -674,6 +706,17 @@ def fixtures():
         short = dict(FAKE_RULE, roles={k: v for k, v in FAKE_RULE['roles'].items() if k != 'caregiver'})
         arm('COVERAGE: a rule that omits one of the app\'s roles is a finding',
             any("['caregiver']" in x for x in coverage([short], src_ok, roles)))
+        compound = src_ok + ("    if (resource === 'fx_cmp' &&\n        (action === 'read' || action === 'write')) {\n"
+                             "      const s = verifySessionToken(t, h, 'sairnsenior');\n"
+                             "      PUB_FIELDS.forEach((f) => { o[f] = d[f]; }); if (X[s.role]) {}\n    }\n")
+        arm('COVERAGE: a COMPOUND two-line dispatch applying a field list is seen (b64 widening)',
+            any('fx_cmp/read' in x for x in coverage([FAKE_RULE], compound, roles)),
+            coverage([FAKE_RULE], compound, roles))
+        errcode = src_ok + ("    if (resource === 'fx_err' && (action === 'read' || action === 'write')) {\n"
+                            "      const s = verifySessionToken(t, h, 'sairnsenior'); if (X[s.role]) {}\n"
+                            "      bad(res, 400, 'MISSING_FIELDS', 'x'); const SV_LOCAL_ONLY_FIELDS = [];\n    }\n")
+        arm('COVERAGE: an error code or an unapplied *_FIELDS name is NOT a redaction (negative half)',
+            coverage([FAKE_RULE], errcode, roles) == [], coverage([FAKE_RULE], errcode, roles))
         arm('SWEEP: every role seeing peer rows alike is SUSPECT',
             classify({'a': (200, 2, 2), 'b': (200, 2, 2)}, 2)[0] == 'SUSPECT')
         arm('SWEEP: every role seeing only its own row is OWN-ROW ONLY, not SUSPECT',
