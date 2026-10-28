@@ -1,0 +1,21 @@
+DIGEST cc b65
+STATUS: re-dispatch after restart; dispatch said b64 but b64 was already closed (58eea285), so this is b65. No override/skip/--force.
+ITEM 1: reoriented on SAIRN-handoff-cc-b64.md; items 2-3 already done in b64, item 4 absent everywhere (new work).
+ITEM 2: CLAUDE.md:418 already 85%; THRESHOLD 85.0 / RED_AT_BUILD 85 read at HEAD and match. No edit.
+ITEM 3: field-scope --validate 5 rules / 0 errors / exit 0 (tree and --ref origin/main). Freshness: --ref dcdba0e6 reads 4 = independent count;
+  no cache path; --fixtures 0 failed. In-tree ablation denied by permissions. hank's declarations not landed yet.
+ITEM 4: hover b92 test_965 obligation appended verbatim; opened_at=owner_assigned_at=2026-10-28T21:14:26Z, opened_at_sha=fe012756 (origin tip).
+  310->311 records, +23/-0, gate --validate exit 0. assign_owner('hover') re-derived = cc (live). Subject file not on main yet (hover holds it).
+ITEM 5: --validate re-run against the current tree, proven by a ref that changes the answer.
+ITEM 6: handoff before report; pushed, landed.
+CHANGED: docs/tier-a-reviews.json (+1 record), .claude/claims/cc.json, this handoff/report/digest.
+SQL: none.
+BOUNDARY: nothing under .claude/skills/sairn-hover-auditor/ edited or created; one filename glob only.
+EVIDENCE-path: SAIRN-handoff-cc-b65.md, SAIRN-report-cc-b65.txt
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\52164776-0b08-422d-94e1-7a56daf3eaaa.jsonl
+OPEN: cc -- review hover b92 once test_965 lands; cc -- cody b57 mech_backup obligation (new, outside dispatch); hank -- field-scope declarations.
+DECISION-NEEDED: none new (b64's alf_clients medications/diagnosis decision still stands with Michael).
+UNVERIFIED: none -- no deployed code changed this batch, so there is no live fix to verify.
+NEXT: hover lands test_965; cc reviews it. b64 routing unchanged.
+CONTEXT 10.8% of 1,000,000 -- 107,705 tokens, measured.
+END-OF-REPORT

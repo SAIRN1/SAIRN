@@ -1,0 +1,37 @@
+SAIRN report -- cc b65 -- 2026-10-28
+
+A re-dispatch after an emergency restart. The dispatch said b64, but b64 was
+already closed (58eea285), so this run is b65. No override, no skip, no
+--force.
+
+1 REORIENTATION: I read SAIRN-handoff-cc-b64.md. Items 2 and 3 were already
+  done in b64. Item 4 (the hover b92 entry) was absent from both the legacy
+  file and every shard.
+
+2 CLAUDE.md: already 85% (line 418). The two constants it cites were read at
+  HEAD (THRESHOLD 85.0, RED_AT_BUILD 85) and match. No edit.
+
+3 FIELD-SCOPE --validate: 5 rules, 0 schema errors, exit 0, both on the
+  working tree and with --ref origin/main.
+  Freshness proof: --ref dcdba0e6 (before sen_branches) reports 4 rules,
+  which matches an independent json count. The reader re-reads its source on
+  every call and has no cache. Blind lock --fixtures: 0 failed.
+  An in-tree ablation was denied by the permission layer, so the proof uses
+  refs only.
+  hank's declarations have not landed; the registry last changed in 11bf769f.
+
+4 TIER A: hover b92's record was appended verbatim. The stamps are
+  opened_at = owner_assigned_at = 2026-10-28T21:14:26Z, and
+  opened_at_sha = fe0127562e1e76db26e1da3a6c106a5fca80ebe3 (the origin/main
+  tip).
+  The write went through the gate's atomic save_reviews(). Records went
+  310 -> 311 and the read-back is equal; the diff is +23/-0; gate --validate
+  exits 0.
+  The owner was re-derived with the gate's own assign_owner: cc, live. The
+  roster is cc, cody, fourth and hank, with cloud excluded.
+  The subject test file is not on main yet; hover is holding it.
+
+OPEN: cc reviews the hover b92 obligation once the file lands. A new
+cc-owned open obligation, cody b57 (mech_backup_not_silent), is outside this
+dispatch. hank's field-scope declarations get --validate when they land. The
+b64 routing is unchanged.
