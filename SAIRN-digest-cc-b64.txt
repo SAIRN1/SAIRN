@@ -1,0 +1,24 @@
+DIGEST cc b64
+STATUS: all five items closed. Landed 11bf769f + 08345692 (+ this handoff), 0/0. No override/skip/--force. platform claim refused (fourth); ran under field-scope.
+ITEM 1: CLAUDE.md wrap-up 80% -> 85%, citing 0ac259bf + THRESHOLD 85.0 / RED_AT_BUILD 85; remaining room 15%; b25/b26 breach line qualified.
+ITEM 2: --validate clean, but discovery missed 26 compound-dispatch branches. Widened, it found sen_branches/read (real tier, no rule) -> declared,
+  live fixture rehearsed+RUN; signal tightened (2 FPs gone); duplicate-request check; lock 20->22. Handler 27/27, live 27/27 exit 0, replay e444dc83^ LEAKs.
+  Not covered (routed): family_mar lib projection + other data-returning non-read actions.
+ITEM 3: 17 audit creds in demo_credentials_check's {app,endpoint,license_key,employee_id,pin} schema -> --file vs prod: 17/17 OK, expected roles,
+  no PIN printed; DB row shape identical across SEN/RF/ALF-AUDIT-0002. Older write probes use ALF_EMP/RF_EMP names: keep them off the 0002 licences.
+ITEM 4: Tier A -- 6 cc-owned obligations discharged (legacy: 0 open for cc). hank b51 SWG low; b52 SWG low-med (HTTP 400 leg_ settings -> allow);
+  b53 SWG MEDIUM (write_batch in.() ')' -> tombstoned customer resurrected); b60 diff SOUND + MEDIUM readiness caregiver-key mismatch;
+  cody b52 SWG low; cody b53 UNSOUND MEDIUM (64KB whole-request cap refuses write_batch at ~140 customers, silent; pre-existing HIGH ~150).
+  cody b19 already discharged 10-20; union shows it open via stale cody.jsonl:71.
+ITEM 5: pushed, landed.
+DECISION-NEEDED: Michael -- alf_clients/read gives billing+activities the resident's free-text medications and diagnosis; covered by "billing never reads the MAR"?
+CHANGED: CLAUDE.md, tools/sairn_field_scope_check.py, tools/field_scope_rules.json (+sen_branches.read), sql/field_scope_live_fixture_sen_branches_2026-10-28.sql (RUN),
+  docs/tier-a-reviews.json (6 discharges), .claude/claims/cc.json. DB: sen_branches +1 on SEN-AUDIT-0002.
+SQL: sql/field_scope_live_fixture_sen_branches_2026-10-28.sql
+EVIDENCE-path: SAIRN-handoff-cc-b64.md, SAIRN-report-cc-b64.txt, scratchpad\live64.txt, scratchpad\democreds64.txt, scratchpad\tar64\*.txt
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\332ab89b-94aa-4880-931e-d17413636dfc.jsonl
+UNVERIFIED: the b53 in.() resurrection live (mock-driven); the 64KB write_batch refusal live (dispatcher-driven on a copy).
+ROUTED: hank -- in.() quoting, readiness key, leg_ 400 path, sd-sub-data update gate, family_mar rule, 23 reads; cody -- write_batch cap, stale shard, b19 suite gaps.
+NEXT: hank -- write_batch in.() fix first (resurrection). cody -- write_batch per-action cap. Michael -- the alf_clients medications decision.
+CONTEXT 69.2% of 1,000,000 -- 692,405 tokens, measured.
+END-OF-REPORT

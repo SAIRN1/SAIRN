@@ -1,0 +1,43 @@
+SAIRN report -- cc b64 -- 2026-10-28
+
+LANDED 11bf769f (items 1-3) and 08345692 (Tier A discharges); 0 0 vs origin.
+No override, no skip, no --force. The platform claim was refused (fourth holds
+it, no shared files), so the work ran under the field-scope claim.
+
+1 CLAUDE.md: "Wrap up at 80%" -> 85%, citing 0ac259bf and the two locked
+  constants (builder_context_watch THRESHOLD 85.0, sairn_status_line
+  RED_AT_BUILD 85); the remaining room 20% -> 15%; the b25/b26 sentence now says
+  "the 80% rule then in force". The dated notes that say 80% were left as
+  history.
+
+2 REGISTRY AT FULL SCOPE: --validate clean, but discovery had read only
+  one-line dispatch -- 26 compound branches were never scanned. Widened, it
+  found sen_branches/read, a real tier that no rule covered: now declared, with
+  a live fixture (rehearsed, RUN). The signal was tightened (two false positives
+  removed), validate refuses duplicate requests, and the blind lock went 20 -> 22.
+  Handler mode 27/27; live 27/27, exit 0; the replay at e444dc83^ LEAKs.
+  Not covered, routed: family_mar (lib projection, non-read action) and other
+  data-returning non-read actions.
+
+3 CREDENTIAL ROUND-TRIP: all 17 audit credentials, written in
+  demo_credentials_check's {app, endpoint, license_key, employee_id, pin}
+  schema, run --file against production: 17/17 OK, expected role each, no PIN
+  printed. The DB row shape is identical across SEN/RF/ALF-AUDIT-0002. Note:
+  older write probes use ALF_EMP/RF_EMP-style env names; do not point them at
+  the closed-world 0002 licences.
+
+4 TIER A: 6 obligations owned by cc were discharged (5 reviewed by read-only
+  agents, key claims spot-checked by cc; b60 reviewed by cc directly). Legacy
+  file: 0 open for cc.
+    hank b51  SOUND-WITH-GAPS low   + MEDIUM: alf_clients meds/diagnosis to billing
+    hank b52  SOUND-WITH-GAPS low-med  HTTP 400 on the leg_ settings read -> default allow
+    hank b53  SOUND-WITH-GAPS MEDIUM   write_batch in.() ')' -> 400 -> tombstone resurrected
+    hank b60  diff SOUND; MEDIUM pre-existing readiness caregiver key mismatch
+    cody b52  SOUND-WITH-GAPS low   exponent-form under-count
+    cody b53  UNSOUND MEDIUM        64KB whole-request cap kills write_batch at ~140
+                                    customers (pre-existing HIGH at ~150)
+  cody b19: already discharged 2026-10-20; the union view shows it open via a
+  stale cody.jsonl mirror (routed). Every finding is routed in the status note
+  and in handoff section 5.
+
+5 pushed, landed.
