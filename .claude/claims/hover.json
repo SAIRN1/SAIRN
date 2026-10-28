@@ -1269,8 +1269,8 @@
       "task": "hover auditor b92 tier a obligation for held test file and gate",
       "claimed_at": "2026-10-28T16:45:55Z",
       "claimed_at_epoch": 1793205955.6290438,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-28T16:52:07Z",
       "files": null
     }
   ],
