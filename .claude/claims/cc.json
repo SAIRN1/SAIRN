@@ -4751,8 +4751,8 @@
       "task": "core.bare probe restore finally truncation replay logged_exec",
       "claimed_at": "2026-10-28T10:48:29Z",
       "claimed_at_epoch": 1793184509.3404129,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-28T11:23:40Z",
       "files": null
     }
   ],
