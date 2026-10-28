@@ -8622,9 +8622,27 @@ module.exports = async (req, res) => {
         (await cr.json() || []).forEach((x) => { clientsById[x.client_id] = Object.assign({ id: x.client_id }, x.data); });
       }
       const gr = await fetch(rest('sen_caregivers?license_hash=eq.' + enc(licHash) + '&select=caregiver_id,data'), { headers });
+      // hank b60 (H1 #1274): the engine reads exactly two caregiver fields, name and
+      // state_caregiver_id (api/_lib/sen-evv-readiness.js checkVisit), so it is handed
+      // exactly those and nothing else -- no bgcheck_date, notes, phone or cpr can reach
+      // it or any later echo. For a role outside SEN_CAREGIVER_HR_FIELD_ROLES the state ID
+      // VALUE is replaced by a presence marker: the verdict stays true (a missing ID is
+      // still reported, which is what an EVV readiness report is for) and the value never
+      // enters the computation. The fetch itself stays whole, deliberately -- see
+      // api/sd-data-sen-caregiver-read-paths.test.js section C.
+      const readinessSeesHr = !!SEN_CAREGIVER_HR_FIELD_ROLES[session.role];
       const caregiversById = {};
       if (gr.ok) {
-        (await gr.json() || []).forEach((x) => { caregiversById[x.caregiver_id] = Object.assign({ id: x.caregiver_id }, x.data); });
+        (await gr.json() || []).forEach((x) => {
+          const d = x.data || {};
+          const sid = d.state_caregiver_id;
+          const hasSid = sid !== undefined && sid !== null && String(sid).trim() !== '';
+          caregiversById[x.caregiver_id] = {
+            id: x.caregiver_id,
+            name: d.name,
+            state_caregiver_id: readinessSeesHr ? sid : (hasSid ? 'present' : '')
+          };
+        });
       }
 
       // The configured operating state comes from sen_settings, never the caller's payload
