@@ -1,0 +1,26 @@
+HANK b59 DIGEST -- 2026-10-28 -- the ALF recovery SQL is run-ready; shipped-file methodology; fx identity leak fixed here
+CONTEXT 33.1% of 1,000,000 -- 331,433 tokens, measured.
+STATUS: pushed, NOT FORCED, LANDED (b676e7e79 fix, 38d7553cb register, 9c6c1c5f5 claim release); no claims held.
+1. sql/alf-audit-owner-recovery.sql is RUN-READY: the real hashPin() values are in the file.
+   - The PIN is in .git\sairn-alf-audit-owner-pin (never committed, never printed).
+   - The origin blob was re-read: 0 placeholders; the PIN verifies against its values.
+   - Re-rehearsed on a temp table built from the literal file: re-keyed and unlocked; the other rows and prod untouched.
+   RISK: the repo is public, so the 8-digit PIN hash can be attacked offline. Audit licence only; re-key after use.
+2. Why b58 diverged:
+   - the rehearsal ran a substituted COPY, not the shipped file;
+   - "guard check OK" was a lint that cannot see placeholders.
+   Standing rule: re-read the literal committed blob before handoff. Memory: shipped-file-is-the-file-that-passed.
+   Register: b676e7e79.
+3. Git config: the LEAK FOUND here was user.email/user.name=fx, the copy_exactly fixture identity, via a worktree's
+   GIT_DIR.
+   - Unset; commits are now Michael Dibert. core.bare was false; GIT_DIR unset; cc's fix 58801d4c7 is present.
+   - 148 hank commits since 10-18 carry fx. Not rewritten (that would need a force push).
+   - cody and fourth have the same leak. Reported, not touched.
+DECISION-NEEDED (Michael): none new. (b58 S2, the demo trial skip, is still open.)
+NEXT:
+- A1 (Michael): run the SQL as-is; move the PIN to your password manager and delete the file; log in once.
+- G1 (cody, fourth): unset the fx local identity.
+- L1: push-time placeholder lint for sql/.
+CHANGED: sql/alf-audit-owner-recovery.sql, the defect register, 3 b59 docs, memory, .git/config here.
+EVIDENCE-path: SAIRN-handoff-hank-b59.md
+UNVERIFIED: the SQL's real run, and a live login with the new PIN (both Michael's).

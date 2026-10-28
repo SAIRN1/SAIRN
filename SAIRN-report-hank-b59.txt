@@ -1,0 +1,51 @@
+HANK b59 REPORT -- 2026-10-28
+
+METHODOLOGY (standing): the file that ships is the file that passed.
+- Re-read the literal SQL file, then the committed blob on origin.
+- Confirm: no placeholders, every literal well-formed, and any credential verifies against values read back from it.
+- Rehearsals are built mechanically from that literal file: table rename and begin/commit strip only, never a value
+  substitution.
+- Memory: shipped-file-is-the-file-that-passed.
+
+1. sql/alf-audit-owner-recovery.sql is now RUN-READY.
+   - The real hashPin() values are written into the file.
+   - The PIN is held only in C:\Users\marsh\Documents\SAIRN-hank\.git\sairn-alf-audit-owner-pin. It is never
+     committed and was never printed.
+   - The literal file and the origin blob were both checked (sha256 12f588a7..., identical):
+     - 0 placeholders;
+     - 128/32 hex;
+     - guard values equal insert values;
+     - the PIN verifies against the values in the file; a wrong PIN is rejected.
+   - Re-rehearsed on a temp table built mechanically from the literal file:
+     - with audit-owner locked first, it came out re-keyed and unlocked;
+     - the other 4 rows were unchanged;
+     - prod is untouched.
+   - Guard lint OK.
+   - RISK, stated in the file: the repo is public, so the hash of an 8-digit PIN can be attacked offline. That is
+     acceptable only on the synthetic audit licence. Re-key after use.
+
+2. Why b58 "rehearsed OK" and the real run aborted:
+   - the rehearsal ran a script-made COPY with dummy hex substituted, so it was not the shipped SQL;
+   - "guard check OK" was a static lint that cannot see placeholders;
+   - the generator values were made once, only to check lengths, and discarded;
+   - the digest did not say "needs operator substitution".
+   Defect register: b676e7e79 (user-report, moderate). Recurrence open: no push-time placeholder lint for sql/.
+
+3. Git config: the leak WAS present in this clone.
+   - user.email=fx@example.invalid and user.name=fx: the copy_exactly_gate fixture identity, written through a linked
+     worktree's GIT_DIR.
+   - core.bare was already false; GIT_DIR is unset.
+   - Fixed: the local identity was unset, so the global Michael Dibert identity applies. Verified on every b59 commit.
+   - cc's code fix 58801d4c7 is present after the pull.
+   - 148 hank commits since 10-18 carry fx. They were NOT rewritten, because that would need a force push.
+   - The cody (fx@local) and fourth (fx@example.invalid) clones show the same leak. Reported, not touched.
+
+4. PUSH: not forced, LANDED. b676e7e79 is the fix, 38d7553cb the register record, 9c6c1c5f5 the claim release.
+   There were two ref races and one register conflict:
+   - the conflict was handled by dropping and re-adding my own register record after the rebase;
+   - every sha was re-derived after the final rebase.
+
+NEXT (Michael):
+- A1: run the SQL as-is.
+- Move the PIN from .git\sairn-alf-audit-owner-pin into your password manager, then delete that file.
+- Log in once to verify.
