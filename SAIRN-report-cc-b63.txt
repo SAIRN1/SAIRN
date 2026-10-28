@@ -1,0 +1,41 @@
+SAIRN report -- cc b63 -- 2026-10-28
+
+LANDED dcdba0e6, 0 0 vs origin. No override, no skip, no --force.
+
+1 LIVE BLOCKS: sen_settings (SEN-AUDIT-0002), rf_settings (RF-AUDIT-0002),
+  alf_facility (ALF-AUDIT-0002). --live now uses the SAME marker judge as the
+  handler mode (b62's key diff could not read nested shapes); fixture rows on
+  each licence carry the rule's own seed() markers. Live on sairn.vercel.app:
+  22/22 role arms, every one exactly its declaration, exit 0 (was 2).
+
+2 CREDENTIALS (sql/field_scope_live_fixtures_2026-10-28.sql) -- rehearsed
+  (always-rollback, guards passed, nothing persisted), RUN, read back.
+    RF-AUDIT-0002   fs-owner owner 28528653 | fs-admin admin 65138684
+                    fs-estimator estimator 61452245 | fs-foreman foreman 32313368
+                    fs-crew crew 20734995
+    ALF-AUDIT-0002  fs-owner owner 86576619 | fs-billing billing 78310947
+                    fs-nursing nursing 57096965 | fs-med-aide med_aide 33024433
+                    fs-caregiver caregiver 86286640 | fs-activities activities 47801717
+                    fs-office-manager office_manager 17478561
+  (SEN-AUDIT-0002 unchanged from b62.) Fixtures 2/3/3/1. Keys added to
+  KNOWN_AUDIT_KEYS. hashPin/verifyPin x12; PR 3.4 guard; guard check 1 guarded.
+
+3 REGISTRY READY FOR HANK: --validate (strict schema, run first on every
+  invocation; unknown key, missing key, bad see/set/tag, duplicate marker).
+  Caught a real stale key on its first run. Blind lock 16 -> 20. A format
+  trial of alf_mar (scratch, not a design) validates, anchors once, drives 7/7.
+  Author's guide in the registry _comment, including the mock's eq-only limit.
+
+4 RED-FLAG 70 -> 80: already done in cc b24 (2026-10-19), then superseded by
+  cc b33 a87a4beb (2026-10-21) to 85 for builders and auditors. Measured: 85 for
+  all six named agents, 70 for an unknown clone. No change. Flag: CLAUDE.md
+  still says "wrap up at 80%"; the status line cites an 85% rule.
+
+5 REPLAY -- each live block FAILS on a real bad case, same live path:
+  sen_caregivers @ f02a61f0^ : caregiver LEAK of the original 8 peer fields
+  sen_settings   @ e444dc83^ : LEAK to scheduler/coordinator/caregiver
+  rf_settings    @ 85206564^ : LEAK to estimator/foreman/crew
+  alf_facility   ablated     : rate card LEAK to 5 roles while rates_visible=false
+  Control: replay on the current tree 22/22 clean.
+
+6 pushed, landed.

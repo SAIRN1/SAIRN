@@ -1,0 +1,27 @@
+DIGEST cc b63
+STATUS: all six items closed. --live covers all 4 field-scope rules: 22/22 role arms, exit 0. Landed dcdba0e6, 0/0. No override/skip.
+ITEM 1: live blocks for sen_settings / rf_settings / alf_facility. --live now uses the SAME marker judge as handler mode; each audit
+  licence holds the rule's own seed() fixtures. Live on sairn.vercel.app: every role received exactly its declaration.
+ITEM 2: sql/field_scope_live_fixtures_2026-10-28.sql rehearsed (always-rollback), RUN, read back. New creds (also in handoff):
+  RF-AUDIT-0002  fs-owner 28528653 | fs-admin 65138684 | fs-estimator 61452245 | fs-foreman 32313368 | fs-crew 20734995
+  ALF-AUDIT-0002 fs-owner 86576619 | fs-billing 78310947 | fs-nursing 57096965 | fs-med-aide 33024433 | fs-caregiver 86286640
+                 fs-activities 47801717 | fs-office-manager 17478561   (employee id = fs-<role>; role = the name after fs-)
+ITEM 3: registry ready: --validate (strict schema, runs first every time) caught a real stale key; blind lock 16 -> 20; a scratch
+  alf_mar FORMAT TRIAL validates and drives 7/7. Author's guide in the registry _comment. hank already has the file (b62 override).
+ITEM 4: red-flag 70->80 was done in cc b24 (10-19), then superseded by b33 a87a4beb (10-21) to 85 for all; measured 85. No change.
+ITEM 5: replay = the unchanged live path vs a known-bad handler on 127.0.0.1. sen_caregivers @ f02a61f0^ -> the original 8-peer-field
+  caregiver LEAK; sen_settings @ e444dc83^ and rf_settings @ 85206564^ -> LEAK; alf_facility ablated -> rate LEAK while flag said false.
+  Control replay on today's tree 22/22 clean.
+ITEM 6: pushed, landed.
+DECISION-NEEDED: Michael -- CLAUDE.md says "wrap up at 80%", sairn_status_line.py cites an 85% wrap-up rule (b29). One is stale.
+CHANGED: tools/sairn_field_scope_check.py (--validate, --replay, --handler-ref, --only, --env-file, marker live judge),
+  tools/field_scope_driver.js (--serve), tools/field_scope_rules.json, tools/audit_licence.py, sql/field_scope_live_fixtures_2026-10-28.sql.
+  DB: license_keys +2, sairnroofing_employee_auth +5, sairncare_employee_auth +7, sen_settings +3, rf_settings +3, alf_facility +1, sen_caregivers 2 updated.
+SQL: sql/field_scope_live_fixtures_2026-10-28.sql
+EVIDENCE-path: SAIRN-handoff-cc-b63.md, SAIRN-report-cc-b63.txt, scratchpad\live63.txt, scratchpad\fieldscope.env (not committed)
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\332ab89b-94aa-4880-931e-d17413636dfc.jsonl
+UNVERIFIED: none of this batch's claims; the 23 routed reads remain undeclared (hank).
+ROUTED: no new routing; b62's 23 reads -> hank, device cache -> fourth stand.
+NEXT: hank -- declare alf_mar in tools/field_scope_rules.json, --validate, then the default run. Michael -- the 80/85 wording.
+CONTEXT 54.5% of 1,000,000 -- 544,544 tokens, measured.
+END-OF-REPORT
