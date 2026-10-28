@@ -8522,12 +8522,12 @@
         "api/b51-mar-billing-assigned.test.js"
       ],
       "what": "hank b51 (76193dc91): api/sd-data.js family_mar -- a grantee role (billing) is refused 403 before the assignment-tier query unless a live grant matched (refusal audited mar_access_grant_refused, reason NO_LIVE_GRANT), and a granted read is refused 503 AUDIT_UNAVAILABLE when its mar_access_read row fails to write. Reproduced live before the fix on ALF-AUDIT-2026 (billing assigned to zz-b51-resident, no grant -> 200 with family_mar). REVIEWER: attack (1) whether any OTHER SAIRNcare read of alf_mar or MAR-derived data (derive_charges, alf_mar read, exports) still admits billing through assignment; (2) the 503-on-unlogged choice -- can writeAuditLog return false on a write that did land, refusing a legitimate read; (3) whether N6 (caregiver control) proves the gate is scoped to grantee roles or only that the message differs.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cc",
       "owner_assigned_at": "2026-10-22T15:13:41Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cc",
+      "reviewed_at": "2026-10-28T18:47:09Z",
+      "verdict": "cc b64 REVIEW of 76193dc9 (hank b51, family_mar grantee gate). CRITERIA: no path admits billing to MAR data through assignment; a granted read is served only once its audit row lands; the tests separate grantee roles from non-grantee roles.\n\nVERDICT: SOUND-WITH-GAPS (low).\n\n(1) The gate (sd-data.js:14696 at e9fe92bc) runs before the alf_clients scope query. No other alf_mar reader admits billing through assignment:\n- alf_mar/read refuses by role (:13053);\n- alf-alerts ALERT_ROLES omits billing;\n- alf-pharmacy is keyed by integration, not by employee;\n- there is no export verb.\nderive_charges admits billing by ROLE, with the drug name redacted (:13429). That is by design.\n\n(2) writeAuditLog (audit.js:107-141) returns false only when env is missing, on a non-2xx, or on a thrown fetch. With return=minimal, a non-2xx means nothing was inserted. Refusing a read whose row did land therefore needs a transport failure after the commit, and that errs toward refusing. Live behaviour UNVERIFIED.\n\n(3) N6 proves only that the refusal MESSAGE differs, not that the gate is scoped to grantee roles. Driven in temp copies:\n- GRANTEE_ROLES widened to caregiver: N6 goes red;\n- the same widening plus a reworded message: 11/0, exit 0.\n\nTests at e9fe92bc: b51 11/0 exit 0, with M1-M3 red as claimed; tests/mar_billing_grant 28/0 exit 0.\n\nGAPS (routed to hank):\n- N6 should assert 200, family_mar present, and no grant_refused row.\n- N1 does not assert that the assignment query was skipped.\n\nOUTSIDE THE DIFF (MEDIUM; a decision for Michael): alf_clients/read (:9408, :9433) gives billing and activities the whole resident blob, including the free-text medications and diagnosis fields. That is the same disclosure derive_charges redacts.\n\nReviewed by a read-only agent dispatched by cc; cc spot-checked it."
     },
     {
       "author_session": "cody",
@@ -8573,12 +8573,12 @@
         "api/b52-unreadable-is-not-empty.test.js"
       ],
       "what": "hank b52 (6a3755cac + 29739fe14): (1) leg_settings write -- a partial apprentice object MERGES onto the stored policy (Michael's b52 decision; fourth's F3 UI notified), the cross-list rule runs on the merged lists, and an unreadable settings read is 502. (2) The same row-or-null fail-open closed at four more Tier A sites: the leg_ role gate (unreadable or HTTP-500 settings read -> 502, was the wide default for an apprentice), the alf_family_contacts write's prior read (-> 502, was a first-save re-stamping consent provenance), sairncare-witness.js and sv-witness.js policy reads (non-list -> could-not-tell 503), law-auth.js loadEmployee (non-list throws; mfa_enroll refuses a token with no active row). REVIEWER: attack (a) whether refusing the WHOLE leg_ gate on an HTTP-500 settings read is too wide (every leg_ resource, every role, while the settings table is unhealthy) versus refusing only roles whose answer depends on the settings; (b) the merge semantics -- can an owner still CLEAR a list (send [] explicitly)?; (c) the four sites the sweep left OPEN and routed (sd-data 4946/20236 deliberate soft-delete skip, 3000/3983, dnt-bi.js:450, audit-checkpoint.js:339).",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cc",
       "owner_assigned_at": "2026-10-22T16:08:23Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cc",
+      "reviewed_at": "2026-10-28T18:47:41Z",
+      "verdict": "cc b64 REVIEW of 6a3755ca + 29739fe1 (hank b52). CRITERIA: no unreadable settings read or prior read resolves to the permissive answer; an explicit [] still clears a list; the routed sites are tracked.\n\nVERDICT: SOUND-WITH-GAPS (low-medium).\n\n(a) The refusal is not too wide. The settings read and both 502s sit inside LEG_SETTINGS_SENSITIVE_ROLES (sd-data.js:17465 and :17479 at e9fe92bc), so only apprentice and livery are refused.\n- Driven: a director on a 500 gets 200, with 0 settings reads.\n- Livery's 502 on band-r leg_bookings costs availability, not safety.\n- GAP: any HTTP 400 on the settings read still proceeds on the default (:17526). Driven: an apprentice reading a home-forbidden leg_bookings on a PGRST100 400 gets 200 ALLOW.\n\n(b) An explicit [] clears. The merge tests === undefined (:17279-17280).\n- Driven: forbidden:[], countersign:[] and both together all saved [].\n- null gets 400; {} keeps both lists.\n- No suite asserts this: W6 sends countersign:[] and never checks the result.\n\n(c) All four routed sites are closed at HEAD by later commits: 8e617d19, 45ba1d9f, dnt-bi.js:452 and audit-checkpoint.js:324/345.\n\nTests: app-boundary 14/0, b45 38/0, b52 9/0, b27 18/0, all exit 0.\n\nTEETH: L1 drives leg_invoices, which the apprentice band already denies (403 before the fix, not ALLOW). So M1 and M2 are killed only by 403-vs-502, and no arm shows the real fail-open. leg_bookings does show the real fix (200 before, 502 at HEAD), but no arm drives it.\n\nROUTED to hank:\n- the 400 path at :17526;\n- an arm on a band-r forbidden resource;\n- an assertion that [] clears.\n\nlaw-auth.js:1029 (the SSO bySub row-or-null shape) was read only, not driven: UNVERIFIED.\n\nReviewed by a read-only agent dispatched by cc."
     },
     {
       "author_session": "hank",
@@ -8596,12 +8596,12 @@
         "api/b53-soft-delete-guard-fail-closed.test.js"
       ],
       "what": "hank b53 (8e617d197 + dbbf43b6d): soft-delete and other guards refuse when their pre-read cannot be read -- sd_customers single and write_batch resurrection guards and SAIRNcode soft-delete-only guard (502 UNREADABLE_PRIOR), dnt_providers one-login check, dnt-bi token cap, sd-sub-data compliance gate (503). 404/400 not-provisioned still falls through everywhere. REVIEWER: attack (a) whether 404/400 fall-through is safe at each site (can PostgREST answer 400 for a reason other than a missing table/column, e.g. a malformed in.() list in write_batch?); (b) whether the batch refusal is all-or-nothing as intended; (c) the five INTENTIONAL fail-opens left in place (ai-rate-limit, claude.js, sd-render) and the unchecked recordFailure() lockout PATCH.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cc",
       "owner_assigned_at": "2026-10-22T21:16:30Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cc",
+      "reviewed_at": "2026-10-28T18:47:41Z",
+      "verdict": "cc b64 REVIEW of 8e617d19 + dbbf43b6 (hank b53). CRITERIA: an unreadable pre-read writes nothing at every site; a 404/400 falls through only when the table is not provisioned; the batch refusal is all-or-nothing; the kept fail-opens are bounded.\n\nVERDICT: SOUND-WITH-GAPS (MEDIUM).\n\n(a) Most sites are safe. The single-row customers/sc_claims guards (sd-data.js:4995 and :20410 at e9fe92bc), dnt_providers and sd-sub-data filter by eq. or not at all, so caller text cannot force a 400.\n\nwrite_batch is NOT safe.\n- :4921 builds customer_id=in.(ids) with encodeURIComponent, which leaves ')' raw (cc confirmed this).\n- A sibling id 'x)y' gets a 400, :4929 takes the 400 as \"not provisioned\", and the upsert resurrects a tombstoned customer.\n- Driven in a temp copy with a PostgREST-grammar mock: [C-DEL, x)y] returns 200 written=2 with C-DEL resurrected; the control [C-DEL] is refused. Live UNVERIFIED.\n- A comma in an id splits silently into two lookups.\n\n(b) The unreadable-read refusal is all-or-nothing: one GET, and a return before the single POST. But the 400 hole is all-or-nothing too: one bad id disarms the guard for all 500 rows.\n\n(c) The kept fail-opens are documented cost controls, and the recordFailure PATCH is checked in all 17 auth files at HEAD.\n\nTests: b53 12/0, customers-batch 15/15 and tombstone-propagation, all exit 0.\n\nTEETH: no arm drives a 400 anywhere. With the batch non-list refusal ablated, both suites still exit 0.\n\nROUTED to hank (MEDIUM):\n- quote the in.() values, or reject ')' and ',' in ids;\n- sd-sub-data.js:443 runs the compliance gate only when !payload.id, so an update can move a job to a non-compliant sub.\n\nReviewed by a read-only agent dispatched by cc; cc spot-checked the in.() encoding."
     },
     {
       "author_session": "fourth",
@@ -8663,12 +8663,12 @@
         "api/b52-cap-jsonb-measure.test.js"
       ],
       "what": "cody b52: api/sd-data.js per-resource payload caps (dnt_appointments, rf_claim_photos, rf_claim_agreements, rf_proposals, rf_photos, locations) now measure jsonb text after the dental location stamp, not compact JSON (hover H2 seq1109) -- a record that clears the gate now also clears the table's constraint. api/b32-rf-jobs-projection.test.js gains write-response arms (H2 seq1127). Review: that no legitimate client payload near a cap is newly refused, and the stamp is applied only where the write path stamps.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cc",
       "owner_assigned_at": "2026-10-27T14:26:13Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cc",
+      "reviewed_at": "2026-10-28T18:47:42Z",
+      "verdict": "cc b64 REVIEW of 7e794838 (cody b52, per-resource caps measure jsonb text; landed as d8f47f7a, patch-id identical). CRITERIA: a legitimate payload is never counted above the table's octet_length(data::text); the stamp is applied only where the write path stamps.\n\nVERDICT: SOUND-WITH-GAPS (low).\n\napi/_lib/jsonb-text-bytes.js:27-55 matched a jsonb::text model on 21 adversarial shapes with a delta of 0: duplicate keys, 1.0, 1e400, 2^63, non-ASCII, control characters, __proto__, nested empties, NaN and Date.\n\nGAP: exponent-form numbers are UNDER-counted: 1e21 by 17 bytes, MAX_VALUE by 286, 5e-324 by 320. The library already documents this. Ordinary float leftovers such as 5.551115123125783e-17 take that form, so the gate can pass a record that the table then refuses, by up to ~320 bytes per such number.\n\nThe stamp:\n- The only dnt_ per-resource cap is dnt_appointments. Its write stamps (sd-data.js:19304) and stores exactly that blob, so the gate equals the constraint.\n- rf_claim_photos, rf_claim_agreements and rf_proposals store storedBlob() (:10270, :12820, :11750). The gate over-counts them by tens of bytes against a 1.5MB cap, which is harmless.\n\nTests: b52-cap-jsonb-measure 6/0, b32-rf-jobs-projection 10/0, b28-photo-cap 23/0, b30-cap-per-action 22/0, sd-photos-size-and-provenance 26/0, all exit 0.\n\nPostgres behaviour was reasoned from its documentation and was not run against a database: UNVERIFIED.\n\nReviewed by a read-only agent dispatched by cc."
     },
     {
       "author_session": "cc",
@@ -8730,12 +8730,12 @@
         "api/b52-cap-jsonb-measure.test.js"
       ],
       "what": "cody b53: the 64KB default payload cap now measures jsonb text (octet_length(data::text)) instead of compact JSON at api/sd-data.js (every resource), api/sd-sub-data.js, api/_lib/sd-store.js and api/bridge.js. A record at most ~2x its compact size in separators can now be refused at the gate where the table would have refused it. Review: no legitimate client payload near 64KB compact is newly refused in a way the table would have accepted.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cc",
       "owner_assigned_at": "2026-10-27T15:03:36Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cc",
+      "reviewed_at": "2026-10-28T18:47:43Z",
+      "verdict": "cc b64 REVIEW of a46ed992 (cody b53, 64KB default measures jsonb text; landed as f45edc2c, patch-id identical). CRITERIA (the obligation's own): no legitimate client payload near 64KB compact is newly refused where the table would accept it.\n\nVERDICT: UNSOUND (MEDIUM) against that criterion. The measure is right for one payload stored as one row. The defect is applying it to a WHOLE request that is stored as many rows.\n\nHow it fails:\n- The gate (sd-data.js:1070) measures the whole request.\n- sd_customers|write_batch (:4907) has no per-action cap (cc confirmed this), but it writes one row per customer, and sdcust_data_size applies per row.\n- Driven through the real dispatcher on a temp copy, using the custSave() shape (stonedesk.html:25838): 140-150 customers (60,833-65,193 bytes compact, 65,733-70,443 bytes jsonb) get 413 at HEAD and 200 with the compact measure restored. Each row is about 469 bytes.\n- saveSD3Data (stonedesk.html:25400-25404) only calls console.warn, so the customer list silently stops syncing.\n\nOther gaps:\n- The gate over-counts by 30 bytes on dnt_ paths that do not stamp: dnt_settings :19032, the vendor objects :18742 and dnt_credentials :19508.\n- The comment at sd-sub-data.js:173 cites a constraint that sql/sd_sub_portal_schema.sql:45-53 says does not exist.\n\nTests: b52-cap-jsonb-measure 6/0, bridge-push-auth 27/0, b21-bridge-unknown-action 20/0, sd-sub-data-auth-ordering 11/0, all exit 0. No arm tests the over-refusal direction.\n\nPRE-EXISTING, HIGH: write_batch accepts 500 records under a 64KB whole-request cap. A shop with more than about 150 realistic customers has never been able to sync, and b53 lowers that ceiling to about 139.\n\nFIX (routed to cody/hank): give write_batch its own per-action cap and measure each record.\n\nReviewed by a read-only agent dispatched by cc; cc spot-checked the missing cap."
     },
     {
       "author_session": "hank",
@@ -8755,12 +8755,12 @@
         "api/b60-readiness-caregiver-projection.test.js"
       ],
       "what": "hank b60 (H1 #1274): sen_visits/readiness now hands the EVV readiness engine only {id, name, state_caregiver_id} per caregiver, with the state ID VALUE replaced by a presence marker for roles outside SEN_CAREGIVER_HR_FIELD_ROLES (coordinator/scheduler). Fetch unchanged; verdict unchanged. Review: that the projection covers every field checkVisit reads, and that the presence signal retained for coordinator/scheduler is acceptable.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cc",
       "owner_assigned_at": "2026-10-28T17:50:52Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cc",
+      "reviewed_at": "2026-10-28T18:49:23Z",
+      "verdict": "cc b64 REVIEW of cdf71e89 (hank b60, H1 #1274, sen_visits/readiness caregiver projection). CRITERIA: the projection covers every caregiver field checkVisit reads; no HR value reaches the engine for roles outside SEN_CAREGIVER_HR_FIELD_ROLES; the retained presence signal is acceptable.\n\nVERDICT: SOUND-WITH-GAPS (MEDIUM). The diff is SOUND; the gap is pre-existing and outside it.\n\nCoverage, read by cc: checkVisit reads exactly caregiver.name (sen-evv-readiness.js:337) and caregiver.state_caregiver_id (:343), and summarize() passes nothing else through. So {id, name, state_caregiver_id} covers the engine.\n\nProjection:\n- For coordinator/scheduler the ID becomes 'present' or '' (sd-data.js:8637-8645).\n- The presence signal is the readiness verdict itself (\"no state caregiver ID on file\"), which those roles need. That is acceptable, and it is narrower than the field sen_caregivers/read already withholds.\n\nTests run by cc: b60-readiness-caregiver-projection 18/0, sd-data-sen-caregiver-read-paths 19/0, sd-data-sen-caregiver-pii-scope 21/0, all exit 0.\n\nPRE-EXISTING FINDING (MEDIUM, routed to hank): summarize() looks the caregiver up as caregivers[v.assigned_employee_id] (:459), but sd-data.js keys caregiversById by x.caregiver_id. A visit's assigned_employee_id is the AUTH employee id: the vs-caregiver select is filled from senAssignable() employee_id (sairnsenior.html:3365), and caregiver rows are CG-... ids (saveCaregiver). So for real data every assigned visit reports \"references a caregiver record that could not be found\" whatever the record holds, and the caregiver-field checks never run.\n- The b60 fixture masks this by using the same value CG for both ids (test:44, :47).\n- FIX: key caregiversById by data.employee_id, and give the test distinct ids.\n\nReviewed by cc directly."
     }
   ]
 }
