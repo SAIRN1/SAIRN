@@ -8808,6 +8808,32 @@
       "reviewed_at": null,
       "verdict": null,
       "owner_note": "hover computed cc by the gate's least-loaded-then-alphabetical rule over the open records in this file (cc 5, cody 6, fourth 6, hank 5 at 2026-10-28); roster liveness not checked, so cc re-assigns with its own roster function if cc is not the right reviewer or is not live."
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-28T22:00:56Z",
+      "opened_at_sha": "9e37119ca396fe9f7fd3db03263efad1df692180",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 1,
+      "resources": [
+        "mech_checks",
+        "mech_credentials",
+        "mech_insurance_policies",
+        "mech_quotes",
+        "mech_site_assets"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tests/sd_data_mech_write_unconfirmed.js"
+      ],
+      "what": "cody b58: api/sd-data.js mech_site_assets, mech_insurance_policies and mech_credentials writes (and the MECH_RECORDS branch for mech_quotes/mech_checks) now answer 502 WRITE_UNCONFIRMED when the store returns no row under return=representation, instead of ok with data:null or the request payload. New refuseUnstoredWrite() sibling of refuseUnconfirmedWrite(). Review: that no legitimate save path returns [] (e.g. a conflict that should be idempotent), and tests/sd_data_mech_write_unconfirmed.js.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-28T22:00:56Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

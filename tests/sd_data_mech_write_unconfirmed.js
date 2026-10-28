@@ -103,13 +103,13 @@ async function write(file, resource, payload, echo) {
 
 // The pre-b58 success lines, restored into a copy for the ablation.
 const OLD = [
-  ["if (wroteRow(rows) !== 'WROTE') { refuseUnconfirmedWrite(res, 'this site asset', NO_ROW_BACK); return; }\n      res.status(200).json({ ok: true, provisioned: true, data: rows[0] });",
+  ["if (wroteRow(rows) !== 'WROTE') { refuseUnstoredWrite(res, 'this site asset'); return; }\n      res.status(200).json({ ok: true, provisioned: true, data: rows[0] });",
    "res.status(200).json({ ok: true, provisioned: true, data: (Array.isArray(rows) && rows[0]) || null });"],
-  ["if (wroteRow(insRows) !== 'WROTE') { refuseUnconfirmedWrite(res, 'this insurance policy', NO_ROW_BACK); return; }\n      res.status(200).json({ ok: true, provisioned: true, data: insRows[0] });",
+  ["if (wroteRow(insRows) !== 'WROTE') { refuseUnstoredWrite(res, 'this insurance policy'); return; }\n      res.status(200).json({ ok: true, provisioned: true, data: insRows[0] });",
    "res.status(200).json({ ok: true, provisioned: true, data: (Array.isArray(insRows) && insRows[0]) || null });"],
-  ["if (wroteRow(rows) !== 'WROTE') { refuseUnconfirmedWrite(res, 'this credential', NO_ROW_BACK); return; }\n      res.status(200).json({ ok: true, provisioned: true, data: rows[0] });",
+  ["if (wroteRow(rows) !== 'WROTE') { refuseUnstoredWrite(res, 'this credential'); return; }\n      res.status(200).json({ ok: true, provisioned: true, data: rows[0] });",
    "res.status(200).json({ ok: true, provisioned: true, data: (Array.isArray(rows) && rows[0]) || null });"],
-  ["if (wroteRow(rows) !== 'WROTE') { refuseUnconfirmedWrite(res, resource, NO_ROW_BACK); return; }\n      res.status(200).json({ ok: true, data: rows[0].data });",
+  ["if (wroteRow(rows) !== 'WROTE') { refuseUnstoredWrite(res, resource); return; }\n      res.status(200).json({ ok: true, data: rows[0].data });",
    "res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : mPayload });"]
 ];
 

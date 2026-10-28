@@ -3446,7 +3446,7 @@ module.exports = async (req, res) => {
       // NO ROW BACK IS NOT A SAVE (cody b58). This answered ok with data:null,
       // and the app clears the form on ok -- so a write the store did not echo
       // lost the technician's entry behind a success.
-      if (wroteRow(rows) !== 'WROTE') { refuseUnconfirmedWrite(res, 'this site asset', NO_ROW_BACK); return; }
+      if (wroteRow(rows) !== 'WROTE') { refuseUnstoredWrite(res, 'this site asset'); return; }
       res.status(200).json({ ok: true, provisioned: true, data: rows[0] });
       return;
     }
@@ -3667,7 +3667,7 @@ module.exports = async (req, res) => {
         return;
       }
       if (!wr.ok) return upstream(res, insRows);
-      if (wroteRow(insRows) !== 'WROTE') { refuseUnconfirmedWrite(res, 'this insurance policy', NO_ROW_BACK); return; }
+      if (wroteRow(insRows) !== 'WROTE') { refuseUnstoredWrite(res, 'this insurance policy'); return; }
       res.status(200).json({ ok: true, provisioned: true, data: insRows[0] });
       return;
     }
@@ -3797,7 +3797,7 @@ module.exports = async (req, res) => {
         return;
       }
       if (!r.ok) return upstream(res, rows);
-      if (wroteRow(rows) !== 'WROTE') { refuseUnconfirmedWrite(res, 'this credential', NO_ROW_BACK); return; }
+      if (wroteRow(rows) !== 'WROTE') { refuseUnstoredWrite(res, 'this credential'); return; }
       res.status(200).json({ ok: true, provisioned: true, data: rows[0] });
       return;
     }
@@ -18941,7 +18941,7 @@ module.exports = async (req, res) => {
       // return=representation an upsert that stored a row returns it; anything
       // else is not a confirmation. (The fallback was `mPayload`, not `payload`,
       // so it never handed back unredacted text -- and now there is none.)
-      if (wroteRow(rows) !== 'WROTE') { refuseUnconfirmedWrite(res, resource, NO_ROW_BACK); return; }
+      if (wroteRow(rows) !== 'WROTE') { refuseUnstoredWrite(res, resource); return; }
       res.status(200).json({ ok: true, data: rows[0].data });
       return;
     }
@@ -20812,12 +20812,20 @@ function wroteRow(rows) {
   return 'WROTE';
 }
 
-// `why` replaces the opening clause for a caller whose answer WAS read and was
-// not a stored row -- an upsert that came back `[]` (cody b58, the mech writes).
-const NO_ROW_BACK = 'The data store answered the save without returning the stored row';
-function refuseUnconfirmedWrite(res, what, why) {
+function refuseUnconfirmedWrite(res, what) {
   res.status(502).json({ error: { code: 'WRITE_UNCONFIRMED',
-    message: (why || 'The data store accepted the request but its answer could not be read') + ', so '
+    message: 'The data store accepted the request but its answer could not be read, so '
+      + 'whether the change to ' + what + ' was saved is UNKNOWN -- it was not confirmed '
+      + 'and it was not refused. Refresh and check the current value before trying again.' } });
+}
+
+// The same answer for a save whose reply WAS read and held no stored row -- an
+// upsert under return=representation that came back `[]` (cody b58, the mech
+// writes). A sibling rather than a parameter, so the function above stays the
+// text tests/run_unconfirmed_write_sweep_sabotage_probe.py anchors on.
+function refuseUnstoredWrite(res, what) {
+  res.status(502).json({ error: { code: 'WRITE_UNCONFIRMED',
+    message: 'The data store answered the save without returning the stored row, so '
       + 'whether the change to ' + what + ' was saved is UNKNOWN -- it was not confirmed '
       + 'and it was not refused. Refresh and check the current value before trying again.' } });
 }
