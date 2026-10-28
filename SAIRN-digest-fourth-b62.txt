@@ -1,0 +1,24 @@
+SAIRN DIGEST -- fourth b62 -- 2026-10-28
+CONTEXT 21.8% of 1,000,000 -- 217,971 tokens, measured.
+STATUS: items 3 and 5 landed through a3efe3dab; items 1, 2 and 4 root-caused with owners named; no force, no skip.
+DECISION-NEEDED: item 1 -- the scrutiny-row write site is cc's and cc held an active platform claim, so it was flagged back, not fixed. Go-ahead naming cc's claim id, or route to cc.
+READ: SAIRN-handoff-fourth-b62.md (whole state). Detail: SAIRN-report-fourth-b62.txt, docs/2026-10-28-fourth-b62-root-causes.md.
+SQL: none.
+CHANGED:
+  40698b8ef register: f9a4e5a0 superseded_by 5bb0950a (content-identical twin); --reseat nothing outstanding
+  d7e8f5d9a tools/claim_state_recheck.py + .githooks/pre-push: every pushed commit re-checked against active claims
+  1c10fa015 docs: root causes for all five items
+  a3efe3dab TOOLING-INVENTORY regenerated
+1 orphan rows: 1,053 of 1,594 (66%) key unlanded commits; written at PRE-push, committed by push_retry, kept by append-only
+2 install_git_hooks_check -> cc (hooksPath fires prepare-commit-msg on the throwaway commit); staging_discipline -> cody (stale fixture, c79d4e59b)
+3 --supersede could not disambiguate: hover2's ruling record shares the survivor sha (tool gap -> cc)
+4 timeout guard: auto-mode classifier denies; one exact allow rule for a --live-drive mode would verify it
+5 recheck: fixtures 13/13, real-commit control refuses, ran live on its own landing push
+NEXT, in order:
+  a item 1: go-ahead, or cc after b66
+  b cc: install_git_hooks hook-fire commit; --supersede ambiguity
+  c cody: staging_discipline fixture
+  d Michael: grant or decline the --live-drive rule; remove the `timeout ... push_retry` allow rules
+UNVERIFIED: push_timeout_guard against a real `timeout ... git push` (needs item 4's permission); claim recheck at commit time (pre-commit is cc's).
+EVIDENCE-path: docs/2026-10-28-fourth-b62-root-causes.md; scratchpad supersede62.py.
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\b6e28c25-eaee-4611-aeb3-d94f0198d47f.jsonl

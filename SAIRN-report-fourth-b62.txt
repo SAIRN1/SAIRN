@@ -1,0 +1,44 @@
+SAIRN REPORT -- fourth b62 -- 2026-10-28
+
+LANDED through a3efe3dab, no force, no gate skip. Detail per item:
+docs/2026-10-28-fourth-b62-root-causes.md.
+
+1 ORPHAN SCRUTINY ROWS -- root-caused, fix designed, NOT applied.
+  Measured: 1,053 of 1,594 ledger rows (66%) key commits not on origin/main
+  (262 rebased-away locally, 791 objects absent here); all 97 local orphan
+  keys have a landed same-subject twin -- the rebase signature.
+  Cause: sairn_push_gate_hook.py writes rows at PRE-push via
+  exit_status_attributable.scrutiny_record; push_retry.fold_scrutiny commits
+  them; the rebase rewrites the commits; scrutiny_append_only forbids the
+  cleanup. The docstring's claim that post-rewrite/doc_sha_reseat repair the
+  ledger is false -- the ledger is in neither's document set.
+  Write site is cc's, and cc held an ACTIVE platform claim all batch: flagged
+  back per the standing rule. Fix: pending store in .git/, promoted only once
+  the sha is an ancestor of origin/main.
+
+2 PRE-EXISTING PROBE FAILURES -- owners named.
+  install_git_hooks_check (1 arm), cc: the hook-fire test sets core.hooksPath
+  for the whole throwaway repo, so prepare-commit-msg refuses the throwaway
+  commit (reproduced: exit 1 with the hooks, exit 0 without).
+  staging_discipline (2 arms), cody: stale fixture -- c79d4e59b added
+  git('add', '-A') at push_retry.py:674 in a selftest temp repo.
+
+3 RESEAT COLLISION -- RESOLVED (40698b8ef). f9a4e5a0 superseded by its
+  content-identical twin 5bb0950a; --supersede could not do it because
+  hover2's ruling record shares the survivor sha. --reseat: nothing
+  outstanding. --check: OK, 761 records.
+
+4 TIMEOUT GUARD LIVE DRIVE -- denier is the Claude Code auto-mode
+  classifier (no deny rule matches). Minimum permission: one allow rule,
+  Bash(python tools/push_timeout_guard.py --live-drive), for a mode not yet
+  built. Also found: settings.local.json still allows
+  `timeout 540/600 python tools/push_retry.py --loop`.
+
+5 CLAIM-STATE RECHECK -- live (d7e8f5d9a). Every pushed commit touching the
+  push wiring, docs/ or <app>.html is refused while another session's active
+  claim covers the path. Fails closed. Fixtures 13/13; real-commit control
+  refuses. It ran on this batch's own landing push.
+
+PUSH: 2 attempts. The first was refused by derived-docs; fixed with a NEW
+commit, not an amend, so the one scrutiny row it wrote keys a landed commit.
+This batch created 0 orphan rows.

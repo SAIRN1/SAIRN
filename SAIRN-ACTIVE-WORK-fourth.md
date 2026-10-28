@@ -2293,3 +2293,13 @@ Full account: `SAIRN-handoff-fourth-b60.md`.
 
 Full account: `SAIRN-handoff-fourth-b61.md`.
 - b61 addendum (post-restart): fx identity unset from this clone's local config; author is now Michael Dibert; committer_identity_check CLEAN; history not rewritten.
+
+## batch b62 -- 2026-10-28, CLOSED (item 1 flagged back: cc's write site, cc's live platform claim)
+
+- Orphan scrutiny rows: 1,053 of 1,594 rows (66%) key commits not on origin/main. Written at pre-push, committed by push_retry, kept by the append-only rule. Fix designed in `docs/2026-10-28-fourth-b62-root-causes.md`; not applied.
+- install_git_hooks_check: routed to cc. staging_discipline: routed to cody. Root causes are in the doc.
+- Reseat collision resolved (`40698b8ef`): f9a4e5a0 superseded_by 5bb0950a.
+- `tools/claim_state_recheck.py` (`d7e8f5d9a`): in pre-push, it re-checks every pushed commit that touches the wiring, docs/ or an <app>.html against the active claims.
+- Timeout guard live-drive: the denier is the auto-mode classifier. The minimum allow rule is documented.
+
+Full account: `SAIRN-handoff-fourth-b62.md`.
