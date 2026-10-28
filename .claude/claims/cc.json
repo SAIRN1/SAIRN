@@ -4798,6 +4798,19 @@
       "status": "released",
       "released_at": "2026-10-28T18:52:54Z",
       "files": null
+    },
+    {
+      "id": "cc-1793221851",
+      "session": "cc",
+      "subject": "platform",
+      "task": "b65 field-scope validate and tier-a hover b92 obligation append FILES: docs/tier-a-reviews.json",
+      "claimed_at": "2026-10-28T21:10:51Z",
+      "claimed_at_epoch": 1793221851.3402803,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/tier-a-reviews.json"
+      ]
     }
   ],
   "refusals": [
