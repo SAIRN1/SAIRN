@@ -4825,6 +4825,20 @@
         "tools/builder_auditor_deny_hook.py",
         "tools/builder_hook_presence.py"
       ]
+    },
+    {
+      "id": "cc-1793229049",
+      "session": "cc",
+      "subject": "sairnsenior",
+      "task": "b67 finding 1756 caregiver local purge on merge FILES: sairnsenior.html tests/sairnsenior_caregiver_scope_purge.js",
+      "claimed_at": "2026-10-28T23:10:49Z",
+      "claimed_at_epoch": 1793229049.846627,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "sairnsenior.html",
+        "tests/sairnsenior_caregiver_scope_purge.js"
+      ]
     }
   ],
   "refusals": [
