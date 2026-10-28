@@ -4659,6 +4659,17 @@
       "status": "released",
       "released_at": "2026-10-27T15:46:58Z",
       "files": null
+    },
+    {
+      "id": "hank-1793186505",
+      "session": "hank",
+      "subject": "sql",
+      "task": "alf audit owner recovery sc pinnacle trial",
+      "claimed_at": "2026-10-28T11:21:45Z",
+      "claimed_at_epoch": 1793186505.5809183,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
