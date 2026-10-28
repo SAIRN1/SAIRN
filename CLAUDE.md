@@ -456,6 +456,11 @@ re-derive any of it from a handoff.
   that goes stale with nothing to say it has.
 - **The final chat message is exactly `done b<n> <Drive file id of the
   digest>`** — the id, not the filename, and nothing else on the line.
+  **Produce it with `python tools/sairn_done_line.py --batch b<n>`** as the
+  last command. It prints the line only once the handoff, report and digest
+  have landed and been uploaded, and it reads the id from Drive for desktop's
+  own database, not from memory. In a builder clone, a Stop hook then refuses
+  any final message that is not that exact line (cc b66).
 
 ## Response style
 

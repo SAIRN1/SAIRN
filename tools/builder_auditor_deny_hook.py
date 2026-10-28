@@ -54,10 +54,9 @@ WHAT IS INSPECTED, PER CALL:
       4. GIT APPLY / AM: every existing file in the command is read as a
          patch, and its target paths are checked.
       5. UNTRACKED SCRIPTS: an interpreter (python, node, bash, ...) run on a
-         file that is not a clean tracked file is read and text-scanned. That
-         is the route of writing a script to the scratchpad and running it.
-         A committed, unmodified tool has been through review and the push
-         gate, and it is not re-read on every call.
+         file git does not track is read and text-scanned. That is the route
+         of writing a script to the scratchpad and running it. A tracked
+         file, modified or not, is not re-read; is_tracked() says why.
 
 SUBAGENTS. A PreToolUse hook in settings fires for a subagent's tool calls as
 well as the main session's. The payload's agent_id / agent_type go into the
@@ -82,13 +81,16 @@ ALLOW IS SILENT: exit 0 with no output. The 2026-10-11 hook removal was about
 hook output driving compaction, so this adds nothing to the context on the
 calls it lets through.
 
-THE BLOCK LOG. Every refusal appends one JSON line to
-~/SAIRN-SESSION-LOCKS/builder-auditor-blocks.jsonl. That location is outside
-every clone and is the same root as the status registry, so all six clones
-can read it. The same line is also appended to
-G:/My Drive/SAIRN-status/builder-auditor-blocks.jsonl, the Drive folder chat
-reads. A failed log write is reported in the refusal and never turns it into
-an allow.
+THE BLOCK LOG. Every refusal appends one tab-separated line to
+~/SAIRN-SESSION-LOCKS/deny-blocks.log: ts, agent, path, tool, reason. That is
+the SAME file and the SAME five columns the auditor's own hook writes for the
+other direction (reconciled cc b66; block_line() says where the format came
+from). One log covers the whole boundary, outside every clone, and all six
+clones can read it. After each append, the whole file is copied to
+G:/My Drive/SAIRN-status/deny-blocks.log, the Drive folder chat reads. That
+copy is current as of the last BUILDER refusal: the auditor's hook appends
+locally and does not mirror. A failed log write is reported in the refusal
+and never turns it into an allow.
 
     python tools/builder_auditor_deny_hook.py              # hook entry: payload on stdin
     python tools/builder_auditor_deny_hook.py --selftest   # criteria, both directions
@@ -104,7 +106,7 @@ import shlex
 import subprocess
 import sys
 
-CRITERIA_VERSION = '2026-10-28.b66.1'
+CRITERIA_VERSION = '2026-10-28.b66.2'
 
 WRITE_TOOLS = ('Edit', 'Write', 'MultiEdit', 'NotebookEdit')
 COMMAND_TOOLS = ('Bash', 'PowerShell', 'Monitor')
@@ -190,9 +192,9 @@ INTERPRETERS = ('python', 'python3', 'py', 'node', 'bash', 'sh', 'pwsh',
 SEGMENT_OPS = (';', '&&', '||', '|', '&', '(', ')', '\n')
 
 LOCKS = os.path.join(os.path.expanduser('~'), 'SAIRN-SESSION-LOCKS')
-LOG_NAME = 'builder-auditor-blocks.jsonl'
-LOG_PATHS = (os.path.join(LOCKS, LOG_NAME),
-             os.path.join('G:', os.sep, 'My Drive', 'SAIRN-status', LOG_NAME))
+LOG_NAME = 'deny-blocks.log'             # SHARED with the auditor's own hook
+LOG_PATHS = (os.path.join(LOCKS, LOG_NAME),                                    # append
+             os.path.join('G:', os.sep, 'My Drive', 'SAIRN-status', LOG_NAME))   # whole-file mirror
 
 
 class CouldNotRun(Exception):
@@ -330,16 +332,25 @@ def patch_targets(path, root):
     return [t for t in out if t != '/dev/null' and path_hit(os.path.join(root, t))]
 
 
-def is_clean_tracked(path):
+def is_tracked(path):
+    """Tracked by the git repo it sits in, modified or not.
+
+    WHY A MODIFIED TRACKED FILE IS NOT RE-READ (cc b66, measured on the armed
+    hook). The first version scanned anything that was not a CLEAN tracked
+    file. tools/tooling_inventory.py names the auditor's paths in its
+    descriptions, and every builder edits it for each new tool and then runs
+    it. So that version would have refused a routine step on every batch that
+    adds a tool. That is the cliff discipline 39 warns about. A tracked file's
+    edits reach the push gate and the history audit
+    (tools/hover_separation_audit.py). A file outside git reaches neither, and
+    that file is the bypass this scan exists for."""
     d = os.path.dirname(os.path.abspath(path))
     try:
-        out = subprocess.run(['git', '-C', d, 'status', '--porcelain', '--ignored', '--',
-                              os.path.abspath(path)], capture_output=True, text=True, timeout=10)
-        tracked = subprocess.run(['git', '-C', d, 'ls-files', '--error-unmatch', '--',
-                                  os.path.abspath(path)], capture_output=True, timeout=10)
+        r = subprocess.run(['git', '-C', d, 'ls-files', '--error-unmatch', '--',
+                            os.path.abspath(path)], capture_output=True, timeout=10)
     except (OSError, subprocess.SubprocessError):
         return False
-    return out.returncode == 0 and out.stdout.strip() == '' and tracked.returncode == 0
+    return r.returncode == 0
 
 
 def tokenize(cmd):
@@ -380,6 +391,23 @@ def inspect_command(cmd, cwd):
     hits = [('command-text', h) for h in text_hits(cmd)]
     for variant in (cmd, cmd.replace('\\', '/')):
         hits.extend(h for h in _inspect_tokens(variant, cwd) if h not in hits)
+    # A script reached some other way than as the interpreter's first
+    # argument -- `cat x.py | python`, `python -c "exec(open('x.py').read())"`.
+    # Any untracked script-named file anywhere in a command that runs an
+    # interpreter is read.
+    words = set(re.findall(r'[A-Za-z0-9_.-]+', cmd.lower()))
+    if words & set(INTERPRETERS):
+        for m in set(re.findall(r'[\w./\\:~-]+\.(?:py|js|mjs|cjs|sh|ps1|pl|rb|ts)\b', cmd)):
+            full = m if os.path.isabs(m) else os.path.join(cwd, m)
+            if os.path.isfile(full):
+                try:
+                    body = io.open(full, encoding='utf-8', errors='replace').read()
+                except OSError as e:
+                    raise CouldNotRun('script %s could not be read (%s)' % (full, e))
+                found = text_hits(body)
+                if found and not is_tracked(full):
+                    hits.extend(('untracked-script %s' % m, h) for h in found
+                                if ('untracked-script %s' % m, h) not in hits)
     return hits
 
 
@@ -424,7 +452,7 @@ def _inspect_tokens(cmd, cwd):
                 # Scan first, ask git second: the git call is the slow part and
                 # only a script that names an auditor path needs it.
                 found = text_hits(body)
-                if found and not is_clean_tracked(full):
+                if found and not is_tracked(full):
                     for h in found:
                         hits.append(('%s untracked-script %s' % (prog, s), h))
         git_base, sub = base, None
@@ -515,29 +543,57 @@ def agent_name():
         return 'UNKNOWN (no sairn-session marker under %s)' % git_dir
 
 
+def block_line(payload, hits, reason, now=None):
+    """One line in the AUDITOR's deny-blocks.log format, column for column:
+
+        <UTC ts>\\t<agent[/subagent type]>\\t<path, normcase>\\t<tool>\\t<reason>
+
+    Read off the live file H1's hook writes (2026-10-28, 8 lines, b98/b99),
+    not invented, so both directions of the boundary land in ONE log a reader
+    can sort by time. The earlier JSON-lines file
+    (builder-auditor-blocks.jsonl) carried the same facts in a second shape,
+    and it was retired the same batch."""
+    pl = payload if isinstance(payload, dict) else {}
+    agent = agent_name() + ('/' + pl['agent_type'] if pl.get('agent_type') else '')
+    tool = pl.get('tool_name') or '-'
+    path = next((p for _c, p in hits if os.path.isabs(p)), '')
+    if not path and hits:
+        p, cwd = hits[0][1], pl.get('cwd') or ''
+        path = os.path.join(cwd, p) if cwd and '/' in p else p
+    path = os.path.normcase(os.path.normpath(path)) if path else '-'
+    if not hits:
+        why = reason
+    elif hits[0][0] == tool:
+        why = 'direct %s on an auditor-owned path' % tool
+    elif hits[0][0] == 'command-text':
+        why = 'command text names an auditor path'
+    else:
+        why = hits[0][0]
+    if len(hits) > 1:
+        why += ' (+%d more)' % (len(hits) - 1)
+    ts = (now or datetime.datetime.now(datetime.timezone.utc)).strftime('%Y-%m-%dT%H:%M:%SZ')
+    return '\t'.join(re.sub(r'[\t\r\n]+', ' ', f) for f in (ts, agent, path, tool, why))
+
+
 def log_block(payload, hits, reason):
-    line = json.dumps({
-        'ts': datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
-        'agent': agent_name(),
-        'path': hits[0][1] if hits else None,
-        'call_type': hits[0][0] if hits else (payload or {}).get('tool_name'),
-        'more_hits': len(hits) - 1 if hits else 0,
-        'tool': (payload or {}).get('tool_name'),
-        'cwd': (payload or {}).get('cwd'),
-        'session_id': (payload or {}).get('session_id'),
-        'agent_id': (payload or {}).get('agent_id'),
-        'agent_type': (payload or {}).get('agent_type'),
-        'reason': reason,
-        'criteria': CRITERIA_VERSION,
-    }, ensure_ascii=False)
+    """Append to the shared log, then copy the WHOLE log to the Drive mirror,
+    so chat sees both directions as of this refusal. -> failures, by path."""
+    line = block_line(payload, hits, reason)
+    local, mirror = LOG_PATHS
     failed = []
-    for p in LOG_PATHS:
-        try:
-            os.makedirs(os.path.dirname(p), exist_ok=True)
-            with io.open(p, 'a', encoding='utf-8', newline='\n') as fh:
-                fh.write(line + '\n')
-        except OSError as e:
-            failed.append('%s (%s)' % (p, e))
+    try:
+        os.makedirs(os.path.dirname(local), exist_ok=True)
+        with io.open(local, 'a', encoding='utf-8', newline='\n') as fh:
+            fh.write(line + '\n')
+    except OSError as e:
+        failed.append('%s (%s)' % (local, e))
+    try:
+        body = io.open(local, encoding='utf-8').read()
+        os.makedirs(os.path.dirname(mirror), exist_ok=True)
+        with io.open(mirror, 'w', encoding='utf-8', newline='\n') as fh:
+            fh.write(body)
+    except OSError as e:
+        failed.append('%s (%s)' % (mirror, e))
     return failed
 
 
@@ -576,7 +632,7 @@ def selftest():
     global LOG_PATHS
     real_logs = LOG_PATHS
     t = tempfile.mkdtemp(prefix='bad-hook-')
-    LOG_PATHS = (os.path.join(t, 'log', LOG_NAME),)
+    LOG_PATHS = (os.path.join(t, 'log', LOG_NAME), os.path.join(t, 'drive', LOG_NAME))
     bad = []
     n = [0]
 
@@ -665,6 +721,9 @@ def selftest():
         arm('git checkout main (a branch, not a path) is allowed', d('Bash', command='git checkout main') == [])
         arm('git pull is allowed (sync is not reaching in)', d('Bash', command='git pull --ff-only origin main') == [])
         arm('git apply of a patch on tools/ is allowed', d('Bash', command='git apply %s' % okpatch) == [])
+        arm('cat <untracked script> | python is read and refused', bool(d('Bash', command='cat %s | python' % script)))
+        arm('python -c "exec(open(<untracked script>).read())" is read and refused',
+            bool(d('Bash', command='python -c "exec(open(\'%s\').read())"' % script.replace('\\', '/'))))
         arm('python on an untracked script that does not name the path is allowed',
             d('Bash', command='python %s' % clean_script) == [], d('Bash', command='python %s' % clean_script))
         arm('python tools/hover_separation_audit.py (a hover-named builder-run tool) is allowed',
@@ -673,8 +732,12 @@ def selftest():
             arm('a CLEAN TRACKED tool that names the path may run (reviewed code)',
                 d('Bash', command='python tools/audit_reader.py') == [], d('Bash', command='python tools/audit_reader.py'))
             io.open(tracked, 'a', newline='\n').write('# modified\n')
-            arm('...the SAME tool once MODIFIED is read and refused',
-                bool(d('Bash', command='python tools/audit_reader.py')))
+            arm('...and once MODIFIED in place it may still run (the tooling_inventory.py shape)',
+                d('Bash', command='python tools/audit_reader.py') == [], d('Bash', command='python tools/audit_reader.py'))
+            io.open(os.path.join(clone, 'tools', 'new_untracked.py'), 'w').write(
+                io.open(tracked).read())
+            arm('...but an UNTRACKED file inside the repo with the same text is read and refused',
+                bool(d('Bash', command='python tools/new_untracked.py')))
             arm('node --check on that modified file is allowed (a syntax check runs nothing)',
                 d('Bash', command='node --check tools/audit_reader.py') == [])
             # Baseline-replay shapes (cc b66): each was a would-be refusal of a
@@ -732,21 +795,38 @@ def selftest():
             body = cmdline if cmdline.startswith('{') else json.dumps(
                 {'tool_name': 'Bash', 'tool_input': {'command': cmdline}, 'cwd': clone,
                  'session_id': 's', 'agent_id': 'sub-1'})
-            r = subprocess.run([sys.executable, os.path.abspath(__file__), '--_log-to', LOG_PATHS[0]],
-                               input=body, capture_output=True, text=True)
+            if cmdline == 'git status':
+                body = json.dumps({'tool_name': 'Bash', 'tool_input': {'command': cmdline}, 'cwd': clone})
+            elif not cmdline.startswith('{'):
+                body = json.dumps({'tool_name': 'Bash', 'tool_input': {'command': cmdline}, 'cwd': clone,
+                                   'session_id': 's', 'agent_id': 'sub-1', 'agent_type': 'general-purpose'})
+            r = subprocess.run([sys.executable, os.path.abspath(__file__), '--_log-to',
+                                LOG_PATHS[0], LOG_PATHS[1]], input=body, capture_output=True, text=True)
             arm('main() exit %d for %r' % (want, cmdline[:40]), r.returncode == want, (r.returncode, r.stderr[:200]))
             if want == 0:
                 arm('...and the allow path is SILENT', r.stdout == '' and r.stderr == '', (r.stdout, r.stderr))
         try:
-            rows = [json.loads(x) for x in io.open(LOG_PATHS[0], encoding='utf-8')]
+            raw = io.open(LOG_PATHS[0], encoding='utf-8').read()
+            rows = [x.split('\t') for x in raw.splitlines()]
+            mirror = io.open(LOG_PATHS[1], encoding='utf-8').read()
         except OSError:
-            rows = []
+            raw, rows, mirror = '', [], None
         arm('two refusals logged, the allow not logged', len(rows) == 2, len(rows))
-        arm('a log row carries ts, agent, path, call_type',
-            bool(rows) and all(rows[0].get(k) for k in ('ts', 'agent', 'path', 'call_type')), rows[:1])
-        arm('a subagent call logs its agent_id', bool(rows) and rows[0].get('agent_id') == 'sub-1', rows[:1])
-        arm('the could-not-run refusal is logged with its reason',
-            len(rows) == 2 and rows[1]['reason'].startswith('COULD NOT RUN'), rows[1:])
+        arm("each row has the auditor log's FIVE tab-separated columns", rows and all(len(r) == 5 for r in rows), rows)
+        arm('column 1 is a UTC timestamp',
+            bool(rows) and re.match(r'^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$', rows[0][0]) is not None, rows[:1])
+        arm('column 2 is agent/subagent-type, as the auditor writes hover/general-purpose',
+            bool(rows) and rows[0][1].endswith('/general-purpose'), rows[:1])
+        arm('column 3 is a normcase ABSOLUTE path into the skill',
+            bool(rows) and os.path.isabs(rows[0][2]) and path_hit(rows[0][2]), rows[:1])
+        arm('column 4 is the tool name', bool(rows) and rows[0][3] == 'Bash', rows[:1])
+        arm('the could-not-run refusal carries its reason in column 5',
+            len(rows) == 2 and rows[1][4].startswith('COULD NOT RUN'), rows[1:])
+        arm('the Drive mirror is a byte-identical copy of the whole log', mirror == raw, (len(raw), mirror and len(mirror)))
+        line = block_line({'tool_name': 'Edit', 'cwd': clone}, [('Edit', os.path.join(skill, 'SKILL.md'))], '',
+                          now=datetime.datetime(2026, 10, 28, 22, 6, 28, tzinfo=datetime.timezone.utc))
+        arm('a direct Edit reads like the auditor\'s "direct Write on a builder-owned path" row',
+            line.split('\t')[0] == '2026-10-28T22:06:28Z' and line.split('\t')[4] == 'direct Edit on an auditor-owned path', line)
     finally:
         LOG_PATHS = real_logs
         shutil.rmtree(t, ignore_errors=True)
@@ -759,5 +839,6 @@ if __name__ == '__main__':
     if '--selftest' in sys.argv:
         sys.exit(selftest())
     if '--_log-to' in sys.argv:                 # selftest only: keep test rows out of the real log
-        LOG_PATHS = (sys.argv[sys.argv.index('--_log-to') + 1],)
+        i = sys.argv.index('--_log-to')
+        LOG_PATHS = (sys.argv[i + 1], sys.argv[i + 2])
     sys.exit(main())

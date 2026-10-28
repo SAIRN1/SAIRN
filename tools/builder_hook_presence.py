@@ -12,13 +12,14 @@ ALL FOUR clones, not only itself. A clone whose own wiring was stripped is
 therefore still reported by the next start in any of the other three.
 
 WHAT "PRESENT AND UNMODIFIED" MEANS, per builder clone:
-  1. <clone>/.git/sairn-hooks/builder_auditor_deny_hook.py and
-     builder_hook_presence.py exist, and each has the git blob sha of the
-     copy at origin/main. The reference is taken from whichever builder
+  1. <clone>/.git/sairn-hooks/ holds builder_auditor_deny_hook.py,
+     builder_hook_presence.py and sairn_done_line.py (the last is the Stop
+     hook that holds a batch's final message to its done line). Each has the
+     git blob sha of the copy at origin/main. The reference is taken from whichever builder
      clone's origin/main is newest, so one clone that has not fetched
      cannot vouch for a stale copy.
   2. <clone>/.claude/settings.local.json carries the exact PreToolUse entry
-     (matcher plus command) and the exact SessionStart entry.
+     (matcher plus command), and the exact SessionStart and Stop entries.
   3. `disableAllHooks` is not true in that clone's settings.local.json, in its
      settings.json, or in ~/.claude/settings.json. Any one of those switches
      the hook off without touching a byte of it.
@@ -52,11 +53,13 @@ import subprocess
 import sys
 import tempfile
 
-CRITERIA_VERSION = '2026-10-28.b66.1'
+CRITERIA_VERSION = '2026-10-28.b66.2'
 EXIT_OK, EXIT_FINDING, EXIT_COULD_NOT_RUN = 0, 1, 2
 
 HOOK = 'builder_auditor_deny_hook.py'
 SELF = 'builder_hook_presence.py'
+DONE = 'sairn_done_line.py'          # its Stop hook (cc b66): the final message is the done line, exactly
+FILES = (HOOK, SELF, DONE)
 COPY_DIR = os.path.join('.git', 'sairn-hooks')
 AUDITOR_RE = re.compile(r'^hover[0-9]*$')
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -99,6 +102,8 @@ def expected_entries(clone, match):
             {'type': 'command', 'command': 'python "%s/.git/sairn-hooks/%s"' % (root, HOOK)}]},
         'SessionStart': {'hooks': [
             {'type': 'command', 'command': 'python "%s/.git/sairn-hooks/%s" --session-start' % (root, SELF)}]},
+        'Stop': {'hooks': [
+            {'type': 'command', 'command': 'python "%s/.git/sairn-hooks/%s" --stop-hook' % (root, DONE)}]},
     }
 
 
@@ -135,7 +140,7 @@ def reference(clones):
     if best is None:
         raise CouldNotRun('no builder clone has a readable origin/main')
     out = {}
-    for f in (HOOK, SELF):
+    for f in FILES:
         r = git(best[2], 'show', 'origin/main:tools/%s' % f)
         if r.returncode != 0:
             raise CouldNotRun('tools/%s is not on origin/main in %s (the newest, at %s) -- '
@@ -163,7 +168,7 @@ def has_entry(rows, want):
 def check_clone(name, clone, ref, match, user_settings=USER_SETTINGS):
     """-> list of finding strings for one clone. Empty means present and unmodified."""
     out = []
-    for f in (HOOK, SELF):
+    for f in FILES:
         p = os.path.join(clone, COPY_DIR, f)
         try:
             got = blob_sha(io.open(p, 'rb').read())
@@ -179,7 +184,7 @@ def check_clone(name, clone, ref, match, user_settings=USER_SETTINGS):
         out.append('NO %s' % local)
     else:
         hooks = doc.get('hooks') or {}
-        for ev in ('PreToolUse', 'SessionStart'):
+        for ev in sorted(want):
             if not has_entry(hooks.get(ev), want[ev]):
                 out.append('UNWIRED %s: hooks.%s has no exact entry for %s' % (local, ev, want[ev]['hooks'][0]['command']))
     # The hook unions the manifest's auditor_paths with a built-in floor. A
@@ -239,7 +244,7 @@ def install(repo=REPO):
     clones, _absent = builders(repo)
     ref, ref_from = reference(clones)
     match = matcher(ref)
-    for f in (HOOK, SELF):
+    for f in FILES:
         mine = blob_sha(io.open(os.path.join(repo, 'tools', f), 'rb').read())
         if mine != ref[f][0]:
             raise CouldNotRun('tools/%s in this clone (blob %s) is not the origin/main copy (%s). '
@@ -247,7 +252,7 @@ def install(repo=REPO):
                               % (f, mine[:12], ref[f][0][:12]))
     for name in sorted(clones):
         clone = clones[name]
-        for f in (HOOK, SELF):
+        for f in FILES:
             atomic_write(os.path.join(clone, COPY_DIR, f), ref[f][1])
         local = os.path.join(clone, '.claude', 'settings.local.json')
         doc = load_json(local) or {}
@@ -277,7 +282,7 @@ def selftest():
     t = tempfile.mkdtemp(prefix='bhp-')
     try:
         g = ['-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'core.autocrlf=false']
-        src = {f: io.open(os.path.join(REPO, 'tools', f), 'rb').read() for f in (HOOK, SELF)}
+        src = {f: io.open(os.path.join(REPO, 'tools', f), 'rb').read() for f in FILES}
         for nm in ('aa', 'bb', 'hover'):
             d = os.path.join(t, 'SAIRN-%s' % nm)
             os.makedirs(os.path.join(d, 'tools'))
@@ -318,6 +323,12 @@ def selftest():
             io.open(loc, 'w').write(json.dumps(doc))
             rc, lines = run_check(a, us)
             arm('a stripped PreToolUse entry is UNWIRED', rc == 1 and any('UNWIRED' in x and 'PreToolUse' in x for x in lines), lines)
+            install(a)
+            doc = json.load(io.open(loc))
+            doc['hooks']['Stop'] = []
+            io.open(loc, 'w').write(json.dumps(doc))
+            rc, lines = run_check(a, us)
+            arm('a stripped Stop (done-line) entry is UNWIRED', rc == 1 and any('UNWIRED' in x and 'Stop' in x for x in lines), lines)
             install(a)
             doc = json.load(io.open(loc))
             doc['hooks']['PreToolUse'][0]['matcher'] = 'Edit'
