@@ -1,0 +1,20 @@
+DIGEST cc b66
+STATUS: three dispatches, one batch; all items closed. Landed a2bdf5ea, a367bd0c, 8c15c569 (+ this handoff). No override/skip/--force.
+ITEM hook: tools/builder_auditor_deny_hook.py armed in cc/cody/fourth/hank (.git/sairn-hooks copy, settings.local.json). 74-arm selftest, layers ablated.
+  Baseline replay 5,256 real calls -> 73 refusals (9 hover-clone reach-ins, 60 by-spec text refs, 4 own selftest); 4 narrowings before landing.
+  LIVE: git checkout, python -c, direct Edit on SKILL.md all REFUSED; git status empty after.
+ITEM log: one shared ~/SAIRN-SESSION-LOCKS/deny-blocks.log, columns/format/400-cap/O_APPEND matched to H1's block_log() source; 20 rows all 5 columns;
+  Drive mirror byte-identical (2,946 B). H1 rows end CRLF (no O_BINARY) -- routed to H1.
+ITEM presence: tools/builder_hook_presence.py at SessionStart in all four, checks all four: 4/4 OK; refresh leaves settings files byte-identical.
+ITEM done-line: tools/sairn_done_line.py prints the line only when landed+linted+uploaded; id from DriveFS DB; Stop hook refuses any other final text.
+ITEM tier-a: hover b96 ITEM 4 = the b65 test_965 record, already on main; not duplicated. H1's BLOCKED-ON:cc is stale.
+DECISION-NEEDED: Michael -- should builders also be blocked from the shared hover triad tools (scope gate/separation/routing-gap)? Not in scope today.
+UNVERIFIED: none for the hook/log/presence (driven live). The done-line Stop hook is exercised for the first time by this batch's final message.
+CHANGED: tools/builder_auditor_deny_hook.py, tools/builder_hook_presence.py, tools/sairn_done_line.py, tools/tooling_inventory.py, docs/TOOLING-INVENTORY.md, CLAUDE.md.
+SQL: none.
+EVIDENCE-path: SAIRN-handoff-cc-b66.md, SAIRN-report-cc-b66.txt, ~/SAIRN-SESSION-LOCKS/deny-blocks.log
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\52164776-0b08-422d-94e1-7a56daf3eaaa.jsonl
+OPEN: H1 -- O_BINARY in block_log(); cc -- review hover b92 once test_965 lands; cc -- cody b57 obligation.
+NEXT: hover lands test_965; Michael answers the triad scope question.
+CONTEXT 40.5% of 1,000,000 -- 404,730 tokens, measured.
+END-OF-REPORT

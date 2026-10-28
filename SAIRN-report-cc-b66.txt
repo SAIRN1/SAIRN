@@ -1,0 +1,49 @@
+SAIRN report -- cc b66 -- 2026-10-28
+
+Landed: a2bdf5ea, a367bd0c and 8c15c569, plus this handoff. No override, no
+skip, no --force.
+
+1 DENY HOOK (tools/builder_auditor_deny_hook.py)
+  - A PreToolUse hook in cc, cody, fourth and hank, run from
+    .git/sairn-hooks/ copies and wired in settings.local.json.
+  - Paths are checked as written and after realpath. Bash gets a text pass,
+    token resolution through cd and git -C, git pathspec ancestors and globs,
+    apply/am patch targets, and untracked scripts.
+  - It fails closed, and an allowed call is silent. Selftest 74 arms, every
+    layer ablated.
+  - Baseline replay of 5,256 real builder calls: 73 would be refused. 9 are
+    reach-ins into hover clones, 60 are Bash commands naming auditor paths
+    (by spec), and 4 were my own uncommitted selftest.
+  - Live in this session, with git status empty: a git checkout, a python -c
+    and a direct Edit on SKILL.md were all REFUSED.
+
+2 SHARED BLOCK LOG
+  - Both hooks write ~/SAIRN-SESSION-LOCKS/deny-blocks.log.
+  - Checked against the source of H1's block_log(): the same five columns,
+    UTC format, sanitising, 400-char cap and O_APPEND single write.
+  - Live: 20 rows, all five columns. A fresh refusal at 22:52:32Z wrote a
+    correct LF row.
+  - The Drive mirror is a byte copy (2,946 = 2,946). The first version copied
+    in text mode; that was fixed, and the arm for it was ablated.
+  - ROUTED TO H1: its rows end CRLF, because os.open is called without
+    O_BINARY.
+
+3 PRESENCE (tools/builder_hook_presence.py)
+  - Wired at SessionStart in all four clones, and each checks all four: copy
+    shas, exact wiring including Stop, disableAllHooks, and the manifest.
+  - 4 of 4 OK.
+  - A refresh leaves the settings files byte-identical, verified.
+  - 14 arms.
+
+4 DONE LINE (tools/sairn_done_line.py)
+  - Prints `done b<n> <id>` only when the deliverables are landed, linted and
+    uploaded.
+  - The id comes from the DriveFS metadata DB and matched the API for cc b65.
+  - Its Stop hook refuses any other final text, and stops refusing after 3.
+  - 16 arms. CLAUDE.md names it.
+
+5 TIER A: hover b96 ITEM 4 is the b65 test_965 record, already on main. Not
+  duplicated.
+
+OPEN: H1 to fix CRLF. Michael to decide on the triad scope. cc to review the
+hover b92 obligation once its file lands, and cody b57.
