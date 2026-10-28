@@ -20,4 +20,6 @@ NEXT, in order:
   b pre-existing failures, not mine: install_git_hooks_check (1 arm), staging_discipline (2), reseat collision f9a4e5a0/5bb0950a
 UNVERIFIED: the guard's refusal of a REAL `timeout ... git push` -- the permission layer denies running one; the probe drives the same chain without pushing.
 EVIDENCE-path: tests/run_push_timeout_guard_probe.py; docs/live-residue/2026-10-28-fourth-b61-sen-sweep-live.json; scratchpad sweep61.py, chips61.py.
+ADDENDUM (post-restart): fx identity unset from local config -> Michael Dibert; committer_identity_check CLEAN; history not rewritten. Items 3/4/6 already landed, not redone.
+CONTEXT 10.0% of 1,000,000 -- 100,357 tokens, measured.
 Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\fd66c7b5-98f7-4e46-ac2a-b0383cde9210.jsonl

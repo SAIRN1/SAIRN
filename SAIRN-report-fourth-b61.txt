@@ -78,3 +78,12 @@ OPEN, all pre-existing and not caused by this batch:
   - install_git_hooks_check_probe: 1 arm fails on HEAD too;
   - run_staging_discipline_probe: 2 arms fail on HEAD too;
   - register reseat collision between f9a4e5a0 and 5bb0950a.
+
+ADDENDUM -- post-restart session, 2026-10-28
+Reconciled with the Drive handoff (byte-identical, 7,289). Items 3, 4 and 6
+of the re-sent dispatch had already landed and were not redone.
+fx identity FIXED: the local user.name/user.email were unset (config backed up
+to the scratchpad first). Author and committer are now Michael Dibert
+<mikied68@gmail.com>; core.bare is false; committer_identity_check exits 0,
+CLEAN. History was NOT rewritten, the same decision as hank b59 and cody b57.
+No shared file was touched and no claim was needed.

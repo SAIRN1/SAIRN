@@ -2292,3 +2292,4 @@ Full account: `SAIRN-handoff-fourth-b60.md`.
 - Methodology: a claim and a path owner are two separate checks. I checked claims before writing the hook; the gate then showed `.githooks/`, `tools/` and `tests/` are other sessions' paths, so I declared them in `assigned_overrides` rather than pushing past.
 
 Full account: `SAIRN-handoff-fourth-b61.md`.
+- b61 addendum (post-restart): fx identity unset from this clone's local config; author is now Michael Dibert; committer_identity_check CLEAN; history not rewritten.

@@ -101,3 +101,22 @@ Each refused push attempt wrote scrutiny rows keyed to **pre-rebase** commits: *
 ## 4. CLAIMS
 
 `fourth` held **stonedesk** and **platform**; both are released at wrap. The SQL file is select-only; nothing needs running.
+
+## 5. ADDENDUM: the session after the emergency restart (transcript `b6e28c25-eaee-4611-aeb3-d94f0198d47f`)
+
+**Reconciled:** the Drive copy of this handoff (`1Y4tXCagXQDPszmGKoE63WoNvJYcQEeBo`, 7,289 bytes) matched the local file. Re-sent dispatch items 3 (senior sweep), 4 (push_timeout_guard, with wiring held until cody's platform claim was released) and 6 had **already landed** in sections 1 and 2 above. Nothing was redone.
+
+**The new item, the fx identity, is fixed.** This clone's `.git/config` had `user.name=fx` and `user.email=fx@example.invalid` (hank b59's G1, copy_exactly's fixture value). I applied the same fix as cc, hank and cody:
+- backed up the config to `scratchpad\git-config-before-b61-identity.txt`;
+- ran `git config --local --unset user.email` and `--unset user.name`;
+- `git var GIT_AUTHOR_IDENT` and `GIT_COMMITTER_IDENT` now give `Michael Dibert <mikied68@gmail.com>`;
+- `core.bare` is false;
+- `python tools/committer_identity_check.py` exits 0, CLEAN, with 45 probe identities.
+
+**History was not rewritten.** Every b61 commit through `d422cb917` carries fx, and fixing that would take a force push, the same decision as hank b59 and cody b57.
+
+**Root cause, already fixed upstream:** cc's `58801d4c7` (the hook unsets GIT_DIR) and cody's `e31869242` (the identity check walks `tools/`; rework_tracker drops GIT_DIR) were both in HEAD before this session. I touched no shared file.
+
+**Assumption:** the context window was declared as 1,000,000. The evidence is that the b61 session on the same model string, `claude-opus-5-5`, measured 374,996 tokens, which only fits in 1M.
+
+**Claims:** I took none. The only change was local config plus these four fourth-owned files. Before writing, I checked the claim list (hover's own skill claim only) and the status registry (every row idle).
