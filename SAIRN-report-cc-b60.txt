@@ -1,0 +1,49 @@
+SAIRN report -- cc b60 -- 2026-10-28
+
+LANDED: 58801d4c fix, c99ca905 register, b6f03541 manifest, 6b89b158 re-seat.
+0 0 against origin; every changed blob identical on origin/main. No override,
+no skip, no --force.
+
+ITEM 1 -- core.bare probe: ROOT CAUSE FOUND, fixed at the source
+  Writer: tools/copy_exactly_gate.py blind-lock fixtures, run on EVERY
+  pre-push; first line `git -C <tempdir> init`. git exports an ABSOLUTE
+  GIT_DIR to a pre-push hook from a linked worktree, and GIT_DIR beats -C, so
+  init re-initialised the real repo: core.bare=true + user.name/email=fx in the
+  SHARED .git/config. Deterministic, not kill-dependent; the fixtures then
+  failed, so every worktree push was refused COULD NOT RUN. Main-clone pushes
+  export a relative GIT_DIR, which is why only worktrees were hit.
+  Fix: .githooks/pre-push unsets GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE/
+  GIT_COMMON_DIR before any gate; run_fixtures drops them too and restores
+  core.bare in a finally (the net -- a finally does not run on a hard kill).
+  Test tests/run_core_bare_kill_probe.py 10/10: real gate, worktree GIT_DIR,
+  hard-killed (TerminateProcess) at 15/35/55/75% while running -> core.bare
+  false every time; teeth arm proves the observable sees the leak.
+  Ablation vs the unfixed gate at HEAD: 4/10, core.bare=true on every arm.
+  E2E: real push --dry-run from a worktree of this clone, full chain, capped:
+  rc 0, 102 s, peak 384 MB, shared .git/config sha256 unchanged.
+
+DECISION NEEDED -- this clone's identity is the same leak
+  cc commits: "Michael Dibert" to 10-27 11:18, "fx <fx@example.invalid>" from
+  12:06 -- _fx_repo's identity, arrived with the b59 worktree replay. Not
+  changed by me (it changes authorship). Restore: git config --local --unset
+  user.name; git config --local --unset user.email.
+
+ITEM 2 -- CMD replay of the 11:02 patch apply: NOT REPRODUCED
+  Isolated `git clone --local` at d48125f9, through capped_run + logged_exec.
+  C1 (H1 README sequence in CMD): reproduces c9c0a5ae blob-for-blob and its
+     author; push gate untouched at 307,268 bytes; no cd/git files.
+  C2 (same lines with a leading "> "): empty `cd` and `git` in the root --
+     2 of 3 artefacts; no commit; gate untouched.
+  C3 (bare "> tools\sairn_push_gate_hook.py"): syntax error, NOT truncated.
+  The truncation cause is still open. Next: was a second block pasted ~11:04?
+
+ITEM 3 -- tools/capped_run.py (5/5 fixtures)
+  Job Object job-wide memory cap + wall clock, set up front, no default;
+  exit 4 cap hit, 5 timeout, 2 = NOT run if the cap cannot be applied. Rule:
+  every incident replay runs through it, in a --local clone, not a worktree.
+  logged_exec.py now records the tree delta (it caught C2's 0-byte files).
+
+ITEM 4 -- pushed, landed (above).
+
+NOT MINE, SEEN: tests/run_copy_exactly_gate_probe.py 0/1 "harness cannot
+reach the gate" -- identical at HEAD before b60.

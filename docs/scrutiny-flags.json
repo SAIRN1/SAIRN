@@ -4814,6 +4814,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": ".githooks/pre-push",
+   "class": "CI / hook configuration",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "58801d4c79d8946bc7c5814f8a795d2aae8e90cb",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_core_bare_kill_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(base, ignore_errors=True)"
+    }
+   ],
+   "sha": "58801d4c79d8946bc7c5814f8a795d2aae8e90cb",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sairnsenior_contract_auth_save.js",
    "class": "test file",
    "level": "CHANGE",
