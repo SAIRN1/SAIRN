@@ -1,0 +1,26 @@
+HANK b62 REPORT -- 2026-10-28
+
+1. SAIRNlaw seeding: NOT SEEDED. MASTER-PLAN carries no jurisdiction status; it was read from the seed files and the
+   gate docs.
+   - 38 states are seeded.
+   - Every gated-unseeded state is blocked or failed by its own gate: CO, IA, LA, TN, AZ, KY.
+   - 7 were never gated: AK, ND, RI, SD, VT, WY, DC. None is claimed.
+   - The next one needs a primary-source gate before any seed. DECISION for Michael: which one.
+2. A1: NOT WRITTEN. sql/alf-audit-owner-recovery.sql is already the run-ready A1 file (b59). A second file would be a
+   duplicate. A1 is still Michael running that file.
+3. push_retry --loop at origin a2bdf5ea7:
+   - The clone's copy is identical to origin's.
+   - Selftest exit 0, 56/0, C1 arms 15/15.
+   - The end-to-end run is this batch's push, through --loop. It landed iff these three files are on origin/main.
+4. "[0053]" rate-limit race fix: PASS, with a drift.
+   - Live on sairn-platform: sairn_ai_rate_limit_consume exists, its args match the client, and the advisory lock
+     wraps count and insert.
+   - Read committed, and no service_role isolation override, so the race is closed.
+   - DRIFT: the live body lacks the 2026-09-15 isolation guard that the committed file carries. Michael re-runs the
+     file. hank applied no DDL.
+5. fx scan, this clone only:
+   - 426 fx-authored commits were created here, 2026-10-07 to 2026-10-28 07:27 (a4afe6535). 412 are on origin.
+   - All 90 commits created here since then are mikied68.
+   - 79c4f10cf is not from this clone.
+   - History not rewritten (that needs a force push and Michael's decision).
+Evidence: SAIRN-handoff-hank-b62.md

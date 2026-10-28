@@ -1,0 +1,20 @@
+HANK b62 DIGEST -- 2026-10-28 -- SAIRNlaw seeding status; A1; push_retry re-verify; [0053] live check; fx scan
+CONTEXT 23.0% of 1,000,000 -- 229,585 tokens, measured.
+STATUS: docs-only batch; no claims held.
+1. SAIRNlaw: NOT seeded. There is no seedable candidate.
+   - Gated states CO, IA, LA, TN, AZ and KY are all blocked or failed.
+   - AK, ND, RI, SD, VT, WY and DC have never been gated.
+2. A1: not written. sql/alf-audit-owner-recovery.sql already IS the run-ready file; a second one would duplicate it.
+3. push_retry: selftest 56/0, C1 15/15 at a2bdf5ea7. The b62 push ran through --loop.
+4. [0053] (AI rate-limit race): PASS live. The lock wraps count+insert; read committed.
+   - DRIFT: the live RPC lacks the 09-15 isolation guard.
+5. fx scan: 426 hank commits are fx-authored (10-07..10-28 07:27). All 90 since are mikied68.
+DECISION-NEEDED (Michael):
+- J1: which jurisdiction to gate next.
+- D1: re-run sql/sairn_ai_rate_limit_consume_fn.sql.
+- H1: leave the historical fx commits (recommended).
+NEXT: A1, Michael runs the existing file. T1: cc, Tier A on cdf71e894.
+CHANGED: b62 handoff, report, digest only.
+SQL-path: sql/alf-audit-owner-recovery.sql (existing, A1); sql/sairn_ai_rate_limit_consume_fn.sql (D1)
+EVIDENCE-path: SAIRN-handoff-hank-b62.md
+UNVERIFIED: the SAIRN project (ohzqfw...) was not checked for the RPC (connect timeout).
