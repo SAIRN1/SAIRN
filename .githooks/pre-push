@@ -82,7 +82,8 @@ REFS=$(cat)
 # CLOSED: a gate that HEAD does not contain, or a hash that cannot be computed,
 # is a refusal.
 for g in tools/hover_auditor_scope_gate.py tools/register_feed_gate.py \
-         tools/copy_exactly_gate.py tools/sairn_push_gate_hook.py; do
+         tools/copy_exactly_gate.py tools/sairn_push_gate_hook.py \
+         tools/push_timeout_guard.py; do
     f="$ROOT/$g"
     if [ ! -s "$f" ]; then
         echo "REFUSED (gate self-integrity): $g is missing or EMPTY. An empty gate passes"
@@ -99,6 +100,12 @@ for g in tools/hover_auditor_scope_gate.py tools/register_feed_gate.py \
         exit 1
     fi
 done
+
+# ── NO PUSH UNDER A TIMEOUT, BEFORE ANY GATE RUNS (fourth b61) ─────────────
+# The push gate writes mutants into tracked files and restores them in
+# `finally`; a timeout that kills it mid-gate skips the restore (fourth b59:
+# api/_lib/law-roles.js left mutated). Refused here, while nothing has run.
+"$PY" "$ROOT/tools/push_timeout_guard.py" --pre-push || exit 1
 
 # ── HOVER AUDITOR SCOPE GATE, and ONLY in the auditor's own clone ───────────
 # The marker is in .git/, so it is not versioned and no build clone inherits it.
