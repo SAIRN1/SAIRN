@@ -805,7 +805,12 @@ def block_log(agent, path, call, reason):
         datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'), agent, path, call, reason)) + '\n'
     try:
         os.makedirs(os.path.dirname(BLOCK_LOG), exist_ok=True)
-        fd = os.open(BLOCK_LOG, os.O_WRONLY | os.O_APPEND | os.O_CREAT)
+        # O_BINARY: without it Windows translates the LF to CRLF on os.write (b102;
+        # cc found 12 of 12 auditor rows ending CRLF while builder rows end LF).
+        flags = os.O_WRONLY | os.O_APPEND | os.O_CREAT
+        if 'no_binary' not in DEFECTS:
+            flags |= getattr(os, 'O_BINARY', 0)
+        fd = os.open(BLOCK_LOG, flags)
         try:
             os.write(fd, line.encode('utf-8'))
         finally:
@@ -1026,6 +1031,32 @@ def selftest():
             if not fl:
                 rc = 1
         DEFECTS.clear()
+
+        # b102: a fresh block-log row is LF-only, five tab-separated columns, capped at 400.
+        def _row_bytes(defects):
+            global BLOCK_LOG
+            saved, BLOCK_LOG = BLOCK_LOG, os.path.join(root, 'bl-%d.log' % len(defects))
+            DEFECTS.clear(); DEFECTS.update(defects)
+            try:
+                block_log('hover/x', 'c:/p\tq\r\nr' + 'z' * 500, 'Edit', 'direct Edit')
+                with open(BLOCK_LOG, 'rb') as fh:
+                    return fh.read()
+            finally:
+                BLOCK_LOG = saved
+                DEFECTS.clear()
+        def _row_ok(b):
+            return (b.endswith(b'\n') and b'\r' not in b and b.count(b'\n') == 1
+                    and len(b.rstrip(b'\n').split(b'\t')) == 5
+                    and all(len(f) <= 400 for f in b.rstrip(b'\n').split(b'\t')))
+        good = _row_bytes(set())
+        bl_ok = _row_ok(good)
+        print('BLOCKLOG fresh row LF-only, 5 columns, fields capped -> %s' % ('ok' if bl_ok else '<-- WRONG: %r' % good[:80]))
+        rc = rc or (0 if bl_ok else 1)
+        bad = _row_bytes({'no_binary'})
+        planted = not _row_ok(bad)
+        print('PLANTED no_binary    -> %s' % ('arm red (CRLF row)' if planted
+                                              else '<-- UNGUARDED: no O_BINARY still wrote an LF-only row'))
+        rc = rc or (0 if planted else 1)
         # fail-closed arms on the hook entry point itself
         env = dict(os.environ)
         for label, stdin in (('garbage stdin', 'not json'), ('empty stdin', '')):
