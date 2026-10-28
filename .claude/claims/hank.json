@@ -4714,6 +4714,17 @@
       "status": "released",
       "released_at": "2026-10-28T18:33:03Z",
       "files": null
+    },
+    {
+      "id": "hank-1793223109",
+      "session": "hank",
+      "subject": "tools",
+      "task": "push_retry pure-base fast retry C1",
+      "claimed_at": "2026-10-28T21:31:49Z",
+      "claimed_at_epoch": 1793223109.1319895,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
