@@ -38946,6 +38946,47 @@
       "recurrence_open": "NOT CLOSED. The archive/ snapshots carry the same components (not deployed apps). Other low-alpha dark-theme labels (.sairn-fu-label, .shoff-label) were not flagged by any rendered pass and are unchanged. cartAdd does not re-render the vendor quantity box (pre-existing)."
     },
     {
+      "commit": "10e914b1c97a",
+      "date": "2026-10-28",
+      "subject": "fix(sd-data, cody b58): a sairnmechanical save the store did not echo is 502 WRITE_UNCONFIRMED, never ok",
+      "files": [
+        "api/sd-data.js",
+        "tests/sd_data_mech_write_unconfirmed.js"
+      ],
+      "lines_added": 189,
+      "lines_removed": 10,
+      "app": "sairnmechanical",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "sairnmechanical server writes answered ok when the store echoed no row: the MECH_RECORDS branch (quotes, checks, docs, takeoffs) returned the request payload as if stored and mech_site_assets / mech_insurance_policies / mech_credentials returned data:null, so the app cleared the form and mechPushOne reported a backup the store never confirmed. Now 502 WRITE_UNCONFIRMED via wroteRow(); tests/sd_data_mech_write_unconfirmed.js 22 arms with ablation.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The fallback arms date from each branch's original wiring (2026-09-02 to 2026-09-25); not traced to single commits."
+      },
+      "citation_note": "C2 in docs/recurring-bug-classes-2.md (silent backup / premature ack), server half; no PR rule id names a return=representation fallback.",
+      "contributing_factors": [
+        {
+          "factor": "Four mech write branches were written before wroteRow()/refuseUnconfirmedWrite() existed (2026-09-18) and the sweep that introduced them covered PATCH and soft-delete sites, not POST upserts.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "All four mech branches now use the pair; tests/sd_data_mech_write_unconfirmed.js with ablation."
+        },
+        {
+          "factor": "The b57 audit of this class stopped at the client and recorded the server path as COULD NOT TELL rather than reading it.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "b58 read and drove every mech write and read branch on the server."
+        }
+      ],
+      "recurrence_open": "Three more ok-with-null write acks remain outside sairnmechanical (sd-data.js supplier_lead_times, sd_approvals, alf_family_contacts); routed in the cody b58 handoff."
+    },
+    {
       "commit": "19a9a84b8f66",
       "date": "2026-10-28",
       "subject": "fix(tools, cody b55): three of my own tools read a run that did not happen as a clean one",
@@ -38987,47 +39028,6 @@
         }
       ],
       "recurrence_open": "41 MEDIUM/LOW hits from the b55 sweep remain (handoff lists them); checker_kit.tracked() ignores git's exit code for every caller."
-    },
-    {
-      "commit": "10e914b1c97a",
-      "date": "2026-10-28",
-      "subject": "fix(sd-data, cody b58): a sairnmechanical save the store did not echo is 502 WRITE_UNCONFIRMED, never ok",
-      "files": [
-        "api/sd-data.js",
-        "tests/sd_data_mech_write_unconfirmed.js"
-      ],
-      "lines_added": 189,
-      "lines_removed": 10,
-      "app": "sairnmechanical",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "sairnmechanical server writes answered ok when the store echoed no row: the MECH_RECORDS branch (quotes, checks, docs, takeoffs) returned the request payload as if stored and mech_site_assets / mech_insurance_policies / mech_credentials returned data:null, so the app cleared the form and mechPushOne reported a backup the store never confirmed. Now 502 WRITE_UNCONFIRMED via wroteRow(); tests/sd_data_mech_write_unconfirmed.js 22 arms with ablation.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The fallback arms date from each branch's original wiring (2026-09-02 to 2026-09-25); not traced to single commits."
-      },
-      "citation_note": "C2 in docs/recurring-bug-classes-2.md (silent backup / premature ack), server half; no PR rule id names a return=representation fallback.",
-      "contributing_factors": [
-        {
-          "factor": "Four mech write branches were written before wroteRow()/refuseUnconfirmedWrite() existed (2026-09-18) and the sweep that introduced them covered PATCH and soft-delete sites, not POST upserts.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "All four mech branches now use the pair; tests/sd_data_mech_write_unconfirmed.js with ablation."
-        },
-        {
-          "factor": "The b57 audit of this class stopped at the client and recorded the server path as COULD NOT TELL rather than reading it.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "b58 read and drove every mech write and read branch on the server."
-        }
-      ],
-      "recurrence_open": "Three more ok-with-null write acks remain outside sairnmechanical (sd-data.js supplier_lead_times, sd_approvals, alf_family_contacts); routed in the cody b58 handoff."
     },
     {
       "commit": "21ad938e1c6f",
@@ -39215,6 +39215,74 @@
       "factors_unknown_reason": "the git() helper's 120 s timeout was right for every read and wrong for the one push, and nothing looked at the two lines together until the b61 scan"
     },
     {
+      "commit": "815240d1626e",
+      "date": "2026-10-28",
+      "subject": "fix(tools, cody b58): the b55 MEDIUM not-run-as-pass leftovers, M2-M23, each with an arm red on the old code",
+      "files": [
+        "tests/run_assertion_label_shape_probe.py",
+        "tests/run_control_char_probe.py",
+        "tests/run_dead_rule_sweep_probe.py",
+        "tests/run_entry_point_scope_probe.py",
+        "tests/run_guard_ablation_probe.py",
+        "tests/run_metamorphic_probe.py",
+        "tests/run_parse_zero_third_state_probe.py",
+        "tests/run_route_suite_failures_probe.py",
+        "tests/run_sairn_dead_function_sweep_probe.py",
+        "tests/run_unproven_arm_probe.py",
+        "tests/run_verify_citator_feedback_probe.py",
+        "tools/assertion_label_shape_check.py",
+        "tools/clone_health_check.py",
+        "tools/control_char_check.py",
+        "tools/dead_rule_sweep.py",
+        "tools/entry_point_scope_check.py",
+        "tools/external_file_index_audit.py",
+        "tools/git_config_isolation.py",
+        "tools/guard_ablation.py",
+        "tools/metamorphic_check.py",
+        "tools/overrun_inversion_scan.py",
+        "tools/parse_zero_third_state_check.py",
+        "tools/route_suite_failures.py",
+        "tools/sairn_dead_function_sweep.py",
+        "tools/session_surface_check.py",
+        "tools/unproven_arm_check.py",
+        "tools/verify_citator_feedback.py"
+      ],
+      "lines_added": 1132,
+      "lines_removed": 79,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "Sixteen cody-owned checkers reported a pass for work that never ran (b55 sweep M2-M23): exit 0 on PARTIAL/COULD-NOT-RUN/NOT ASSESSED (verify_citator_feedback, guard_ablation, unproven_arm), a strip_comments arg slot that made a count structurally 0 (assertion_label_shape), value=2 matching indent=2, crashing checkers treated as holding a relation, unexercised relations, unread overlay rc, untrusted strips counted clean, absent claims ok, no-transcript runs reported as never-used, and selftest arms that never called the code. Each fixed with an arm red on the old copy.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Sixteen tools, each with its own history; the sweep that found them (cody b55) did not trace injection commits."
+      },
+      "citation_note": "PR 1.11: could-not-run is a third state, never folded into passed.",
+      "contributing_factors": [
+        {
+          "factor": "Checker tools folded could-not-run into pass in sixteen distinct shapes (exit 0 on partial runs, dead counters, selftest arms that never called the code they name); each was written before checker_kit.finish(could_not_run=) was the house pattern.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Each fixed with a test arm shown red on the pre-fix copy."
+        },
+        {
+          "factor": "The b55 sweep routed the MEDIUM rows to a later batch and two batches passed before they were picked up; a routed list in a handoff has no owner-side reminder.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Closed in b58 as an explicit dispatch item."
+        }
+      ],
+      "recurrence_open": "Only cody's 41 tools were swept; other sessions' checkers were not, and checker_kit.tracked() still ignores git's exit code for every caller (cc's)."
+    },
+    {
       "commit": "8259a6dd25fe",
       "date": "2026-10-28",
       "subject": "fix(sairnmechanical, cody b57): a backup that never ran, and a restore that never read, both said nothing",
@@ -39345,74 +39413,6 @@
       "recurrence_open": "Other consumers of FLAKY.classify or of report_only_checks --json output may have the same default-to-best or stdout-pollution shape; not swept."
     },
     {
-      "commit": "815240d1626e",
-      "date": "2026-10-28",
-      "subject": "fix(tools, cody b58): the b55 MEDIUM not-run-as-pass leftovers, M2-M23, each with an arm red on the old code",
-      "files": [
-        "tests/run_assertion_label_shape_probe.py",
-        "tests/run_control_char_probe.py",
-        "tests/run_dead_rule_sweep_probe.py",
-        "tests/run_entry_point_scope_probe.py",
-        "tests/run_guard_ablation_probe.py",
-        "tests/run_metamorphic_probe.py",
-        "tests/run_parse_zero_third_state_probe.py",
-        "tests/run_route_suite_failures_probe.py",
-        "tests/run_sairn_dead_function_sweep_probe.py",
-        "tests/run_unproven_arm_probe.py",
-        "tests/run_verify_citator_feedback_probe.py",
-        "tools/assertion_label_shape_check.py",
-        "tools/clone_health_check.py",
-        "tools/control_char_check.py",
-        "tools/dead_rule_sweep.py",
-        "tools/entry_point_scope_check.py",
-        "tools/external_file_index_audit.py",
-        "tools/git_config_isolation.py",
-        "tools/guard_ablation.py",
-        "tools/metamorphic_check.py",
-        "tools/overrun_inversion_scan.py",
-        "tools/parse_zero_third_state_check.py",
-        "tools/route_suite_failures.py",
-        "tools/sairn_dead_function_sweep.py",
-        "tools/session_surface_check.py",
-        "tools/unproven_arm_check.py",
-        "tools/verify_citator_feedback.py"
-      ],
-      "lines_added": 1132,
-      "lines_removed": 79,
-      "app": "PLATFORM",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "independent-review",
-      "summary": "Sixteen cody-owned checkers reported a pass for work that never ran (b55 sweep M2-M23): exit 0 on PARTIAL/COULD-NOT-RUN/NOT ASSESSED (verify_citator_feedback, guard_ablation, unproven_arm), a strip_comments arg slot that made a count structurally 0 (assertion_label_shape), value=2 matching indent=2, crashing checkers treated as holding a relation, unexercised relations, unread overlay rc, untrusted strips counted clean, absent claims ok, no-transcript runs reported as never-used, and selftest arms that never called the code. Each fixed with an arm red on the old copy.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "Sixteen tools, each with its own history; the sweep that found them (cody b55) did not trace injection commits."
-      },
-      "citation_note": "PR 1.11: could-not-run is a third state, never folded into passed.",
-      "contributing_factors": [
-        {
-          "factor": "Checker tools folded could-not-run into pass in sixteen distinct shapes (exit 0 on partial runs, dead counters, selftest arms that never called the code they name); each was written before checker_kit.finish(could_not_run=) was the house pattern.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Each fixed with a test arm shown red on the pre-fix copy."
-        },
-        {
-          "factor": "The b55 sweep routed the MEDIUM rows to a later batch and two batches passed before they were picked up; a routed list in a handoff has no owner-side reminder.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Closed in b58 as an explicit dispatch item."
-        }
-      ],
-      "recurrence_open": "Only cody's 41 tools were swept; other sessions' checkers were not, and checker_kit.tracked() still ignores git's exit code for every caller (cc's)."
-    },
-    {
       "commit": "b676e7e79a2d",
       "date": "2026-10-28",
       "subject": "fix(sql, hank b59): alf-audit-owner-recovery.sql is run-ready -- real hash/salt written into the shipped file",
@@ -39504,6 +39504,50 @@
         }
       ],
       "recurrence_open": "The presence of a state caregiver ID remains visible to coordinators/schedulers through the readiness verdict by design (EVV readiness must report a missing ID); a role-suppressed element would be a product decision."
+    },
+    {
+      "commit": "d5ab80210b59",
+      "date": "2026-10-28",
+      "subject": "fix(tools, cody b58): write_without_readback_check -- an empty target list exits 2; \"FILES SCANNED\" counts targets (M17, the last b55 row)",
+      "files": [
+        "docs/sairn-path-manifest.json",
+        "docs/scrutiny-flags.json",
+        "tools/write_without_readback_check.py"
+      ],
+      "lines_added": 171,
+      "lines_removed": 5,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "independent-review",
+      "summary": "write_without_readback_check exited 0 when it scanned no file at all (an empty target list, e.g. run from the wrong directory) and mislabelled files-with-a-write as files scanned, so a write-free scan said ZERO files were scanned. Now an empty target list is exit 2 and the line counts targets and writers separately; fixture arm ablated red on the old main().",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The disclosure was added 2026-09-10; not traced further."
+      },
+      "citation_note": "PR 1.11: could-not-run is a third state, never folded into passed.",
+      "contributing_factors": [
+        {
+          "factor": "The zero-scanned disclosure keyed on `results`, which holds only files with a write, so the message and the could-not-run case were bound to the wrong population.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Keyed on targets; two fixture arms, one ablated red on the old main()."
+        },
+        {
+          "factor": "The b55 fix attempt was reverted without the right fix being routed separately, so the row stayed open three batches.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Closed in b58."
+        }
+      ],
+      "recurrence_open": "Other checkers whose denominator is a filtered list rather than the targets were not swept for this shape."
     },
     {
       "commit": "e318692427ec",
