@@ -39103,7 +39103,7 @@
       "recurrence_open": "Any OTHER hook-spawned tool that runs git in a temp dir is covered only by the hook-level unset; a tool invoked by a different hook or wrapper that exports GIT_DIR is not."
     },
     {
-      "commit": "78d271272790",
+      "commit": "8259a6dd25fe",
       "date": "2026-10-28",
       "subject": "fix(sairnmechanical, cody b57): a backup that never ran, and a restore that never read, both said nothing",
       "files": [
@@ -39146,7 +39146,7 @@
       "recurrence_open": "The generic sd-data server path was not re-audited for this class in b57."
     },
     {
-      "commit": "8b60dc1281ac",
+      "commit": "e318692427ec",
       "date": "2026-10-28",
       "subject": "fix(identity, cody b57): the fx identity is out of this clone's config, and two tools can no longer put it back unseen",
       "files": [
@@ -39326,7 +39326,7 @@
       "recurrence_open": "No mechanical check yet refuses a placeholder token in a sql/ file at push time; the re-read is a discipline, not a gate."
     },
     {
-      "commit": "bf88dbc92bdb",
+      "commit": "40af6a301113",
       "date": "2026-10-28",
       "subject": "fix(tools, cody b57): write_batch was invisible to the read-back check -- stonedesk's \"33 -> 32\" was a masked regression, not growth",
       "files": [
