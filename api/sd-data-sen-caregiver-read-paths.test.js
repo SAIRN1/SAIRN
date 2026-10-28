@@ -73,6 +73,8 @@ const SECRETS = Object.freeze({
 const KEPT = ['id', 'name', 'phone', 'cpr_expiry', 'status',
               'aide_type', 'program', 'employee_id', 'branch_id'];
 const HR_ROLES = ['owner', 'billing'];
+// The tiers that get the whole roster; every other role gets its own row.
+const ROSTER_ROLES = ['owner', 'billing', 'coordinator', 'scheduler'];
 
 let pass = 0, fail = 0;
 const FAILED = [];
@@ -163,7 +165,7 @@ function loadHandler(fetchImpl) {
   return require('./sd-data.js');
 }
 
-async function callAs(role, body, tables) {
+async function callAs(role, body, tables, employeeId) {
   const calls = [];
   const h = loadHandler(pgMock(tables || {}, calls));
   const res = mockRes();
@@ -171,7 +173,7 @@ async function callAs(role, body, tables) {
     method: 'POST',
     headers: {
       authorization: 'Bearer KEY-FOR-' + HASH,
-      'x-sd-auth': signSessionToken({ app: APP, employee_id: 'emp-1', role, license_hash: HASH })
+      'x-sd-auth': signSessionToken({ app: APP, employee_id: employeeId || 'emp-1', role, license_hash: HASH })
     },
     body
   }, res);
@@ -246,12 +248,16 @@ function leaksIn(body) {
           + JSON.stringify(res.body).slice(0, 400));
       });
 
+    // Signed as emp-7, the employee CG-1 belongs to. A caregiver gets ITS OWN
+    // row and no colleague's (cc b61, H1 #965); the scheduling tiers get both.
     await test('[' + role + '] ...and the nine fields the app needs survived, '
-      + 'on EVERY row and not just the first', async () => {
+      + 'on EVERY row it is given and not just the first', async () => {
         const { res } = await callAs(role, { action: 'read', resource: 'sen_caregivers' },
-          { sen_caregivers: [caregiverRow('CG-1'), caregiverRow('CG-2', 'emp-8')] });
+          { sen_caregivers: [caregiverRow('CG-1'), caregiverRow('CG-2', 'emp-8')] }, 'emp-7');
         const rows = (res.body && res.body.data) || [];
-        assert.strictEqual(rows.length, 2, 'expected 2 rows, got ' + rows.length);
+        const want = ROSTER_ROLES.indexOf(role) !== -1 ? 2 : 1;
+        assert.strictEqual(rows.length, want, 'expected ' + want + ' rows, got ' + rows.length);
+        if (want === 1) assert.strictEqual(rows[0].id, 'CG-1', 'a caregiver got a colleague: ' + rows[0].id);
         rows.forEach((item, i) => {
           const missing = KEPT.filter((f) => !(f in item));
           assert.deepStrictEqual(missing, [],

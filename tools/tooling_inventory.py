@@ -129,6 +129,13 @@ PURPOSES = {
         'any shell-operator argument (it runs without a shell), and exits 3 if a '
         'gate or hook file changed during the run. Written after the 2026-10-27 '
         'push-gate truncation, whose originating command was never captured.'),
+    'sairn_field_scope_check.py': ('GATE',
+        'a field, role or row scope meant to redact or refuse that instead returns in full to '
+        'an unprivileged role: drives the REAL api handler once per role (token signed by the '
+        'real auth) against tools/field_scope_rules.json, closed-world by unique markers, and '
+        'fails on a LEAK, an over-redaction, a wrong scope flag, or a declared redaction in '
+        'api/sd-data.js with no rule. Blocking pre-push check 4c, fails closed; --sweep maps '
+        'every undeclared role-scoped read; --live reads the deployed endpoint per role.'),
     'capped_run.py': ('GUARD',
         'an incident replay that runs uncapped and is OOM-killed mid-run, losing the '
         'attempt: runs the command in a Job Object (RLIMIT_AS off Windows) with a '

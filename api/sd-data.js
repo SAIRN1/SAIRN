@@ -7497,8 +7497,24 @@ module.exports = async (req, res) => {
     // cannot ask. A blank background-check date reads as "no check on file" on
     // a compliance column -- which is why sairnsenior.html's roster table now
     // reads that flag instead of rendering an empty cell.
+    //
+    // ── AND THE ROWS: A CAREGIVER GETS ITS OWN RECORD, NOT THE ROSTER (cc b61,
+    //    2026-10-28, H1 #965 re-driven) ──────────────────────────────────────
+    // After the HR redaction every role still received every colleague's
+    // name, personal phone, CPR expiry and ids. The agency-wide need named
+    // above belongs to the scheduling tiers: senIsScheduler() is
+    // senIsBroadRead(), i.e. owner/billing/coordinator/scheduler, and the cert
+    // gate on assignment reads the ASSIGNEE's cpr_expiry. A caregiver assigns
+    // only itself (sairnsenior.html saveClient: senSession.employee_id), so its
+    // cert gate needs its own row and nothing else. Same tiering sen_clients
+    // uses one branch up (SEN_CLIENT_BROAD_READ_ROLES, caregiver scoped to its
+    // own). Declared on the response as `roster_scope`, for the same reason as
+    // hr_fields_visible. The declared per-role field sets live in
+    // tools/field_scope_rules.json and tools/sairn_field_scope_check.py holds
+    // this branch to them.
     const SEN_CAREGIVER_HR_FIELD_ROLES = roleSet({ owner: true, billing: true });
     const SEN_CAREGIVER_HR_FIELDS = ['bgcheck_date', 'state_caregiver_id', 'notes'];
+    const SEN_CAREGIVER_ROSTER_ROLES = roleSet({ owner: true, billing: true, coordinator: true, scheduler: true });
     if (resource === 'sen_caregivers' && action === 'read') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
@@ -7507,12 +7523,16 @@ module.exports = async (req, res) => {
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       const canSeeHr = !!SEN_CAREGIVER_HR_FIELD_ROLES[session.role];
-      const data = (rows || []).map((r) => {
+      const fullRoster = !!SEN_CAREGIVER_ROSTER_ROLES[session.role];
+      const me = session.employee_id ? String(session.employee_id) : '';
+      const data = (rows || []).filter((r) => fullRoster
+        || (me !== '' && r.data && String(r.data.employee_id || '') === me)).map((r) => {
         const out = Object.assign({ id: r.caregiver_id }, r.data);
         if (!canSeeHr) SEN_CAREGIVER_HR_FIELDS.forEach((f) => { delete out[f]; });
         return out;
       });
-      res.status(200).json({ ok: true, data, provisioned: true, hr_fields_visible: canSeeHr });
+      res.status(200).json({ ok: true, data, provisioned: true, hr_fields_visible: canSeeHr,
+                             roster_scope: fullRoster ? 'agency' : 'own' });
       return;
     }
     if (resource === 'sen_caregivers' && action === 'write') {

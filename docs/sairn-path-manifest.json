@@ -69,7 +69,9 @@
       "tests/run_hover_separation_probe.py",
       "sairnlegacy.html",
       "api/sd-data-leg-bookings-toctou.test.js",
-      "tests/run_core_bare_kill_probe.py"
+      "tests/run_core_bare_kill_probe.py",
+      "api/sd-data-sen-caregiver-pii-scope.test.js",
+      "api/sd-data-sen-caregiver-read-paths.test.js"
     ],
     "cody": [
       "tools/checker_confidence.py",

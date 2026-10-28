@@ -2576,6 +2576,46 @@ def main():
                 print(json.dumps({"hookSpecificOutput": {
                     "hookEventName": "PreToolUse", "additionalContext": note}}))
 
+    # ── CHECK 4c: field / role / row scope -- BLOCKING, FAILS CLOSED (cc b61) ─
+    # Four times by 2026-10-28 a scope that was meant to redact or refuse
+    # returned in full to an unprivileged role, and an auditor found it after
+    # it shipped (H1 #965 the fourth). tools/sairn_field_scope_check.py drives
+    # the REAL handler at the pushed tip once per role and diffs what each role
+    # receives against tools/field_scope_rules.json. Unlike the seam check its
+    # COULD NOT RUN (2) also denies: Michael's b61 decision is that report-only
+    # is not acceptable for this class, and a scope check that did not run has
+    # not cleared one. Same trigger as the seam check plus its own three files.
+    fs_files = ('tools/field_scope_rules.json', 'tools/field_scope_driver.js',
+                'tools/sairn_field_scope_check.py')
+    if api_changed or any(q in fs_files for q in changed):
+        fsc = os.path.join(repo, 'tools', 'sairn_field_scope_check.py')
+        if not os.path.isfile(fsc):
+            deny(chr(10).join([
+                "Blocked: this push changes api/ JavaScript and the field-scope check",
+                "is not in this clone, so nothing checked what each role receives.",
+                "  expected: %s" % fsc,
+                OVERRIDE_HINT,
+            ]))
+        try:
+            s = subprocess.run([sys.executable, fsc, '--ref', tip], capture_output=True, text=True,
+                               encoding='utf-8', errors='replace', timeout=600, cwd=repo)
+            fs_rc, fs_out = s.returncode, (s.stdout or '') + (s.stderr or '')
+        except Exception as e:
+            fs_rc, fs_out = None, '%s: %s' % (type(e).__name__, e)
+        if fs_rc != 0:
+            deny(chr(10).join([
+                "Blocked: the field-scope check %s." % (
+                    "found a role receiving what its declaration does not allow" if fs_rc == 1
+                    else "COULD NOT RUN (exit %s), and an unrun scope check is not a pass" % fs_rc),
+                "",
+                fs_out.strip()[-2500:],
+                "",
+                "Fix the handler, or -- if the design changed -- change the declaration in",
+                "tools/field_scope_rules.json in the same push and say why in the commit.",
+                "Full detail:  python tools/sairn_field_scope_check.py",
+                OVERRIDE_HINT,
+            ]))
+
     # ── CHECK 5: reachability -- BLOCKING as of 2026-09-02 ─────────────────
     # Added 2026-09-01. Three complete, working, AI-backed StoneDesk features
     # were unreachable by a customer on 2026-08-30: each injected its only

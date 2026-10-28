@@ -158,7 +158,9 @@ async function readAs(role, rows) {
   const calls = [];
   const h = loadHandler(postgrestMock(rows, calls));
   const res = mockRes();
-  await h(mockReq({ action: 'read', resource: 'sen_caregivers' }, 'emp-1', role), res);
+  // Signed as emp-7, whose row caregiverRow() builds: a caregiver is given its
+  // OWN record only (cc b61, H1 #965), so the field arms need it to be the owner.
+  await h(mockReq({ action: 'read', resource: 'sen_caregivers' }, 'emp-7', role), res);
   return { res: res, calls: calls };
 }
 

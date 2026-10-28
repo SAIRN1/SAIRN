@@ -1,0 +1,132 @@
+{
+  "_comment": [
+    "The DECLARED field and row scope of every endpoint with a redaction or role-scope rule.",
+    "tools/sairn_field_scope_check.py holds the real handler to it, per role, and refuses a",
+    "push that breaks it. A declaration is the DESIGN, written from the write site and the",
+    "decision that set it -- never read off the read branch, or the check agrees with the",
+    "code by construction.",
+    "",
+    "tables: rows seeded into the mock. A null value becomes a unique MARKER string; any",
+    "other value is literal and is not accounted. roles: every role the app has (from",
+    "api/_lib/auth.js ROLES_BY_APP) must appear. see: 'tag.field' or 'tag.*' -- the markers",
+    "that role MUST get back; every other marker must be ABSENT anywhere in the body. That is",
+    "the diff of returned fields against the allowed set, closed-world and shape-independent.",
+    "refused: true -- that role must get 401/403 and no marker at all. flags: top-level body",
+    "values that role must see."
+  ],
+  "rules": [
+    {
+      "id": "sen_caregivers.read",
+      "app": "sairnsenior",
+      "anchor": "if (resource === 'sen_caregivers' && action === 'read')",
+      "request": { "action": "read", "resource": "sen_caregivers" },
+      "declared_from": "sairnsenior.html saveCaregiver() field list; b384a513 HR tier (owner/billing); cc b61 row tier (caregiver gets its own record, scheduling tiers the roster) for H1 #965",
+      "caller": "emp-self",
+      "tables": {
+        "sen_caregivers": [
+          { "tag": "self", "caregiver_id": null, "data": {
+            "name": null, "phone": null, "cpr_expiry": null, "bgcheck_date": null, "status": null,
+            "notes": null, "aide_type": null, "program": null, "state_caregiver_id": null,
+            "employee_id": "emp-self", "branch_id": null } },
+          { "tag": "peer", "caregiver_id": null, "data": {
+            "name": null, "phone": null, "cpr_expiry": null, "bgcheck_date": null, "status": null,
+            "notes": null, "aide_type": null, "program": null, "state_caregiver_id": null,
+            "employee_id": "emp-peer", "branch_id": null } }
+        ]
+      },
+      "sets": {
+        "SCHED": ["caregiver_id", "name", "phone", "cpr_expiry", "status", "aide_type", "program", "branch_id"]
+      },
+      "roles": {
+        "owner":       { "see": ["self.*", "peer.*"], "flags": { "hr_fields_visible": true, "roster_scope": "agency" } },
+        "billing":     { "see": ["self.*", "peer.*"], "flags": { "hr_fields_visible": true, "roster_scope": "agency" } },
+        "scheduler":   { "see": ["self.@SCHED", "peer.@SCHED"], "flags": { "hr_fields_visible": false, "roster_scope": "agency" } },
+        "coordinator": { "see": ["self.@SCHED", "peer.@SCHED"], "flags": { "hr_fields_visible": false, "roster_scope": "agency" } },
+        "caregiver":   { "see": ["self.@SCHED"], "flags": { "hr_fields_visible": false, "roster_scope": "own" } }
+      },
+      "live": { "licence_env": "SEN_AUDIT_LICENSE", "auth_path": "/api/sen-auth", "owner_field": "employee_id",
+                "creds": { "scheduler": ["SEN_SCHEDULER_EMP", "SEN_SCHEDULER_PIN"],
+                           "coordinator": ["SEN_COORDINATOR_EMP", "SEN_COORDINATOR_PIN"],
+                           "caregiver": ["SEN_CAREGIVER_EMP", "SEN_CAREGIVER_PIN"] } }
+    },
+    {
+      "id": "sen_settings.read",
+      "app": "sairnsenior",
+      "anchor": "if (resource === 'sen_settings' && action === 'read')",
+      "request": { "action": "read", "resource": "sen_settings" },
+      "declared_from": "the 2026-10-14 b9 tiering decision: non-management gets the operating state, the aggregator and the agency display name; unknown keys and updated_by/updated_at are withheld",
+      "caller": "emp-self",
+      "tables": {
+        "sen_settings": [
+          { "tag": "evv", "setting_key": "evv_config", "updated_by": null, "updated_at": null,
+            "data": { "state": null, "aggregator": null, "api_secret": null } },
+          { "tag": "profile", "setting_key": "agency_profile", "updated_by": null, "updated_at": null,
+            "data": { "name": null, "tax_id": null } },
+          { "tag": "other", "setting_key": "billing_defaults", "updated_by": null, "updated_at": null,
+            "data": { "rate": null } }
+        ]
+      },
+      "roles": {
+        "owner":       { "see": ["evv.*", "profile.*", "other.*"], "flags": { "tiered": false } },
+        "billing":     { "see": ["evv.*", "profile.*", "other.*"], "flags": { "tiered": false } },
+        "scheduler":   { "see": ["evv.state", "evv.aggregator", "profile.name"], "flags": { "tiered": true } },
+        "coordinator": { "see": ["evv.state", "evv.aggregator", "profile.name"], "flags": { "tiered": true } },
+        "caregiver":   { "see": ["evv.state", "evv.aggregator", "profile.name"], "flags": { "tiered": true } }
+      }
+    },
+    {
+      "id": "rf_settings.read",
+      "app": "sairnroofing",
+      "anchor": "if (resource === 'rf_settings' && action === 'read')",
+      "request": { "action": "read", "resource": "rf_settings" },
+      "declared_from": "the 2026-10-14 b10 tiering decision: non-management gets the damage_threshold value and its source (sairnroofing.html rfDmgShowThreshold), never updated_by/updated_at, never an unknown key -- including one named constructor",
+      "caller": "emp-self",
+      "tables": {
+        "rf_settings": [
+          { "tag": "dmg", "setting_key": "damage_threshold", "updated_by": null, "updated_at": null,
+            "data": { "value": null, "source": null } },
+          { "tag": "proto", "setting_key": "constructor", "updated_by": null, "updated_at": null,
+            "data": { "value": null } },
+          { "tag": "other", "setting_key": "crew_rates", "updated_by": null, "updated_at": null,
+            "data": { "rate": null } }
+        ]
+      },
+      "roles": {
+        "owner":     { "see": ["dmg.*", "proto.*", "other.*"], "flags": { "tiered": false } },
+        "admin":     { "see": ["dmg.*", "proto.*", "other.*"], "flags": { "tiered": false } },
+        "estimator": { "see": ["dmg.value", "dmg.source"], "flags": { "tiered": true } },
+        "foreman":   { "see": ["dmg.value", "dmg.source"], "flags": { "tiered": true } },
+        "crew":      { "see": ["dmg.value", "dmg.source"], "flags": { "tiered": true } }
+      }
+    },
+    {
+      "id": "alf_facility.read",
+      "app": "sairncare",
+      "anchor": "if (resource === 'alf_facility' && action === 'read')",
+      "request": { "action": "read", "resource": "alf_facility" },
+      "declared_from": "sairncare.html facility() defaults plus ALF_FACILITY_RATE_FIELDS' il/mc/snf; the 2026-08-21 two-tier design (rate card to management only, the rest facility-wide)",
+      "caller": "emp-self",
+      "tables": {
+        "alf_facility": [
+          { "tag": "fac", "facility_id": null, "data": {
+            "name": null, "company": null, "licensing_state": null, "license_number": null,
+            "cs_policy": null, "hcbs_enabled": null, "hcbs_state": null,
+            "roomboard_rate": null, "il_rate": null, "al1_rate": null, "al2_rate": null,
+            "al3_rate": null, "mc_rate": null, "snf_rate": null } }
+        ]
+      },
+      "sets": {
+        "PROFILE": ["facility_id", "name", "company", "licensing_state", "license_number", "cs_policy", "hcbs_enabled", "hcbs_state"]
+      },
+      "roles": {
+        "owner":          { "see": ["fac.*"], "flags": { "rates_visible": true } },
+        "billing":        { "see": ["fac.*"], "flags": { "rates_visible": true } },
+        "nursing":        { "see": ["fac.@PROFILE"], "flags": { "rates_visible": false } },
+        "med_aide":       { "see": ["fac.@PROFILE"], "flags": { "rates_visible": false } },
+        "caregiver":      { "see": ["fac.@PROFILE"], "flags": { "rates_visible": false } },
+        "activities":     { "see": ["fac.@PROFILE"], "flags": { "rates_visible": false } },
+        "office_manager": { "see": ["fac.@PROFILE"], "flags": { "rates_visible": false } }
+      }
+    }
+  ]
+}
