@@ -21,6 +21,7 @@
   "_assigned_overrides_why_cc_b53": "ADDED for cc b53 2026-10-22, on Michael's instruction (fix H1 b83 #1694, H6). sairnlegacy.html (*.html is fourth's): saveBooking() also withdraws the optimistic row on BOOKING_CHECK_INDETERMINATE -- one condition and one toast fallback, in a function fourth's live F3 claim does not touch (its unpushed hunks are saveCremation and above). api/sd-data-leg-bookings-toctou.test.js (api/ is hank's): one arm (a2). No wildcard, no prefix.",
   "_assigned_overrides_why_cc_b42": "ADDED for cc b42 2026-10-21, on Michael's instruction (declare undeclared third-party imports platform-wide, the tools/requirements.txt pattern). tests/requirements.txt (tests/ is cody's) and docs/requirements.txt (docs/ is fourth's): each a new manifest file only, no existing file in either directory is edited. No wildcard, no prefix.",
   "_assigned_overrides_why_cc_b38": "NEW for cc b38 2026-10-21, on Michael's instruction (platform-wide deleted-employee-row refusal, the RESOURCE_NAMES_BY_APP shape cc proposed in b37). api/ is hank's by the split; each entry is a single file. api/sd-data.js: the pre-gate's expected app now comes from OWNER_BY_RESOURCE for every registered resource. api/b38-deleted-row-platform.test.js: the arms. api/_lib/routes.test.js: one mock line -- its blanket [] answer to the employee-auth lookup now reads as a deleted employee, so it answers an active row. No wildcard, no prefix.",
+  "_assigned_overrides_why_cody_b57_REPLACES_b56": "REPLACED FOR b57 2026-10-28 (the b56 list is replaced, not extended), on Michael's b57 items 3-6: tools/committer_identity_check.py (walks tools/ fixtures too) and tools/rework_tracker.py (its git fixture drops an inherited GIT_DIR) for the fx identity leak; tools/write_without_readback_check.py (write_batch is a write); sairnmechanical.html (item 5: backup and restore no longer fail silently -- fourth's by the split, the audit Michael assigned); docs/recurring-bug-classes-2.md (C3, the pure-base re-check decision); docs/MASTER-PLAN.md and docs/traceability-matrix.md (regenerated for the new test); docs/BYPASS-LOG.jsonl (the skip records a pure-base push writes). Each a single file; no wildcard, no prefix.",
   "_assigned_overrides_why_cody_b56_REPLACES_b55": "REPLACED FOR b56 2026-10-28 (the b55 list is replaced, not extended), on Michael's b56 items 2 and 4: tools/gap_ledger.py (a Synthesis that yields zero rows is a finding, not no gaps) and tools/write_without_readback_check.py (a generic writer reachable only through an alias is COULD NOT TELL) -- cody's by the owner map, cc's by the split; docs/recurring-bug-classes-2.md (new, the push-race and not-run-as-pass classes, fourth's by the split) and docs/BYPASS-LOG.jsonl (one record of the b56 pure-base gate skip, written through tools/bypass_log.py). Each a single file; no wildcard, no prefix.",
   "_assigned_overrides_why_cody_b55_REPLACES_b54": "REPLACED FOR b55 2026-10-28 (the b54 list is replaced, not extended), on Michael's b55 items 2 and 5: checker_confidence hardening (UNRUNNABLE rated HIGH, --json not JSON) and the not-run/skipped-as-pass sweep of cody's own tools (owner map): rework_tracker, dead_rule_sweep, register_freshness_check, metamorphic_check, master_plan, service_role_tier_a_gate_check, eaten_substitution_check, git_config_isolation, hover_separation_audit -- cc's by the split, cody's by the owner map. Each a single file; no wildcard, no prefix.",
   "_assigned_overrides_why_cody_b54_REPLACES_b53": "REPLACED FOR b54 2026-10-27 (the b53 list is replaced, not extended), on Michael's b54 item 2: five tools/ ratio fixes (cc's by the split), each a single file -- run_all_tests (not-run counted as pass), flaky_checker_quarantine (numerator outside the registry), sairn_reachability_check (a real 0 fell through to the wrong metric), text_gate_literal_sweep (COULD-NOT-RUN counted as covered), checker_confidence (pooled history). No wildcard, no prefix.",
@@ -81,9 +82,13 @@
       "api/sd-data-sen-caregiver-read-paths.test.js"
     ],
     "cody": [
-      "tools/gap_ledger.py",
+      "tools/committer_identity_check.py",
+      "tools/rework_tracker.py",
       "tools/write_without_readback_check.py",
+      "sairnmechanical.html",
       "docs/recurring-bug-classes-2.md",
+      "docs/MASTER-PLAN.md",
+      "docs/traceability-matrix.md",
       "docs/BYPASS-LOG.jsonl"
     ],
     "fourth": [

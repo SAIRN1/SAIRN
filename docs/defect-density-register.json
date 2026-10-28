@@ -39103,21 +39103,22 @@
       "recurrence_open": "Any OTHER hook-spawned tool that runs git in a temp dir is covered only by the hook-level unset; a tool invoked by a different hook or wrapper that exports GIT_DIR is not."
     },
     {
-      "commit": "e567e2f56b6f",
+      "commit": "78d271272790",
       "date": "2026-10-28",
-      "subject": "fix(tools, cody b56): two more not-runs read as clean -- a synthesis nobody parsed, and a writer only an alias reaches",
+      "subject": "fix(sairnmechanical, cody b57): a backup that never ran, and a restore that never read, both said nothing",
       "files": [
-        "tests/write_readback_shape_probe.py",
-        "tools/gap_ledger.py",
-        "tools/write_without_readback_check.py"
+        "sairnmechanical.html",
+        "tests/mech_backup_not_silent.js",
+        "tests/mech_check_register_identity.js",
+        "tests/mech_docs_redaction_wiring_probe.py"
       ],
-      "lines_added": 92,
-      "lines_removed": 2,
-      "app": "tooling",
-      "layer": "tooling",
+      "lines_added": 185,
+      "lines_removed": 14,
+      "app": "sairnmechanical",
+      "layer": "product",
       "severity": "moderate",
       "detection_method": "code-review",
-      "summary": "Two cody-owned checkers read a not-run as clean: gap_ledger treated a Synthesis section in an unparsed shape as zero gaps (live: sairnbiz external audit), and write_without_readback_check returned no record for an app whose only generic writer is reached through an alias (live: sairnmechanical mechPushOne), so its writes were never checked. Now a finding and a COULD NOT TELL respectively; fixtures +4.",
+      "summary": "SAIRNmechanical backup and restore failed silently: every save site skipped the server push with no message when window.mechPushRecord was missing, saveDoc toasted 'Saved and synced' before the async push answered (and on failure), and mechHydrateAll returned silently on refused, unparseable or non-list answers and corrupt local copies, merging 0 exactly like an up-to-date register. Now each warns by collection, saveDoc waits for the answer; tests/mech_backup_not_silent.js 13 arms with an ablation.",
       "rules": [],
       "citation_confidence": "not-citable",
       "injection_phase": "coding",
@@ -39125,24 +39126,68 @@
       "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "unknown_reason": "Both resolvers predate the shapes they miss; the sairnbiz synthesis format and the mechanical alias were written later. Not traced to single commits."
+        "unknown_reason": "The guarded push sites and the hydrate predate the b57 audit; the 'Saved and synced' toast came with mech_docs registration. Not traced to single commits."
       },
-      "citation_note": "PR 1.11 names the general shape; docs/recurring-bug-classes-2.md C2 now names it as a standing class.",
+      "citation_note": "C2 in docs/recurring-bug-classes-2.md; sairn-silent-failure-sweep names the shape for app code but no PR rule id applies.",
       "contributing_factors": [
         {
-          "factor": "Each resolver handled only the shapes it was written against, and an unmatched input produced an empty result indistinguishable from a clean one.",
+          "factor": "Optional-feature guards (typeof ... === function) had no else branch, so a missing module was indistinguishable from a successful push.",
           "kind": "technical",
           "action_status": "done",
-          "action": "Unmatched-but-present input now yields a finding or COULD NOT TELL; fixtures for both directions."
+          "action": "One mechBackup() helper warns and returns null."
         },
         {
-          "factor": "These were found only by a deliberate not-run sweep, not by the tools own probes.",
+          "factor": "A redaction-wiring probe arm was red for two weeks because its extractor did not skip comments, so nobody could tell a real regression in saveDoc from a parser fault.",
           "kind": "process",
           "action_status": "done",
-          "action": "Standing practice recorded as class C2 in docs/recurring-bug-classes-2.md: touched tools get a does-it-run/does-it-check pass."
+          "action": "Extractor skips comments; arm green on the real body."
         }
       ],
-      "recurrence_open": "Remaining b55-sweep MEDIUM items; write_without_readback still cannot attribute what an aliased writer writes (it reports that it cannot)."
+      "recurrence_open": "The generic sd-data server path was not re-audited for this class in b57."
+    },
+    {
+      "commit": "8b60dc1281ac",
+      "date": "2026-10-28",
+      "subject": "fix(identity, cody b57): the fx identity is out of this clone's config, and two tools can no longer put it back unseen",
+      "files": [
+        "tools/committer_identity_check.py",
+        "tools/rework_tracker.py"
+      ],
+      "lines_added": 17,
+      "lines_removed": 2,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "SAIRN-cody committed as fx <fx@local> from 2026-10-27 (90 commits on origin/main) because a gate fixture's git init re-initialised the shared repo through an inherited absolute GIT_DIR (root cause fixed by cc b60 58801d4c7). This commit unsets the local identity, widens committer_identity_check to tools/ fixtures (it scanned tests/ only, so copy_exactly's fx was not on its list), and makes cody's own rework_tracker git fixture drop GIT_DIR so it cannot re-init the real repo or commit to its HEAD.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "config",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "0d2fe1eb3eac",
+        "date": "2026-10-27",
+        "subject": "chore(bypass-log, cody b51): the last honoured external-files skip row",
+        "lag_days": 1
+      },
+      "citation_note": "No rule names an inherited GIT_DIR beating git -C; PR 1.11 covers the unnoticed half (no gate reads the identity).",
+      "contributing_factors": [
+        {
+          "factor": "git exports an absolute GIT_DIR to a pre-push hook from a linked worktree, which overrides -C in fixtures that init temp repos.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Hook unsets it (cc b60); cody fixture drops it; driven with a hostile GIT_DIR."
+        },
+        {
+          "factor": "No gate reads the committing identity, so 90 commits went out before anyone looked.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "cody push script runs committer_identity_check and refuses core.bare!=false before pushing."
+        }
+      ],
+      "recurrence_open": "fourth's clone still carries fx@example.invalid in local config (fourth's to fix); other tools with git init fixtures (sairn_self_state, idempotence_double_run, push_retry) rely on the hook-level unset."
     },
     {
       "commit": "8e2c18f48c37",
@@ -39279,6 +39324,89 @@
         }
       ],
       "recurrence_open": "No mechanical check yet refuses a placeholder token in a sql/ file at push time; the re-read is a discipline, not a gate."
+    },
+    {
+      "commit": "bf88dbc92bdb",
+      "date": "2026-10-28",
+      "subject": "fix(tools, cody b57): write_batch was invisible to the read-back check -- stonedesk's \"33 -> 32\" was a masked regression, not growth",
+      "files": [
+        "tests/write_readback_shape_probe.py",
+        "tools/write_without_readback_check.py"
+      ],
+      "lines_added": 20,
+      "lines_removed": 3,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "write_without_readback_check WRITE_RE matched only 'write', so stonedesk sd_customers, moved to sdData('write_batch', ...), fell out of the write set and its read-back stopped being checked; write_readback_shape_probe's 33 -> 32 read as app shrinkage. Fixed in the tool (write(?:_batch)?) with a fixture that fails on the old regex; two other drifts (sairncare, sairnmechanical) read and confirmed as real features with read-back before re-baselining.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The write_batch action was introduced for sd_customers in stonedesk after WRITE_RE was written; not traced to a single commit."
+      },
+      "citation_note": "C2 in docs/recurring-bug-classes-2.md (not-run read as pass); no standing rule names an action-name drift in a resolver.",
+      "contributing_factors": [
+        {
+          "factor": "A resolver keyed on one literal action name lost a resource silently when the app adopted a sibling action.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "WRITE_RE accepts write_batch; fixture plus ablation."
+        },
+        {
+          "factor": "A red baseline arm was carried as app growth without reading which resource changed.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Each drift diffed against the 2026-09-17 baseline commit before any re-baseline."
+        }
+      ],
+      "recurrence_open": "Other action names (soft_delete, upsert variants) are not in WRITE_RE; not swept."
+    },
+    {
+      "commit": "e567e2f56b6f",
+      "date": "2026-10-28",
+      "subject": "fix(tools, cody b56): two more not-runs read as clean -- a synthesis nobody parsed, and a writer only an alias reaches",
+      "files": [
+        "tests/write_readback_shape_probe.py",
+        "tools/gap_ledger.py",
+        "tools/write_without_readback_check.py"
+      ],
+      "lines_added": 92,
+      "lines_removed": 2,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "Two cody-owned checkers read a not-run as clean: gap_ledger treated a Synthesis section in an unparsed shape as zero gaps (live: sairnbiz external audit), and write_without_readback_check returned no record for an app whose only generic writer is reached through an alias (live: sairnmechanical mechPushOne), so its writes were never checked. Now a finding and a COULD NOT TELL respectively; fixtures +4.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Both resolvers predate the shapes they miss; the sairnbiz synthesis format and the mechanical alias were written later. Not traced to single commits."
+      },
+      "citation_note": "PR 1.11 names the general shape; docs/recurring-bug-classes-2.md C2 now names it as a standing class.",
+      "contributing_factors": [
+        {
+          "factor": "Each resolver handled only the shapes it was written against, and an unmatched input produced an empty result indistinguishable from a clean one.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Unmatched-but-present input now yields a finding or COULD NOT TELL; fixtures for both directions."
+        },
+        {
+          "factor": "These were found only by a deliberate not-run sweep, not by the tools own probes.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Standing practice recorded as class C2 in docs/recurring-bug-classes-2.md: touched tools get a does-it-run/does-it-check pass."
+        }
+      ],
+      "recurrence_open": "Remaining b55-sweep MEDIUM items; write_without_readback still cannot attribute what an aliased writer writes (it reports that it cannot)."
     },
     {
       "commit": "f02a61f023da",
