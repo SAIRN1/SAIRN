@@ -359,7 +359,7 @@ def build_context(X, path, chunk, after_text, body, strip_applies):
     budget = min(X.CONTEXT_MAX_TOKENS,
                  X.TPM_BUDGET_CEILING - X.MAX_OUTPUT_TOKENS
                  - X.estimate_tokens(X.SYSTEM_PROMPT + X.CONTEXT_PROMPT_ADDENDUM)
-                 - X.estimate_tokens(body) - X.estimate_tokens(X.CONTEXT_HEADER))
+                 - est_tokens(X, body, path) - X.estimate_tokens(X.CONTEXT_HEADER))
     if budget <= 0:
         return ''
     text = after_text
@@ -396,6 +396,132 @@ def injection_refusal(body, context):
     return None
 
 
+# b97, the b94 HTTP 413. Groq counted 9,148 prompt tokens for a 26,487-character SQL
+# diff (2.94 characters per token); estimate_tokens() said 6,622 (4 per token), so a
+# chunk this sampler judged to fit one call was refused by the vendor as over its
+# 8,000-token limit and the commit went unreviewed. SQL is denser than the 4-per-token
+# rule: short identifiers, punctuation and 64-character hashes. 2.5 is REASONED, with margin
+# below the densest real SQL measured, not calibrated. Evidence (b97): the vendor's own count
+# for that file is 2.94 characters per token; a local o200k proxy (which reads about 5 percent
+# above the vendor) puts 131 twelve-thousand-character windows of the 310 files in sql/ at a
+# minimum of 2.70, a median of 3.99, and none below 2.5; the two live parts then came in at an
+# estimate 2 to 3 percent above the vendor's total (output included). Every completed SQL call
+# prints its estimate beside the vendor's count so the next batch can check it. It applies to
+# .sql ONLY, because .sql is the only shape measured.
+SQL_CHARS_PER_TOKEN = 2.5
+# A file that needs more than this many calls is not split: it is named unreviewed.
+MAX_PARTS = 4
+
+
+def chunk_path(chunk):
+    """The b/ path of one file's diff chunk, or None."""
+    m = re.match(r'diff --git a/\S+ b/(\S+)', chunk)
+    return m.group(1) if m else None
+
+
+def est_tokens(X, text, path=None):
+    """X.estimate_tokens, raised to the measured SQL density for a .sql path."""
+    n = X.estimate_tokens(text)
+    if path and path.endswith('.sql'):
+        n = max(n, int(len(text) / SQL_CHARS_PER_TOKEN) + 1)
+    return n
+
+
+_HUNK_HDR = re.compile(r'^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@(.*)$')
+
+
+def _is_boundary(text):
+    """A line a cut may follow without splitting a statement: blank, or ends in a semicolon."""
+    body = text[1:].rstrip()
+    return body == '' or body.endswith(';')
+
+
+def split_chunk(chunk, fits, max_parts=MAX_PARTS):
+    """PURE. One file's diff chunk as a list of sub-chunks that each satisfy fits(), or None
+    when no split into max_parts or fewer does. [chunk] unchanged when it fits whole.
+    Cuts fall on line boundaries, inside a hunk where it must, backing off to the last blank or
+    ;-terminated line when that is past the halfway point. Each sub-chunk repeats the file
+    header and carries its own @@ header with the REAL new-file line number, so a citation in
+    a part is checked against the same line numbers as in the whole file. A part cannot see
+    the other parts: a defect that spans the cut is not visible to the reviewer."""
+    if fits(chunk):
+        return [chunk]
+    lines = chunk.split('\n')
+    trailing_nl = lines and lines[-1] == ''
+    if trailing_nl:
+        lines = lines[:-1]
+    first = next((i for i, l in enumerate(lines) if _HUNK_HDR.match(l)), None)
+    if first is None:
+        return None
+    header = lines[:first]
+    recs = []  # (hunk_index, text, old_no, new_no, hunk_tail)
+    h = -1
+    old_no = new_no = 0
+    tail = ''
+    for l in lines[first:]:
+        m = _HUNK_HDR.match(l)
+        if m:
+            h += 1
+            old_no, new_no, tail = int(m.group(1)), int(m.group(3)), m.group(5)
+            continue
+        recs.append((h, l, old_no, new_no, tail))
+        if l.startswith('+'):
+            new_no += 1
+        elif l.startswith('-'):
+            old_no += 1
+        elif l.startswith('\\'):
+            pass
+        else:
+            old_no += 1
+            new_no += 1
+
+    def render(group):
+        out = list(header)
+        i = 0
+        while i < len(group):
+            j = i
+            while j + 1 < len(group) and group[j + 1][0] == group[i][0]:
+                j += 1
+            run = group[i:j + 1]
+            ob = sum(1 for r in run if r[1][:1] in (' ', '-', ''))
+            nb = sum(1 for r in run if r[1][:1] in (' ', '+', ''))
+            os_ = run[0][2] if ob else max(run[0][2] - 1, 0)
+            ns_ = run[0][3] if nb else max(run[0][3] - 1, 0)
+            out.append('@@ -%d,%d +%d,%d @@%s' % (os_, ob, ns_, nb, run[0][4]))
+            out.extend(r[1] for r in run)
+            i = j + 1
+        return '\n'.join(out) + ('\n' if trailing_nl else '')
+
+    parts, i = [], 0
+    while i < len(recs):
+        if len(parts) >= max_parts:
+            return None
+        j = i
+        while j < len(recs) and fits(render(recs[i:j + 1])):
+            j += 1
+        if j == i:
+            return None  # one line alone does not fit
+        if j < len(recs):
+            k = j
+            b = k
+            while b > i and not _is_boundary(recs[b - 1][1]):
+                b -= 1
+            if b > i and (b - i) * 2 >= (k - i):
+                k = b
+            while k > i and recs[k][1].startswith('\\'):
+                k -= 1  # never cut before a "no newline at end of file" marker
+            if k > i:
+                j = k
+            else:
+                while j < len(recs) and recs[j][1].startswith('\\'):
+                    j += 1  # the marker cannot go with an earlier line, so it goes with this one
+        parts.append(render(recs[i:j]))
+        i = j
+    if not all(fits(x) for x in parts):
+        return None  # a marker carried across a cut can leave a part over the limit: say so, do not send it
+    return parts
+
+
 def review_chunk(X, gate, api_key, path, chunk, ask=None, after_text=None):
     """ONE file's chunk through the production path: boilerplate removal, the
     defence decision, the rate gate, the vendor call, and citation validation
@@ -413,10 +539,10 @@ def review_chunk(X, gate, api_key, path, chunk, ask=None, after_text=None):
     if refusal:
         return {'status': 'injection-refused', 'why': refusal, 'strip': dec,
                 'sent_body': None}
-    est = X.estimate_tokens(X.SYSTEM_PROMPT) + X.estimate_tokens(body)
+    est = X.estimate_tokens(X.SYSTEM_PROMPT) + est_tokens(X, body, path)
     if context:
         est += (X.estimate_tokens(X.CONTEXT_PROMPT_ADDENDUM)
-                + X.estimate_tokens(X.CONTEXT_HEADER + context))
+                + est_tokens(X, X.CONTEXT_HEADER + context, path))
     ok, why = gate.wait_or_refuse(est)
     if not ok:
         return {'status': 'rate-refused', 'why': why, 'strip': dec,
@@ -472,7 +598,7 @@ def rank_commit_files(sha, paths):
     return sorted(paths, key=key)
 
 
-def plan_batch(commit_files, per_commit, est_fn, hard_ceiling):
+def plan_batch(commit_files, per_commit, est_fn, hard_ceiling, split_fn=None):
     """PURE planner behind --sample-batch, so the coverage logic is driven by
     fixtures with no git and no network. commit_files is a list of
     (sha, subject, {path: chunk}). Returns (plan, unreviewed):
@@ -480,7 +606,9 @@ def plan_batch(commit_files, per_commit, est_fn, hard_ceiling):
                   one Tier 1+2 file that FITS a single call
       unreviewed  [(sha, subject, reason)] -- every commit that does not, NAMED
     An oversized file is skipped and named, never truncated in silence, and the
-    next-ranked file of the same commit is tried instead."""
+    next-ranked file of the same commit is tried instead. b97: when split_fn(chunk)
+    returns a list of parts the file is reviewable in that many calls, so it is a pick
+    and not oversized."""
     plan, unreviewed = [], []
     for sha, subj, files in commit_files:
         t12 = [p for p in files if tier12(p)]
@@ -492,15 +620,16 @@ def plan_batch(commit_files, per_commit, est_fn, hard_ceiling):
             if len(picks) >= per_commit:
                 break
             if est_fn(files[p]) > hard_ceiling:
-                over.append(p)
-                continue
+                if split_fn is None or split_fn(files[p]) is None:
+                    over.append(p)
+                    continue
             picks.append(p)
         if picks:
             plan.append((sha, subj, picks))
         else:
             unreviewed.append((sha, subj, 'every Tier 1+2 file is oversized '
-                                '(%s) -- needs hunk-splitting, not built'
-                                % ', '.join(over)))
+                                '(%s) -- needs more than %d parts, or cannot be split'
+                                % (', '.join(over), MAX_PARTS)))
     return plan, unreviewed
 
 
@@ -556,9 +685,17 @@ def cmd_sample_batch(argv, opt):
         commit_files.append((sha, subj, dict(split_per_file(diff))))
     hard_ceiling = (X.TPM_BUDGET_CEILING - X.MAX_OUTPUT_TOKENS
                     - X.estimate_tokens(X.SYSTEM_PROMPT))
+    part_budget = hard_ceiling - X.TOKEN_SAFETY_MARGIN
+
+    def _fits(c):
+        return est_tokens(X, X.strip_boilerplate(c), chunk_path(c)) <= part_budget
+
+    def _split(c):
+        return split_chunk(c, _fits)
     plan, unreviewed = plan_batch(
         commit_files, per_commit,
-        lambda c: X.estimate_tokens(X.strip_boilerplate(c)), hard_ceiling)
+        lambda c: est_tokens(X, X.strip_boilerplate(c), chunk_path(c)), hard_ceiling,
+        split_fn=_split)
     unreviewed = unreadable + unreviewed
     # Order by the commit's own hash digest, NOT chronologically: if the call
     # cap or the clock truncates the run, what is lost is an arbitrary subset,
@@ -587,24 +724,36 @@ def cmd_sample_batch(argv, opt):
 
     gate = X.RateGate()
     tokens_total, completed, strips, refused = 0, [], [], []
+    split_files, partial = 0, []
     for sha, subj, p in sent:
-        r = review_chunk(X, gate, api_key, p, chunks[sha][p],
-                         after_text=file_at_commit(cwd, sha, p))
-        strips.append(r['strip'])
-        if r['status'] != 'ok':
-            refused.append((sha, subj, p, r['status'], r['why']))
-            print('    %s %-9s %s -- %s' % (sha[:8], r['status'].upper(), p, r['why']))
-            continue
-        tokens_total += r['tokens']
-        completed.append((sha, subj, p, r))
-        print('    %s %-44s findings %d (dropped %d) tokens %d  %s'
-              % (sha[:8], p[:44], len(r['valid']), r['dropped_n'], r['tokens'],
-                 strip_label(r['strip'])))
-        for f in r['valid']:
-            print('        - %s:%s -- trigger: %s -- %s'
-                  % (f.get('file'), f.get('line'), f.get('trigger'),
-                     str(f.get('description'))[:240].replace('\n', ' ')))
-
+        parts = _split(chunks[sha][p]) or [chunks[sha][p]]
+        n_parts = len(parts)
+        split_files += n_parts > 1
+        after = file_at_commit(cwd, sha, p)
+        done_parts = 0
+        for pi, part in enumerate(parts, 1):
+            label = p if n_parts == 1 else '%s [part %d/%d]' % (p, pi, n_parts)
+            r = review_chunk(X, gate, api_key, p, part, after_text=after)
+            strips.append(r['strip'])
+            if r['status'] != 'ok':
+                refused.append((sha, subj, label, r['status'], r['why']))
+                print('    %s %-9s %s -- %s' % (sha[:8], r['status'].upper(), label, r['why']))
+                continue
+            done_parts += 1
+            tokens_total += r['tokens']
+            completed.append((sha, subj, label, r))
+            print('    %s %-44s findings %d (dropped %d) tokens %d  %s'
+                  % (sha[:8], label[:44], len(r['valid']), r['dropped_n'], r['tokens'],
+                     strip_label(r['strip'])))
+            if p.endswith('.sql'):
+                print('        est %d prompt tokens vs vendor total %d (incl. output)'
+                      % (r['est'], r['tokens']))
+            for f in r['valid']:
+                print('        - %s:%s -- trigger: %s -- %s'
+                      % (f.get('file'), f.get('line'), f.get('trigger'),
+                         str(f.get('description'))[:240].replace('\n', ' ')))
+        if done_parts < n_parts:
+            partial.append((sha, p, done_parts, n_parts))
     nf = sum(len(r['valid']) for _a, _b, _c, r in completed)
     reviewed_commits = {sha for sha, _s, _p, _r in completed}
     print('')
@@ -619,6 +768,10 @@ def cmd_sample_batch(argv, opt):
                                                               - reviewed_commits))
     for sha, subj, p in dropped:
         print('      %s  %s' % (sha[:8], p))
+    print('  files split into parts (one call each; a part cannot see the others)  %d' % split_files)
+    print('  files only PARTLY reviewed (a part refused or could not tell)  %d' % len(partial))
+    for sha, p, d, n in partial:
+        print('      %s  %s  %d of %d parts' % (sha[:8], p, d, n))
     print('  not reviewed -- refused / could not tell  %d' % len(refused))
     for sha, subj, p, st, why in refused:
         print('      %s  %s  %s' % (sha[:8], p, st))
@@ -1418,6 +1571,166 @@ def selftest():
            'one record per call with the tokens the vendor reported (#1658)',
            batch_rec == [11, 11])
         ck('V39 ...and so did the ORIGINAL cmd_sample path', sample_rec == [11, 11])
+        # ── b97: the SQL-aware estimate and the file splitter. The 413 that began this was
+        # a chunk the estimate said fit and the vendor counted 1.36 times larger.
+        def _added_map(text):
+            out, no = [], None
+            for l in text.split(chr(10)):
+                m = _HUNK_HDR.match(l)
+                if m:
+                    no = int(m.group(3))
+                    continue
+                if no is None:
+                    continue
+                if l.startswith('+'):
+                    out.append((no, l[1:]))
+                    no += 1
+                elif l.startswith('-') or l.startswith(chr(92)):
+                    pass
+                else:
+                    no += 1
+            return out
+        ck('V56 the estimate is raised for .sql ONLY: the b94 chunk (26,487 chars, 9,148 prompt tokens by the '
+           "vendor's own count) was estimated at 6,622 and would have been sent; it now estimates above the "
+           'real count, and a .js path is untouched',
+           X.estimate_tokens('a' * 26487) < 9148 < est_tokens(X, 'a' * 26487, 'sql/x.sql')
+           and est_tokens(X, 'a' * 26487, 'api/x.js') == X.estimate_tokens('a' * 26487)
+           and est_tokens(X, 'a' * 26487) == X.estimate_tokens('a' * 26487))
+        _whole = ('diff --git a/sql/n.sql b/sql/n.sql' + chr(10) + '--- a/sql/n.sql' + chr(10)
+                  + '+++ b/sql/n.sql' + chr(10) + '@@ -0,0 +1,3 @@' + chr(10) + '+select 1;' + chr(10)
+                  + '+select 2;' + chr(10) + '+select 3;' + chr(10))
+        ck('V57 a chunk that fits is returned whole and unchanged (one call, as before)',
+           split_chunk(_whole, lambda c: len(c) <= 10 ** 6) == [_whole])
+        _stm = [('+insert into t (a)' if i % 2 == 0 else '+  values (%d);' % i) for i in range(120)]
+        _pairs = ('diff --git a/sql/p.sql b/sql/p.sql' + chr(10) + '--- /dev/null' + chr(10)
+                  + '+++ b/sql/p.sql' + chr(10) + '@@ -0,0 +1,120 @@' + chr(10) + chr(10).join(_stm) + chr(10))
+        _okcut, _multi = True, 0
+        for _n in range(600, 960, 13):
+            _pp = split_chunk(_pairs, lambda c, n=_n: len(c) <= n, max_parts=10)
+            if _pp and len(_pp) > 1:
+                _multi += 1
+                for _part in _pp[:-1]:
+                    _okcut = _okcut and _part.rstrip(chr(10)).split(chr(10))[-1].endswith(';')
+        ck('V58 a cut falls after a statement, not inside one: across %d different part sizes every part but the '
+           'last ends on a semicolon (a greedy cut alone would land mid-statement about half the time)' % _multi,
+           _multi >= 10 and _okcut)
+        ck('V59 a file that needs more than max_parts parts is None (named unreviewed upstream), never truncated',
+           split_chunk(_pairs, lambda c: len(c) <= 600, max_parts=4) is None)
+        _mk = ('diff --git a/sql/m.sql b/sql/m.sql' + chr(10) + '--- a/sql/m.sql' + chr(10) + '+++ b/sql/m.sql'
+               + chr(10) + '@@ -1,3 +1,3 @@' + chr(10) + ' a line one;' + chr(10) + '-old line two' + chr(10)
+               + chr(92) + ' No newline at end of file' + chr(10) + '+new line two' + chr(10) + chr(92)
+               + ' No newline at end of file' + chr(10))
+        _mk_split, _mk_bad, _mk_over = 0, False, False
+        for _n in range(120, 330, 3):
+            _pp = split_chunk(_mk, lambda c, n=_n: len(c) <= n, max_parts=10)
+            if _pp and len(_pp) > 1:
+                _mk_split += 1
+                _mk_over = _mk_over or any(len(_x) > _n for _x in _pp)
+                for _part in _pp:
+                    _body = _part.split(chr(10))
+                    _first = next(i for i, l in enumerate(_body) if l.startswith('@@')) + 1
+                    _mk_bad = _mk_bad or _body[_first].startswith(chr(92))
+        ck('V60 a "no newline at end of file" marker is never the first line of a part, and every part returned still '
+           'fits the limit it was cut for -- a split that cannot do both is None (%d splits tried)' % _mk_split,
+           _mk_split >= 5 and not _mk_bad and not _mk_over)
+        _cf = [('s1', 'one', {'sql/big.sql': 'z' * 400})]
+        _p1, _u1 = plan_batch(_cf, 1, lambda c: len(c), 100, split_fn=lambda c: ['a', 'b'])
+        _p2, _u2 = plan_batch(_cf, 1, lambda c: len(c), 100, split_fn=lambda c: None)
+        _p3, _u3 = plan_batch(_cf, 1, lambda c: len(c), 100)
+        ck('V61 plan_batch: an oversized file that CAN be split is a pick; one that cannot, and the old call with no '
+           'split_fn, are still NAMED unreviewed',
+           [p[0] for p in _p1] == ['s1'] and not _u1 and not _p2 and 'cannot be split' in _u2[0][2]
+           and not _p3 and 'oversized' in _u3[0][2])
+        # A REAL git history for the end-to-end arms (Standing Rule 3), and the line numbers checked against the
+        # file AT THE COMMIT, never against the splitter's own arithmetic.
+        os.makedirs(os.path.join(tmp, 'sql'))
+        _big = ["insert into audit_fixture (id, license_hash, note) values (%d, '%064x', 'row %d');" % (i, i * 7919, i)
+                for i in range(400)]
+        with open(os.path.join(tmp, 'sql', 'big.sql'), 'w', newline='') as f:
+            f.write(chr(10).join(_big) + chr(10))
+        git('add', '-A')
+        git('commit', '-q', '-m', 'feat: big sql')
+        big_sha = git('rev-parse', 'HEAD').stdout.strip()
+        _argv5 = ['--sample-batch', '--range', base + '..HEAD', '--cwd', tmp, '--key-path', keyfile,
+                  '--commits', big_sha[:8]]
+        bodies[:] = []
+
+        def _ask_ctx(body, _key, context=None):
+            bodies.append(body)
+            return [], 11
+        X.ask_groq, X.RateGate = _ask_ctx, (lambda: _Gate())
+        buf5 = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(buf5):
+                rc5 = cmd_sample_batch(_argv5, lambda n, d=None: (_argv5[_argv5.index(n) + 1] if n in _argv5 else d))
+        finally:
+            X.ask_groq, X.RateGate = real_ask, real_gate
+        t5 = buf5.getvalue()
+        _n5 = len(bodies)
+        _seen = sorted(n for b in bodies for n, _t in _added_map(b))
+        ck('V62 END TO END over a real commit: a 58 KB .sql file that the old path would have refused or 413d goes '
+           'to the vendor in %d parts (rc=%s), and between them the parts carry every added line exactly once, each at '
+           'its true line number' % (_n5, rc5),
+           rc5 == EXIT_OK and _n5 >= 2 and _seen == list(range(1, 401))
+           and all(_big[n - 1] == t for b in bodies for n, t in _added_map(b)))
+        ck('V63 ...every part sent fits the 8,000-token window by the SQL-aware estimate, with the output cap and the '
+           'safety margin',
+           all(est_tokens(X, b, 'sql/big.sql') + X.estimate_tokens(X.SYSTEM_PROMPT) + X.MAX_OUTPUT_TOKENS
+               + X.TOKEN_SAFETY_MARGIN <= X.TPM_BUDGET_CEILING for b in bodies))
+        ck('V64 ...and the report says the file was split and that none of it was only partly reviewed',
+           'files split into parts' in t5 and 'only PARTLY reviewed (a part refused or could not tell)  0' in t5)
+        _calls6 = [0]
+
+        def _ask_fail_second(body, _key, context=None):
+            _calls6[0] += 1
+            if _calls6[0] == 2:
+                raise RuntimeError('vendor said no')
+            return [], 11
+        X.ask_groq, X.RateGate = _ask_fail_second, (lambda: _Gate())
+        buf6 = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(buf6):
+                cmd_sample_batch(_argv5, lambda n, d=None: (_argv5[_argv5.index(n) + 1] if n in _argv5 else d))
+        finally:
+            X.ask_groq, X.RateGate = real_ask, real_gate
+        t6 = buf6.getvalue()
+        ck('V65 a part that could not be reviewed makes the file PARTLY reviewed and says %d of %d by name; it is not '
+           'reported as reviewed' % (_n5 - 1, _n5),
+           'only PARTLY reviewed (a part refused or could not tell)  1' in t6
+           and '%d of %d parts' % (_n5 - 1, _n5) in t6)
+        _mod = list(_big)
+        _mod[10] = _mod[10].replace('row', 'ROW')
+        del _mod[150]
+        _mod.insert(300, 'select 1;')
+        _mod[395] = _mod[395].replace('row', 'ROW')
+        with open(os.path.join(tmp, 'sql', 'big.sql'), 'w', newline='') as f:
+            f.write(chr(10).join(_mod) + chr(10))
+        git('add', '-A')
+        git('commit', '-q', '-m', 'fix: edit big sql')
+        _chunk_mod = split_per_file(git('diff', 'HEAD~1', 'HEAD', '--', 'sql/big.sql').stdout)[0][1]
+        _pp = split_chunk(_chunk_mod, lambda c: len(c) <= 1200, max_parts=12)
+        _dels = lambda t: sum(1 for l in t.split(chr(10)) if l.startswith('-') and not l.startswith('---'))
+        ck('V66 a REAL multi-hunk modification diff cut inside its hunks (%d parts): every added line is at its true '
+           'line of the file at that commit, and the parts together carry every added and every removed line exactly '
+           'once' % len(_pp or []),
+           bool(_pp) and len(_pp) >= 3 and all(_mod[n - 1] == t for p in _pp for n, t in _added_map(p))
+           and sorted(n for p in _pp for n, _t in _added_map(p)) == sorted(n for n, _t in _added_map(_chunk_mod))
+           and sum(_dels(p) for p in _pp) == _dels(_chunk_mod))
+
+        class _G2:
+            def wait_or_refuse(self, est, **k):
+                return True, None
+
+            def record_call(self, used):
+                pass
+        _sqlchunk = ('diff --git a/sql/e.sql b/sql/e.sql' + chr(10) + '--- /dev/null' + chr(10) + '+++ b/sql/e.sql'
+                     + chr(10) + '@@ -0,0 +1,300 @@' + chr(10)
+                     + ''.join('+select %d, %d from t;' % (i, i) + chr(10) for i in range(300)))
+        _r_sql = review_chunk(X, _G2(), 'k', 'sql/e.sql', _sqlchunk, ask=lambda b, k: ([], 5))
+        _r_js = review_chunk(X, _G2(), 'k', 'api/e.js', _sqlchunk, ask=lambda b, k: ([], 5))
+        ck('V67 review_chunk hands the gate the SQL-aware estimate for a .sql path and the old one for a .js path '
+           'from the SAME text',
+           _r_sql['est'] > _r_js['est'] * 1.4)
         globals()['injection_refusal'] = _ir_keep
         rec[:] = []
         argv_v = ['--injection-vendor', '--max-calls', '2', '--key-path', keyfile]
