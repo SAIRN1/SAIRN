@@ -1452,11 +1452,23 @@ async function fqGenQuote(){
   }catch(e){el.textContent='Quote generation failed. Check connection.';}
 }
 function fqShare(){if(navigator.share)navigator.share({title:'SAIRNmechanical Quote',text:fqQuoteTxt}).catch(()=>{});else{navigator.clipboard.writeText(fqQuoteTxt);showToast('Quote copied!');}}
+// THE ONE WAY A SAVE REACHES THE SERVER BACKUP (cody b57). Every save site
+// guarded the push with `typeof window.mechPushRecord==='function'` and had no
+// else: if the controller block that defines it never ran, the push was
+// skipped with no message at all -- a backup that did not happen, reading
+// exactly like one that did. It still never blocks a local save; it says so.
+// Returns mechPushRecord's promise (record on success, null on failure), or
+// null when there is nothing to call.
+function mechBackup(resource,rec){
+  if(typeof window.mechPushRecord==='function')return window.mechPushRecord(resource,rec);
+  try{console.warn('SAIRNmechanical backup: the backup module did not load, so this "'+resource+'" record was NOT backed up. It is saved on this device only.');}catch(e){}
+  return null;
+}
 function saveQuote(){var q=[];try{q=JSON.parse(localStorage.getItem(APP_ID+'_quotes')||'[]');}catch(e){q=[];}q.unshift({id:Date.now(),date:new Date().toLocaleDateString(),trade:fqTrade,text:fqQuoteTxt});var ok=mechSt(APP_ID+'_quotes',q);
   // ONE RECORD, NOT THE WHOLE ARRAY, and only after the local write succeeded.
   // window.* because mechPushRecord lives in the controller IIFE further down
-  // the file; `typeof` guarded so a save still works if that block never ran.
-  if(ok&&typeof window.mechPushRecord==='function')window.mechPushRecord('mech_quotes',q[0]);
+  // the file; mechBackup() says so if that block never ran.
+  if(ok)mechBackup('mech_quotes',q[0]);
   if(ok)showToast('Quote saved');return ok;}
 // fqClose() said 'Signed quote saved' unconditionally. It now defers to
 // saveQuote(): on a failed write mechSt() has already said what happened, and
@@ -1551,7 +1563,7 @@ function saveCheck(){
   // Keyed on entry.id, not entry.num -- see mechCheckId(). Fire-and-forget by
   // design: the cheque IS recorded on this device, and a failed backup says so
   // in the console rather than undoing it.
-  if(typeof window.mechPushRecord==='function')window.mechPushRecord('mech_checks',entry);
+  mechBackup('mech_checks',entry);
   if(!mechSt(APP_ID+'_crnum',crNum)){
     // The check IS saved; only the counter is not, so the next one would
     // reuse this number. Say exactly that rather than reporting a clean save.
@@ -1835,16 +1847,23 @@ function saveDoc(){
     redaction:{local:true,redacted:red.redacted,complete:false,note:MECH_REDACT_NOTE}});
   try{localStorage.setItem(APP_ID+'_docs',JSON.stringify(arr.slice(0,50)));}
   catch(e){showToast('Could not save -- local storage may be full');return;}
-  if(typeof window.mechPushRecord==='function')window.mechPushRecord('mech_docs',arr[0]);
   // ── THE TOAST SAID "Saved on this device" WHILE THE LINE ABOVE SYNCED IT.
   // The comment above this function said the same -- "there is no server data
   // layer for this app yet" -- and that stopped being true when mech_docs was
   // registered in api/_resources/sairnmechanical.js and mechPushRecord started
   // pushing it. A message that understates where a document went is the wrong
   // direction to be wrong in for a scanned work order.
-  showToast(red.redacted
-    ? 'Saved and synced -- identifiers removed. Names in prose are not.'
-    : 'Saved and synced. Nothing matched a redaction rule; names in prose are never removed.');
+  //
+  // AND THEN IT SAID "synced" WITHOUT LOOKING (cody b57). The push is async
+  // and returns null on failure; the toast fired before it answered, so a
+  // backup that failed -- or never ran -- was reported as synced. It waits.
+  var redNote=red.redacted
+    ? ' -- identifiers removed. Names in prose are not.'
+    : '. Nothing matched a redaction rule; names in prose are never removed.';
+  Promise.resolve(mechBackup('mech_docs',arr[0])).then(function(d){
+    showToast(d ? 'Saved and synced'+redNote
+                : 'Kept on this device only -- the server backup did not complete'+redNote);
+  },function(){showToast('Kept on this device only -- the server backup did not complete'+redNote);});
 }
 function saveTakeoff(){
   var el=document.getElementById('bp-out');
@@ -1854,7 +1873,7 @@ function saveTakeoff(){
   arr.unshift({id:Date.now(),date:new Date().toLocaleString(),text:txt});
   try{localStorage.setItem(APP_ID+'_takeoffs',JSON.stringify(arr.slice(0,50)));}
   catch(e){showToast('Could not save -- local storage may be full');return;}
-  if(typeof window.mechPushRecord==='function')window.mechPushRecord('mech_takeoffs',arr[0]);
+  mechBackup('mech_takeoffs',arr[0]);
   showToast('Saved on this device');
 }
 // Real navigation, replacing ten tiles that only toasted "Opening <app>".
@@ -2205,7 +2224,9 @@ function mechData(action, resource, payload) {
         } catch (e) {}
         return null;
       }
-      return r.body.data;
+      // Truthy on success even when the server sends no `data` back, so a
+      // caller can tell success from the null of a failure (cody b57).
+      return r.body.data !== undefined && r.body.data !== null ? r.body.data : true;
     });
   }
   window.mechPushRecord = mechPushOne;
@@ -2227,13 +2248,26 @@ function mechData(action, resource, payload) {
     return Promise.all(MECH_SYNCED.map(function (pair) {
       var resource = pair[0], key = pair[1];
       var idField = MECH_ID_FIELD[resource] || 'id';
+      // A READ THAT DID NOT HAPPEN IS NOT "NOTHING NEW" (cody b57). Every
+      // failure below returned silently and the catch swallowed the rest, so
+      // a refused, unparseable or wrongly-shaped answer merged 0 rows exactly
+      // like an up-to-date register. They still change nothing locally; they
+      // now say which collection was not read back and why.
+      function unread(why) {
+        try { console.warn('SAIRNmechanical restore: "' + resource + '" was NOT read back from the server (' + why + '). This device shows only what it already had.'); } catch (e) {}
+      }
       return mechData('read', resource, {}).then(function (r) {
-        if (!r || r.status !== 200 || !r.body || !r.body.ok) return;
+        if (!r || r.status !== 200 || !r.body || !r.body.ok) {
+          // provisioned:false is a real answer, not a failure (see above).
+          if (!(r && r.body && r.body.provisioned === false)) unread('status ' + ((r && r.status) || 'no response'));
+          return;
+        }
         var rows = r.body.data;
-        if (!Array.isArray(rows) || !rows.length) return;
+        if (!Array.isArray(rows)) { unread('the answer was not a list'); return; }
+        if (!rows.length) return;
         var local = [];
-        try { local = JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) { return; }
-        if (!Array.isArray(local)) return;
+        try { local = JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) { unread('this device\'s copy could not be parsed, so nothing was merged'); return; }
+        if (!Array.isArray(local)) { unread('this device\'s copy is not a list, so nothing was merged'); return; }
         var have = {};
         local.forEach(function (x) { if (x && x[idField] != null) have[String(x[idField])] = true; });
         var added = 0;
@@ -2241,7 +2275,7 @@ function mechData(action, resource, payload) {
           if (x && x[idField] != null && !have[String(x[idField])]) { local.push(x); added++; }
         });
         if (added && mechSt(key, local)) merged += added;
-      }).catch(function () {});
+      }).catch(function (e) { unread((e && e.message) || 'an error'); });
     })).then(function () { return merged; });
   }
   window.mechHydrateAll = mechHydrateAll;

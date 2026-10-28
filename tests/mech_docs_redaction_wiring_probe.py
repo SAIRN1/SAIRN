@@ -116,6 +116,18 @@ def function_body(src, name):
                 continue
             if c == quote:
                 quote = None
+        # COMMENTS ARE SKIPPED (cody b57). An apostrophe in a comment --
+        # "THE MODEL'S" in saveDoc, 2026-10-14 -- opened a "string" here that
+        # never closed, so the body ran 92K characters on into saveTakeoff and
+        # arm 7 went red on a phrase that belongs to the next function.
+        elif src.startswith('//', k):
+            nl = src.find('\n', k)
+            k = len(src) if nl == -1 else nl
+            continue
+        elif src.startswith('/*', k):
+            end = src.find('*/', k + 2)
+            k = len(src) if end == -1 else end + 2
+            continue
         elif c in '\'"`':
             quote = c
         elif c == '{':

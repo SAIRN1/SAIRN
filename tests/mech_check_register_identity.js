@@ -94,6 +94,9 @@ function device(startingChecks) {
     'localStorage', 'window', 'document', 'showToast', 'APP_ID', 'crypto',
     'var crNum = parseInt(localStorage.getItem(APP_ID + "_crnum") || "1001");\n' +
     fn('function mechSt(key, value) {') + '\n' +
+    // cody b57: saveCheck() pushes through mechBackup() now, which warns
+    // instead of skipping silently when window.mechPushRecord is missing.
+    fn('function mechBackup(resource,rec){') + '\n' +
     fn('function mechCheckId(){') + '\n' +
     fn('function mechEnsureCheckIds(checks){') + '\n' +
     fn('function saveCheck(){') + '\n' +
