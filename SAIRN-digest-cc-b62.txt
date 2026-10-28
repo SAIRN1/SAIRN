@@ -1,0 +1,25 @@
+DIGEST cc b62
+STATUS: all six items closed; #965 verified LIVE 5/5 roles. Landed bfe18165, 0/0. No override/skip/--force.
+ITEM 1: scheduler/coordinator keep caregiver phone -- Michael's decision, no change.
+ITEM 2: SEN-AUDIT-0002 provisioned (sql/sen_audit_0002_role_scope_credentials_2026-10-28.sql): rehearsed (always-rollback, guards
+  passed, 0/0/0 after), run, read back. SEN-AUDIT-2026 already existed (payroll probe licence, 3 creds) -- kept separate on purpose.
+  SEN-AUDIT-0002  fs-owner owner 74816982 | fs-billing billing 52958575 | fs-scheduler scheduler 54401975
+                  fs-coordinator coordinator 34513907 | fs-caregiver caregiver 70654769
+  Fixtures CG-FS-SELF (fs-caregiver), CG-FS-PEER (fs-peer). Audit licence, no customer data; rotate PINs if that ever changes.
+ITEM 3: --live on sairn.vercel.app: owner/billing both rows all 12 fields; scheduler/coordinator both rows 9 fields no HR;
+  caregiver CG-FS-SELF ONLY. Flags as declared; paired positive held. Exit 2 overall only because 3 other rules lack live blocks.
+ITEM 4: all 23 sweep reads -> hank (api/ owner, did sairncare b51 MAR): alf_mar first, then sen_clients, sen_visits, rf_claims, rest.
+  tools/field_scope_rules.json assigned to hank in the manifest; status-registry note posted. Pre-fix device roster cache -> fourth.
+ITEM 5: write_attribution 17/3 identical at 6a8237ae (pre-b61) and HEAD, all rf_schedule; only a source offset moved. Left alone.
+ITEM 6: pushed, landed.
+DECISION-NEEDED: none.
+CHANGED: sql/sen_audit_0002_role_scope_credentials_2026-10-28.sql (new, RUN), tools/field_scope_rules.json, tools/sairn_field_scope_check.py,
+  tools/audit_licence.py, docs/sairn-path-manifest.json. DB: license_keys +1, sairnsenior_employee_auth +5, sen_caregivers +2.
+SQL: sql/sen_audit_0002_role_scope_credentials_2026-10-28.sql
+EVIDENCE-path: SAIRN-handoff-cc-b62.md, SAIRN-report-cc-b62.txt, scratchpad\live62.txt, scratchpad\wa62\{pre,head}\out.txt
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\332ab89b-94aa-4880-931e-d17413636dfc.jsonl
+UNVERIFIED: live reads of sen_settings / rf_settings / alf_facility (no audit role creds for those apps yet).
+ROUTED: 23 reads -> hank (table in handoff section 4); device cache -> fourth; H1 1274 -> hank; rf_schedule fails -> hank/cody.
+NEXT: hank -- declare alf_mar's rule in tools/field_scope_rules.json, then the rest. cc -- live blocks for the other 3 rules when asked.
+CONTEXT 42.9% of 1,000,000 -- 428,610 tokens, measured.
+END-OF-REPORT

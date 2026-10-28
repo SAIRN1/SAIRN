@@ -1,0 +1,39 @@
+SAIRN report -- cc b62 -- 2026-10-28
+
+LANDED bfe18165, 0 0 vs origin. No override, no skip, no --force.
+
+1 phone for scheduler/coordinator: kept as-is (Michael's decision). No change.
+
+2 SEN-AUDIT-0002 PROVISIONED (sql/sen_audit_0002_role_scope_credentials_2026-10-28.sql)
+  Premise check: SEN-AUDIT-2026 already exists with audit-owner + two hank
+  caregivers and no caregiver rows -- the payroll probe's licence. A separate
+  licence was minted as instructed, so the live roster is fully known.
+    licence SEN-AUDIT-0002 (sairnsenior, plan demo)
+    fs-owner        owner        PIN 74816982
+    fs-billing      billing      PIN 52958575
+    fs-scheduler    scheduler    PIN 54401975
+    fs-coordinator  coordinator  PIN 34513907
+    fs-caregiver    caregiver    PIN 70654769
+  Fixture rows: CG-FS-SELF (fs-caregiver), CG-FS-PEER (fs-peer, no credential).
+  hashPin()/verifyPin() per PIN; PR 3.4 guard; salt + fixture-count guards;
+  credential guard OK; SQL preflight 0. REHEARSED in an always-rollback run
+  (5 creds / 1 provisioner / 2 fixtures; read afterwards 0/0/0), then RUN and
+  read back. Added to KNOWN_AUDIT_KEYS. "0002" is a serial forced by the audit
+  key shape plus the SEN- prefix rule, not a year.
+
+3 #965 LIVE: VERIFIED, 5/5 roles (--live, sairn.vercel.app, SEN-AUDIT-0002)
+  owner, billing: both rows, all 12 fields | scheduler, coordinator: both rows,
+  9 fields, no HR | caregiver: CG-FS-SELF ONLY, 9 fields. Flags as declared.
+  --live now also checks flags and a paired positive (roster tiers must get a
+  non-own row). Exit is 2 overall only because 3 other rules have no live block.
+
+4 SWEEP ROUTED: all 23 reads -> hank (api/ owner; did sairncare b51 MAR work);
+  alf_mar first, then sen_clients, sen_visits, rf_claims. tools/field_scope_rules.json
+  assigned to hank in the manifest; note posted to the status registry. Client
+  residue (pre-fix roster cache) -> fourth. Full per-item table: handoff section 4.
+
+5 write_attribution: 17/3 at 6a8237ae (pre-b61) and at HEAD; FAIL lines identical
+  (all rf_schedule); one diagnostic offset moved by b61's bytes; its sen_caregivers
+  arm passes both times. Pre-existing, not touched, left.
+
+6 pushed, landed.
