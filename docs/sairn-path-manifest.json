@@ -67,7 +67,8 @@
       "docs/requirements.txt",
       "tests/run_hover_separation_probe.py",
       "sairnlegacy.html",
-      "api/sd-data-leg-bookings-toctou.test.js"
+      "api/sd-data-leg-bookings-toctou.test.js",
+      "tests/run_core_bare_kill_probe.py"
     ],
     "cody": [
       "tools/run_all_tests.py",

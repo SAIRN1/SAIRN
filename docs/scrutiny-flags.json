@@ -9509,6 +9509,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": ".githooks/pre-push",
+   "class": "CI / hook configuration",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a8d986697ffc76d15fd9bbf8d6c4f036a63da890",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_core_bare_kill_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(base, ignore_errors=True)"
+    }
+   ],
+   "sha": "a8d986697ffc76d15fd9bbf8d6c4f036a63da890",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_blob_coverage_scope_sabotage.py",
    "class": "test file",
    "level": "CHANGE",
