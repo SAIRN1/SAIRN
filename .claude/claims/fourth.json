@@ -4823,8 +4823,8 @@
       "task": "b62 claim-state recheck wired into pre-push, register supersede f9a4e5a0, root-cause notes FILES: tools/claim_state_recheck.py .githooks/pre-push docs/sairn-path-manifest.json docs/defect-density-register.json docs/2026-10-28-fourth-b62-root-causes.md",
       "claimed_at": "2026-10-28T21:59:25Z",
       "claimed_at_epoch": 1793224765.975775,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-28T22:15:10Z",
       "files": [
         "docs/2026-10-28-fourth-b62-root-causes.md",
         "docs/defect-density-register.json",
