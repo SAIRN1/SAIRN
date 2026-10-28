@@ -4486,8 +4486,8 @@
       "task": "server write path audit write_re sweep",
       "claimed_at": "2026-10-28T21:17:03Z",
       "claimed_at_epoch": 1793222223.9821873,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-28T22:29:39Z",
       "files": null
     }
   ],
