@@ -1,3 +1,4 @@
+# OWNER: fourth
 """push_timeout_guard.py -- a git push is never run under a timeout. Checked, not remembered.
 
     python tools/push_timeout_guard.py --pre-push   # called by .githooks/pre-push, FIRST
