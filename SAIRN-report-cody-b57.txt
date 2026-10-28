@@ -1,0 +1,49 @@
+SAIRN REPORT -- cody b57 (2026-10-28)
+=====================================
+Handoff: SAIRN-handoff-cody-b57.md.
+
+1-2. WORKTREE REMOVED.
+   - git worktree remove --force exited 0.
+   - Temp\cody-b55-alltests is gone from git worktree list and from disk.
+
+3. FX IDENTITY LEAK: FIXED HERE, ROOT CAUSE ALREADY FIXED BY cc b60.
+   - Root cause (58801d4c7, in HEAD): a worktree pre-push hook inherits an absolute GIT_DIR, which beats `git -C <tmp> init` in a gate fixture.
+   - In this clone:
+     - the local fx / fx@local identity is unset, so commits go out as Michael Dibert;
+     - core.bare is false.
+   - The 90 historical fx commits were NOT rewritten.
+   - Hardening:
+     - committer_identity_check now also walks tools/. It had missed copy_exactly's fx. Identities found went 29 -> 45.
+     - My own rework_tracker git fixture now drops GIT_DIR. Driven with a hostile GIT_DIR: nothing in the real repo moved.
+     - The push script refuses to push on a bad identity or on core.bare.
+   - fourth's clone still carries fx@example.invalid. That clone is fourth's.
+
+4. SHAPE PROBE RE-BASELINE: one of the two reds was a MASKED REGRESSION.
+   - stonedesk 33 -> 32: sd_customers had moved to write_batch, which WRITE_RE could not see. Fixed in the tool, not re-baselined. A new fixture fails on the old regex.
+   - sairncare +alf_claim_routes and sairnmechanical +mech_insurance_policies: real features, each with its read-back. Re-baselined with the reason written in.
+   - Shape probe: ALL ARMS PASS.
+
+5. mechPushOne AUDIT.
+   - api/sd-mech-data.js does not exist. The client side is sairnmechanical.html, over the generic sd-data path.
+   - Alias-only writer, no record: FOUND and FIXED.
+     - The 4 save sites skipped the push silently. They now go through mechBackup(), which warns.
+     - saveDoc said "synced" before the push answered. It now waits.
+   - Unparsed output read as pass: FOUND and FIXED. mechHydrateAll was silent on refused, unparseable or non-list reads and on a corrupt local copy. Each now warns.
+   - New test tests/mech_backup_not_silent.js: 13 arms, with an ablation.
+   - Also fixed: mech_docs_redaction_wiring_probe arm 7, red since 10-14. Its extractor did not skip comments.
+   - Live-verified on sairn.vercel.app.
+   - COULD NOT TELL: the generic server path was not re-audited this batch.
+
+6. PURE-BASE RE-CHECK: decided YES, implemented, and logged as C3.
+   - Three whole-tree checks run in parallel, 18 s measured: register --check, master_plan --check and traceability --check.
+   - On any red: regenerate and take the full gate.
+   - Incoming changes to CRITICALITY-TIERS, the gate code or .githooks always re-gate.
+   - Measured: one new test file turned both derived-doc checks red.
+
+7. PUSH.
+   - Work landed as e31869242..bc1444274, through the full gate, with every commit authored by Michael Dibert.
+   - The gate blocked twice, and both were fixed:
+     - a real Tier A obligation, now opened and assigned to cc;
+     - a register-feed block after the rebase. Re-seated, and the script now re-seats by subject automatically.
+
+DELIVERABLES PUSH: see the line appended after the push.

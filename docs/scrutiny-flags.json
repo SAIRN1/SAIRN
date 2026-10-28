@@ -3438,6 +3438,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/write_readback_shape_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "40af6a30111383e771024225ed7efcf29561981b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_condition_coverage_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -6941,6 +6949,30 @@
     }
    ],
    "sha": "815dae59f7c387f3303c94f06cce805702843bcf",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/mech_backup_not_silent.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "8259a6dd25fea97b8d34eabb0d9a007fd5c92440",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/mech_check_register_identity.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "8259a6dd25fea97b8d34eabb0d9a007fd5c92440",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/mech_docs_redaction_wiring_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "8259a6dd25fea97b8d34eabb0d9a007fd5c92440",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -11995,6 +12027,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "d366f332743dd81c18ac7ecbe4a6245649d5999d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/mech_backup_not_silent.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d48db33efbf40915f91bbf55e1bed0c54f2a830d",
    "criteria_version": "2026-10-06.1"
   },
   {

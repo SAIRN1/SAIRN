@@ -1,0 +1,24 @@
+DIGEST -- cody b57, 2026-10-28. All 7 items DONE.
+STATUS: TOOLS, ONE APP (sairnmechanical.html, live-verified), TESTS, DOCS. NO SQL. NO LIVE DATA WRITES.
+CHANGED: tools/committer_identity_check.py, tools/rework_tracker.py, tools/write_without_readback_check.py, sairnmechanical.html,
+  tests (mech_backup_not_silent.js new; 3 probes), docs/recurring-bug-classes-2.md (C3), derived docs, register, tier-a-reviews, manifest.
+LANDED: e31869242..bc1444274 (full gate), authored Michael Dibert. No claims held.
+ITEMS 1-2 -- the cody-b55-alltests worktree is removed and gone from git worktree list.
+ITEM 3 -- the fx identity is unset in this clone, and core.bare is false. The root cause is cc b60's GIT_DIR unset, already in HEAD.
+  The identity check now also scans tools/. My rework_tracker fixture now drops GIT_DIR. The push script refuses to push on a bad identity.
+  The 90 historical fx commits are not rewritten. fourth's clone still has fx@example.invalid (fourth's).
+ITEM 4 -- stonedesk 33->32 was a MASKED REGRESSION: write_batch was invisible to the check. Fixed in the tool.
+  sairncare and mechanical growth was read and confirmed real, then re-baselined. Shape probe all pass.
+ITEM 5 -- api/sd-mech-data.js does not exist; the client side was audited instead. Fixed both shapes:
+  - save sites skipped the push silently; they now warn via mechBackup();
+  - saveDoc said "synced" too early; it now waits;
+  - hydrate was silent on failed reads; it now warns.
+  +13-arm test. Server path: COULD NOT TELL.
+ITEM 6 -- pure-base push now runs an 18 s whole-tree re-check (register/master_plan/traceability). A red means regenerate and full gate.
+  Tier/gate/hook changes always re-gate. Logged as C3.
+ITEM 7 -- pushed and confirmed. The gate blocked twice; both fixed: a real Tier A obligation (opened, cc) and a register re-seat (now automatic).
+DECISION-NEEDED: cc -- discharge the Tier A review (sairnmechanical b57); move the push rules into tools/push_retry.py. fourth -- unset fx identity.
+UNVERIFIED: the generic sd-data server path for the not-run class; other WRITE_RE action names.
+NEXT: cody -- sd-data server audit; WRITE_RE action sweep; hover_separation fixture; b55 MEDIUM leftovers.
+EVIDENCE-path: SAIRN-handoff-cody-b57.md, SAIRN-report-cody-b57.txt, docs/recurring-bug-classes-2.md
+CONTEXT 53.7% of 1,000,000 -- 537,006 tokens, measured.
