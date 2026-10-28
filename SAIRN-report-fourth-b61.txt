@@ -1,0 +1,80 @@
+SAIRN REPORT -- fourth b61 -- 2026-10-28
+
+RESULT: every item is done and landed through 5a0c1d1f5, with no force and no
+gate skip. Item 1 was dropped by Michael and routed to cody. StoneDesk is
+live (19:17Z), byte-identical to origin. Handoff: SAIRN-handoff-fourth-b61.md.
+
+0 idleCompaction: false in ~/.claude/settings.json, checked at the start and
+  again at wrap.
+
+1 RUN JOURNAL ON THE PUSH GATE: dropped, per Michael. cody owns it and is
+  working from the b60 design. Nothing was done here.
+
+2 CHIP / BUTTON COLOURS                                f9c5a22a3 (live)
+  .sairn-fu-chip and .shoff-btn text now use var(--muted) at rest and
+  var(--text) on hover, measured with axe plus a hover read in the light
+  #ai-chat:
+    rest:  1.08:1 / 1.07:1 -> 5.52:1
+    hover: 1.13:1 / 1.11:1 -> 16.36:1
+  Borders and hover backgrounds are unchanged (they are not text).
+  .sdm-prompt-chip keeps #F0F0FF because its modal is dark.
+
+3 SENIOR SWEEP, LIVE                                   da158f493 (evidence)
+  Real browser, the live page, signed in through the real login screen as
+  SEN-AUDIT-2026 / audit-owner.
+  Seeded on the device: what a pre-b59 refusal leaves behind -- one completed
+  visit, and a draft claim for it with a 70,000-character note.
+  When Billing opened:
+  - live read: 200, 0 rows;
+  - live re-send: 413 PAYLOAD_TOO_LARGE ("70240 bytes; the limit is 65536");
+  - the draft was withdrawn from the device;
+  - the visit was back in Ready to bill (KPI 1, the row shown);
+  - the toast appeared; 0 page errors.
+  No-answer case: the draft was kept, the visit stayed out, no toast.
+  Every other write was aborted in the browser. Zero rows were stored.
+  To confirm, run sql/zz_confirm_b61_sen_sweep_no_residue.sql (select-only;
+  it must return 0).
+
+4 NO PUSH UNDER A TIMEOUT -- A CHECK, NOT A RULE
+  tools/push_timeout_guard.py                           52bac9862
+  It has two layers:
+  - --pre-push refuses when a process above the push is `timeout`. Measured
+    through the real hook chain: python <- sh <- git <- git <- timeout.
+  - --scan reads every tracked tool for a push run with a timeout: a call
+    that passes timeout=, a `timeout N git push` string, or a push through a
+    git() helper that sets a timeout.
+  Wired FIRST in .githooks/pre-push                    d3e1d1fd8
+  - Both layers run on every push, before any gate touches a file. The scan
+    takes about 8 s.
+  - The guard is also in the hook's self-integrity list, because an empty
+    guard file would pass every push.
+  FIRST SCAN FOUND A REAL ONE                          79c4f10cf
+  - tools/push_retry.py:1060 pushed through git(), which sets timeout=120;
+    the gate takes minutes. That push now passes timeout=None. Registered.
+  TESTS: fixtures 24/24; tests/run_push_timeout_guard_probe.py 9/9. Each
+  refusal has a control that must flip it: the killer list emptied, the
+  timeout removed, and the pre-fix push_retry shape.
+  BLIND SPOTS (written in the docstring): the Claude Bash tool's own timeout;
+  a hand or memory-pressure kill (cody's journal covers that); markdown; a
+  push command built in a variable.
+
+METHODOLOGY (Michael's item 3): before I touched .githooks/pre-push, cody's
+platform claim showed RELEASED (53b22ae49); I claimed platform myself and
+re-read all claims and the hook's recent commits immediately before the
+commit. The gate then showed a second owner layer: the path manifest puts
+.githooks/ and tools/ under cc and tests/ under cody. I declared the five
+paths in assigned_overrides rather than pushing past.
+Lesson: "is it claimed?" and "whose path is it?" are two separate checks.
+
+PUSH: 7 attempts (races, register conflicts, the owner header, the path
+manifest, regenerating MASTER-PLAN and the traceability matrix).
+Each refused attempt left gate scrutiny rows keyed to pre-rebase commits: 10
+orphan rows, which I dropped before the landing push. Ledger: CONTRADICTED 0.
+No push ran under a timeout.
+
+OPEN, all pre-existing and not caused by this batch:
+  - orphan scrutiny rows from refused retries: route to the scrutiny_record
+    owner;
+  - install_git_hooks_check_probe: 1 arm fails on HEAD too;
+  - run_staging_discipline_probe: 2 arms fail on HEAD too;
+  - register reseat collision between f9a4e5a0 and 5bb0950a.

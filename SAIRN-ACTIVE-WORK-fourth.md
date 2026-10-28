@@ -2282,3 +2282,13 @@ Full account: `SAIRN-handoff-fourth-b41.md`.
 - STANDING RULE: never wrap `git push` in `timeout`. The gate's guard suites write mutants and restore them in `finally`, and a kill skips that. Saved to memory. The gate-level journal guard is held because cody holds `platform`; the design is in the handoff.
 
 Full account: `SAIRN-handoff-fourth-b60.md`.
+
+## batch b61 -- 2026-10-28, CLOSED (item 1 dropped by Michael, routed to cody)
+
+- idleCompaction: false. Checked at the start and again at wrap.
+- stonedesk (`f9c5a22a3`): `.sairn-fu-chip` and `.shoff-btn` text now use `var(--muted)` at rest and `var(--text)` on hover: 1.08:1 -> 5.52:1, and 1.13:1 -> 16.36:1 on hover. The rows are dormant.
+- sairnsenior sweep, driven LIVE (`da158f493`, evidence only): the live server refused the draft (413), the device withdrew it and the visit is back in Ready to bill. With no answer from the server, the draft is kept. Zero rows stored.
+- `tools/push_timeout_guard.py` (`52bac9862`), wired FIRST in `.githooks/pre-push` (`d3e1d1fd8`). It refuses a push whose ancestor process is `timeout`, and any tracked tool that pushes on a clock. Its first scan found `push_retry.py:1060` (`timeout=120`), fixed in `79c4f10cf`. Probe 9/9.
+- Methodology: a claim and a path owner are two separate checks. I checked claims before writing the hook; the gate then showed `.githooks/`, `tools/` and `tests/` are other sessions' paths, so I declared them in `assigned_overrides` rather than pushing past.
+
+Full account: `SAIRN-handoff-fourth-b61.md`.

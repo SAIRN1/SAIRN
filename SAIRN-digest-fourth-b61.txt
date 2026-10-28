@@ -1,0 +1,23 @@
+SAIRN DIGEST -- fourth b61 -- 2026-10-28
+CONTEXT 37.5% of 1,000,000 -- 374,996 tokens, measured.
+STATUS: all items done and landed through 5a0c1d1f5; StoneDesk live 19:17Z, byte-identical to origin. Item 1 dropped (cody).
+DECISION-NEEDED: none. Route the orphan-scrutiny-row class to the scrutiny_record owner (NEXT a).
+READ: SAIRN-handoff-fourth-b61.md (whole state). Detail: SAIRN-report-fourth-b61.txt.
+SQL: sql/zz_confirm_b61_sen_sweep_no_residue.sql (select-only, must return 0).
+CHANGED:
+  f9c5a22a3 stonedesk: .sairn-fu-chip/.shoff-btn -> var(--muted), hover var(--text); 1.08:1 -> 5.52:1 (hover 16.36:1)
+  da158f493 docs/live-residue: senior sweep driven LIVE -- server refused (413), draft withdrawn, visit back; 0 rows
+  52bac9862 tools/push_timeout_guard.py: refuses a push under `timeout` (process ancestry) + scans tools for timed pushes
+  d3e1d1fd8 .githooks/pre-push: guard runs FIRST and is in the self-integrity list
+  79c4f10cf push_retry.py: its push ran under git()'s 120 s timeout -- now timeout=None (found by the guard's first scan)
+  e52f9c624 OWNER line + 5 paths declared in assigned_overrides; 5a0c1d1f5 generated docs + register
+1 item 3 cleared by Michael; no sairnsenior file touched (cc then hank held it)
+2 hook wiring landed only after cody's platform claim showed released (53b22ae49); claims re-checked at commit time
+3 lesson: a claim and a path owner are two separate checks -- the gate's manifest caught the second
+4 probe 9/9 with controls; fixtures 24/24; ledger CONTRADICTED 0; register check 0
+NEXT, in order:
+  a orphan scrutiny rows: each refused push in a race writes rows on pre-rebase commits (10 dropped this batch)
+  b pre-existing failures, not mine: install_git_hooks_check (1 arm), staging_discipline (2), reseat collision f9a4e5a0/5bb0950a
+UNVERIFIED: the guard's refusal of a REAL `timeout ... git push` -- the permission layer denies running one; the probe drives the same chain without pushing.
+EVIDENCE-path: tests/run_push_timeout_guard_probe.py; docs/live-residue/2026-10-28-fourth-b61-sen-sweep-live.json; scratchpad sweep61.py, chips61.py.
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\fd66c7b5-98f7-4e46-ac2a-b0383cde9210.jsonl

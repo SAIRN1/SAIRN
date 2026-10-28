@@ -39541,7 +39541,7 @@
       "recurrence_open": "The presence of a state caregiver ID remains visible to coordinators/schedulers through the readiness verdict by design (EVV readiness must report a missing ID); a role-suppressed element would be a product decision."
     },
     {
-      "commit": "33fff3b365fc",
+      "commit": "79c4f10cf665",
       "date": "2026-10-28",
       "subject": "fix(push_retry b61): the push runs with no timeout -- git() killed it at 120 s",
       "files": [

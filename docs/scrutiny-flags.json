@@ -4576,6 +4576,23 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_push_timeout_guard_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "\"\"\"run_push_timeout_guard_probe.py -- does tools/push_timeout_guard.py actually "
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(tmp, ignore_errors=True)"
+    }
+   ],
+   "sha": "52bac9862ca14a7f72b5fc5023e63dae491eab3b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sairnsenior_negative_hours_claim.js",
    "class": "test file",
    "level": "CHANGE",
@@ -12027,6 +12044,19 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "d366f332743dd81c18ac7ecbe4a6245649d5999d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": ".githooks/pre-push",
+   "class": "CI / hook configuration",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "tools/push_timeout_guard.py; do"
+    }
+   ],
+   "sha": "d3e1d1fd819bf56601eeef70d5deb58b28996218",
    "criteria_version": "2026-10-06.1"
   },
   {
