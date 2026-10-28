@@ -4855,8 +4855,8 @@
       "task": "b64 sv_controlled live drive, SOAP note body stored, witness token obtained FILES: sairnvet.html tests/ sql/",
       "claimed_at": "2026-10-28T23:14:38Z",
       "claimed_at_epoch": 1793229278.4670737,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-28T23:54:57Z",
       "files": [
         "sairnvet.html"
       ]
