@@ -1491,6 +1491,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_register_freshness_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "19a9a84b8f66b5679e576eb7b322e09f15e74f7f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sairndental_a11y_pass.js",
    "class": "test file",
    "level": "CHANGE",
@@ -7542,6 +7550,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_eaten_substitution_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "8e2c18f48c3743b9a28ede549cad46c6626a4233",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_dora_metrics_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -8044,6 +8060,14 @@
     }
    ],
    "sha": "9841e14a5eaa680b206f66557559f33b2b8eebc2",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_checker_confidence_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "98bb61e17dfba5d29a56e242988e49806e8b757e",
    "criteria_version": "2026-10-06.1"
   },
   {

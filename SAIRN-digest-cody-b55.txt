@@ -1,0 +1,21 @@
+DIGEST -- cody b55, 2026-10-28. Six items: 2, 5, 6 DONE; 1 RUNNING (not blocking); 3, 4 NOT BUILD WORK, routed to the auditors.
+STATUS: TOOLS AND PROBES ONLY. NO APP CODE. NO SQL. NO LIVE WRITES.
+CHANGED: tools/ checker_confidence, rework_tracker, dead_rule_sweep, register_freshness_check, metamorphic_check, master_plan,
+  service_role_tier_a_gate_check, eaten_substitution_check, git_config_isolation, hover_separation_audit; 3 probes; manifest; register.
+LANDED: 98bb61e17, 19a9a84b8, 8e2c18f48 plus bookkeeping, attempt 1 of 5 (e016a7f1a), 0/0. No --loop, no force, no skip.
+ITEM 1 -- full run_all_tests in worktree Temp\cody-b55-alltests (unbuffered). So far 491 passed, 0 failed. Unfinished, so this is a floor.
+ITEM 2 -- checker_confidence: an UNRUNNABLE checker was rated HIGH (live: metamorphic_check). --json had been broken since 10-14, which crashed its probe.
+  The naming join and unread-file not-runs were folded in as measured. All now UNKNOWN or COULD NOT TELL. +13 arms.
+ITEM 3 -- the Semgrep .html/.sql arm is H2's own tooling (seq1091/1097/1099/1106). run_semgrep.py already exits 2 on its 4 partial-parse html.
+ITEM 4 -- emailed anchor: H2 seq813/871 (retired by Michael b19) contradicts H2 seq1156 (still open). H1 seq1704/1721 never record it.
+  Both are in auditor tooling, so not touched. "Chain log" is the auditors' log; the build record is SAIRN-ACTIVE-WORK-cody.md.
+ITEM 5 -- not-run-as-pass sweep of all 41 cody-owned tools, worst first. Fixed 9:
+  rework_tracker read 1/3 of commits (events 127 -> 456). dead_rule_sweep gave CLEAN on a typo'd tool or an empty segment.
+  master_plan published TIERED on a failed check. Plus register_freshness, metamorphic, service_role, eaten, git_config_isolation, hover_sep.
+  Reverted 1 wrong fix (write_without_readback). MEDIUM/LOW leftovers and the 16 clean tools are named in handoff s5.
+ITEM 6 -- pushed and confirmed. Platform claim released (0651405e3); fourth b60 had been held on it.
+DECISION-NEEDED: H2/H1 -- items 3 and 4, which are theirs. cc -- checker_kit.tracked() ignores git rc; flaky ledger runs metamorphic without registry args (180s timeout).
+UNVERIFIED: the full run is unfinished (counts so far only). The sweep's MEDIUM/LOW items were not re-read by me.
+NEXT: cody -- read the full-run log tail, remove the worktree; gap_ledger and write_without_readback alias hits; hover_separation probe fixture (red at HEAD since H1 b86).
+EVIDENCE-path: SAIRN-handoff-cody-b55.md, SAIRN-report-cody-b55.txt
+CONTEXT 31.5% of 1,000,000 -- 315,034 tokens, measured.

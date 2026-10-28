@@ -6408,3 +6408,20 @@ this batch:
 
 Six of eight are fixed. The other two are being worked by fourth right now, so
 editing them here would collide.
+
+### cody b55 (2026-10-28): checker_confidence hardened; not-run-as-pass sweep of my own tools
+
+- **checker_confidence.py** (`98bb61e17`). An UNRUNNABLE checker was rated HIGH stability, and it fell through with no branch. The live case is metamorphic_check.py: six raised runs, rated HIGH. Three other fixes in the same commit:
+  - `--json` was not JSON. An import-time NOTE from report_only_checks led stdout, so probe section 5 had crashed since 2026-10-14.
+  - The naming join returned `{}` on a read failure, and that was printed as "a MEASURED zero".
+  - An unread test file was read as NONE.
+  - Probe: 13 new arms, all pass.
+- **Item 5 sweep.** All 41 tools the owner map gives to cody, worst first. Each fix was measured against HEAD.
+  - `19a9a84b8`:
+    - rework_tracker read 3,524 of 10,587 commits. It now reads all of them: 127 → 456 events.
+    - dead_rule_sweep: a crashed ablation run counted as LIVE, and a typo `--tool` or an empty segment gave exit 0 CLEAN.
+    - register_freshness: one register missing gave exit 0.
+  - `8e2c18f48`: metamorphic_check, master_plan, service_role_tier_a_gate_check, eaten_substitution_check, git_config_isolation, hover_separation_audit.
+  - The remaining MEDIUM and LOW hits are listed in SAIRN-handoff-cody-b55.md.
+- **Items 3 and 4 are not build work.** The Semgrep arm that cannot read .html/.sql is H2 seq1091/1097/1099/1106, and the emailed-anchor leg is H2 seq813/871/1156 and H1 seq1704/1721. Both are in the auditors' own tooling, which this clone must not edit. They are routed back, with the evidence in the b55 report.
+- **Chain log:** I have none; that is the auditors' hash-chained log. This entry is the build-side record.

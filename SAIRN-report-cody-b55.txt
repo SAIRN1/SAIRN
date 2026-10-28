@@ -1,0 +1,67 @@
+SAIRN REPORT -- cody b55 (2026-10-28)
+=====================================
+
+Handoff: SAIRN-handoff-cody-b55.md. It covers the full state, the sweep table and the open items.
+
+1. FULL run_all_tests.py: RUNNING, not blocking the batch
+   - It runs in an isolated worktree (C:\Users\marsh\AppData\Local\Temp\cody-b55-alltests, at 1feeb7d67, which includes the b54 not-run fix).
+   - I restarted it once, unbuffered (-u), because file stdout was block-buffered and showed no progress.
+   - SO FAR (11:58Z): 491 test files passed, 0 failed, 0 passed only on retry, 0 lines of any other kind. The run is not finished, so this is a floor, not a verdict.
+   - Log: ...\scratchpad\b55-alltests.log. The final line is EXIT=<n>.
+
+2. checker_confidence.py hardening: DONE, 98bb61e17
+   Four could-not-run states had been folded into measured answers.
+   - (a) The UNRUNNABLE verdict fell through to HIGH stability. Live case: metamorphic_check.py, 6 of 6 runs raised, rated HIGH.
+   - (b) --json led with an import-time NOTE, so the probe's real-fleet section had crashed since 2026-10-14.
+   - (c) The naming join returned {} on a read failure, which printed as "a MEASURED zero".
+   - (d) An unreadable test file read as NONE.
+   Each case now reports UNKNOWN or COULD NOT TELL. Verdicts judged on an older tree are labelled.
+   Probe: 13 new arms, all pass, and the ablation kills the reason arm. Tool exit is unchanged against HEAD (2).
+
+3 and 4. NOT BUILD WORK: routed to the auditors
+   Item 3, the Semgrep arm that cannot read .html/.sql:
+   - It is H2's tools-hover2/semgrep_risk_pack.py (seq1091, 1097, 1099, 1106; OPEN; target "self").
+   - On the build side, tools/run_semgrep.py --default already reports the 4 partially parsed .html files as COULD NOT FULLY SCAN, exit 2.
+   Item 4, the emailed-anchor leg:
+   - H2 seq813 records Michael's b19 retirement, and seq871 records the gate change; its WEAKENING-FLAGS sign-off is OPEN.
+   - H2 seq1111, 1147 and 1156 still carry the emailed-anchor leg as open, which contradicts seq813.
+   - H1 seq1704, 1715 and 1721 still describe the emailed anchor as a third check, and no H1 entry records the retirement.
+   CLAUDE.md bars a build agent from the hover tooling, so I did not touch either.
+   - "Chain log" is the auditors' hash-chained log. The build-side record is the b55 entry in SAIRN-ACTIVE-WORK-cody.md.
+   - "Calibration confidences" also matches H2's calibration_tracker open list (seq1078-1085, 1091, 1109). That list is H2's. I hardened the build-side tool (item 2).
+
+5. METHODOLOGY: not-run counted as pass, swept worst-first over all 41 cody-owned tools
+   Six read-only auditors, then I re-read every HIGH hit myself. Fixed in 19a9a84b8 and 8e2c18f48:
+   - rework_tracker: read 3,524 of 10,587 commits with no unread reason. Events went 127 -> 456. A fixture arm now kills the old split.
+   - dead_rule_sweep:
+     - a crashed or hung ablation run counted as LIVE;
+     - --tool typo.py and an empty --segment both gave CLEAN, exit 0. Measured: HEAD inner exit 0, now 2.
+   - register_freshness_check: one register missing, zero rows, or UNVERIFIABLE-only all gave exit 0. 5 new probe arms, 4 of which fail on the HEAD tool.
+   - metamorphic_check:
+     - zero targets gave CLEAN (HEAD 0, now 2);
+     - the ls-files return code was not read;
+     - --json skipped the rewording family.
+   - master_plan: an unread criticality_tier_check exit meant every app could be published TIERED. Generation now refuses, and that refusal was driven.
+   - service_role_tier_a_gate_check: an empty Tier A set or an empty api/ list gave CLEAN. Now refused.
+   - eaten_substitution_check: printed "NOTHING WAS SCANNED", then exited 0.
+     - New arm E5b fails on HEAD.
+     - Pre-existing reds C4/C5 fixed: the last-3000 window had grown past the two recorded commits.
+   - git_config_isolation: a failed --rc-file write gave exit 0, and the refusal text omitted --rc-file. Selftest 8/0.
+   - hover_separation_audit: a failed git show was read as in-scope.
+     - Its probe's G11/G14/G21 are red identically at HEAD.
+     - Cause: H1's b86 patch put the fixture commit in scope.
+   Reverted: write_without_readback "zero files -> 2". Its results list counts files that have writes, not files scanned.
+   Not fixed: the MEDIUM and LOW list in handoff section 5. Worst remaining:
+   - gap_ledger: a zero-item Synthesis reads as "no gaps" (live, sairnbiz).
+   - write_without_readback: alias-only writers are skipped (live, sairnmechanical).
+   - checker_kit.tracked() ignores git's exit code (shared, cc).
+   Clean as checked: 16 tools, named in the handoff.
+
+6. PUSH: bounded single attempts, no --loop, no force, no skip
+   - Work landed on attempt 1 (head e016a7f1a); the clone was 0 ahead and 0 behind.
+   - Commits: 98bb61e17, 19a9a84b8, 8e2c18f48, and the register, manifest and claim bookkeeping.
+   - The deliverables push is confirmed below.
+   - Register --check: OK, 751 records.
+   - The platform claim was taken and released (0651405e3). fourth b60 had been held on it.
+
+DELIVERABLES PUSH: see the line appended after the push.
