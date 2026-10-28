@@ -4754,6 +4754,17 @@
       "status": "released",
       "released_at": "2026-10-28T11:23:40Z",
       "files": null
+    },
+    {
+      "id": "cc-1793188949",
+      "session": "cc",
+      "subject": "sairnsenior",
+      "task": "sen_caregivers HR field redaction fix 965 field scope check",
+      "claimed_at": "2026-10-28T12:02:29Z",
+      "claimed_at_epoch": 1793188949.9561596,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
