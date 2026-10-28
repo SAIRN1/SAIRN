@@ -4681,6 +4681,17 @@
       "status": "released",
       "released_at": "2026-10-28T12:23:16Z",
       "files": null
+    },
+    {
+      "id": "hank-1793208086",
+      "session": "hank",
+      "subject": "sairncode",
+      "task": "trial gate demo exemption server decided sc-auth",
+      "claimed_at": "2026-10-28T17:21:26Z",
+      "claimed_at_epoch": 1793208086.5554144,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
