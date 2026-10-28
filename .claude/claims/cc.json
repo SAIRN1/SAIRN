@@ -4795,8 +4795,8 @@
       "task": "CLAUDE.md wrap-up wording field-scope registry validate tier-a review discharges",
       "claimed_at": "2026-10-28T18:23:50Z",
       "claimed_at_epoch": 1793211830.9069421,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-28T18:52:54Z",
       "files": null
     }
   ],
