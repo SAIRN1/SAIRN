@@ -141,6 +141,13 @@ PURPOSES = {
         'fails on a LEAK, an over-redaction, a wrong scope flag, or a declared redaction in '
         'api/sd-data.js with no rule. Blocking pre-push check 4c, fails closed; --sweep maps '
         'every undeclared role-scoped read; --live reads the deployed endpoint per role.'),
+    'sql_placeholder_check.py': ('GATE',
+        'a sql/*.sql file that ships with an unsubstituted placeholder (__DUNDER__, {{mustache}}, '
+        "REPLACE_ME-style markers, or an operator '<... hash/key/id ...>' literal) in EXECUTABLE "
+        'text -- the hank b58 shape, where a rehearsal of a substituted copy passed and the real '
+        'run aborted. Reads the blob at the pushed tip, never the working tree; comments are '
+        'lexed away; reasoned operator-input declarations are reported NOT RUN-READY. Blocking '
+        'pre-push check 4d, fails closed (exit 2 = could not run also denies).'),
     'capped_run.py': ('GUARD',
         'an incident replay that runs uncapped and is OOM-killed mid-run, losing the '
         'attempt: runs the command in a Job Object (RLIMIT_AS off Windows) with a '

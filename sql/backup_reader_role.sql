@@ -89,6 +89,7 @@
 -- verifier, so the same password hashes differently every time and cannot be
 -- compared to a known string. The check has to be PREVENTIVE, which is why it
 -- is a raise and not an assertion afterwards.
+-- sql-placeholder-lint: operator-input REPLACE_ME_BEFORE_RUNNING -- a role password must never be committed to this public repo; the raise below refuses to run until it is replaced (NOT RUN-READY by design)
 do $$
 declare
   -- REPLACE THIS. It is the only edit this file needs.

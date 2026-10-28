@@ -2616,6 +2616,45 @@ def main():
                 OVERRIDE_HINT,
             ]))
 
+    # ── CHECK 4d: unsubstituted SQL placeholders -- BLOCKING, FAILS CLOSED (hank b60) ─
+    # hank b58 shipped sql/alf-audit-owner-recovery.sql with __PIN_HASH__ in
+    # its INSERT. A rehearsal of a substituted COPY passed, and Michael's real
+    # run aborted on the file's own guard. tools/sql_placeholder_check.py reads
+    # each changed sql/*.sql AS COMMITTED AT THE TIP, never the working tree,
+    # and refuses an undeclared placeholder in executable text. Same shape as
+    # 4c: a missing tool or a COULD NOT RUN (2) denies, because a check that
+    # could not read the file has not cleared it.
+    sql_changed = [q for q in changed if q.startswith('sql/') and q.endswith('.sql')]
+    if sql_changed or 'tools/sql_placeholder_check.py' in changed:
+        spc = os.path.join(repo, 'tools', 'sql_placeholder_check.py')
+        if not os.path.isfile(spc):
+            deny(chr(10).join([
+                "Blocked: this push changes sql/ and the placeholder check is not in this",
+                "clone, so nothing checked the committed SQL for unsubstituted tokens.",
+                "  expected: %s" % spc,
+                OVERRIDE_HINT,
+            ]))
+        sp_args = sql_changed if sql_changed else ['--all']
+        try:
+            s = subprocess.run([sys.executable, spc, '--ref', tip] + sp_args, capture_output=True, text=True,
+                               encoding='utf-8', errors='replace', timeout=300, cwd=repo)
+            sp_rc, sp_out = s.returncode, (s.stdout or '') + (s.stderr or '')
+        except Exception as e:
+            sp_rc, sp_out = None, '%s: %s' % (type(e).__name__, e)
+        if sp_rc != 0:
+            deny(chr(10).join([
+                "Blocked: the SQL placeholder check %s." % (
+                    "found an unsubstituted placeholder in SQL that would ship" if sp_rc == 1
+                    else "COULD NOT RUN (exit %s), and an unrun check is not a pass" % sp_rc),
+                "",
+                sp_out.strip()[-2500:],
+                "",
+                "Write the real value into the file itself, or -- for a value that must",
+                "never be committed -- declare it as operator input (see the tool's header).",
+                "Full detail:  python tools/sql_placeholder_check.py --ref HEAD " + ' '.join(sp_args),
+                OVERRIDE_HINT,
+            ]))
+
     # ── CHECK 5: reachability -- BLOCKING as of 2026-09-02 ─────────────────
     # Added 2026-09-01. Three complete, working, AI-backed StoneDesk features
     # were unreachable by a customer on 2026-08-30: each injected its only
