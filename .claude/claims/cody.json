@@ -4475,8 +4475,8 @@
       "task": "b55 checker_confidence hardening and tools not-run sweep",
       "claimed_at": "2026-10-28T11:24:23Z",
       "claimed_at_epoch": 1793186663.5067565,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-28T11:56:59Z",
       "files": null
     }
   ],
