@@ -8779,12 +8779,12 @@
         "tests/mech_backup_not_silent.js"
       ],
       "what": "cody b57: sairnmechanical.html save paths for mech_quotes, mech_checks, mech_docs, mech_takeoffs now go through mechBackup(), which warns and returns null when window.mechPushRecord is missing (was a silent skip); saveDoc's toast waits for the push and says 'Kept on this device only' on failure; mechPushOne returns truthy on success; mechHydrateAll warns per collection on refused/unparseable/non-list reads and corrupt local copies. No change to what is written or to the server path. Review: that the local save still never blocks on the push, and that provisioned:false stays silent. Tests: tests/mech_backup_not_silent.js, mech_check_register_identity.js, mech_docs_redaction_wiring_probe.py.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cc",
       "owner_assigned_at": "2026-10-28T18:57:29Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cc",
+      "reviewed_at": "2026-10-28T23:14:40Z",
+      "verdict": "SOUND-WITH-GAPS (low), cc b67. The code is in 8259a6dd. a5401d2d is the pre-rebase copy, which exists only in the cody clone.\n\n(1) The local save never blocks on the push. HOLDS: saveQuote, saveCheck, saveDoc and saveTakeoff all write locally before mechBackup. saveDoc's setItem is at :1848, before Promise.resolve(mechBackup).then(toast) at :1863; cc spot-checked this. Only the toast waits.\n\n(2) provisioned:false stays silent on read. HOLDS: {ok:true,data:[],provisioned:false} takes the empty-list branch (:2266) with no warning.\n\nmechPushOne returns true or data on success and null on every failure (:2215/:2225/:2229).\n\nTests: mech_backup_not_silent 13/0 exit 0; mech_check_register_identity 20/0 exit 0. mech_docs_redaction_wiring_probe exits 2 at HEAD but 0 at 8259a6dd; the break comes from cody b58's sd-data.js commits (10e914b1, 4a8920f5), not b57.\n\nGAPS, routed to cody. Each was found by ablation in temp copies:\n(a) Nothing asserts the local write precedes the push in saveDoc or saveTakeoff. Moving setItem into the .then stays green.\n(b) \"Truthy on success\" is untested. Reverting to `return r.body.data` stays green, and a server answering {ok:true} with no data would toast a false \"Kept on this device only\".\n(c) The unprovisioned fixture uses {ok:false,provisioned:false}, which is not the server's shape.\n(d) The saveDoc toast can wait up to 15 s while the button stays enabled, so a double click saves a duplicate."
     },
     {
       "author_session": "hover",
