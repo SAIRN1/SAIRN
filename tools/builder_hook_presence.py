@@ -53,7 +53,7 @@ import subprocess
 import sys
 import tempfile
 
-CRITERIA_VERSION = '2026-10-28.b66.2'
+CRITERIA_VERSION = '2026-10-28.b66.3'
 EXIT_OK, EXIT_FINDING, EXIT_COULD_NOT_RUN = 0, 1, 2
 
 HOOK = 'builder_auditor_deny_hook.py'
@@ -256,6 +256,7 @@ def install(repo=REPO):
             atomic_write(os.path.join(clone, COPY_DIR, f), ref[f][1])
         local = os.path.join(clone, '.claude', 'settings.local.json')
         doc = load_json(local) or {}
+        before = json.dumps(doc, sort_keys=True)
         hooks = doc.setdefault('hooks', {})
         want = expected_entries(clone, match)
         for ev, entry in want.items():
@@ -263,8 +264,14 @@ def install(repo=REPO):
             keep = [r for r in (hooks.get(ev) or [])
                     if not any(mark in (h.get('command') or '') for h in r.get('hooks') or [])]
             hooks[ev] = keep + [entry]
-        atomic_write(local, (json.dumps(doc, indent=2, ensure_ascii=False) + '\n').encode('utf-8'))
-        print('  installed %-7s %s' % (name, clone))
+        # A REFRESH (new landed copies, wiring already exact) leaves the
+        # settings file untouched. The settings files are deny-protected for
+        # the agents, and a refresh has no reason to rewrite one.
+        if json.dumps(doc, sort_keys=True) != before:
+            atomic_write(local, (json.dumps(doc, indent=2, ensure_ascii=False) + '\n').encode('utf-8'))
+            print('  installed %-7s %s  (copies + settings wiring)' % (name, clone))
+        else:
+            print('  refreshed %-7s %s  (copies only; wiring already exact, settings untouched)' % (name, clone))
     return ref_from
 
 
@@ -339,6 +346,11 @@ def selftest():
             doc = json.load(io.open(loc))
             arm('re-install replaces its own entry rather than stacking a second',
                 len(doc['hooks']['PreToolUse']) == 1, doc['hooks']['PreToolUse'])
+            m0 = os.stat(loc).st_mtime_ns
+            body0 = io.open(loc, 'rb').read()
+            install(a)
+            arm('a REFRESH with exact wiring leaves settings.local.json byte-identical and unwritten',
+                io.open(loc, 'rb').read() == body0 and os.stat(loc).st_mtime_ns == m0)
             io.open(us, 'w').write('{"disableAllHooks": true}')
             rc, lines = run_check(a, us)
             arm('disableAllHooks in the USER settings is a finding', rc == 1 and any('DISABLED' in x for x in lines), lines)

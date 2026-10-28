@@ -106,7 +106,7 @@ import shlex
 import subprocess
 import sys
 
-CRITERIA_VERSION = '2026-10-28.b66.2'
+CRITERIA_VERSION = '2026-10-28.b66.3'
 
 WRITE_TOOLS = ('Edit', 'Write', 'MultiEdit', 'NotebookEdit')
 COMMAND_TOOLS = ('Bash', 'PowerShell', 'Monitor')
@@ -572,26 +572,38 @@ def block_line(payload, hits, reason, now=None):
     if len(hits) > 1:
         why += ' (+%d more)' % (len(hits) - 1)
     ts = (now or datetime.datetime.now(datetime.timezone.utc)).strftime('%Y-%m-%dT%H:%M:%SZ')
-    return '\t'.join(re.sub(r'[\t\r\n]+', ' ', f) for f in (ts, agent, path, tool, why))
+    # Each field capped at 400 characters, as the auditor's block_log() caps
+    # its own -- read off its source, not assumed.
+    return '\t'.join(re.sub(r'[\t\r\n]+', ' ', f)[:400] for f in (ts, agent, path, tool, why))
 
 
 def log_block(payload, hits, reason):
     """Append to the shared log, then copy the WHOLE log to the Drive mirror,
-    so chat sees both directions as of this refusal. -> failures, by path."""
-    line = block_line(payload, hits, reason)
+    so chat sees both directions as of this refusal. -> failures, by path.
+
+    BOTH WRITES ARE BINARY, and the first version's mirror was not. The
+    auditor's hook opens the log with os.open and no O_BINARY, so on Windows
+    each of its lines ends CRLF (measured: 12 of 12 auditor rows, cc b66). A
+    text-mode read-then-write of the mirror turned those into LF, and the
+    "copy" then differed from the log by 12 bytes. The append is one
+    os.write of an LF line under O_APPEND, the same call shape the auditor
+    uses; the mirror is a byte copy."""
+    line = (block_line(payload, hits, reason) + '\n').encode('utf-8')
     local, mirror = LOG_PATHS
     failed = []
     try:
         os.makedirs(os.path.dirname(local), exist_ok=True)
-        with io.open(local, 'a', encoding='utf-8', newline='\n') as fh:
-            fh.write(line + '\n')
+        fd = os.open(local, os.O_WRONLY | os.O_APPEND | os.O_CREAT | getattr(os, 'O_BINARY', 0))
+        try:
+            os.write(fd, line)
+        finally:
+            os.close(fd)
     except OSError as e:
         failed.append('%s (%s)' % (local, e))
     try:
-        body = io.open(local, encoding='utf-8').read()
+        import shutil
         os.makedirs(os.path.dirname(mirror), exist_ok=True)
-        with io.open(mirror, 'w', encoding='utf-8', newline='\n') as fh:
-            fh.write(body)
+        shutil.copyfile(local, mirror)
     except OSError as e:
         failed.append('%s (%s)' % (mirror, e))
     return failed
@@ -789,7 +801,12 @@ def selftest():
                 arm('%s is COULD NOT RUN' % name, False, 'allowed')
             except CouldNotRun:
                 arm('%s is COULD NOT RUN' % name, True)
-        # END TO END through main(): exit code, stderr, and the log line
+        # END TO END through main(): exit code, stderr, and the log line. The
+        # log is SEEDED with one auditor-shaped CRLF row first, because that is
+        # what the live shared file holds, and the mirror must copy it as is.
+        os.makedirs(os.path.dirname(LOG_PATHS[0]))
+        io.open(LOG_PATHS[0], 'wb').write(
+            b'2026-10-28T22:06:28Z\thover\tc:\\x\\api\\a.js\tWrite\tdirect Write on a builder-owned path\r\n')
         for cmdline, want in (('git checkout -- .claude/skills/sairn-hover-auditor/SKILL.md', 2),
                               ('git status', 0), ('{not json', 2)):
             body = cmdline if cmdline.startswith('{') else json.dumps(
@@ -806,11 +823,11 @@ def selftest():
             if want == 0:
                 arm('...and the allow path is SILENT', r.stdout == '' and r.stderr == '', (r.stdout, r.stderr))
         try:
-            raw = io.open(LOG_PATHS[0], encoding='utf-8').read()
-            rows = [x.split('\t') for x in raw.splitlines()]
-            mirror = io.open(LOG_PATHS[1], encoding='utf-8').read()
+            raw = io.open(LOG_PATHS[0], 'rb').read()
+            rows = [x.split('\t') for x in raw.decode('utf-8').splitlines()][1:]   # row 0 is the seeded auditor line
+            mirror = io.open(LOG_PATHS[1], 'rb').read()
         except OSError:
-            raw, rows, mirror = '', [], None
+            raw, rows, mirror = b'', [], None
         arm('two refusals logged, the allow not logged', len(rows) == 2, len(rows))
         arm("each row has the auditor log's FIVE tab-separated columns", rows and all(len(r) == 5 for r in rows), rows)
         arm('column 1 is a UTC timestamp',
@@ -822,7 +839,12 @@ def selftest():
         arm('column 4 is the tool name', bool(rows) and rows[0][3] == 'Bash', rows[:1])
         arm('the could-not-run refusal carries its reason in column 5',
             len(rows) == 2 and rows[1][4].startswith('COULD NOT RUN'), rows[1:])
-        arm('the Drive mirror is a byte-identical copy of the whole log', mirror == raw, (len(raw), mirror and len(mirror)))
+        arm('the Drive mirror is a BYTE-identical copy, CRLF auditor row included', mirror == raw and b'\r\n' in raw,
+            (len(raw), mirror and len(mirror)))
+        arm('the seeded auditor row is untouched and the builder rows end LF',
+            raw.startswith(b'2026-10-28T22:06:28Z\thover') and raw.count(b'\r\n') == 1, raw[:120])
+        arm('every field is capped at 400 characters, as the auditor caps its own',
+            all(len(f) <= 400 for f in block_line({'tool_name': 'Edit'}, [('Edit', 'c:/' + 'x' * 900)], '').split('\t')))
         line = block_line({'tool_name': 'Edit', 'cwd': clone}, [('Edit', os.path.join(skill, 'SKILL.md'))], '',
                           now=datetime.datetime(2026, 10, 28, 22, 6, 28, tzinfo=datetime.timezone.utc))
         arm('a direct Edit reads like the auditor\'s "direct Write on a builder-owned path" row',
