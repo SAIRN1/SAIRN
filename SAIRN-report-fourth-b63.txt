@@ -1,0 +1,42 @@
+SAIRN REPORT -- fourth b63 -- 2026-10-28
+
+LANDED through 6f63fbac7. No force, no gate skip.
+
+1 ORPHAN SCRUTINY ROWS -- logged as decided: route to cc after its b66
+  lands. Design: docs/2026-10-28-fourth-b62-root-causes.md section 1.
+
+2 LIVE DRIVE -- 6/6 (6cc944a08).
+  `python tools/push_timeout_guard.py --live-drive` runs a REAL
+  `timeout 60 git push` from a temp repo to a temp bare remote, through a
+  hook running the guard. Result: refused, guard REFUSED line, timeout in the
+  chain, remote ref absent. Control push without timeout: lands, remote ==
+  pushed commit. Origin never touched.
+  ALLOW RULE NOT ADDED: the Edit of .claude/settings.local.json was denied by
+  the permission layer and not routed around. Michael adds
+  "Bash(python tools/push_timeout_guard.py --live-drive)" by hand. It is
+  optional while the existing "Bash(python *)" allow stands, which is how the
+  drive ran.
+
+3 WORLDWIDE AUDITS -- roofing, senior, vet (6f63fbac7). From research on
+  file only: 0 fetches, 0 regulators read, the research's own grades kept.
+  roofing: US gaps all built or refused out loud; 0/13 non-US regimes; 5 of
+    the 13 land on rf_invoices, which has no tax ids.
+  senior: 5 September findings overtaken; skew/replay flags written and never
+    shown; billing does not check EVV; CPR-only client-side credential gate.
+  vet: the SOAP record stores no note body; the client never obtains the
+    server's witness token and rewrites register rows in place (the
+    WITNESS_REQUIRED outcome is an inference, not live-verified).
+  sairnmechanical skipped: cody's active claim.
+
+4 DOC VERIFICATION -- all 3 docs clean.
+  GitHub GFM render: all tables render. 107 citations exist, are in range and
+  name their function within 3 lines. Links resolve, fences balance.
+  Landed blob == verified bytes. The known-bad control fails on all 5 planted
+  defects. Found b41 sairnbiz drift (saveEmp now :2514); not edited.
+
+5 HOOK-WIRING RECHECK -- ran on all 4 push attempts. The read found my own
+  b62 defect (a raw newline in the printf quotes), fixed in 40410a53e. It also
+  found a false positive in cc's b66 deny hook on `sh -n .githooks/pre-push`.
+
+PUSH: 4 attempts, 3 lost races. The pre-rebase scrutiny row was dropped
+before each rebase. 0 orphan rows; the committed row keys 40410a53e on main.

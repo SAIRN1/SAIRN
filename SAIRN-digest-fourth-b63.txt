@@ -1,0 +1,23 @@
+SAIRN DIGEST -- fourth b63 -- 2026-10-28
+CONTEXT 33.7% of 1,000,000 -- 336,874 tokens, measured.
+STATUS: items 2-5 landed through 6f63fbac7; item 1 logged (cc after b66); no force, no skip.
+DECISION-NEEDED: add the allow rule by hand -- the Edit was denied and not routed around (optional while `python *` stands). Also: senior's EVV billing gate changes what is paid.
+READ: SAIRN-handoff-fourth-b63.md (whole state). Detail: SAIRN-report-fourth-b63.txt.
+SQL: none.
+CHANGED:
+  6cc944a08 push_timeout_guard --live-drive: real `timeout 60 git push` to a temp bare remote, refused 6/6
+  40410a53e .githooks/pre-push: claim-recheck printf had a raw newline in its quotes (my b62 defect)
+  6f63fbac7 docs/cloud-research: worldwide audits for sairnroofing, sairnsenior, sairnvet (research on file)
+1 b61's UNVERIFIED line is closed: the guard refuses a REAL timed push through git's hook path
+2 vet: the SOAP record has no note body; the witness token is never obtained -- two defects no audit saw
+3 senior: EVV skew flags written and never shown; billing does not check EVV
+4 roofing: 0/13 non-US regimes; five land on rf_invoices, which has no tax ids
+5 docs: GFM render + 107 citations checked; landed bytes == verified bytes
+NEXT, in order:
+  a cc after b66: orphan scrutiny rows (b62 design)
+  b vet: claim sairnvet.html, drive an sv_controlled write live, then fix SOAP body + register
+  c next audits: sairnmechanical (after cody's claim), sairnbuild, sairngrounds, sairncash
+  d cc: deny-hook false positive on `sh -n` of a hook file
+UNVERIFIED: vet WITNESS_REQUIRED on sync (an inference from code); every external claim in the 3 audits is as graded in the research.
+EVIDENCE-path: tools/push_timeout_guard.py --live-drive; scratchpad docverify63.py, ctl63.md.
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\b6e28c25-eaee-4611-aeb3-d94f0198d47f.jsonl

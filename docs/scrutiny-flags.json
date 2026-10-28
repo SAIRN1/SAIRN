@@ -3451,6 +3451,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": ".githooks/pre-push",
+   "class": "CI / hook configuration",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "40410a53ebc777aef57262c59c0ad17eeb52ae73",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/write_readback_shape_probe.py",
    "class": "test file",
    "level": "CHANGE",

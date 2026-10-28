@@ -2303,3 +2303,12 @@ Full account: `SAIRN-handoff-fourth-b61.md`.
 - Timeout guard live-drive: the denier is the auto-mode classifier. The minimum allow rule is documented.
 
 Full account: `SAIRN-handoff-fourth-b62.md`.
+
+## batch b63 -- 2026-10-28, CLOSED
+
+- `push_timeout_guard --live-drive` (`6cc944a08`): a real `timeout 60 git push`, refused 6/6, against a temp bare remote. The allow-rule edit was denied by the permission layer and left for Michael.
+- Worldwide audits for sairnroofing, sairnsenior and sairnvet (`6f63fbac7`), from the research on file. Vet: the SOAP record stores no body, and the witness token is never obtained.
+- Hook fix (`40410a53e`): a raw newline in the claim-recheck printf.
+- All docs GFM-rendered and their citations checked. sairnmechanical skipped (cody's claim).
+
+Full account: `SAIRN-handoff-fourth-b63.md`.
