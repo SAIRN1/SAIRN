@@ -58,7 +58,8 @@
       "sairnbiz.html",
       "tests/sairnbiz_incidents_kpi.js",
       "stonedesk.html",
-      "tests/sairnlegacy_reservation_lock.js"
+      "tests/sairnlegacy_reservation_lock.js",
+      "tools/field_scope_rules.json"
     ],
     "cc": [
       "api/sd-data.js",

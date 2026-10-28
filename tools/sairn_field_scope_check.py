@@ -403,14 +403,28 @@ def check_live(rules):
                     if own_only and str(it.get(live.get('owner_field'), '')) != emp:
                         bad_rows += 1
             extra = sorted(got - allowed - set(idcol))
+            flags = ['%s=%r (declared %r)' % (k, body.get(k), v)
+                     for k, v in (r['roles'][role].get('flags') or {}).items() if body.get(k) != v]
             if extra or bad_rows:
                 findings.append('LIVE LEAK %s [%s]: fields %s not allowed; %d row(s) not the caller\'s'
                                 % (r['id'], role, extra, bad_rows))
+            elif flags:
+                findings.append('LIVE FLAG %s [%s]: %s' % (r['id'], role, ', '.join(flags)))
+            elif any(k.startswith('peer.') for k in want) and not any(
+                    isinstance(it, dict) and str(it.get(live.get('owner_field'), '')) != emp for it in items):
+                # The paired positive: a role declared to see the roster must
+                # actually get a row that is not its own, or "own only" and
+                # "the whole roster" would read the same.
+                findings.append('LIVE MISSING %s [%s]: declared to see other employees\' rows, got none'
+                                % (r['id'], role))
             elif not items:
                 cnr.append('%s [%s]: served 200 with no rows on the audit licence -- nothing to diff'
                            % (r['id'], role))
             else:
                 ok += 1
+                print('  ok   %s [%s]: %d row(s) %s, fields %s, flags as declared'
+                      % (r['id'], role, len(items), sorted(str(i.get('id')) for i in items if isinstance(i, dict)),
+                         sorted(got)))
     return findings, cnr, ok
 
 

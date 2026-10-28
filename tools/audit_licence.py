@@ -105,7 +105,7 @@ EXIT_COULD_NOT_RUN = 2
 #   SEN-AUDIT-2026   200 EXISTS   (seeded 2026-10-20)
 KNOWN_AUDIT_KEYS = ('SD-AUDIT-2026', 'RF-AUDIT-2026', 'ALF-AUDIT-2026',
                     'LAW-AUDIT-2026', 'MECH-AUDIT-2026', 'SC-AUDIT-2026',
-                    'SEN-AUDIT-2026')
+                    'SEN-AUDIT-2026', 'SEN-AUDIT-0002')
 
 
 def is_audit_licence(key):

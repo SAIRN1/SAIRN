@@ -45,7 +45,9 @@
         "caregiver":   { "see": ["self.@SCHED"], "flags": { "hr_fields_visible": false, "roster_scope": "own" } }
       },
       "live": { "licence_env": "SEN_AUDIT_LICENSE", "auth_path": "/api/sen-auth", "owner_field": "employee_id",
-                "creds": { "scheduler": ["SEN_SCHEDULER_EMP", "SEN_SCHEDULER_PIN"],
+                "creds": { "owner": ["SEN_OWNER_EMP", "SEN_OWNER_PIN"],
+                           "billing": ["SEN_BILLING_EMP", "SEN_BILLING_PIN"],
+                           "scheduler": ["SEN_SCHEDULER_EMP", "SEN_SCHEDULER_PIN"],
                            "coordinator": ["SEN_COORDINATOR_EMP", "SEN_COORDINATOR_PIN"],
                            "caregiver": ["SEN_CAREGIVER_EMP", "SEN_CAREGIVER_PIN"] } }
     },
