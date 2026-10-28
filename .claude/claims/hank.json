@@ -4733,8 +4733,8 @@
       "task": "alaska deadline gate and seed",
       "claimed_at": "2026-10-28T22:24:19Z",
       "claimed_at_epoch": 1793226259.2922978,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-28T23:59:30Z",
       "files": null
     }
   ],
