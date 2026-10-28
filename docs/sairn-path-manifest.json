@@ -71,7 +71,8 @@
       "tests/sql_placeholder_check_probe.py",
       "tools/push_retry.py",
       "docs/recurring-bug-classes-2.md",
-      "docs/sairnlaw-alaska-deadline-seed-gate.md"
+      "docs/sairnlaw-alaska-deadline-seed-gate.md",
+      "docs/sairnlaw-northdakota-deadline-seed-gate.md"
     ],
     "cc": [
       "api/sd-data.js",

@@ -15175,6 +15175,147 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/_lib/deadline-alaska.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "check('answer: lands on Alaska Day Sunday, skips the shifted Monday too',"
+    }
+   ],
+   "sha": "f8f4c585e1c889f03378ae963b8a2eb8d75e368f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-connecticut.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f8f4c585e1c889f03378ae963b8a2eb8d75e368f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-florida-coverage.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f8f4c585e1c889f03378ae963b8a2eb8d75e368f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-hawaii.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f8f4c585e1c889f03378ae963b8a2eb8d75e368f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-idaho.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f8f4c585e1c889f03378ae963b8a2eb8d75e368f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-massachusetts.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f8f4c585e1c889f03378ae963b8a2eb8d75e368f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-minnesota.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f8f4c585e1c889f03378ae963b8a2eb8d75e368f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-mississippi.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f8f4c585e1c889f03378ae963b8a2eb8d75e368f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-missouri.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f8f4c585e1c889f03378ae963b8a2eb8d75e368f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-nebraska.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f8f4c585e1c889f03378ae963b8a2eb8d75e368f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-nevada.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f8f4c585e1c889f03378ae963b8a2eb8d75e368f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-newhampshire.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f8f4c585e1c889f03378ae963b8a2eb8d75e368f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-newmexico.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f8f4c585e1c889f03378ae963b8a2eb8d75e368f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-oklahoma.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f8f4c585e1c889f03378ae963b8a2eb8d75e368f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-oregon.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f8f4c585e1c889f03378ae963b8a2eb8d75e368f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-southcarolina.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f8f4c585e1c889f03378ae963b8a2eb8d75e368f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-utah.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f8f4c585e1c889f03378ae963b8a2eb8d75e368f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_tier_a_review_gate_probe.py",
    "class": "test file",
    "level": "WEAKENING",

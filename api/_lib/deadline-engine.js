@@ -1462,6 +1462,19 @@ var COMPUTATION_STANDARDS = {
     short_period_exclusion_days: 7,
     base_period_suffix: '', months_years_suffix: '',
     rollover_suffix_forward: '', rollover_suffix_backward: '' },
+  // ── NORTH DAKOTA (hank b63): THE MODERN FEDERAL COUNT, HOLIDAYS BY NUMBER ──
+  // N.D.R.Civ.P. 6(a)(1): "(B) count every day, including intermediate
+  // Saturdays, Sundays, and legal holidays" -- no short-period exclusion, and
+  // the Explanatory Note says so ("counted regardless of the length of the
+  // specified period", 2011). 6(a)(6) defines "legal holiday" as N.D.C.C.
+  // 1-03-01, 1-03-02 and 1-03-02.1 BY NUMBER. App. R. 26(a) is the same text.
+  // docs/sairnlaw-northdakota-deadline-seed-gate.md.
+  nd_rcp_6a: { label: 'N.D.R.Civ.P. 6(a)', impl: 'frcp_6a',
+    base_period_suffix: '(1)(A)-(B)', months_years_suffix: '(1)(C)',
+    rollover_suffix_forward: '(1)(C)', rollover_suffix_backward: '(5)' },
+  nd_app_r_26a: { label: 'N.D.R.App.P. 26(a)', impl: 'frcp_6a',
+    base_period_suffix: '(1)(A)-(B)', months_years_suffix: '(1)(C)',
+    rollover_suffix_forward: '(1)(C)', rollover_suffix_backward: '(5)' },
   // ── MINNESOTA: DAYS ARE DAYS, AND THE EXCLUSION IS OPT-IN PER RULE ───────
   // Minn. R. Civ. P. 6.01(a), verbatim on the parts that decide these fields:
   //
@@ -2483,6 +2496,12 @@ var JURISDICTION_COVERAGE = {
     summary: 'Three Alaska days that may be legal holidays for time computation are NOT encoded -- MLK Day, the Friday before a Saturday holiday, and proclamation days -- and no row adds Rule 6(c) mail days to a deadline running from the clerk\'s certificate of distribution. This date may be EARLIER than the true deadline, never later.',
     detail: 'The calendar encodes Saturdays, Sundays and the AS 44.12.010 legal holidays, with the AS 44.12.020 Monday after a Sunday holiday. Each omission below can only make a date EARLIER: (1) MARTIN LUTHER KING, JR. DAY. AS 44.12.010(a)(2) lists it "as provided in (b)", and (b) makes it a legal holiday "for employment purposes" for state employees on collective-bargaining terms, so whether it is a legal holiday for a court deadline is a question of law; a deadline landing on it is shown on that Monday. (2) THE FRIDAY BEFORE A SATURDAY HOLIDAY. AS 44.12.025 makes it a legal holiday "for officers and employees of the state" only -- for example Friday 3 July 2026. (3) PROCLAMATION DAYS under AS 44.12.010(a)(14), which cannot be derived in advance. (4) MAIL DAYS ON DISTRIBUTION-TRIGGERED ROWS. Civil Rule 6(c) and Appellate Rule 502(c) add three days after a document is "distributed by" mail, which may reach a mailed judgment, but Civil Rule 6(b) forbids enlarging Rule 59(b) and a late notice of appeal is lost, so the Rule 59(b) and Appellate Rule 204(a)(1) rows add none. A court closure is NOT a legal holiday: the closed-court sentence printed beside Civil Rule 6 is the text of rescinded SCO 1875. If a computed date falls on MLK Day, the Friday before a Saturday holiday, or runs from a mailed judgment, confirm before relying on it.'
   },
+  nd: {
+    complete: false,
+    direction: 'early',
+    summary: 'North Dakota days the calendar cannot see -- a clerk\'s office that is inaccessible, proclamation holidays, and possibly Juneteenth -- are NOT modelled, and the defendant\'s 45-day discovery floor and Rule 59(c) mail days are not added. This date may be EARLIER than the true deadline, never later.',
+    detail: 'The calendar encodes Saturdays, Sundays and the N.D.C.C. 1-03-01 holidays including Good Friday, with BOTH 1-03-02 (Sunday to Monday) and 1-03-02.1 (Saturday to Friday) shifts for New Year\'s Day, Independence Day, Veterans\' Day and Christmas, because N.D.R.Civ.P. 6(a)(6) names all three sections by number. Each omission can only make a date EARLIER: (1) N.D.R.Civ.P. 6(a)(3) and App. R. 26(a)(3) extend a deadline when the clerk\'s office is INACCESSIBLE on the last day; (2) days "appointed by the President of the United States or by the governor of this state for a public holiday" (1-03-01(12)) cannot be derived in advance; (3) JUNETEENTH is not in 1-03-01 and was created by Congress rather than appointed by the President, so it is not encoded; (4) the Christmas Eve noon closure of state offices (1-03-01.1) is a closure, not a holiday; (5) Rules 33, 34 and 36 give a DEFENDANT 45 days from service of the summons where that is later than 30, which the 30-day rows do not compute; (6) no mail days are added to the Rule 59(c) row, which runs from notice of entry. If a computed date falls on or near Juneteenth or a proclaimed day, or the responding party is a recently-served defendant, confirm before relying on it.'
+  },
   mo: {
     complete: false,
     direction: 'early',
@@ -3429,6 +3448,26 @@ var SERVICE_EXTENSION_STANDARDS = {
     sequence: 'add_to_period_then_roll',
     shape: 'enumerated_allowlist',
     qualifies: function (method) { return method === 'mail'; }
+  },
+  // ── NORTH DAKOTA: MAIL OR COMMERCIAL CARRIER, AFTER EXPIRY (hank b63) ────
+  // N.D.R.Civ.P. 6(e)(1): "service is made by mail or third-party commercial
+  // carrier under Rule 5, three days are added after the prescribed period
+  // would otherwise expire under N.D.R.Civ.P. 6(a)." The federal order. Rule 4
+  // service by those means instead starts the period "upon delivery"
+  // (6(e)(2)), so the answer row carries none. App. R. 26(c) adds the same
+  // three days "after being served", and treats electronic service as
+  // delivered on the date of service -- so electronic earns nothing in either.
+  nd_rcp_6e: {
+    label: 'N.D.R.Civ.P. 6(e)',
+    sequence: 'roll_then_add_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) { return method === 'mail' || method === 'third_party_commercial_carrier'; }
+  },
+  nd_app_r_26c: {
+    label: 'N.D.R.App.P. 26(c)',
+    sequence: 'roll_then_add_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) { return method === 'mail' || method === 'third_party_commercial_carrier'; }
   },
   // ── MINNESOTA: MAIL GETS THREE, EVERYTHING ELSE GETS THE CLOCK ──────────
   // Minn. R. Civ. P. 6.01(e), verbatim in full:
