@@ -12,122 +12,558 @@
     "that role MUST get back; every other marker must be ABSENT anywhere in the body. That is",
     "the diff of returned fields against the allowed set, closed-world and shape-independent.",
     "refused: true -- that role must get 401/403 and no marker at all. flags: top-level body",
-    "values that role must see."
+    "values that role must see.",
+    "",
+    "ADDING A RULE (cc b63, written for hank's 23 routed reads -- alf_mar first):",
+    "  1. Write it from the DESIGN (the write site, the decision that set the scope), never off the read branch.",
+    "  2. Required keys: id, app, anchor (one exact line of api/sd-data.js), request {action, resource[, payload]},",
+    "     declared_from, tables, roles. Optional: caller (default emp-self), sets, live.",
+    "  3. tables: every table the branch reads, rows with a unique 'tag'. Columns the branch FILTERS on (eq.)",
+    "     must be present, or the row is filtered out and the role reads as MISSING. Seed any lookup table too.",
+    "  4. Typed columns (timestamptz, numeric) cannot hold FSMK...: use {\"marker\": \"2001-02-03T04:05:09.101\"}.",
+    "  5. roles: EVERY role in ROLES_BY_APP[app]. Each is {see: [...]} or {refused: true}; optional flags {}.",
+    "     A role scoped to its own rows sees only 'self.*'; put the caller's id ('emp-self') in the owner column.",
+    "  6. Check it: python tools/sairn_field_scope_check.py --validate   then   python tools/sairn_field_scope_check.py",
+    "  7. Mock limits: only <col>=eq.<v> and select= are honoured. in./neq./order/limit are IGNORED, which returns",
+    "     MORE rows -- a false LEAK is loud, never a silent pass. Say so in declared_from if a filter matters.",
+    "  8. live (optional): licence_env, auth_path, creds {role: [EMP_ENV, PIN_ENV]}, employees {emp-self: <real id>}.",
+    "     Fixture rows must be seeded with THESE markers: generate the SQL from seed(), as",
+    "     sql/field_scope_live_fixtures_2026-10-28.sql was. Prove it can fail: --replay --handler-ref <pre-fix sha>.",
+    "  A FORMAT TRIAL of alf_mar (handler mode, 7/7, b63) is in SAIRN-handoff-cc-b63.md; it is NOT a design."
   ],
   "rules": [
     {
       "id": "sen_caregivers.read",
       "app": "sairnsenior",
       "anchor": "if (resource === 'sen_caregivers' && action === 'read')",
-      "request": { "action": "read", "resource": "sen_caregivers" },
+      "request": {
+        "action": "read",
+        "resource": "sen_caregivers"
+      },
       "declared_from": "sairnsenior.html saveCaregiver() field list; b384a513 HR tier (owner/billing); cc b61 row tier (caregiver gets its own record, scheduling tiers the roster) for H1 #965",
       "caller": "emp-self",
       "tables": {
         "sen_caregivers": [
-          { "tag": "self", "caregiver_id": null, "data": {
-            "name": null, "phone": null, "cpr_expiry": null, "bgcheck_date": null, "status": null,
-            "notes": null, "aide_type": null, "program": null, "state_caregiver_id": null,
-            "employee_id": "emp-self", "branch_id": null } },
-          { "tag": "peer", "caregiver_id": null, "data": {
-            "name": null, "phone": null, "cpr_expiry": null, "bgcheck_date": null, "status": null,
-            "notes": null, "aide_type": null, "program": null, "state_caregiver_id": null,
-            "employee_id": "emp-peer", "branch_id": null } }
+          {
+            "tag": "self",
+            "caregiver_id": null,
+            "data": {
+              "name": null,
+              "phone": null,
+              "cpr_expiry": null,
+              "bgcheck_date": null,
+              "status": null,
+              "notes": null,
+              "aide_type": null,
+              "program": null,
+              "state_caregiver_id": null,
+              "employee_id": "emp-self",
+              "branch_id": null
+            }
+          },
+          {
+            "tag": "peer",
+            "caregiver_id": null,
+            "data": {
+              "name": null,
+              "phone": null,
+              "cpr_expiry": null,
+              "bgcheck_date": null,
+              "status": null,
+              "notes": null,
+              "aide_type": null,
+              "program": null,
+              "state_caregiver_id": null,
+              "employee_id": "emp-peer",
+              "branch_id": null
+            }
+          }
         ]
       },
       "sets": {
-        "SCHED": ["caregiver_id", "name", "phone", "cpr_expiry", "status", "aide_type", "program", "branch_id"]
+        "SCHED": [
+          "caregiver_id",
+          "name",
+          "phone",
+          "cpr_expiry",
+          "status",
+          "aide_type",
+          "program",
+          "branch_id"
+        ]
       },
       "roles": {
-        "owner":       { "see": ["self.*", "peer.*"], "flags": { "hr_fields_visible": true, "roster_scope": "agency" } },
-        "billing":     { "see": ["self.*", "peer.*"], "flags": { "hr_fields_visible": true, "roster_scope": "agency" } },
-        "scheduler":   { "see": ["self.@SCHED", "peer.@SCHED"], "flags": { "hr_fields_visible": false, "roster_scope": "agency" } },
-        "coordinator": { "see": ["self.@SCHED", "peer.@SCHED"], "flags": { "hr_fields_visible": false, "roster_scope": "agency" } },
-        "caregiver":   { "see": ["self.@SCHED"], "flags": { "hr_fields_visible": false, "roster_scope": "own" } }
+        "owner": {
+          "see": [
+            "self.*",
+            "peer.*"
+          ],
+          "flags": {
+            "hr_fields_visible": true,
+            "roster_scope": "agency"
+          }
+        },
+        "billing": {
+          "see": [
+            "self.*",
+            "peer.*"
+          ],
+          "flags": {
+            "hr_fields_visible": true,
+            "roster_scope": "agency"
+          }
+        },
+        "scheduler": {
+          "see": [
+            "self.@SCHED",
+            "peer.@SCHED"
+          ],
+          "flags": {
+            "hr_fields_visible": false,
+            "roster_scope": "agency"
+          }
+        },
+        "coordinator": {
+          "see": [
+            "self.@SCHED",
+            "peer.@SCHED"
+          ],
+          "flags": {
+            "hr_fields_visible": false,
+            "roster_scope": "agency"
+          }
+        },
+        "caregiver": {
+          "see": [
+            "self.@SCHED"
+          ],
+          "flags": {
+            "hr_fields_visible": false,
+            "roster_scope": "own"
+          }
+        }
       },
-      "live": { "licence_env": "SEN_AUDIT_LICENSE", "auth_path": "/api/sen-auth", "owner_field": "employee_id",
-                "creds": { "owner": ["SEN_OWNER_EMP", "SEN_OWNER_PIN"],
-                           "billing": ["SEN_BILLING_EMP", "SEN_BILLING_PIN"],
-                           "scheduler": ["SEN_SCHEDULER_EMP", "SEN_SCHEDULER_PIN"],
-                           "coordinator": ["SEN_COORDINATOR_EMP", "SEN_COORDINATOR_PIN"],
-                           "caregiver": ["SEN_CAREGIVER_EMP", "SEN_CAREGIVER_PIN"] } }
+      "live": {
+        "licence_env": "SEN_AUDIT_LICENSE",
+        "auth_path": "/api/sen-auth",
+        "creds": {
+          "owner": [
+            "SEN_OWNER_EMP",
+            "SEN_OWNER_PIN"
+          ],
+          "billing": [
+            "SEN_BILLING_EMP",
+            "SEN_BILLING_PIN"
+          ],
+          "scheduler": [
+            "SEN_SCHEDULER_EMP",
+            "SEN_SCHEDULER_PIN"
+          ],
+          "coordinator": [
+            "SEN_COORDINATOR_EMP",
+            "SEN_COORDINATOR_PIN"
+          ],
+          "caregiver": [
+            "SEN_CAREGIVER_EMP",
+            "SEN_CAREGIVER_PIN"
+          ]
+        },
+        "employees": {
+          "emp-self": "fs-caregiver",
+          "emp-peer": "fs-peer"
+        }
+      }
     },
     {
       "id": "sen_settings.read",
       "app": "sairnsenior",
       "anchor": "if (resource === 'sen_settings' && action === 'read')",
-      "request": { "action": "read", "resource": "sen_settings" },
+      "request": {
+        "action": "read",
+        "resource": "sen_settings"
+      },
       "declared_from": "the 2026-10-14 b9 tiering decision: non-management gets the operating state, the aggregator and the agency display name; unknown keys and updated_by/updated_at are withheld",
       "caller": "emp-self",
       "tables": {
         "sen_settings": [
-          { "tag": "evv", "setting_key": "evv_config", "updated_by": null, "updated_at": null,
-            "data": { "state": null, "aggregator": null, "api_secret": null } },
-          { "tag": "profile", "setting_key": "agency_profile", "updated_by": null, "updated_at": null,
-            "data": { "name": null, "tax_id": null } },
-          { "tag": "other", "setting_key": "billing_defaults", "updated_by": null, "updated_at": null,
-            "data": { "rate": null } }
+          {
+            "tag": "evv",
+            "setting_key": "evv_config",
+            "updated_by": null,
+            "updated_at": {
+              "marker": "2001-02-03T04:05:06.101"
+            },
+            "data": {
+              "state": null,
+              "aggregator": null,
+              "api_secret": null
+            }
+          },
+          {
+            "tag": "profile",
+            "setting_key": "agency_profile",
+            "updated_by": null,
+            "updated_at": {
+              "marker": "2001-02-03T04:05:06.202"
+            },
+            "data": {
+              "name": null,
+              "tax_id": null
+            }
+          },
+          {
+            "tag": "other",
+            "setting_key": "billing_defaults",
+            "updated_by": null,
+            "updated_at": {
+              "marker": "2001-02-03T04:05:06.303"
+            },
+            "data": {
+              "rate": null
+            }
+          }
         ]
       },
       "roles": {
-        "owner":       { "see": ["evv.*", "profile.*", "other.*"], "flags": { "tiered": false } },
-        "billing":     { "see": ["evv.*", "profile.*", "other.*"], "flags": { "tiered": false } },
-        "scheduler":   { "see": ["evv.state", "evv.aggregator", "profile.name"], "flags": { "tiered": true } },
-        "coordinator": { "see": ["evv.state", "evv.aggregator", "profile.name"], "flags": { "tiered": true } },
-        "caregiver":   { "see": ["evv.state", "evv.aggregator", "profile.name"], "flags": { "tiered": true } }
+        "owner": {
+          "see": [
+            "evv.*",
+            "profile.*",
+            "other.*"
+          ],
+          "flags": {
+            "tiered": false
+          }
+        },
+        "billing": {
+          "see": [
+            "evv.*",
+            "profile.*",
+            "other.*"
+          ],
+          "flags": {
+            "tiered": false
+          }
+        },
+        "scheduler": {
+          "see": [
+            "evv.state",
+            "evv.aggregator",
+            "profile.name"
+          ],
+          "flags": {
+            "tiered": true
+          }
+        },
+        "coordinator": {
+          "see": [
+            "evv.state",
+            "evv.aggregator",
+            "profile.name"
+          ],
+          "flags": {
+            "tiered": true
+          }
+        },
+        "caregiver": {
+          "see": [
+            "evv.state",
+            "evv.aggregator",
+            "profile.name"
+          ],
+          "flags": {
+            "tiered": true
+          }
+        }
+      },
+      "live": {
+        "licence_env": "SEN_AUDIT_LICENSE",
+        "auth_path": "/api/sen-auth",
+        "creds": {
+          "owner": [
+            "SEN_OWNER_EMP",
+            "SEN_OWNER_PIN"
+          ],
+          "billing": [
+            "SEN_BILLING_EMP",
+            "SEN_BILLING_PIN"
+          ],
+          "scheduler": [
+            "SEN_SCHEDULER_EMP",
+            "SEN_SCHEDULER_PIN"
+          ],
+          "coordinator": [
+            "SEN_COORDINATOR_EMP",
+            "SEN_COORDINATOR_PIN"
+          ],
+          "caregiver": [
+            "SEN_CAREGIVER_EMP",
+            "SEN_CAREGIVER_PIN"
+          ]
+        }
       }
     },
     {
       "id": "rf_settings.read",
       "app": "sairnroofing",
       "anchor": "if (resource === 'rf_settings' && action === 'read')",
-      "request": { "action": "read", "resource": "rf_settings" },
+      "request": {
+        "action": "read",
+        "resource": "rf_settings"
+      },
       "declared_from": "the 2026-10-14 b10 tiering decision: non-management gets the damage_threshold value and its source (sairnroofing.html rfDmgShowThreshold), never updated_by/updated_at, never an unknown key -- including one named constructor",
       "caller": "emp-self",
       "tables": {
         "rf_settings": [
-          { "tag": "dmg", "setting_key": "damage_threshold", "updated_by": null, "updated_at": null,
-            "data": { "value": null, "source": null } },
-          { "tag": "proto", "setting_key": "constructor", "updated_by": null, "updated_at": null,
-            "data": { "value": null } },
-          { "tag": "other", "setting_key": "crew_rates", "updated_by": null, "updated_at": null,
-            "data": { "rate": null } }
+          {
+            "tag": "dmg",
+            "setting_key": "damage_threshold",
+            "updated_by": null,
+            "updated_at": {
+              "marker": "2001-02-03T04:05:07.101"
+            },
+            "data": {
+              "value": null,
+              "source": null
+            }
+          },
+          {
+            "tag": "proto",
+            "setting_key": "constructor",
+            "updated_by": null,
+            "updated_at": {
+              "marker": "2001-02-03T04:05:07.202"
+            },
+            "data": {
+              "value": null
+            }
+          },
+          {
+            "tag": "other",
+            "setting_key": "crew_rates",
+            "updated_by": null,
+            "updated_at": {
+              "marker": "2001-02-03T04:05:07.303"
+            },
+            "data": {
+              "rate": null
+            }
+          }
         ]
       },
       "roles": {
-        "owner":     { "see": ["dmg.*", "proto.*", "other.*"], "flags": { "tiered": false } },
-        "admin":     { "see": ["dmg.*", "proto.*", "other.*"], "flags": { "tiered": false } },
-        "estimator": { "see": ["dmg.value", "dmg.source"], "flags": { "tiered": true } },
-        "foreman":   { "see": ["dmg.value", "dmg.source"], "flags": { "tiered": true } },
-        "crew":      { "see": ["dmg.value", "dmg.source"], "flags": { "tiered": true } }
+        "owner": {
+          "see": [
+            "dmg.*",
+            "proto.*",
+            "other.*"
+          ],
+          "flags": {
+            "tiered": false
+          }
+        },
+        "admin": {
+          "see": [
+            "dmg.*",
+            "proto.*",
+            "other.*"
+          ],
+          "flags": {
+            "tiered": false
+          }
+        },
+        "estimator": {
+          "see": [
+            "dmg.value",
+            "dmg.source"
+          ],
+          "flags": {
+            "tiered": true
+          }
+        },
+        "foreman": {
+          "see": [
+            "dmg.value",
+            "dmg.source"
+          ],
+          "flags": {
+            "tiered": true
+          }
+        },
+        "crew": {
+          "see": [
+            "dmg.value",
+            "dmg.source"
+          ],
+          "flags": {
+            "tiered": true
+          }
+        }
+      },
+      "live": {
+        "licence_env": "RF_AUDIT_LICENSE",
+        "auth_path": "/api/rf-auth",
+        "creds": {
+          "owner": [
+            "RF_OWNER_EMP",
+            "RF_OWNER_PIN"
+          ],
+          "admin": [
+            "RF_ADMIN_EMP",
+            "RF_ADMIN_PIN"
+          ],
+          "estimator": [
+            "RF_ESTIMATOR_EMP",
+            "RF_ESTIMATOR_PIN"
+          ],
+          "foreman": [
+            "RF_FOREMAN_EMP",
+            "RF_FOREMAN_PIN"
+          ],
+          "crew": [
+            "RF_CREW_EMP",
+            "RF_CREW_PIN"
+          ]
+        }
       }
     },
     {
       "id": "alf_facility.read",
       "app": "sairncare",
       "anchor": "if (resource === 'alf_facility' && action === 'read')",
-      "request": { "action": "read", "resource": "alf_facility" },
+      "request": {
+        "action": "read",
+        "resource": "alf_facility"
+      },
       "declared_from": "sairncare.html facility() defaults plus ALF_FACILITY_RATE_FIELDS' il/mc/snf; the 2026-08-21 two-tier design (rate card to management only, the rest facility-wide)",
       "caller": "emp-self",
       "tables": {
         "alf_facility": [
-          { "tag": "fac", "facility_id": null, "data": {
-            "name": null, "company": null, "licensing_state": null, "license_number": null,
-            "cs_policy": null, "hcbs_enabled": null, "hcbs_state": null,
-            "roomboard_rate": null, "il_rate": null, "al1_rate": null, "al2_rate": null,
-            "al3_rate": null, "mc_rate": null, "snf_rate": null } }
+          {
+            "tag": "fac",
+            "facility_id": null,
+            "data": {
+              "name": null,
+              "company": null,
+              "licensing_state": null,
+              "license_number": null,
+              "cs_policy": null,
+              "hcbs_enabled": null,
+              "hcbs_state": null,
+              "roomboard_rate": null,
+              "il_rate": null,
+              "al1_rate": null,
+              "al2_rate": null,
+              "al3_rate": null,
+              "mc_rate": null,
+              "snf_rate": null
+            }
+          }
         ]
       },
       "sets": {
-        "PROFILE": ["facility_id", "name", "company", "licensing_state", "license_number", "cs_policy", "hcbs_enabled", "hcbs_state"]
+        "PROFILE": [
+          "facility_id",
+          "name",
+          "company",
+          "licensing_state",
+          "license_number",
+          "cs_policy",
+          "hcbs_enabled",
+          "hcbs_state"
+        ]
       },
       "roles": {
-        "owner":          { "see": ["fac.*"], "flags": { "rates_visible": true } },
-        "billing":        { "see": ["fac.*"], "flags": { "rates_visible": true } },
-        "nursing":        { "see": ["fac.@PROFILE"], "flags": { "rates_visible": false } },
-        "med_aide":       { "see": ["fac.@PROFILE"], "flags": { "rates_visible": false } },
-        "caregiver":      { "see": ["fac.@PROFILE"], "flags": { "rates_visible": false } },
-        "activities":     { "see": ["fac.@PROFILE"], "flags": { "rates_visible": false } },
-        "office_manager": { "see": ["fac.@PROFILE"], "flags": { "rates_visible": false } }
+        "owner": {
+          "see": [
+            "fac.*"
+          ],
+          "flags": {
+            "rates_visible": true
+          }
+        },
+        "billing": {
+          "see": [
+            "fac.*"
+          ],
+          "flags": {
+            "rates_visible": true
+          }
+        },
+        "nursing": {
+          "see": [
+            "fac.@PROFILE"
+          ],
+          "flags": {
+            "rates_visible": false
+          }
+        },
+        "med_aide": {
+          "see": [
+            "fac.@PROFILE"
+          ],
+          "flags": {
+            "rates_visible": false
+          }
+        },
+        "caregiver": {
+          "see": [
+            "fac.@PROFILE"
+          ],
+          "flags": {
+            "rates_visible": false
+          }
+        },
+        "activities": {
+          "see": [
+            "fac.@PROFILE"
+          ],
+          "flags": {
+            "rates_visible": false
+          }
+        },
+        "office_manager": {
+          "see": [
+            "fac.@PROFILE"
+          ],
+          "flags": {
+            "rates_visible": false
+          }
+        }
+      },
+      "live": {
+        "licence_env": "ALF_AUDIT_LICENSE",
+        "auth_path": "/api/alf-auth",
+        "creds": {
+          "owner": [
+            "ALF_OWNER_EMP",
+            "ALF_OWNER_PIN"
+          ],
+          "billing": [
+            "ALF_BILLING_EMP",
+            "ALF_BILLING_PIN"
+          ],
+          "nursing": [
+            "ALF_NURSING_EMP",
+            "ALF_NURSING_PIN"
+          ],
+          "med_aide": [
+            "ALF_MED_AIDE_EMP",
+            "ALF_MED_AIDE_PIN"
+          ],
+          "caregiver": [
+            "ALF_CAREGIVER_EMP",
+            "ALF_CAREGIVER_PIN"
+          ],
+          "activities": [
+            "ALF_ACTIVITIES_EMP",
+            "ALF_ACTIVITIES_PIN"
+          ],
+          "office_manager": [
+            "ALF_OFFICE_MANAGER_EMP",
+            "ALF_OFFICE_MANAGER_PIN"
+          ]
+        }
       }
     }
   ]

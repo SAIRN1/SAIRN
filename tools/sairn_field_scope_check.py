@@ -6,7 +6,11 @@
     python tools/sairn_field_scope_check.py --ref <sha>   # the same, on the tree AT <sha>
     python tools/sairn_field_scope_check.py --sweep       # + an exposure matrix of every
                                                           #   role-scoped read nobody declared
-    python tools/sairn_field_scope_check.py --live        # every rule's live block, deployed
+    python tools/sairn_field_scope_check.py --live [--env-file F]   # every rule's live block, deployed
+    python tools/sairn_field_scope_check.py --replay --handler-ref <sha> [--only <rule>]
+                                                          # the SAME live path against the handler
+                                                          #   at <sha>, served on 127.0.0.1
+    python tools/sairn_field_scope_check.py --validate    # the registry's schema, nothing driven
     python tools/sairn_field_scope_check.py --fixtures    # the blind lock
 
 THE CLASS (four confirmed instances by 2026-10-28, every one caught by an
@@ -43,9 +47,11 @@ WHY PRE-PUSH IS HANDLER-LEVEL AND --live IS SEPARATE. A pre-push gate runs
 before the deploy, so a live request there reads the PREVIOUS code: it would
 refuse the push that fixes a leak and pass the push that adds one. The gate
 therefore drives the code being pushed. --live reads the deployed endpoint per
-role on an audit licence (read-only, key-shaped field diff and the declared
-row owner) and is the post-push verification and the platform sweep's live
-half. Without role PINs in the environment it is COULD NOT RUN, never a pass.
+role on an audit licence, read-only, and judges it with the SAME marker judge:
+the licence holds the rule's own fixture rows, written from seed() (b63). It is
+the post-push verification. Without role PINs in the environment it is COULD
+NOT RUN, never a pass. --replay points that unchanged live path at a known-bad
+handler, because a live check never seen to fail has proved nothing.
 
 WHAT THIS CANNOT SEE: dispatch shapes other than `resource === 'x' && action
 === 'y'` in api/sd-data.js; writes (a refused write is a different check);
@@ -93,20 +99,129 @@ def seed(rule):
                 if k == 'tag':
                     continue
                 if k == 'data':
-                    data = {}
-                    for f, fv in v.items():
-                        if fv is None:
-                            data[f] = markers['%s.%s' % (tag, f)] = marker(rule['id'], tag, f)
-                        else:
-                            data[f] = fv
-                    built['data'] = data
-                elif v is None:
-                    built[k] = markers['%s.%s' % (tag, k)] = marker(rule['id'], tag, k)
+                    built['data'] = {f: _cell(rule, tag, f, fv, markers) for f, fv in v.items()}
                 else:
-                    built[k] = v
+                    built[k] = _cell(rule, tag, k, v, markers)
             out.append(built)
         tables[table] = out
     return tables, markers
+
+
+def _cell(rule, tag, field, v, markers):
+    """null -> a generated marker; {"marker": "<literal>"} -> that literal IS the
+    marker (for a typed column, e.g. a timestamptz that cannot hold FSMK...);
+    anything else is a literal and is not accounted."""
+    if v is None:
+        m = marker(rule['id'], tag, field)
+    elif isinstance(v, dict) and set(v) == {'marker'}:
+        m = str(v['marker'])
+    else:
+        return v
+    if m in markers.values():
+        raise CouldNotRun('rule %s: marker %r is used twice, so its presence cannot say which '
+                          'field it came from' % (rule['id'], m))
+    markers['%s.%s' % (tag, field)] = m
+    return m
+
+
+def substitute(tables, mapping):
+    """The seeded tables with literal employee ids swapped for the live ones."""
+    def sub(v):
+        return mapping.get(v, v) if isinstance(v, str) else v
+    return {t: [{k: ({f: sub(x) for f, x in v.items()} if k == 'data' else sub(v))
+                 for k, v in row.items()} for row in rows] for t, rows in tables.items()}
+
+
+RULE_KEYS = {'id', 'app', 'anchor', 'request', 'declared_from', 'caller', 'tables', 'sets', 'roles', 'live'}
+SPEC_KEYS = {'see', 'refused', 'flags'}
+LIVE_KEYS = {'licence_env', 'auth_path', 'creds', 'employees'}
+
+
+def validate(rules):
+    """Every way a declaration can be malformed, named by rule and key, before
+    anything is driven. A typo'd key would otherwise be IGNORED: a "see_fields"
+    the judge never reads is a role that is checked against nothing."""
+    bad, ids = [], set()
+    for n, r in enumerate(rules):
+        start = len(bad)
+        if not isinstance(r, dict):
+            bad.append('rule #%d: is not an object' % n)
+            continue
+        where = 'rule %s' % (r.get('id') or '#%d' % n)
+        for k in sorted(set(r) - RULE_KEYS):
+            bad.append('%s: unknown key %r (allowed: %s)' % (where, k, ', '.join(sorted(RULE_KEYS))))
+        for k in ('id', 'app', 'anchor', 'request', 'declared_from', 'tables', 'roles'):
+            if k not in r:
+                bad.append('%s: missing required key %r' % (where, k))
+        if r.get('id') in ids:
+            bad.append('%s: duplicate id' % where)
+        ids.add(r.get('id'))
+        req = r.get('request')
+        if req is not None and not (isinstance(req, dict) and isinstance(req.get('resource'), str)
+                                    and isinstance(req.get('action'), str)):
+            bad.append('%s: request must be an object with string resource and action' % where)
+        tags = set()
+        tables = r.get('tables')
+        if tables is not None and not isinstance(tables, dict):
+            bad.append('%s: tables must be an object of table -> [rows]' % where)
+            tables = {}
+        for t, rows in (tables or {}).items():
+            if not isinstance(rows, list) or not rows:
+                bad.append('%s: table %r must be a non-empty list of rows' % (where, t))
+                continue
+            for row in rows:
+                if not isinstance(row, dict) or not isinstance(row.get('tag'), str):
+                    bad.append('%s: every row in %r needs a string "tag"' % (where, t))
+                    continue
+                if row['tag'] in tags:
+                    bad.append('%s: tag %r is used twice' % (where, row['tag']))
+                tags.add(row['tag'])
+                if 'data' in row and not isinstance(row['data'], dict):
+                    bad.append('%s: %s.data must be an object' % (where, row['tag']))
+        for sname, sv in (r.get('sets') or {}).items():
+            if not isinstance(sv, list) or not all(isinstance(x, str) for x in sv):
+                bad.append('%s: set %r must be a list of field names' % (where, sname))
+        for role, spec in (r.get('roles') or {}).items():
+            if not isinstance(spec, dict):
+                bad.append('%s [%s]: spec must be an object' % (where, role))
+                continue
+            for k in sorted(set(spec) - SPEC_KEYS):
+                bad.append('%s [%s]: unknown key %r (allowed: see, refused, flags)' % (where, role, k))
+            if ('see' in spec) == bool(spec.get('refused')):
+                bad.append('%s [%s]: needs exactly one of "see" (a list) or "refused": true' % (where, role))
+            for item in spec.get('see') or []:
+                tag, dot, field = str(item).partition('.')
+                if not dot or tag not in tags or not field:
+                    bad.append('%s [%s]: see entry %r is not <tag>.<field|*|@SET> for a declared tag'
+                               % (where, role, item))
+                elif field.startswith('@') and field[1:] not in (r.get('sets') or {}):
+                    bad.append('%s [%s]: %r names an undeclared set' % (where, role, item))
+            if 'flags' in spec and not isinstance(spec['flags'], dict):
+                bad.append('%s [%s]: flags must be an object' % (where, role))
+        live = r.get('live')
+        if live is not None:
+            for k in sorted(set(live) - LIVE_KEYS):
+                bad.append('%s live: unknown key %r' % (where, k))
+            for k in ('licence_env', 'auth_path', 'creds'):
+                if k not in live:
+                    bad.append('%s live: missing %r' % (where, k))
+            for role, pair in (live.get('creds') or {}).items():
+                if role not in (r.get('roles') or {}):
+                    bad.append('%s live: creds for %r, which the rule does not declare' % (where, role))
+                if not (isinstance(pair, list) and len(pair) == 2):
+                    bad.append('%s live: creds[%r] must be [EMP_ENV, PIN_ENV]' % (where, role))
+        if len(bad) > start:
+            continue
+        try:
+            _t, mk = seed(r)
+            for role, spec in r['roles'].items():
+                if isinstance(spec.get('see'), list):
+                    expand(r, spec['see'], mk)
+        except CouldNotRun as e:
+            bad.append(str(e))
+        except Exception as e:                                  # noqa: BLE001
+            bad.append('%s: could not be seeded (%s: %s)' % (where, type(e).__name__, e))
+    return bad
 
 
 def expand(rule, see, markers):
@@ -128,10 +243,9 @@ def expand(rule, see, markers):
 
 
 # ── THE TREE BEING CHECKED ─────────────────────────────────────────────────
-def export_ref(ref):
+def export_ref(ref, paths=('api', 'tools/field_scope_rules.json')):
     d = tempfile.mkdtemp(prefix='field_scope_ref_')
-    a = subprocess.run(['git', '-C', REPO, 'archive', '--format=tar', ref, 'api',
-                        'tools/field_scope_rules.json'], capture_output=True)
+    a = subprocess.run(['git', '-C', REPO, 'archive', '--format=tar', ref] + list(paths), capture_output=True)
     if a.returncode != 0:
         shutil.rmtree(d, ignore_errors=True)
         raise CouldNotRun('git archive %s failed: %s' % (ref, a.stderr.decode('utf-8', 'replace')[:300]))
@@ -376,10 +490,27 @@ def check_live(rules):
                        % (r['id'], live['licence_env'], 'unset' if not key else 'not an audit key'))
             continue
         _t, markers = seed(r)
+        # THE SAME JUDGE AS THE HANDLER MODE (cc b63). The audit licence holds
+        # the rule's own fixture rows with the rule's own marker values
+        # (sql/field_scope_live_fixtures_*.sql writes them FROM this file), so a
+        # deployed response is diffed exactly the way a driven one is: closed
+        # world, by marker, shape-independent. The b62 version compared item KEYS
+        # and could not read a nested shape like sen_settings' {setting_key,
+        # value}; this one can, and a leak is the same LEAK line in both modes.
+        selfemp = (live.get('employees') or {}).get(r.get('caller', 'emp-self'))
         for role, (emp_env, pin_env) in sorted(live['creds'].items()):
             emp, pin = os.environ.get(emp_env, ''), os.environ.get(pin_env, '')
             if not emp or not pin:
                 cnr.append('%s [%s]: %s / %s not set -- this arm DID NOT RUN' % (r['id'], role, emp_env, pin_env))
+                continue
+            spec = r['roles'][role]
+            want = expand(r, spec.get('see', []), markers)
+            own_rows = {k.split('.', 1)[0] for k in want}
+            if own_rows == {'self'} and selfemp and emp != selfemp:
+                # A self-only role signed in as somebody else would read "no row
+                # of mine" as a pass. Refuse rather than judge the wrong person.
+                cnr.append('%s [%s]: signed in as %s but the fixtures\' self row belongs to %s'
+                           % (r['id'], role, emp, selfemp))
                 continue
             st, body = post(LIVE_BASE + live['auth_path'], {'action': 'login', 'employee_id': emp, 'pin': pin}, key)
             tok = isinstance(body, dict) and body.get('token')
@@ -387,44 +518,76 @@ def check_live(rules):
                 cnr.append('%s [%s]: login answered %s -- no session, not a scope result' % (r['id'], role, st))
                 continue
             st, body = post(LIVE_BASE + '/api/sd-data', r['request'], key, tok)
-            if st != 200 or not isinstance(body, dict):
-                cnr.append('%s [%s]: read answered %s' % (r['id'], role, st))
-                continue
-            want = expand(r, r['roles'][role].get('see', []), markers)
-            allowed = {k.split('.', 1)[1] for k in want} | {'id', live.get('owner_field', '')}
-            idcol = [k for k in r['tables'][list(r['tables'])[0]][0] if k not in ('tag', 'data')]
-            got = set()
-            bad_rows = 0
-            items = body.get('data') if isinstance(body.get('data'), list) else []
-            own_only = all(k.startswith('self.') for k in want)
-            for it in items:
-                if isinstance(it, dict):
-                    got |= set(it)
-                    if own_only and str(it.get(live.get('owner_field'), '')) != emp:
-                        bad_rows += 1
-            extra = sorted(got - allowed - set(idcol))
-            flags = ['%s=%r (declared %r)' % (k, body.get(k), v)
-                     for k, v in (r['roles'][role].get('flags') or {}).items() if body.get(k) != v]
-            if extra or bad_rows:
-                findings.append('LIVE LEAK %s [%s]: fields %s not allowed; %d row(s) not the caller\'s'
-                                % (r['id'], role, extra, bad_rows))
-            elif flags:
-                findings.append('LIVE FLAG %s [%s]: %s' % (r['id'], role, ', '.join(flags)))
-            elif any(k.startswith('peer.') for k in want) and not any(
-                    isinstance(it, dict) and str(it.get(live.get('owner_field'), '')) != emp for it in items):
-                # The paired positive: a role declared to see the roster must
-                # actually get a row that is not its own, or "own only" and
-                # "the whole roster" would read the same.
-                findings.append('LIVE MISSING %s [%s]: declared to see other employees\' rows, got none'
-                                % (r['id'], role))
-            elif not items:
-                cnr.append('%s [%s]: served 200 with no rows on the audit licence -- nothing to diff'
-                           % (r['id'], role))
-            else:
+            f, c = judge(r, role, spec, {'status': st, 'body': body}, markers)
+            findings += ['LIVE ' + x for x in f]
+            cnr += c
+            if not f and not c:
                 ok += 1
-                print('  ok   %s [%s]: %d row(s) %s, fields %s, flags as declared'
-                      % (r['id'], role, len(items), sorted(str(i.get('id')) for i in items if isinstance(i, dict)),
-                         sorted(got)))
+                blob = json.dumps(body, ensure_ascii=False)
+                print('  ok   %s [%s]: received %d of %d markers, exactly its declaration'
+                      % (r['id'], role, sum(1 for v in markers.values() if v in blob), len(markers)))
+    return findings, cnr, ok
+
+
+# ── REPLAY: the live path against a KNOWN-BAD handler (cc b63) ─────────────
+# A live check that has only ever been pointed at a clean deployment has never
+# been seen to fail. --replay runs check_live() unchanged -- same HTTP calls,
+# same login, same judge -- against tools/field_scope_driver.js --serve, which
+# serves the handler AT <ref> over 127.0.0.1 with the rule's own fixtures. Point
+# it at the commit before a fix and it must report the leak that fix closed.
+def replay(root, rules):
+    import socket
+    global LIVE_BASE
+    findings, cnr, ok = [], [], 0
+    for r in rules:
+        live = r.get('live')
+        if not live:
+            cnr.append('%s: no live block, nothing to replay' % r['id'])
+            continue
+        emps = live.get('employees') or {}
+        selfemp = emps.get(r.get('caller', 'emp-self'), 'replay-self')
+        tables, markers = seed(r)
+        creds, env = {}, {live['licence_env']: 'RP-AUDIT-0000'}
+        for role, (emp_env, pin_env) in live['creds'].items():
+            want = expand(r, r['roles'][role].get('see', []), markers)
+            emp = selfemp if {k.split('.', 1)[0] for k in want} == {'self'} else 'replay-' + role
+            if emp in creds:
+                emp = 'replay-' + role
+            creds[emp] = {'pin': '12345678', 'role': role}
+            env[emp_env], env[pin_env] = emp, '12345678'
+        s = socket.socket()
+        s.bind(('127.0.0.1', 0))
+        port = s.getsockname()[1]
+        s.close()
+        cfg = os.path.join(tempfile.mkdtemp(prefix='field_scope_replay_'), 'cfg.json')
+        io.open(cfg, 'w', encoding='utf-8').write(json.dumps({
+            'handler': os.path.join(root, 'api', 'sd-data.js'), 'port': port, 'app': r['app'],
+            'tables': substitute(tables, emps), 'creds': creds}))
+        p = subprocess.Popen(['node', os.path.join(REPO, 'tools', 'field_scope_driver.js'), '--serve', cfg],
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        try:
+            line = p.stdout.readline()
+            if not line.startswith('LISTENING'):
+                cnr.append('%s: the replay server did not start: %s' % (r['id'], (p.stderr.read() or line)[:300]))
+                continue
+            saved_env = {k: os.environ.get(k) for k in env}
+            os.environ.update(env)
+            LIVE_BASE, base = 'http://127.0.0.1:%d' % port, LIVE_BASE
+            try:
+                f, c, k = check_live([r])
+            finally:
+                LIVE_BASE = base
+                for k2, v2 in saved_env.items():
+                    if v2 is None:
+                        os.environ.pop(k2, None)
+                    else:
+                        os.environ[k2] = v2
+            findings += f
+            cnr += c
+            ok += k
+        finally:
+            p.kill()
+            p.wait()
     return findings, cnr, ok
 
 
@@ -449,6 +612,7 @@ module.exports = async function (req, res) {
 
 FAKE_RULE = {
     'id': 'fixture.read', 'app': 'sairnsenior', 'anchor': 'FIXTURE-ANCHOR',
+    'declared_from': 'the blind lock itself',
     'request': {'action': 'read', 'resource': 'fx_t'}, 'caller': 'emp-self',
     'tables': {'fx_t': [
         {'tag': 'self', 'row_id': None, 'data': {'name': None, 'secret': None, 'owner': 'emp-self'}},
@@ -518,6 +682,17 @@ def fixtures():
             classify({'a': (200, 2, 2), 'b': (200, 2, 0)}, 2)[0] == 'DIFFERENTIATED')
         arm('SWEEP: nobody served is COULD NOT TELL, never clean',
             classify({'a': (403, 0, 0), 'b': (400, 0, 0)}, 2)[0] == 'COULD NOT TELL')
+        arm('SCHEMA: a well-formed rule validates clean', validate([FAKE_RULE]) == [], validate([FAKE_RULE]))
+        typo = dict(FAKE_RULE, roles=dict(FAKE_RULE['roles'], caregiver={'see_fields': ['self.*']}))
+        arm('SCHEMA: a misspelled key is an ERROR, never silently ignored',
+            any("unknown key 'see_fields'" in x for x in validate([typo])), validate([typo]))
+        nobody = dict(FAKE_RULE, roles=dict(FAKE_RULE['roles'], caregiver={'see': ['ghost.*']}))
+        arm('SCHEMA: a see entry naming an undeclared tag is an error',
+            any('ghost' in x for x in validate([nobody])))
+        dup = dict(FAKE_RULE, tables={'fx_t': FAKE_RULE['tables']['fx_t'] + [{'tag': 'x', 'a': {'marker': 'M1'}},
+                                                                            {'tag': 'y', 'b': {'marker': 'M1'}}]})
+        arm('SCHEMA: one marker literal used twice is an error (presence could not say which field)',
+            any('used twice' in x for x in validate([dup])), validate([dup]))
         try:
             expand(FAKE_RULE, ['self.nope'], seed(FAKE_RULE)[1])
             arm('a `see` naming an unseeded field is COULD NOT RUN', False)
@@ -538,12 +713,51 @@ def main(argv):
         root = REPO
         if '--ref' in argv:
             tmp = root = export_ref(argv[argv.index('--ref') + 1])
+        rules_root = root
+        if '--handler-ref' in argv:
+            # The handler AT a past commit, judged by TODAY's declarations: the
+            # shape a replay of a pre-fix bug needs, since the old tree has no
+            # registry (or an older one that would agree with the old code).
+            tmp = root = export_ref(argv[argv.index('--handler-ref') + 1], paths=('api',))
         try:
-            rules = json.load(io.open(os.path.join(root, 'tools', 'field_scope_rules.json'),
+            rules = json.load(io.open(os.path.join(rules_root, 'tools', 'field_scope_rules.json'),
                                       encoding='utf-8'))['rules']
             src = io.open(os.path.join(root, 'api', 'sd-data.js'), encoding='utf-8').read()
         except (OSError, ValueError, KeyError) as e:
             raise CouldNotRun('the registry or api/sd-data.js could not be read: %s' % e)
+        bad = validate(rules) if isinstance(rules, list) else ['"rules" is not a list']
+        if bad or '--validate' in argv:
+            print('FIELD SCOPE REGISTRY -- %d rule(s), %d schema error(s)' % (
+                len(rules) if isinstance(rules, list) else 0, len(bad)))
+            for x in bad:
+                print('  SCHEMA ' + x)
+            if bad:
+                return EXIT_FINDING
+            if '--validate' in argv:
+                return EXIT_OK
+        if '--env-file' in argv:
+            # KEY=VALUE lines, for the live credentials. Never overrides a value
+            # already in the environment, so an explicit export still wins.
+            try:
+                for ln in io.open(argv[argv.index('--env-file') + 1], encoding='utf-8'):
+                    k, eq, v = ln.strip().partition('=')
+                    if eq and k and not k.startswith('#'):
+                        os.environ.setdefault(k.strip(), v.strip())
+            except (OSError, IndexError) as e:
+                raise CouldNotRun('--env-file could not be read: %s' % e)
+        if '--only' in argv:
+            only = argv[argv.index('--only') + 1].split(',')
+            rules = [r for r in rules if r['id'] in only]
+            if not rules:
+                raise CouldNotRun('--only matched no rule id')
+        if '--replay' in argv:
+            findings, cnr, ok = replay(root, rules)
+            at = (argv[argv.index('--handler-ref') + 1] if '--handler-ref' in argv
+                  else argv[argv.index('--ref') + 1] if '--ref' in argv else 'the working tree')
+            print('FIELD SCOPE REPLAY -- the live path against the handler at %s, %d arm(s) clean' % (at, ok))
+            for x in findings + ['COULD NOT RUN ' + y for y in cnr]:
+                print('  ' + x)
+            return EXIT_FINDING if findings else (EXIT_COULD_NOT_RUN if cnr else EXIT_OK)
         if '--live' in argv:
             findings, cnr, ok = check_live(rules)
             print('FIELD SCOPE LIVE -- %s, %d arm(s) verified' % (LIVE_BASE, ok))

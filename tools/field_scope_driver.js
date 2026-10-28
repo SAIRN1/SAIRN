@@ -101,7 +101,56 @@ async function runCase(handlerPath, c) {
   return { status: res.statusCode, body: res.body };
 }
 
+// ── --serve: the LIVE path, against a handler you choose (cc b63) ─────────
+//   node tools/field_scope_driver.js --serve <config.json>
+// config: { handler, port, app, tables, creds: { <employee_id>: { pin, role } } }
+// Serves POST /api/*-auth {action:'login'} and POST /api/sd-data over HTTP, so
+// `sairn_field_scope_check.py --live` can be pointed at a KNOWN-BAD handler
+// (SAIRN_LIVE_BASE=http://127.0.0.1:<port>) and must report the leak through
+// exactly the code path it uses against the deployed one. A live check that has
+// only ever seen a clean server has proved nothing about what it would catch.
+async function serve(cfgPath) {
+  const http = require('http');
+  const cfg = JSON.parse(require('fs').readFileSync(cfgPath, 'utf8'));
+  const server = http.createServer((req, res) => {
+    let raw = '';
+    req.on('data', (c) => { raw += c; });
+    req.on('end', async () => {
+      const send = (code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
+      let body = {};
+      try { body = raw ? JSON.parse(raw) : {}; } catch (_e) { return send(400, { error: 'bad json' }); }
+      try {
+        if (/-auth$/.test(req.url.split('?')[0])) {
+          const c = cfg.creds[body.employee_id];
+          if (body.action !== 'login' || !c || String(c.pin) !== String(body.pin)) return send(401, { error: { code: 'BAD_LOGIN' } });
+          const auth = require(path.join(path.dirname(cfg.handler), '_lib', 'auth'));
+          return send(200, { ok: true, token: auth.signSessionToken({ app: cfg.app, employee_id: body.employee_id,
+            role: c.role, license_hash: HASH }) });
+        }
+        const token = req.headers['x-sd-auth'] || '';
+        const auth = require(path.join(path.dirname(cfg.handler), '_lib', 'auth'));
+        const sess = auth.verifySessionToken(token, HASH, cfg.app) || { employee_id: '', role: '' };
+        const keep = { log: console.log, warn: console.warn, error: console.error, info: console.info };
+        console.log = console.warn = console.error = console.info = () => {};
+        let out;
+        try {
+          out = await runCase(cfg.handler, { app: cfg.app, role: sess.role, employee_id: sess.employee_id,
+            body, tables: cfg.tables, token });
+        } finally { Object.assign(console, keep); }
+        return send(out.status || 500, out.body);
+      } catch (e) { return send(500, { error: String(e && e.message || e) }); }
+    });
+  });
+  server.listen(cfg.port, '127.0.0.1', () => { process.stdout.write('LISTENING ' + cfg.port + '\n'); });
+}
+
 (async function () {
+  if (process.argv[2] === '--serve') {
+    process.env.SD_AUTH_SECRET = process.env.SD_AUTH_SECRET || 'field-scope-driver-secret';
+    process.env.SUPABASE_URL = process.env.SUPABASE_URL || 'https://field-scope.supabase.co';
+    process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'field-scope-key';
+    return serve(process.argv[3]);
+  }
   process.env.SD_AUTH_SECRET = process.env.SD_AUTH_SECRET || 'field-scope-driver-secret';
   process.env.SUPABASE_URL = process.env.SUPABASE_URL || 'https://field-scope.supabase.co';
   process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'field-scope-key';
