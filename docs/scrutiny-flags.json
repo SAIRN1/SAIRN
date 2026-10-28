@@ -805,6 +805,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sd_data_mech_write_unconfirmed.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "each_occurrence: 1000000, aggregate_limit: 2000000 }],"
+    }
+   ],
+   "sha": "10e914b1c97a062d598fe3492e60e69325517f49",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sairnsenior_negative_hours_claim.js",
    "class": "test file",
    "level": "CHANGE",
@@ -4036,6 +4049,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sd_data_mech_write_unconfirmed.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "4a8920f5855c46ec29a4fab5967f2d876224e273",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/b16-evv-pay-agreement.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -7043,6 +7064,109 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_assertion_label_shape_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold CHANGED",
+     "detail": "was: check('E5b. ...and while that second figure is 0 the limit c  now: section('F. the limit count, the coverage figure and NOT JUD"
+    }
+   ],
+   "sha": "815240d1626e618a7550ac052cda54e0aa9b36c4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_control_char_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "815240d1626e618a7550ac052cda54e0aa9b36c4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_dead_rule_sweep_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "815240d1626e618a7550ac052cda54e0aa9b36c4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_entry_point_scope_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "815240d1626e618a7550ac052cda54e0aa9b36c4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_guard_ablation_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "815240d1626e618a7550ac052cda54e0aa9b36c4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_metamorphic_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "815240d1626e618a7550ac052cda54e0aa9b36c4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_parse_zero_third_state_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "'were judged (M8) -- exit stays 0, it is a coverage limit not a failed read',"
+    }
+   ],
+   "sha": "815240d1626e618a7550ac052cda54e0aa9b36c4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_route_suite_failures_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "absent the tool exits 2 and every routing arm here reports FAIL, not skipped."
+    }
+   ],
+   "sha": "815240d1626e618a7550ac052cda54e0aa9b36c4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_sairn_dead_function_sweep_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "815240d1626e618a7550ac052cda54e0aa9b36c4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_unproven_arm_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "815240d1626e618a7550ac052cda54e0aa9b36c4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_verify_citator_feedback_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "815240d1626e618a7550ac052cda54e0aa9b36c4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/sd-data-scp-session-gate.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -7871,6 +7995,19 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "9136677d5e5c615c5426a786131a3be61a8c7983",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_pure_base_skip_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "\"\"\"Probe: a pure-base push retry never skips the gate over a changed gate."
+    }
+   ],
+   "sha": "91695f6168451fb5fe418aa6bf3b0353883deb31",
    "criteria_version": "2026-10-06.1"
   },
   {

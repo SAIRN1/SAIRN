@@ -104,6 +104,7 @@
       "tools/tooling_inventory.py",
       "tools/unproven_arm_check.py",
       "tools/verify_citator_feedback.py",
+      "tools/write_without_readback_check.py",
       "docs/recurring-bug-classes-2.md",
       "docs/MASTER-PLAN.md",
       "docs/traceability-matrix.md",

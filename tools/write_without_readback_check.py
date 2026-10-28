@@ -751,10 +751,31 @@ def run_fixtures():
                     {k: sorted(v) if isinstance(v, set) else v
                      for k, v in rec.items() if k != 'reads'}
                     if rec else 'audit() returned None'))
+        # M17 (cody b58): the exit turns on TARGETS, not on files with a write.
+        global REPO
+        import contextlib, io
+        empty = tempfile.mkdtemp(prefix='wworb-empty-')
+        plain = os.path.join(d, 'no_writes.html')
+        with open(plain, 'w', encoding='utf-8') as fh:
+            fh.write('<script>var x = 1;</script>')
+        real, out = REPO, io.StringIO()
+        try:
+            REPO = empty
+            with contextlib.redirect_stdout(out):
+                rc_none = main(['wworb'])
+                rc_plain = main(['wworb', plain])
+        finally:
+            REPO = real
+            shutil.rmtree(empty, ignore_errors=True)
+        for held, name in ((rc_none == 2, 'no target at all -> exit 2, never a pass (got %s)' % rc_none),
+                           (rc_plain == 0, 'one write-free target -> exit 0, not "zero scanned" (got %s)' % rc_plain)):
+            print('  %s %-12s %s' % ('ok  ' if held else 'FAIL', 'M17', name))
+            if not held:
+                bad.append('M17 / ' + name)
     finally:
         shutil.rmtree(d, ignore_errors=True)
-    print('\n%d of %d fixture(s) hold' % (len(FIXTURES) - len(bad),
-                                          len(FIXTURES)))
+    print('\n%d of %d fixture(s) hold' % (len(FIXTURES) + 2 - len(bad),
+                                          len(FIXTURES) + 2))
     if bad:
         print('THE MEASUREMENT IS REFUSED -- a tool whose own criteria do not '
               'classify its\nown fixtures correctly cannot be trusted about '
@@ -816,13 +837,20 @@ def main(argv):
     # `docs/` during the tools/ half of the self-referential-guard sweep; it
     # was the only one of four checkers tried that way with no count anywhere
     # in its output. The two zeros here are what make the difference visible.
-    print('\nFILES SCANNED: %d (of %d target(s) named or globbed)'
-          % (len(results), len(targets)))
-    if not results:
+    # FILES WITH A WRITE ARE NOT FILES SCANNED (cody b58, M17). This printed
+    # "FILES SCANNED: len(results)", but `results` holds only files that HAVE a
+    # write, so a correct scan of write-free files said "ZERO files were
+    # scanned" -- and a truly empty target list said the same and exited 0.
+    # b55 tried `if not results: return 2` and reverted it for exactly that
+    # reason; the could-not-run case is an empty TARGET list.
+    print('\nFILES SCANNED: %d target(s) named or globbed, %d with a write'
+          % (len(targets), len(results)))
+    if not targets:
         print('      ZERO files were scanned, so nothing above is a pass. The '
               'default target')
         print('      list is `*.html` in the CURRENT directory -- run this from '
               'the repo root.')
+        return 2
     print('\nNOTE: this cannot tell whether a read is ever CALLED. A hydrate that')
     print('      exists and is never invoked reads clean here -- see')
     print('      tools/sairn_reachability_check.py for that question.')
