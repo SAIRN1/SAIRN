@@ -12453,6 +12453,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": ".githooks/pre-push",
+   "class": "CI / hook configuration",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold CHANGED",
+     "detail": "was: tools/push_timeout_guard.py; do  now: tools/push_timeout_guard.py tools/claim_state_recheck.py; do"
+    }
+   ],
+   "sha": "d7e8f5d9ae05e74d5f7f6fa3819ecdc87ac17abb",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/sairn_push_gate_hook.py",
    "class": "push-gate logic",
    "level": "WEAKENING",
