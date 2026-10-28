@@ -231,6 +231,36 @@ def index_identifiers(code):
     return idx
 
 
+RUNAWAY_MARGIN_PP = 5.0   # measured slack on all 22 apps, b59: 0.0 to +0.5 points
+# A block comment counts only when it OPENS AT THE START OF A LINE and closes
+# within 20,000 characters. The runaway this guards against opened MID-LINE,
+# inside a regex literal (`image/*`, a `/\*/` pattern), so it cannot be one.
+_LINE_BLOCK = re.compile(r'(?m)^[ \t]*/\*.{0,20000}?\*/', re.S)
+_LINE_SLASH = re.compile(r'(?m)^[ \t]*//[^\n]*')
+
+
+def _nonws(s):
+    return sum(1 for ch in s if not ch.isspace())
+
+
+def comment_estimate(raw):
+    """Percent of the file that is comment, counted WITHOUT strip_comments() or
+    jscomments: in scripts, block comments that open at a line start and whole
+    `//` lines; outside scripts, HTML comments. It misses trailing comments, so
+    it reads a little low -- the margin is for that."""
+    seen = pos = 0
+    for m in SCRIPT_BLOCK.finditer(raw):
+        seen += sum(_nonws(c.group(0)) for c in re.finditer(r'<!--.*?-->', raw[pos:m.start()], re.S))
+        js = m.group(2)
+        mask = bytearray(len(js))
+        for c in list(_LINE_BLOCK.finditer(js)) + list(_LINE_SLASH.finditer(js)):
+            mask[c.start():c.end()] = b'\x01' * (c.end() - c.start())
+        seen += sum(1 for i, ch in enumerate(js) if mask[i] and not ch.isspace())
+        pos = m.end()
+    seen += sum(_nonws(c.group(0)) for c in re.finditer(r'<!--.*?-->', raw[pos:], re.S))
+    return 100.0 * seen / max(1, len(raw))
+
+
 class UntrustedStrip(Exception):
     """Comment stripping blanked past the size guard. The file's findings are
     NOT a result -- raised rather than printed, so no caller can count them."""
@@ -242,19 +272,33 @@ def sweep(path):
     # Size guard. A runaway comment match is silent and catastrophic -- it does
     # not error, it just deletes identifiers and turns live functions into
     # findings. 80.5% of sairncare.html vanished this way and the run still
-    # exited 0. Real comment density in these files is single-digit percent, so
-    # anything past 25% means a delimiter ran away and the output must not be
-    # read as a result.
+    # exited 0.
+    #
+    # ── A FIXED 25% STOPPED MEANING "RUNAWAY" (cody b59) ─────────────────────
+    # This said "real comment density in these files is single-digit percent,
+    # so anything past 25% means a delimiter ran away". Measured 2026-10-28 it
+    # is not: sairnbiz 31.0%, sairncash 30.0%, sairnsenior 25.5% blanked, and
+    # an independent whole-line count of comment lines gives 30.5 / 29.8 / 25.0
+    # -- within 0.5 points. Every code-shaped string in the blanked text was
+    # inside a `//` comment. Real prose, not a runaway; the guard was refusing
+    # three correct strips and would refuse more as comments grow.
+    #
+    # So the guard now asks the question it exists for: did the strip blank
+    # MORE than the comments an independent count can see? That count does not
+    # use strip_comments() or jscomments, so a delimiter that runs away in the
+    # stripper does not run away in it too.
     blanked = sum(1 for a, b in zip(raw, code) if a != b)
     pct = 100.0 * blanked / max(1, len(raw))
+    expected = comment_estimate(raw)
     #
     # RAISED, NOT PRINTED (M20, 2026-10-28). This used to print a WARNING and
     # then carry on: the file still printed `clean`, its counts went into
     # TOTAL_*, and the run exited 0 -- the guard's own verdict was ignored by
     # the line after it.
-    if pct > 25:
-        raise UntrustedStrip('comment stripping blanked %.1f%% of the file -- '
-                             'a delimiter has almost certainly run away' % pct)
+    if pct > expected + RUNAWAY_MARGIN_PP:
+        raise UntrustedStrip('comment stripping blanked %.1f%% of the file, but an '
+                             'independent count finds only %.1f%% in comment lines -- '
+                             'a delimiter has almost certainly run away' % (pct, expected))
     defs = definitions(code)
     idx = index_identifiers(code)
     dead, export_only = [], []
