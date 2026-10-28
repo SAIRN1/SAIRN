@@ -691,6 +691,15 @@ def derive_closure_states(rows):
                             proposed_rule='fix-phrase-in-sentence',
                             proposed_evidence_seq=later_seq)
         out[seq] = row
+    # b91: a HUMAN rejection of a derived proposal. A proposal is still only a proposal, and a
+    # reader who followed its evidence seq and found it unrelated says so on the chain with
+    # --rejects-proposal; the next backfill then does not offer it again. State is untouched: only
+    # the proposal is dropped, and the rejecting note's seq is kept so the drop is auditable.
+    for r in rows:
+        for n in (r.get('rejects_proposal') or []):
+            if n in out and out[n].get('proposed'):
+                out[n].update(proposed=None, proposed_rule=None, proposed_evidence_seq=None,
+                              proposal_rejected_by=r['seq'])
     return out
 
 
@@ -1166,6 +1175,25 @@ def cmd_add(argv):
     # one. undirected_sweep_freshness.py reads this field, never the prose.
     is_undirected_sweep = '--undirected-sweep' in argv
 
+    rejects_raw = opt('--rejects-proposal', required=False, default='') or ''
+    rejects = []
+    if rejects_raw:
+        if etype != 'note':
+            print('--rejects-proposal only makes sense on --type note (a human reading the evidence seq '
+                  'and saying the derived proposal is wrong); nothing was appended')
+            return EXIT_COULD_NOT_RUN
+        try:
+            rejects = sorted({int(x) for x in rejects_raw.split(',') if x.strip()})
+        except ValueError:
+            print('--rejects-proposal takes finding seq numbers, comma separated; nothing was appended')
+            return EXIT_COULD_NOT_RUN
+        known = {r['seq'] for r in prior if r.get('type') == 'finding'}
+        unknown = [n for n in rejects if n not in known]
+        if not rejects or unknown:
+            print('--rejects-proposal names %s, which is not a finding in this log; a rejection of '
+                  'nothing would look like a real one forever in an append-only log. Nothing was appended.'
+                  % (unknown or rejects_raw))
+            return EXIT_COULD_NOT_RUN
     detection_method = opt('--detection-method', required=False, default='') or ''
     if detection_method and detection_method not in DETECTION_METHODS:
         print('--detection-method must be one of %s (got %r); nothing was appended'
@@ -1437,6 +1465,8 @@ def cmd_add(argv):
     }
     if detection_method:
         entry['detection_method'] = detection_method
+    if rejects:
+        entry['rejects_proposal'] = rejects
     entry['hash'] = digest_of(prev_hash, entry)
 
     with open(LOG_PATH, 'a', encoding='utf-8') as f:
@@ -2115,6 +2145,62 @@ def run_detection_method_fixtures():
 
 
 
+def run_rejection_fixtures():
+    """b91: --rejects-proposal and its effect on the derivation. Isolated LOG_PATH."""
+    global LOG_PATH
+    import contextlib
+    import io
+    import tempfile
+    ok = [0]
+    bad = [0]
+
+    def ck(name, cond):
+        if cond:
+            ok[0] += 1
+            print('  ok   ' + name)
+        else:
+            bad[0] += 1
+            print('  FAIL ' + name)
+
+    rows = [
+        {'seq': 1, 'type': 'finding', 'target': 'fourth', 'summary': 'the thing is broken', 'routable': []},
+        {'seq': 2, 'type': 'check', 'target': 'self', 'summary': 'unrelated tool fixed, seq 1 is where it was noticed', 'routable': []},
+    ]
+    d0 = derive_closure_states(rows)
+    ck('RJ1 BEFORE: the derivation proposes fixed-unverified for seq 1 from the unrelated seq 2 (the false match)',
+       d0[1]['proposed'] == 'fixed-unverified' and d0[1]['proposed_evidence_seq'] == 2)
+    rows.append({'seq': 3, 'type': 'note', 'target': 'self', 'summary': 'seq 2 is the beacon fix, not seq 1',
+                 'routable': [], 'rejects_proposal': [1]})
+    d1 = derive_closure_states(rows)
+    ck('RJ2 AFTER a rejecting note: no proposal, the structural state is unchanged, the rejecting seq is recorded',
+       d1[1]['proposed'] is None and d1[1]['state'] == 'routed' and d1[1].get('proposal_rejected_by') == 3)
+
+    real = LOG_PATH
+    tmpdir = tempfile.mkdtemp(prefix='hover-rj-')
+    try:
+        LOG_PATH = os.path.join(tmpdir, 'rj-log.jsonl')
+        sink = io.StringIO()
+        with contextlib.redirect_stdout(sink):
+            cmd_add(['--add', '--type', 'finding', '--target', 'self', '--summary', 'f one'])
+            rc_ok = cmd_add(['--add', '--type', 'note', '--target', 'self', '--summary', 'reject one',
+                             '--rejects-proposal', '1'])
+            rc_bad = cmd_add(['--add', '--type', 'note', '--target', 'self', '--summary', 'reject nothing',
+                              '--rejects-proposal', '99'])
+            rc_type = cmd_add(['--add', '--type', 'check', '--target', 'self', '--summary', 'wrong type',
+                               '--rejects-proposal', '1'])
+        got = [json.loads(x) for x in open(LOG_PATH, encoding='utf-8') if x.strip()]
+        ck('RJ3 --rejects-proposal on a note naming an existing finding is stored as a list', rc_ok == EXIT_CLEAN
+           and got[1].get('rejects_proposal') == [1])
+        ck('RJ4 a rejection of a seq that is not a finding is REFUSED and nothing is appended', rc_bad == EXIT_COULD_NOT_RUN
+           and len(got) == 2)
+        ck('RJ5 --rejects-proposal on a check (not a note) is REFUSED', rc_type == EXIT_COULD_NOT_RUN and len(got) == 2)
+    finally:
+        LOG_PATH = real
+    print('%d ok, %d failed' % (ok[0], bad[0]))
+    return not bad[0]
+
+
+
 def run_closure_state_fixtures():
     """derive_closure_states() is pure over a list of rows -- no I/O, no
     git, no LOG_PATH. Every arm below is a hand-built row list, and the
@@ -2284,7 +2370,9 @@ def main(argv):
         ok_class = run_finding_class_fixtures()
         print()
         ok_dm = run_detection_method_fixtures()
-        return (EXIT_CLEAN if (ok_stale and ok_rotation and ok_closure and ok_class and ok_dm)
+        print()
+        ok_rj = run_rejection_fixtures()
+        return (EXIT_CLEAN if (ok_stale and ok_rotation and ok_closure and ok_class and ok_dm and ok_rj)
                 else EXIT_FINDING_OR_BROKEN)
     # ── THE TWO h1 b32 GUARDS, BEFORE ANY REAL DISPATCH ────────────────────
     # Skipped only for --selftest above, which monkeypatches LOG_PATH itself

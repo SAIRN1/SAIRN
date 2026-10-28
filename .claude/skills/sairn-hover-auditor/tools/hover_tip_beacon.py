@@ -181,6 +181,31 @@ def anchor_payload(tip, total_entries, now):
     }
 
 
+def mirror_to_drive(text):
+    """(ok, message). The Drive-mounted copy cc's board reads. b91: this was inline in
+    cmd_publish only, so hover_backup_mirror.refresh_beacon(), which re-implements the first
+    half of cmd_publish, never mirrored: every mirror push since b38 left the Drive copy at
+    whatever the last hand-run --publish wrote (seq 1592, 2026-10-19, against a log at 1725).
+    Non-fatal and loud, exactly as it was: the message says which of the three things happened."""
+    drive_path = _drive_beacon_path()
+    try:
+        ddir = os.path.dirname(drive_path)
+        if ddir and not os.path.isdir(ddir):
+            os.makedirs(ddir)
+        io.open(drive_path, 'w', encoding='utf-8', newline='\n').write(text)
+        mirrored = io.open(drive_path, encoding='utf-8').read()
+        if mirrored != text:
+            return False, ('DRIVE MIRROR NOT CONFIRMED: wrote %s but the read-back is '
+                           'not byte-identical -- the local beacon above is still '
+                           "correct; the Drive-hosted copy cc's board reads may still "
+                           'be stale.' % drive_path)
+        return True, 'drive-mirrored: %s' % drive_path
+    except OSError as exc:
+        return False, ('DRIVE MIRROR NOT WRITTEN (non-fatal -- the local beacon above '
+                       'is still correct and this publish still counts): %s -- %s'
+                       % (drive_path, exc))
+
+
 def cmd_publish(argv):
     try:
         entries = read_all()
@@ -228,24 +253,7 @@ def cmd_publish(argv):
     # mounted-drive hiccup (unmounted, offline, permissions) must not block
     # a real publish from reporting success for the part that worked. Loud
     # either way, never silent -- see _drive_beacon_path()'s docstring.
-    drive_path = _drive_beacon_path()
-    try:
-        ddir = os.path.dirname(drive_path)
-        if ddir and not os.path.isdir(ddir):
-            os.makedirs(ddir)
-        io.open(drive_path, 'w', encoding='utf-8', newline='\n').write(text)
-        mirrored = io.open(drive_path, encoding='utf-8').read()
-        if mirrored != text:
-            print('DRIVE MIRROR NOT CONFIRMED: wrote %s but the read-back is '
-                  'not byte-identical -- the local beacon above is still '
-                  "correct; the Drive-hosted copy cc's board reads may still "
-                  'be stale.' % drive_path)
-        else:
-            print('drive-mirrored: %s' % drive_path)
-    except OSError as exc:
-        print('DRIVE MIRROR NOT WRITTEN (non-fatal -- the local beacon above '
-              'is still correct and this publish still counts): %s -- %s'
-              % (drive_path, exc))
+    print(mirror_to_drive(text)[1])
     if '--anchor' in argv:
         payload = anchor_payload(tip, len(entries), now)
         # ONE line, machine-parseable, so the driving session does not have

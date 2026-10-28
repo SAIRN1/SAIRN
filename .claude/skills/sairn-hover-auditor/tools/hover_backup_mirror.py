@@ -561,7 +561,8 @@ def refresh_beacon():
         io.open(TB.BEACON_PATH, 'w', encoding='utf-8', newline='\n').write(text)
     except OSError as e:
         return False, 'could not write TIP-BEACON.md -- %s' % e
-    return True, 'seq=%d hash=%s total=%d' % (tip['seq'], tip['hash'], len(entries))
+    ok_m, msg_m = TB.mirror_to_drive(text)
+    return True, 'seq=%d hash=%s total=%d | %s' % (tip['seq'], tip['hash'], len(entries), msg_m)
 
 
 def cmd_push():
@@ -1210,6 +1211,11 @@ def run_fixtures():
     # cmd_selftest already uses (patch TB.BEACON_PATH/TB.LOG_PATH AND
     # hover_log.LOG_PATH, restore both in a finally).
     scratch = tempfile.mkdtemp(prefix='beacon_refresh_fx_')
+    # b91: refresh_beacon() now mirrors to the Drive mount, so the WHOLE block runs with the mount
+    # redirected into the scratch dir; the real mount is never a target of a fixture.
+    _had_drive = 'HOVER_BEACON_DRIVE_DIR' in os.environ
+    _real_drive = os.environ.get('HOVER_BEACON_DRIVE_DIR')
+    os.environ['HOVER_BEACON_DRIVE_DIR'] = os.path.join(scratch, 'drive-mirror')
     real_beacon, real_tb_log = TB.BEACON_PATH, TB.LOG_PATH
     import hover_log as HL
     real_hl_log = HL.LOG_PATH
@@ -1239,6 +1245,17 @@ def run_fixtures():
         ok_r, detail_r = refresh_beacon()
         ck('refresh_beacon() succeeds against a real scratch log',
            ok_r and 'seq=1' in detail_r and e1['hash'][:12] in detail_r)
+        ck('b91: refresh_beacon() ALSO mirrors the same bytes to the Drive mount (redirected to scratch here)',
+           os.path.isfile(os.path.join(scratch, 'drive-mirror', 'TIP-BEACON.md'))
+           and io.open(os.path.join(scratch, 'drive-mirror', 'TIP-BEACON.md'), encoding='utf-8').read()
+           == io.open(TB.BEACON_PATH, encoding='utf-8').read() and 'drive-mirrored' in detail_r)
+        _blocker = os.path.join(scratch, 'not-a-dir')
+        io.open(_blocker, 'w').write('x')
+        os.environ['HOVER_BEACON_DRIVE_DIR'] = os.path.join(_blocker, 'hover-chain-h1')
+        ok_blk, detail_blk = refresh_beacon()
+        os.environ['HOVER_BEACON_DRIVE_DIR'] = os.path.join(scratch, 'drive-mirror')
+        ck('b91: an unwritable Drive mount is NON-FATAL for the refresh (the local beacon is the one the push needs) but is NAMED in the detail, never silent',
+           ok_blk and 'DRIVE MIRROR NOT WRITTEN' in detail_blk)
         ck('...and TIP-BEACON.md on disk actually carries that tip',
            os.path.isfile(TB.BEACON_PATH) and
            e1['hash'] in io.open(TB.BEACON_PATH, encoding='utf-8').read())
@@ -1287,6 +1304,10 @@ def run_fixtures():
     finally:
         TB.BEACON_PATH, TB.LOG_PATH = real_beacon, real_tb_log
         HL.LOG_PATH = real_hl_log
+        if _had_drive:
+            os.environ['HOVER_BEACON_DRIVE_DIR'] = _real_drive
+        else:
+            os.environ.pop('HOVER_BEACON_DRIVE_DIR', None)
         shutil.rmtree(scratch, ignore_errors=True)
 
     print('%d ok, %d failed' % (ok[0], bad[0]))
