@@ -39099,6 +39099,95 @@
         }
       ],
       "recurrence_open": "Other consumers of FLAKY.classify or of report_only_checks --json output may have the same default-to-best or stdout-pollution shape; not swept."
+    },
+    {
+      "commit": "0b1746772917",
+      "date": "2026-10-28",
+      "subject": "fix(tools, cody b55): three of my own tools read a run that did not happen as a clean one",
+      "files": [
+        "tests/run_register_freshness_probe.py",
+        "tools/dead_rule_sweep.py",
+        "tools/register_freshness_check.py",
+        "tools/rework_tracker.py"
+      ],
+      "lines_added": 125,
+      "lines_removed": 14,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "Three cody-owned tools read work that did not run as clean: rework_tracker split git log on a doubled separator that only follows empty-bodied commits, reading 3,524 of 10,587 commits with no unread reason (events 127 -> 456 fixed); dead_rule_sweep counted a timed-out/crashed ablation run as LIVE and exited 0 CLEAN on --tool typo.py and on an empty --segment slice; register_freshness_check exited 0 with one register missing, with a register parsing to zero rows, and with UNVERIFIABLE cites and nothing drifted.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Three tools, three separate origins; not traced."
+      },
+      "citation_note": "PR 1.11 (could-not-run is a third state) names the shape; no rule covers record-splitting a git log stream or a segment slice after the empty check.",
+      "contributing_factors": [
+        {
+          "factor": "Each tool guarded the empty/failed case at one point (before a slice, when both registers failed, on rc of git log) and not at the point the population actually became empty or partial.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Guards moved to after the population is final; parsed count checked against git rev-list --count; probe and fixture arms fail against HEAD."
+        },
+        {
+          "factor": "The b52-b54 sweeps traced ratios, not exit paths of not-run states, so these were outside what was swept.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "b55 item 5 swept all 41 cody-owned tools for not-run-as-pass exit paths."
+        }
+      ],
+      "recurrence_open": "41 MEDIUM/LOW hits from the b55 sweep remain (handoff lists them); checker_kit.tracked() ignores git's exit code for every caller."
+    },
+    {
+      "commit": "9d8d56d3cd37",
+      "date": "2026-10-28",
+      "subject": "fix(tools, cody b55): six more of my tools could exit 0, or publish a pass, for work that did not run",
+      "files": [
+        "tests/run_eaten_substitution_probe.py",
+        "tools/eaten_substitution_check.py",
+        "tools/git_config_isolation.py",
+        "tools/hover_separation_audit.py",
+        "tools/master_plan.py",
+        "tools/metamorphic_check.py",
+        "tools/service_role_tier_a_gate_check.py"
+      ],
+      "lines_added": 103,
+      "lines_removed": 10,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "Six cody-owned tools could exit 0 or publish a pass for work that did not run: metamorphic_check (zero targets CLEAN; --json skipped the rewording family), master_plan (criticality_tier_check exit never read, every app published TIERED if it could not finish), service_role_tier_a_gate_check (empty Tier A set or empty api/ list CLEAN), eaten_substitution_check (NOTHING WAS SCANNED then EXIT_CLEAN), git_config_isolation (--rc-file write failure exit 0; refusal text omitted --rc-file so wrapped verdicts read as 0), hover_separation_audit (failed git show read as in-scope).",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Six tools, separate origins; not traced."
+      },
+      "citation_note": "PR 1.11 names could-not-run folded into pass; no rule names an unread subprocess exit code in a generator.",
+      "contributing_factors": [
+        {
+          "factor": "Subprocess exit codes were dropped and the empty output read as an empty population or as no complaints.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Exit codes read; zero populations refused; arms added where drivable."
+        },
+        {
+          "factor": "Two probes (eaten C4/C5) had been red because a sliding last-3000 window outgrew the recorded commits, and nothing distinguished that from a tool regression.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Recorded commits found by subject in full history."
+        }
+      ],
+      "recurrence_open": "checker_kit.tracked() still ignores git's exit code (shared, cc); remaining MEDIUM/LOW hits listed in the b55 handoff."
     }
   ],
   "started": "2026-09-09",
