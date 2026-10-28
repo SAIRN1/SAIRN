@@ -129,10 +129,28 @@ ok('C3 the shape is rare in real commit bodies -- 5 or fewer in 3,000',
 subjects = ' || '.join(s for _, s in flagged)
 # Matched on SUBJECT, not SHA: four clones rebase constantly and a pasted SHA
 # names a commit that stops existing. The subject survives a rebase.
+# FOUND BY SUBJECT IN THE WHOLE HISTORY, THEN SCANNED ALONE (cody b55). These
+# arms looked for the two instances inside the LAST 3,000 commits, and the
+# history has since grown past them -- red since they left the window, with
+# nothing wrong in the tool. A window that slides is a citation that rots.
+def _recorded(subject_part):
+    g = subprocess.run(['git', 'log', '--format=%H', '-F', '--grep',
+                        subject_part, '-1'], cwd=REPO, capture_output=True,
+                       encoding='utf-8', errors='replace')
+    sha = (g.stdout or '').strip()
+    if g.returncode != 0 or not sha:
+        return None, 'not found in history (git exit %d)' % g.returncode
+    one, e = T.commits('%s^..%s' % (sha, sha), 1)
+    if e or not one:
+        return None, e or 'read nothing'
+    return bool(T.scan(one[0][2])), one[0][1]
+
+_c4, _c4why = _recorded('pin the clock freeze the watchdog suite')
 ok('C4 it still finds the cron clock-freeze commit item 18 records',
-   'pin the clock freeze the watchdog suite' in subjects, subjects[:300])
+   _c4 is True, _c4why)
+_c5, _c5why = _recorded('item 41 poka-yoke review')
 ok('C5 ...and the poka-yoke review commit, the other recorded instance',
-   'item 41 poka-yoke review' in subjects, subjects[:300])
+   _c5 is True, _c5why)
 
 # ── D. could-not-run is a third state and is never folded into clean ──────
 # DRIVEN BY BEHAVIOUR, NOT BY GREPPING THE SOURCE. A first draft of this
@@ -198,6 +216,10 @@ p2 = subprocess.run([sys.executable,
 out2 = (p2.stdout or '') + (p2.stderr or '')
 ok('E5 an empty range reports NOTHING WAS SCANNED rather than a bare clean line',
    'NOTHING WAS SCANNED' in out2, out2[:300])
+# cody b55: E5 checked the words and not the exit code, which was 0.
+ok('E5b ...and exits 2 COULD NOT RUN, not 0 -- the sentence says the check '
+   'did not run, so the exit code must too', p2.returncode == 2,
+   'exit %d' % p2.returncode)
 
 p3 = subprocess.run([sys.executable,
                      os.path.join(REPO, 'tools', 'eaten_substitution_check.py'),

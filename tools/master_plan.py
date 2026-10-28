@@ -179,6 +179,11 @@ def tiered_apps():
                        cwd=REPO, capture_output=True, text=True,
                        encoding='utf-8', errors='replace', timeout=600)
     out = (p.stdout or '') + (p.stderr or '')
+    # 0 clean, 1 findings -- anything else did not finish judging, and is
+    # (None, reason, output) so the caller refuses rather than reading the
+    # absence of complaints as tiered.
+    if p.returncode not in (0, 1):
+        return None, 'exit %d' % p.returncode, out
     # A per-app complaint names the app. No complaint for an app that HAS
     # resources means it is tiered. Reported as (clean_overall, {app: problem}).
     problems = {}
@@ -471,6 +476,15 @@ def build():
                       'The resource counts are the spine of this document and '
                       'guessing them is the failure it exists to end.' % e)
     tier_clean, tier_problems, _tier_out = tiered_apps()
+    # cody b55: only BAD TIER / NO TIER / half-tiered lines became problems,
+    # and the exit code was never read -- so a criticality_tier_check that
+    # could not run (exit 2, a lock failure, a traceback) printed none of
+    # them and every app was published TIERED.
+    if tier_clean is None:
+        return None, ('REFUSING to generate -- criticality_tier_check.py did '
+                      'not complete (%s), so no app can be shown as tiered.\n'
+                      'Its last lines:\n%s'
+                      % (tier_problems, '\n'.join(_tier_out.splitlines()[-5:])))
     (faults, fault_declarers, fault_too_broad, fault_unattributed,
      fault_named_unresolved) = fault_probes()
     suites = suites_by_app(tests, names)

@@ -698,8 +698,14 @@ def app_targets(limit, max_bytes=None):
     quietly skips the biggest app is the truncation shape this platform keeps
     finding.
     """
-    out = subprocess.run(['git', 'ls-files', '*.html'], cwd=REPO,
-                         capture_output=True, text=True, encoding='utf-8', errors='replace').stdout
+    r = subprocess.run(['git', 'ls-files', '*.html'], cwd=REPO,
+                       capture_output=True, text=True, encoding='utf-8', errors='replace')
+    # cody b55: the exit code was not read, so a failed ls-files was an empty
+    # target list, and measure([]) reported nothing could-not-run: CLEAN.
+    if r.returncode != 0:
+        raise RuntimeError('git ls-files exited %d: %s'
+                           % (r.returncode, (r.stderr or '').strip()[:200]))
+    out = r.stdout or ''
     roots = [f for f in out.split('\n') if f.strip() and '/' not in f]
     roots.sort(key=lambda f: -os.path.getsize(os.path.join(REPO, f)))
     too_big = []
@@ -1299,19 +1305,37 @@ def main(argv):
                   'would mean something.')
         return 0
 
-    targets, too_big, skipped = app_targets(
-        None if args.all else args.targets, args.max_bytes or None)
+    try:
+        targets, too_big, skipped = app_targets(
+            None if args.all else args.targets, args.max_bytes or None)
+    except RuntimeError as e:
+        print('COULD NOT RUN -- the target list could not be derived: %s' % e)
+        return EXIT_COULD_NOT_RUN
     rows, could_not_run = measure(targets)
+    # cody b55: zero targets (everything over --max-bytes, or --targets 0) was
+    # measure([]) -> no rows, no could-not-run -> CLEAN, exit 0.
+    if not targets:
+        could_not_run = could_not_run + [
+            'ZERO targets were measured (%d over the size cap) -- a run over '
+            'no app is not clean' % len(too_big)]
     violations = [r for r in rows if not r['holds']]
 
     if args.json:
+        # cody b55: --json returned HERE, before the rewording family ever
+        # ran, and exited 0 with half the run not done and not mentioned.
+        p_findings, p_cnr = (([], []) if args.no_prose
+                             else _prose_report(True))
+        could_not_run = could_not_run + p_cnr
         print(json.dumps({'locked': True, 'lock_rows': lock_rows,
                           'targets': targets, 'not_covered': skipped,
                           'over_size_cap': too_big,
                           'max_bytes': args.max_bytes or None,
                           'comparisons': rows,
+                          'rewording_run': not args.no_prose,
+                          'rewording_findings': p_findings,
                           'could_not_run': could_not_run}, indent=1))
-        return EXIT_COULD_NOT_RUN if could_not_run else (1 if violations else 0)
+        return EXIT_COULD_NOT_RUN if could_not_run else (
+            1 if (violations or p_findings) else 0)
 
     if not quiet:
         print('  checkers under test : %d  (those taking the file as argv[1])'

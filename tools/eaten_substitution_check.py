@@ -318,7 +318,10 @@ def main(argv):
         print('  NOTHING WAS SCANNED. An empty range is not a clean result --')
         print('  it is a check that did not run. If this was the default')
         print('  range, the branch is level with its upstream.')
-        return EXIT_CLEAN
+        # cody b55: this said all of the above and then returned EXIT_CLEAN.
+        # The registry runs it with -n 40, which is never empty, so only a
+        # caller passing an empty range sees the change.
+        return EXIT_COULD_NOT_RUN
 
     if not findings and not mid:
         print('')

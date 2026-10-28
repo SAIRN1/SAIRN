@@ -1065,6 +1065,13 @@ def _selflog_one(rows, path, session, hover_commits, violations, could_not_run):
         log_bad = []
         for short, full in sorted(resolved.items()):
             code, out, _ = git('show', '--name-only', '--format=', full)
+            # cody b55: the exit code was dropped, so a failed show was an
+            # EMPTY file list -- nothing outside scope -- and read as in-scope.
+            if code != 0:
+                could_not_run.append('git show %s exited %d -- its files are '
+                                     'unknown, so its scope was not judged'
+                                     % (short, code))
+                continue
             files = [l.strip().replace('\\', '/') for l in out.split('\n') if l.strip()]
             outside = [p for p in files if not in_auditor_scope(p)]
             if outside:

@@ -454,9 +454,22 @@ def main(argv=None):
         print('COULD NOT RUN: %s is unreadable, so no resource is known to be '
               'Tier A and every verdict below would be vacuous.' % TIERS_DOC)
         return EXIT_COULD_NOT_RUN
+    # cody b55: only None was refused. An EMPTY set (the register's row shape
+    # drifted) made every classify() return None, and the run said "CLEAN --
+    # ran fully", exit 0.
+    if not t:
+        print('COULD NOT RUN: %s parsed to ZERO Tier A resources, so every '
+              'verdict below would be vacuous.' % TIERS_DOC)
+        return EXIT_COULD_NOT_RUN
     TIER_A = t
 
     files, notes = tracked('api/*.js', 'api/**/*.js')
+    # tracked() does not read git's exit code (checker_kit, shared -- routed),
+    # so a failed ls-files is an empty list here. api/ is never empty.
+    if not files:
+        print('COULD NOT RUN: no tracked api/*.js file was listed -- git '
+              'failed or the tree is not this repo. Nothing was scanned.')
+        return EXIT_COULD_NOT_RUN
     findings, could_not_run, rows = [], [], []
     for rel in files:
         if rel.endswith('.test.js'):

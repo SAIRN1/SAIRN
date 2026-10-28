@@ -136,7 +136,11 @@ worktree add refuse, so one dead probe blocks an unrelated run.
 
 Run it through the guard instead, which snapshots and restores:
 
-  python tools/git_config_isolation.py -- python tools/%s <args>
+  python tools/git_config_isolation.py --rc-file <path> -- python tools/%s <args>
+
+The guard's OWN exit is about .git/config and .git/worktrees only -- it is 0
+whatever the wrapped tool returned. The tool's verdict is the number written
+to --rc-file; without it a red or COULD-NOT-RUN sweep reads as exit 0.
 
 Exit 2 COULD NOT RUN, deliberately: a refusal that exited 0 would be
 indistinguishable from a sweep that found nothing.
@@ -269,7 +273,13 @@ def run_guarded(cmd, repo, rc_file=None, quiet=False):
                 with io.open(rc_file, 'w', encoding='utf-8') as fh:
                     fh.write('%d\n' % inner)
             except (IOError, OSError) as exc:
-                say('  (could not write --rc-file: %s)' % exc)
+                # cody b55: this was a parenthesis and the guard went on to
+                # exit 0 -- so a caller reading the file got the PREVIOUS
+                # run's verdict, or none, and the guard said nothing failed.
+                say('COULD NOT RUN: --rc-file could not be written (%s), so '
+                    'the wrapped command exit %d is lost to the caller.'
+                    % (exc, inner))
+                return 2
 
         gl = env['GIT_CONFIG_GLOBAL']
         if os.path.exists(gl):
