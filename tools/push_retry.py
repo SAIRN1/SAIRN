@@ -194,12 +194,17 @@ def accumulated_losses(before, after):
 STATE_FILE = os.path.join(REPO, '.git', 'push_retry_safe_subjects.json')
 
 
-def git(*args):
+def git(*args, timeout=120):
     """(exit, stdout, stderr). Never raises -- the caller decides what a
-    failure means, and for this tool it usually means REFUSE."""
+    failure means, and for this tool it usually means REFUSE.
+
+    `timeout=None` for a PUSH (b61). The push gate writes mutants into tracked
+    files and restores them in `finally`; 120 s killed a push whose gate runs
+    for minutes, and a kill skips the restore. tools/push_timeout_guard.py
+    --scan flags any push through this helper that does not pass None."""
     try:
         p = subprocess.run(['git'] + list(args), cwd=REPO, capture_output=True,
-                           timeout=120)
+                           timeout=timeout)
         return (p.returncode,
                 (p.stdout or b'').decode('utf-8', 'replace').strip(),
                 (p.stderr or b'').decode('utf-8', 'replace').strip())
@@ -1057,7 +1062,7 @@ def cmd_loop(attempts):
             _f, _why = _regenerate_and_fold()
             if _f:
                 print('  regenerated documents folded into your own commit')
-        prc, pout, perr = git('push', 'origin', 'main')
+        prc, pout, perr = git('push', 'origin', 'main', timeout=None)
         if prc == 0:
             print('PUSHED')
             return 0
