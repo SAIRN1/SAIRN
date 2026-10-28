@@ -39215,7 +39215,7 @@
       "factors_unknown_reason": "the git() helper's 120 s timeout was right for every read and wrong for the one push, and nothing looked at the two lines together until the b61 scan"
     },
     {
-      "commit": "ef444cc6802d",
+      "commit": "c2b3a90bbc22",
       "date": "2026-10-28",
       "subject": "fix(sairnsenior, cc b67): H1 #1756 -- a caregiver device purges colleagues' cached caregiver rows and the withheld HR fields on merge",
       "files": [

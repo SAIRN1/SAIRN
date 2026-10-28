@@ -11941,6 +11941,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairnsenior_caregiver_scope_purge.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c2b3a90bbc22dd7bf46a6fcfde40c654845be300",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_defect_register_superseded_probe.py",
    "class": "test file",
    "level": "CHANGE",
