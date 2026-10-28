@@ -4722,8 +4722,8 @@
       "task": "push_retry pure-base fast retry C1",
       "claimed_at": "2026-10-28T21:31:49Z",
       "claimed_at_epoch": 1793223109.1319895,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-28T21:51:38Z",
       "files": null
     }
   ],
