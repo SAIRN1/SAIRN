@@ -1575,11 +1575,14 @@ function senData(action,resource,payload,withSession){
         return null;
       }
       delete senLastErr[resource];
-      // The read envelope's scope declarations, kept per resource (cc b67,
-      // H1 #1756). The server says what it withheld (roster_scope,
+      // The scope declarations of the read envelope, kept per resource (cc
+      // b67, H1 #1756). The server says what it withheld (roster_scope,
       // hr_fields_visible) because a missing row and a deleted one look the
       // same to a merge. Without this line those flags were dropped here, and
-      // no hydrate could act on them.
+      // no hydrate could act on them. NO APOSTROPHES in this comment: the
+      // api/b17-lift-list-check.test.js brace matcher reads one as a string
+      // opener and stops seeing senData as a page function (its L1 arm caught
+      // exactly that on the first draft).
       if(action==='read')senLastScope[resource]={roster_scope:d.roster_scope,hr_fields_visible:d.hr_fields_visible};
       // ONE LINE IN THE TRANSPORT (2026-09-21): a write past the guard above is
       // a write the server accepted, and the server-wins carve-out needs to know
