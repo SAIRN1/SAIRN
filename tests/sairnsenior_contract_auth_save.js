@@ -46,6 +46,8 @@ const SRC = [
   grab('async function saveAuthorization(){'),
   grab('async function generateClaim(visitId){'),
   grab('function readyToBillVisits(){'),
+  grab('var SEN_SWEEP_ROW_CAP=').split('\n')[0],
+  grab('async function senSweepLocalDrafts(serverRows){'),
 ].join('\n');
 
 let pass = 0, fail = 0;
@@ -84,7 +86,9 @@ function make(outcome, opts) {
     azBurnDown: () => ({ remaining: 10 }), fmt: (n) => '$' + n,
     pcEditId: opts.pcEditId || null, azEditId: opts.azEditId || null,
     senLastErr: Object.assign({}, opts.staleErr || {}),
+    writes: 0,
     senData: (action, resource) => {
+      if (action === 'write') ctx.writes++;
       if (outcome === 'ok') { delete ctx.senLastErr[resource]; return Promise.resolve({ ok: true }); }
       if (outcome === 'network') return Promise.resolve(null);
       ctx.senLastErr[resource] = { code: outcome.code, message: outcome.message };
@@ -154,6 +158,35 @@ const last = (t) => t.toasts[t.toasts.length - 1] || '';
   t = make('ok');
   await t.ctx.generateClaim('V1');
   check('G8. control: a saved claim stays and its visit leaves Ready to bill', t.store.sen_claims.length === 1 && t.ctx.readyToBillVisits().length === 0);
+
+  // b60: the sweep for drafts refused BEFORE b59, still on devices with their visits hidden.
+  console.log('(c) local-only draft sweep');
+  const DRAFT = { id: 'CLM-OLD', visit_id: 'V1', client_id: 'C1', status: 'draft' };
+  t = make({ code: 'ROW_REFUSED', message: 'the server refused the row' }, { store: { sen_claims: [DRAFT] } });
+  check('S0. control: the old draft hides V1 from Ready to bill before the sweep', t.ctx.readyToBillVisits().length === 0);
+  let n = await t.ctx.senSweepLocalDrafts([]);
+  check('S1. a local-only draft the server REFUSES on re-send is withdrawn', t.store.sen_claims.length === 0 && n === 1 && t.ctx.writes === 1, JSON.stringify(t.store.sen_claims));
+  check('S2. ...so V1 is back in Ready to bill, and the biller is told', t.ctx.readyToBillVisits().map((v) => v.id).join() === 'V1' && /withdrawn/.test(last(t)), last(t));
+  t = make('network', { store: { sen_claims: [DRAFT] } });
+  await t.ctx.senSweepLocalDrafts([]);
+  check('S3. NO answer keeps the draft (not a refusal) and says nothing', t.store.sen_claims.length === 1 && t.toasts.length === 0);
+  t = make('ok', { store: { sen_claims: [DRAFT] } });
+  n = await t.ctx.senSweepLocalDrafts([]);
+  check('S4. an ACCEPTED re-send keeps the draft -- it is on the server now', t.store.sen_claims.length === 1 && t.ctx.writes === 1 && n === 1);
+  t = make('ok', { store: { sen_claims: [DRAFT] } });
+  await t.ctx.senSweepLocalDrafts([{ id: 'CLM-OTHER', visit_id: 'V1', status: 'submitted' }]);
+  check('S5. the server already bills V1 under another claim: withdrawn WITHOUT a write (no double billing)',
+    t.store.sen_claims.length === 0 && t.ctx.writes === 0, 'writes=' + t.ctx.writes + ' ' + JSON.stringify(t.store.sen_claims));
+  t = make('ok', { store: { sen_claims: [DRAFT] } });
+  await t.ctx.senSweepLocalDrafts([{ id: 'CLM-OLD', visit_id: 'V1', status: 'draft' }]);
+  check('S6. a draft the server already holds is not re-sent', t.store.sen_claims.length === 1 && t.ctx.writes === 0);
+  t = make({ code: 'ROW_REFUSED', message: 'x' }, { store: { sen_claims: [DRAFT] } });
+  const full = Array.from({ length: 1000 }, (_, i) => ({ id: 'S' + i, visit_id: 'VX' + i }));
+  await t.ctx.senSweepLocalDrafts(full);
+  check('S7. a read AT the row cap proves no absence: nothing re-sent, nothing withdrawn', t.store.sen_claims.length === 1 && t.ctx.writes === 0);
+  t = make({ code: 'ROW_REFUSED', message: 'x' }, { store: { sen_claims: [Object.assign({}, DRAFT, { status: 'submitted' })] } });
+  await t.ctx.senSweepLocalDrafts([]);
+  check('S8. only DRAFTS are swept -- a local-only submitted claim is left alone', t.store.sen_claims.length === 1 && t.ctx.writes === 0);
 
   console.log('\n' + (fail ? 'FAILED' : 'ok') + '  sairnsenior contract/auth save: ' + pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);

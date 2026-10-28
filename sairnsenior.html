@@ -4133,9 +4133,44 @@ function senHydrateClaims(){
   return senData('read','sen_claims',null,true).then(function(serverRows){
     if(!serverRows||!Array.isArray(serverRows))return false;
     var changed=senServerWinsMerge('sen_claims',serverRows);
-
-    return !!changed;
+    return senSweepLocalDrafts(serverRows).then(function(swept){return !!(changed||swept);});
   });
+}
+// b60 -- CONCEPT: a claim draft that is on this device and NOT on the server is
+// asked about again, not guessed at. Before b59 (H1 #1713) a draft the server
+// refused was kept, so its visit is still hidden from Ready to bill on the
+// device that made it. Each such draft is re-sent: accepted -> it is on the
+// server now; refused -> withdrawn and its visit is back; no answer -> kept.
+// The synced map cannot tell these apart (its bootstrap seeded every local id),
+// so the server is the only witness. Absence is only proved by a WHOLE read, so
+// a read at the row cap sweeps nothing; and a draft whose visit the server
+// already bills under another claim is withdrawn WITHOUT a write, because
+// re-sending it would bill that visit twice.
+var SEN_SWEEP_ROW_CAP=1000;
+async function senSweepLocalDrafts(serverRows){
+  if(!Array.isArray(serverRows)||serverRows.length>=SEN_SWEEP_ROW_CAP)return 0;
+  var onServer={},billed={};
+  serverRows.forEach(function(r){
+    if(!r)return;
+    if(r.id!==undefined&&r.id!==null)onServer[String(r.id)]=true;
+    if(r.visit_id)billed[String(r.visit_id)]=true;
+  });
+  var drafts=claims().filter(function(c){return c&&c.id!==undefined&&c.id!==null&&c.status==='draft'&&!onServer[String(c.id)];});
+  var withdrawn={},n=0,landed=0;
+  for(var i=0;i<drafts.length;i++){
+    var c=drafts[i];
+    if(c.visit_id&&billed[String(c.visit_id)]){withdrawn[String(c.id)]=true;n++;continue;}
+    delete senLastErr.sen_claims;
+    var saved=await senData('write','sen_claims',c,true);
+    if(saved){landed++;continue;}
+    if(!senWriteFail('sen_claims').kept){withdrawn[String(c.id)]=true;n++;}
+  }
+  if(n){
+    st('sen_claims',claims().filter(function(x){return !withdrawn[String(x.id)];}));
+    toast(n+' claim draft'+(n===1?' was':'s were')+' only on this device and the server would not take '+(n===1?'it':'them')+
+      ' -- withdrawn. Ready to bill now shows every visit with no claim on the server.');
+  }
+  return n+landed;
 }
 function blRender(){
   var isMgmt=senIsManagement();
