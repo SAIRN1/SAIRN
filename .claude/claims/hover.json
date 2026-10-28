@@ -1327,6 +1327,19 @@
       "status": "released",
       "released_at": "2026-10-28T20:33:15Z",
       "files": null
+    },
+    {
+      "id": "hover-1793223427",
+      "session": "hover",
+      "subject": "hover",
+      "task": "b98 pre-tool-call deny-list hook for builder paths and a shared block log. FILES: .claude/skills/sairn-hover-auditor/tools/hover_builder_path_deny.py",
+      "claimed_at": "2026-10-28T21:37:07Z",
+      "claimed_at_epoch": 1793223427.0932498,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools/hover_builder_path_deny.py"
+      ]
     }
   ],
   "refusals": [
