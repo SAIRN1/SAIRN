@@ -1283,6 +1283,17 @@
       "status": "released",
       "released_at": "2026-10-28T17:28:55Z",
       "files": null
+    },
+    {
+      "id": "hover-1793209395",
+      "session": "hover",
+      "subject": "hover",
+      "task": "hover auditor b94 fast and deep tier1 scan tier b rotation red flag threshold",
+      "claimed_at": "2026-10-28T17:43:15Z",
+      "claimed_at_epoch": 1793209395.0476716,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
