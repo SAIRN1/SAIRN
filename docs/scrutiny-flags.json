@@ -2246,22 +2246,6 @@
    "criteria_version": "2026-10-06.1"
   },
   {
-   "path": "tests/run_tier_a_review_gate_probe.py",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "2a3a95c20d55ae860c7554bbc0598329410591f6",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tools/tier_a_review_gate.py",
-   "class": "push-gate logic",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "2a3a95c20d55ae860c7554bbc0598329410591f6",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
    "path": "api/ai-safeguards.test.js",
    "class": "test file",
    "level": "WEAKENING",
@@ -3343,22 +3327,6 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "3e8a65252954ead8eef94fedaf4af8e114e29e76",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/run_tier_a_review_gate_probe.py",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "3ead2e8618e14e0d62a54200cdfdfee591183b85",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tools/tier_a_review_gate.py",
-   "class": "push-gate logic",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "3ead2e8618e14e0d62a54200cdfdfee591183b85",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -13630,6 +13598,22 @@
     }
    ],
    "sha": "f269a82602d6e45681d5f9565f45fdcb9111316b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_tier_a_review_gate_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f2ee7be0d6da84146346835dc15bc8ecf857d9cb",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/tier_a_review_gate.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f2ee7be0d6da84146346835dc15bc8ecf857d9cb",
    "criteria_version": "2026-10-06.1"
   },
   {
