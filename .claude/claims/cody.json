@@ -4489,6 +4489,17 @@
       "status": "released",
       "released_at": "2026-10-28T22:29:39Z",
       "files": null
+    },
+    {
+      "id": "cody-1793226967",
+      "session": "cody",
+      "subject": "PLATFORM",
+      "task": "cody b59 red triage dead_function_sweep hover_separation write_re verbs js extractor",
+      "claimed_at": "2026-10-28T22:36:07Z",
+      "claimed_at_epoch": 1793226967.6333964,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
