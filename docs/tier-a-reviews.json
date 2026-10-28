@@ -8736,6 +8736,31 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-28T17:50:52Z",
+      "opened_at_sha": "cdf71e894bf36dfadf8cba0a1e7d2897589e1cbd",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 1,
+      "resources": [
+        "sen_caregivers",
+        "sen_clients",
+        "sen_settings",
+        "sen_visits"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/b60-readiness-caregiver-projection.test.js"
+      ],
+      "what": "hank b60 (H1 #1274): sen_visits/readiness now hands the EVV readiness engine only {id, name, state_caregiver_id} per caregiver, with the state ID VALUE replaced by a presence marker for roles outside SEN_CAREGIVER_HR_FIELD_ROLES (coordinator/scheduler). Fetch unchanged; verdict unchanged. Review: that the projection covers every field checkVisit reads, and that the presence signal retained for coordinator/scheduler is acceptable.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-28T17:50:52Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

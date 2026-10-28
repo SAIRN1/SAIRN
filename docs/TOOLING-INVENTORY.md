@@ -21,11 +21,11 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**374 files in `tools/`.** By what actually invokes them:
+**375 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
-| **BLOCKING** | 27 | reachable from something that can refuse a push or a tool call |
+| **BLOCKING** | 28 | reachable from something that can refuse a push or a tool call |
 | **REPORT-ONLY** | 81 | runs automatically on every push, never blocks |
 | **ADVISORY** | 5 | session-start or prompt hooks, informational |
 | **DECIDED** | 79 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
@@ -40,7 +40,7 @@ By what they are, independent of wiring:
 |---|---:|
 | ADVISORY | 4 |
 | CHECKER | 249 |
-| GATE | 2 |
+| GATE | 3 |
 | GENERATOR | 23 |
 | GUARD | 4 |
 | LIBRARY | 28 |
@@ -152,7 +152,7 @@ outside world. Unwired is the right state for them and is not a finding.
 
 ---
 
-## BLOCKING (27)
+## BLOCKING (28)
 
 Two entry points, and they are not the same one. `.claude/settings.json`
 PreToolUse fires on a Claude Code **tool call**; `.githooks/pre-push` fires on
@@ -185,6 +185,7 @@ around it. The second exists because the first missed exactly that on
 | `sairn_seam_check.py` | CHECKER | an endpoint dropping a field the engine reads (gate check 4) | `check4_probe.py`, `missing_checker_probe.py`, `run_delegation_probe.py`, `run_or_default_probe.py`, `run_probe.py`, `run_ref_probe.py`, `run_seam_cannot_tell_watch_probe.py` |
 | `sairn_sql_preflight.py` | CHECKER | SQL referencing a column or table the live schema does not have (gate check 3) | `check3_probe.py`, `constraint_probe.py`, `run_probe.py`, `run_sql_preflight_literal_probe.py` |
 | `session_lock_check.py` | CHECKER | a second session in the same clone -- warns at SessionStart, and REFUSES Write/Edit/Bash when the other session is confirmed live by CLAUDE_PID plus its process start time. Liveness that cannot be determined falls back to the 2h staleness rule and blocks nothing | `session_lock_liveness_probe.py`, `session_lock_retraction_probe.py` |
+| `sql_placeholder_check.py` | GATE | a sql/*.sql file that ships with an unsubstituted placeholder (__DUNDER__, {{mustache}}, REPLACE_ME-style markers, or an operator '<... hash/key/id ...>' literal) in EXECUTABLE text -- the hank b58 shape, where a rehearsal of a substituted copy passed and the real run aborted. Reads the blob at the pushed tip, never the working tree; comments are lexed away; reasoned operator-input declarations are reported NOT RUN-READY. Blocking pre-push check 4d, fails closed (exit 2 = could not run also denies). | `sql_placeholder_check_probe.py` |
 | `staged_parse_check.py` | CHECKER | a source file this PUSH SHIPS that does not parse -- .py through the interpreter own compiler, .js through `node --check`, over tools/, tests/ and api/. The gate checked stonedesk.html script blocks and api/ and NOT tools/, so a tools/tooling_inventory.py that does not parse reached origin/main: nothing at push time imports a tool, so no existing check looked at it. NOT `python -m py_compile`, which writes a __pycache__/*.pyc beside every file it checks -- a gate mutating the tree it inspects, and the artefacts would show in git status as though the push made them. Exit 2 is COULD NOT RUN: no files given, an unreadable file, or a .js with no node on PATH. CANNOT SEE a file that parses and is still wrong -- a rule that compiles and matches nothing is tools/dead_rule_sweep.py job, and neither check subsumes the other | `run_staged_parse_probe.py` |
 | `tier_a_review_gate.py` | CHECKER | a change to code serving a Tier A resource that carries no recorded independent-review obligation, and a review record signed by its own author -- push-gate check 13, BLOCKING. Scoped by diff HUNK and not by file: the same question asked per FILE reported 78 Tier A resources for a one-line edit to api/sd-data.js, because that file names every resource on the platform. It cannot read a review and says so; what it refuses is a Tier A change nobody was told about and a self-signed one. `--amend` ADDED 2026-10-16 (cc b16), FOR A RECORDED FILE SET THAT IS WRONG AND HAD NO WAY TO SAY SO. The case is cc b15 routing item C5, measured: the sen_caregivers obligation at b384a513 lists only api/sd-data-sen-caregiver-pii-scope.test.js and api/sd-data.js, where the handler change landed, is not on it -- the gate matched on RESOURCES so it did not fail open, but a reviewer reading that file set is pointed at the test and not at the code. The only previous routes were a SECOND obligation for one review, which is the duplication this ledger exists to avoid, or a hand edit leaving no trace of what the record said before. IT CAN ONLY WIDEN: there is no removal flag at all, which is stronger than refusing one, because narrowing a recorded obligation is how one gets shrunk to fit whatever was actually reviewed. A `reviewed` record is REFUSED -- the verdict was reached against the recorded set and widening it afterwards would make a discharge cover files nobody read. `--why` is required at 40 characters. It is a DRY RUN without `--apply`. An unknown or AMBIGUOUS sha prefix is refused with the candidates named. And it is APPEND-ONLY: the previous files and resources are kept in an `amendments` entry with the amending session and the reason, so the earlier state stays derivable. AND THE REAL C5 CASE TURNED OUT TO NEED A DIFFERENT FIX, which is the most useful thing this mode has produced: b384a513 is ALREADY reviewed, by hank at 2026-10-13T06:32:55Z, so the amendment is refused and correctly -- C5's recommended fix was wrong and the refusal is what establishes it. The route is a NEW obligation naming why it exists. 10 arms on a FIXTURE ledger because docs/tier-a-reviews.json is held LIVE by hank b17 and cc's b16 claim says no record in it is edited: A1-A3 require the widening and its append-only record, A4-A8 are the five refusals, A9 the dry run, A10 the over-writing control. The three refusals were ALSO driven read-only against the real ledger, which is how the C5 answer was established | `cross_tenant_dispatchers_review_probe.py`, `cross_tenant_scope_grader_review_probe.py`, `run_body_file_roundtrip_probe.py`, `run_body_file_wiring_sabotage_probe.py`, `run_coding_rule_channel_probe.py`, `run_irreversible_class_probe.py`, `run_review_gate_validate_probe.py`, `run_save_reviews_retry_probe.py`, `run_tier_a_open_basis_probe.py`, `run_tier_a_reseat_probe.py`, `run_tier_a_review_gate_probe.py`, `run_tier_a_review_gate_sabotage_probe.py`, `stonedesk_exec_msgs_gate.js` |
 | `tool_owner_header_check.py` | CHECKER | a NEWLY ADDED tools/*.py file with no `# OWNER: <session>` header. 22 tools were found mutating the repo on a bare run and 21 could not be routed to anybody: one git identity authors every commit here, and the claim record only knows a file if somebody named it in a claim string, so nothing could answer the question afterwards. A new file is the one moment the answer is free. The session list is DERIVED from .claude/claims/ rather than hardcoded. GRANDFATHERS the 282 existing tools deliberately and PRINTS that count every run, because a gate refusing every push that touches any tool gets switched off. CANNOT SEE whether the declared owner is the right one | `run_tool_owner_header_probe.py` |
@@ -656,11 +657,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      374   git ls-files tools/
+  tools on disk                      375   git ls-files tools/
   hook entries                        19   docs\hooks-disabled-2026-10-13.json (RECORDED wiring -- this clone's live hooks are the committed disarm, and the record is read rather than the zero being believed)
-  push-gate invocations               21   tools\sairn_push_gate_hook.py
+  push-gate invocations               22   tools\sairn_push_gate_hook.py
   report-only registry                78   report_only_checks.REGISTRY
-  tools invoked by tests/            239   tests/**/*.py, *.js
+  tools invoked by tests/            240   tests/**/*.py, *.js
   recorded NOT-promoted decisions     88   report_only_checks.NOT_PROMOTED
   numbered gate checks                17   tools\sairn_push_gate_hook.py
 ```

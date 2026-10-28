@@ -39367,6 +39367,50 @@
       },
       "citation_note": "No coding rule covers a component's colours written for a different surface than the one it renders into. Proposed: injected UI takes colours from theme tokens, never literal rgba.",
       "factors_unknown_reason": "same latent class as 56ec80530: the rows are dormant, so no rendered pass reached them; the b60 label fix named these and left them"
+    },
+    {
+      "commit": "cdf71e894bf3",
+      "date": "2026-10-28",
+      "subject": "fix(sairnsenior, hank b60): readiness engine gets only name + state-ID presence for non-HR roles (H1 #1274)",
+      "files": [
+        "api/b60-readiness-caregiver-projection.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 154,
+      "lines_removed": 1,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": "H1 #1274: sen_visits/readiness (open to coordinator/scheduler) built caregiversById from the whole sen_caregivers blob, so HR fields (bgcheck_date, notes, the state caregiver ID value) entered the readiness engine for roles SEN_CAREGIVER_HR_FIELD_ROLES excludes on sen_caregivers/read. No value reached the response (presence booleans only). Fixed by projecting to {id, name, state_caregiver_id} with a presence marker for non-HR roles; verdict unchanged.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "f1d2b579c967",
+        "date": "2026-08-27",
+        "subject": "feat(sairnsenior): EVV submission-readiness panel -- report-only, persists nothing",
+        "lag_days": 62
+      },
+      "citation_note": "No standing rule requires a compute-only consumer to receive a role-projected object; the redaction was applied to the one emitting path only. Proposed: a consumer of a field-gated table receives exactly the fields it reads, projected by the caller's role.",
+      "contributing_factors": [
+        {
+          "factor": "The HR-field redaction (b384a513) was applied to the emitting read path only; the compute-only readiness path kept the whole blob",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "readiness projects to the two fields the engine reads, role-split on the state ID value"
+        },
+        {
+          "factor": "Routed to cody on 2026-10-13 and confirmed unfixed at seq1288; the routing never reached a paste for 15 days",
+          "kind": "process",
+          "action_status": "done",
+          "action": "pulled from the H1 log and resolved in hank b60"
+        }
+      ],
+      "recurrence_open": "The presence of a state caregiver ID remains visible to coordinators/schedulers through the readiness verdict by design (EVV readiness must report a missing ID); a role-suppressed element would be a product decision."
     }
   ],
   "started": "2026-09-09",

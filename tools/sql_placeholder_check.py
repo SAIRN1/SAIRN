@@ -1,3 +1,4 @@
+# OWNER: hank
 """Does a SQL file that is about to ship still contain an unsubstituted placeholder?
 
 WHY THIS EXISTS (hank b58 -> b59, 2026-10-28)
