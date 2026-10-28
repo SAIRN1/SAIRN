@@ -1340,6 +1340,17 @@
       "files": [
         ".claude/skills/sairn-hover-auditor/tools/hover_builder_path_deny.py"
       ]
+    },
+    {
+      "id": "hover-1793226635",
+      "session": "hover",
+      "subject": "hover",
+      "task": "hover-tools b100 vendor context for cross_vendor_check range mode",
+      "claimed_at": "2026-10-28T22:30:35Z",
+      "claimed_at_epoch": 1793226635.3785589,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
