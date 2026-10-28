@@ -4,6 +4,7 @@
     python tools/push_timeout_guard.py --pre-push   # called by .githooks/pre-push, FIRST
     python tools/push_timeout_guard.py --scan       # every tracked tool, statically
     python tools/push_timeout_guard.py --fixtures   # the criteria against synthetic cases
+    python tools/push_timeout_guard.py --live-drive # a REAL `timeout 60 git push` to a temp bare remote
 
 Exit: 0 clean - 1 REFUSED / findings - 2 COULD NOT RUN (a fixture misclassified)
 
@@ -391,8 +392,90 @@ def fixtures():
     return 2 if bad else 0
 
 
+# ── LIVE DRIVE (fourth b63): a REAL `timeout ... git push`, never at origin ───
+# b61 could only drive the chain without pushing: Claude Code's auto-mode
+# classifier denies a hand-typed scratch `timeout 60 git push`. Michael's b63
+# decision is ONE exact allow rule for this mode and nothing wider. It pushes
+# from a temp repo to a temp BARE remote through a hook that runs this file's
+# --pre-push, so the refusal is git's own hook path, not a simulation.
+#   arm A  `timeout 60 git push`  -> refused, guard's REFUSED line, remote ref ABSENT
+#   arm B  same push, no timeout  -> lands, remote ref == the pushed commit (control)
+def live_drive():
+    import shutil
+    import tempfile
+    tmo = shutil.which('timeout')
+    if not tmo:
+        print('COULD NOT RUN: no `timeout` binary on PATH, so a timed push cannot be driven. Not a pass.')
+        return 2
+    env = {k: v for k, v in os.environ.items() if not k.startswith('GIT_')}
+    tmp = tempfile.mkdtemp(prefix='ptg-live-')
+    try:
+        src, bare, hooks, nohooks = (os.path.join(tmp, n) for n in ('src', 'remote.git', 'hooks', 'nohooks'))
+        os.makedirs(hooks)
+        os.makedirs(nohooks)
+
+        def run(args, cwd=None):
+            r = subprocess.run(args, cwd=cwd, env=env, capture_output=True, text=True,
+                               encoding='utf-8', errors='replace')
+            return r.returncode, (r.stdout or '') + (r.stderr or '')
+
+        guard = os.path.abspath(__file__).replace('\\', '/')
+        py = sys.executable.replace('\\', '/')
+        with open(os.path.join(hooks, 'pre-push'), 'w', newline='\n') as f:
+            f.write('#!/bin/sh\nexec "%s" "%s" --pre-push\n' % (py, guard))
+        os.chmod(os.path.join(hooks, 'pre-push'), 0o755)
+        for args in (['git', 'init', '-q', '-b', 'main', src], ['git', 'init', '-q', '--bare', bare]):
+            if run(args)[0] != 0:
+                print('COULD NOT RUN: could not create the throwaway repos. Not a pass.')
+                return 2
+        g = ['git', '-c', 'user.name=ptg-live', '-c', 'user.email=ptg-live@example.invalid',
+             '-c', 'commit.gpgsign=false']
+        with open(os.path.join(src, 'f.txt'), 'w') as f:
+            f.write('x\n')
+        steps = (g + ['-c', 'core.hooksPath=' + nohooks.replace('\\', '/'), 'add', 'f.txt'],
+                 g + ['-c', 'core.hooksPath=' + nohooks.replace('\\', '/'), 'commit', '-q', '-m', 'live'],
+                 ['git', 'remote', 'add', 'origin', bare.replace('\\', '/')])
+        for args in steps:
+            rc, out = run(args, cwd=src)
+            if rc != 0:
+                print('COULD NOT RUN: setup step %r failed: %s' % (args[-2:], out.strip()[:200]))
+                return 2
+        head = run(['git', 'rev-parse', 'HEAD'], cwd=src)[1].strip()
+        push = ['git', '-c', 'core.hooksPath=' + hooks.replace('\\', '/'), 'push', 'origin', 'HEAD:refs/heads/main']
+
+        def remote_ref():
+            rc, out = run(['git', '--git-dir', bare, 'rev-parse', '-q', '--verify', 'refs/heads/main'])
+            return out.strip() if rc == 0 else None
+
+        rc_a, out_a = run([tmo, '60'] + push, cwd=src)
+        ref_a = remote_ref()
+        rc_b, out_b = run(push, cwd=src)
+        ref_b = remote_ref()
+        arms = [
+            ('A  `timeout 60 git push` is REFUSED (non-zero exit)', rc_a != 0, 'exit %d' % rc_a),
+            ('   ...by this guard, through git\'s own hook path', 'REFUSED (push_timeout_guard)' in out_a,
+             out_a.strip()[-300:]),
+            ('   ...and the timeout is named in the ancestry chain', 'timeout' in out_a.split('chain:')[-1][:400],
+             ''),
+            ('   ...and NOTHING reached the remote', ref_a is None, 'remote main = %s' % ref_a),
+            ('B  CONTROL: the same push with no timeout lands', rc_b == 0, 'exit %d: %s' % (rc_b, out_b.strip()[-300:])),
+            ('   ...and the remote holds exactly the pushed commit', ref_b == head, '%s vs %s' % (ref_b, head)),
+        ]
+        bad = 0
+        for name, ok, why in arms:
+            print('  %s %s%s' % ('ok  ' if ok else 'FAIL', name, '' if ok else '\n         ' + why))
+            bad += not ok
+        print('%d/%d live-drive arms pass (temp bare remote only; origin was never touched)'
+              % (len(arms) - bad, len(arms)))
+        return 1 if bad else 0
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def main(argv):
     repo = subprocess.run(['git', 'rev-parse', '--show-toplevel'], capture_output=True, text=True).stdout.strip() or '.'
+    if '--live-drive' in argv:
+        return live_drive()
     if '--fixtures' in argv:
         return fixtures()
     if '--scan' in argv:
