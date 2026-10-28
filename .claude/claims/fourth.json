@@ -4771,6 +4771,17 @@
       "status": "released",
       "released_at": "2026-10-27T16:32:04Z",
       "files": null
+    },
+    {
+      "id": "fourth-1793185411",
+      "session": "fourth",
+      "subject": "stonedesk",
+      "task": "b60 cartAdd qty rerender, sairn-fu-label shoff-label dark contrast",
+      "claimed_at": "2026-10-28T11:03:31Z",
+      "claimed_at_epoch": 1793185411.8233356,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
