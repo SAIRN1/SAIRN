@@ -1949,6 +1949,17 @@ PURPOSES = {
         'finding: many are deliberately pinned, and a family where none or '
         'only a minority honour one is reported clean, because neither is a '
         'convention'),
+    'push_timeout_guard.py': ('CHECKER',
+        'a git push run under a timeout. The push gate writes mutants into '
+        'tracked files and restores them in `finally`, and a kill skips the '
+        'restore (fourth b59: api/_lib/law-roles.js left mutated). --pre-push '
+        'runs FIRST in .githooks/pre-push and refuses when an ancestor process '
+        'is `timeout` -- measured on Windows/Git Bash through the real '
+        'git -> sh -> python hook chain. --scan reads every tracked tool for a '
+        'push inside a call with timeout=, a `timeout N git push` string, or a '
+        'push through a git() helper that sets one (it found push_retry.py:1060 '
+        'on its first run). Cannot see the Claude Bash tool\'s own timeout or a '
+        'hand kill; that needs the run journal routed to cody (b61)'),
     'push_retry.py': ('TOOL',
         'an amend that is about to run in a tree where HEAD is not what the '
         'author thinks it is -- and it REFUSES rather than warns. Five clones '
