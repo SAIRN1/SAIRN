@@ -112,8 +112,7 @@ done
 # refused while another session holds an ACTIVE claim on that path. b61 did
 # this by hand, once; this asks it at every push. Exit 2 (could not read the
 # claims) refuses too: an unread claim record is not an empty one.
-printf '%s
-' "$REFS" | "$PY" "$ROOT/tools/claim_state_recheck.py" --pre-push || exit 1
+printf '%s\n' "$REFS" | "$PY" "$ROOT/tools/claim_state_recheck.py" --pre-push || exit 1
 
 # ── HOVER AUDITOR SCOPE GATE, and ONLY in the auditor's own clone ───────────
 # The marker is in .git/, so it is not versioned and no build clone inherits it.
