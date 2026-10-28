@@ -39060,7 +39060,7 @@
       "recurrence_open": "Any OTHER hook-spawned tool that runs git in a temp dir is covered only by the hook-level unset; a tool invoked by a different hook or wrapper that exports GIT_DIR is not."
     },
     {
-      "commit": "5e5f7aab862c",
+      "commit": "98bb61e17dfb",
       "date": "2026-10-28",
       "subject": "fix(tools, cody b55): checker_confidence -- an UNRUNNABLE checker was rated HIGH stability, and --json was not JSON",
       "files": [
@@ -39101,7 +39101,7 @@
       "recurrence_open": "Other consumers of FLAKY.classify or of report_only_checks --json output may have the same default-to-best or stdout-pollution shape; not swept."
     },
     {
-      "commit": "0b1746772917",
+      "commit": "19a9a84b8f66",
       "date": "2026-10-28",
       "subject": "fix(tools, cody b55): three of my own tools read a run that did not happen as a clean one",
       "files": [
@@ -39144,7 +39144,7 @@
       "recurrence_open": "41 MEDIUM/LOW hits from the b55 sweep remain (handoff lists them); checker_kit.tracked() ignores git's exit code for every caller."
     },
     {
-      "commit": "9d8d56d3cd37",
+      "commit": "8e2c18f48c37",
       "date": "2026-10-28",
       "subject": "fix(tools, cody b55): six more of my tools could exit 0, or publish a pass, for work that did not run",
       "files": [
