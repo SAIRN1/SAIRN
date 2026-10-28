@@ -129,6 +129,12 @@ PURPOSES = {
         'any shell-operator argument (it runs without a shell), and exits 3 if a '
         'gate or hook file changed during the run. Written after the 2026-10-27 '
         'push-gate truncation, whose originating command was never captured.'),
+    'capped_run.py': ('GUARD',
+        'an incident replay that runs uncapped and is OOM-killed mid-run, losing the '
+        'attempt: runs the command in a Job Object (RLIMIT_AS off Windows) with a '
+        'job-wide memory cap and a wall-clock cap chosen up front; exit 4 when the '
+        'memory cap is reached, 5 on timeout, and 2 -- command NOT run -- if the cap '
+        'cannot be applied. Written after the cc b59 replay was killed for low memory.'),
     'presence_proof.py': ('CHECKER',
         'a stress test that could pass a false positive silently: the PRESENCE '
         'PASSED AS PROOF checklist as code. A plan is refused (exit 2) unless '

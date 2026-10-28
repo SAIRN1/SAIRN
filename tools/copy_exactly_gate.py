@@ -423,7 +423,45 @@ def _fx_repo(td):
     return td
 
 
+# ── THE FIXTURES MUST NOT INHERIT THE HOOK'S GIT_DIR (cc b60, 2026-10-28) ──
+# git exports GIT_DIR to a pre-push hook, and from a LINKED WORKTREE it is an
+# absolute path. `git -C <tempdir> init` honours GIT_DIR over -C, so the first
+# line of _fx_repo re-initialised the REAL repository instead of the temp dir:
+# core.bare=true and user.email/user.name=fx landed in the clone's SHARED
+# .git/config (a worktree has no config of its own). Measured in a scratch repo
+# with a real `git push --dry-run` from a worktree: core.bare false -> true.
+# That is how core.bare=true reached this clone after the b59 worktree replay,
+# and the identity check8_probe recorded in its corrupted config is this
+# function's. A push from the main clone exports a RELATIVE GIT_DIR, which
+# resolves inside the temp dir, which is why it only ever bit worktrees.
+#
+# The env is dropped for the fixture run, so the write cannot reach the shared
+# config at all. The core.bare restore in the finally is the net behind that,
+# and it is only a net: a finally runs on an exception or a Ctrl-C, NOT on a
+# hard kill (TerminateProcess, an OOM kill). Surviving a kill is the env drop's
+# job; tests/run_core_bare_kill_probe.py kills this mid-run to prove it.
+_HOOK_GIT_ENV = ('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_COMMON_DIR')
+
+
+def _core_bare():
+    code, out, _e = git('config', '--get', 'core.bare')
+    return out.strip() if code == 0 else None
+
+
 def run_fixtures(verbose=True):
+    saved = {k: os.environ.pop(k) for k in _HOOK_GIT_ENV if k in os.environ}
+    bare_before = _core_bare()
+    try:
+        return _run_fixtures(verbose)
+    finally:
+        if bare_before is not None and _core_bare() != bare_before:
+            git('config', 'core.bare', bare_before)
+            sys.stderr.write('copy-exactly: a fixture changed core.bare in %s; '
+                             'restored to %s\n' % (REPO, bare_before))
+        os.environ.update(saved)
+
+
+def _run_fixtures(verbose):
     import tempfile
     bad = []
 

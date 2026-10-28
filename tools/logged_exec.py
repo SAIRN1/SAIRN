@@ -64,6 +64,20 @@ def snapshot(root):
     return out
 
 
+def tree(root):
+    """Every path git status names, with its size. Diffed before/after, this is
+    where a redirect inside a `cmd /c` or `sh -c` argument actually landed --
+    the argv alone cannot say, because the redirect is inside one argument."""
+    r = subprocess.run(['git', '-C', root, 'status', '--porcelain', '--untracked-files=all'],
+                       capture_output=True, text=True)
+    out = {}
+    for ln in r.stdout.splitlines():
+        p = ln[3:].strip().strip('"')
+        f = os.path.join(root, p)
+        out[p] = (ln[:2], os.path.getsize(f) if os.path.isfile(f) else None)
+    return out
+
+
 def run_fixtures():
     cases = [(shell_op('>'), '>'), (shell_op('>tools/x.py'), '>'), (shell_op('2>&1'), '2>'),
              (shell_op('|'), '|'), (shell_op('&&'), '&&'), (shell_op('git'), None),
@@ -107,12 +121,17 @@ def main(argv):
               'redirect would not happen here -- and in a shell it is the shape that truncated '
               'the push gate on 2026-10-27. Run the command without the redirect.' % [a for a, _ in ops])
         return 2
-    before = snapshot(root)
+    before, tree0 = snapshot(root), tree(root)
     rc = subprocess.run(cmd).returncode
-    after = snapshot(root)
+    after, tree1 = snapshot(root), tree(root)
     changed = [g for g in GATES if before[g] != after[g]]
+    delta = sorted('%s %s %s bytes' % (st, p, sz) for p, (st, sz) in tree1.items()
+                   if tree0.get(p) != (st, sz))
     with open(log, 'a', encoding='utf-8') as fh:
-        fh.write(json.dumps({'at': rec['at'], 'argv': cmd, 'rc': rc, 'gates_changed': changed}) + '\n')
+        fh.write(json.dumps({'at': rec['at'], 'argv': cmd, 'rc': rc, 'gates_changed': changed,
+                             'tree_delta': delta}) + '\n')
+    for d in delta:
+        print('TREE CHANGED: %s' % d)
     if changed:
         print('GATE FILE CHANGED during this command: %s. Check it before any push.' % ', '.join(changed))
         return 3

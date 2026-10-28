@@ -46,6 +46,14 @@ command -v python >/dev/null 2>&1 && PY=python || PY=python3
 ROOT=$(git rev-parse --show-toplevel)
 GITDIR=$(git rev-parse --git-dir)
 
+# git exports GIT_DIR to this hook, ABSOLUTE when pushing from a linked
+# worktree. Any gate or gate fixture that then runs `git -C <tempdir> init`
+# re-initialises THIS repo instead -- core.bare=true in the shared .git/config
+# (cc b60; reproduced with a real push --dry-run from a worktree). Every git
+# call below and in the gates finds the repo from its cwd, so drop it here and
+# no child of the chain inherits it.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR
+
 # ── HOVER AUDITOR SCOPE GATE, and ONLY in the auditor's own clone ───────────
 # The marker is in .git/, so it is not versioned and no build clone inherits
 # it. A build clone pays one file test and then takes the original path below,
