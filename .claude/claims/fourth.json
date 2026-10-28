@@ -4782,6 +4782,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "fourth-1793185558",
+      "session": "fourth",
+      "subject": "sairnsenior",
+      "task": "b60 sweep refused claim drafts on devices",
+      "claimed_at": "2026-10-28T11:05:58Z",
+      "claimed_at_epoch": 1793185558.3262658,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
