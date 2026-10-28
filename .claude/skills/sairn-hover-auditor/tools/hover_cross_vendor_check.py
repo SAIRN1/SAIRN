@@ -615,6 +615,30 @@ def fit_context(context, budget_tokens):
     return NL.join(kept) if len(kept) > 1 else ''
 
 
+def range_context(range_, cwd, added, budget_tokens):
+    """b100: the CONTEXT section for a --range review, one block per changed
+    file, read from the range's END revision (the side the added line numbers
+    count against). '' when there is no budget, nothing to show, or the range
+    has no end revision: a bare rev diffs the WORKING TREE, whose file text is
+    not that revision's, so it gets no context rather than a mismatched one.
+    A file absent at the end revision (a deletion) is skipped."""
+    if budget_tokens <= 0 or '..' not in range_:
+        return ''
+    end = range_.replace('...', '..').split('..')[-1] or 'HEAD'
+    parts = []
+    for path in sorted(added):
+        if not added[path]:
+            continue
+        r = subprocess.run(['git', 'show', '%s:%s' % (end, path)], cwd=cwd, capture_output=True,
+                           text=True, encoding='utf-8', errors='replace')
+        if r.returncode != 0:
+            continue
+        ctx = enclosing_context(r.stdout, added[path])
+        if ctx:
+            parts.append('--- %s ---' % path + chr(10) + ctx)
+    return fit_context(chr(10).join(parts), budget_tokens)
+
+
 def ask_groq(diff_text, api_key, http_post=None, context=None):
     """http_post(url, headers, body_bytes) -> (status, response_dict) is
     injectable for the selftest. Returns (findings_list, real_total_tokens).
@@ -1431,6 +1455,13 @@ def run_check(range_, cwd, own_verdict=None, key_path=DEFAULT_KEY_PATH, gate=Non
     added = added_lines_with_numbers(stripped)
 
     prompt_tokens_est = estimate_tokens(SYSTEM_PROMPT) + estimate_tokens(stripped)
+    # b100: context only fills the budget the diff leaves; the diff is never trimmed.
+    ctx_fixed = estimate_tokens(CONTEXT_PROMPT_ADDENDUM) + estimate_tokens(CONTEXT_HEADER)
+    context = range_context(range_, cwd, added, min(
+        CONTEXT_MAX_TOKENS,
+        TPM_BUDGET_CEILING - MAX_OUTPUT_TOKENS - TOKEN_SAFETY_MARGIN - prompt_tokens_est - ctx_fixed))
+    if context:
+        prompt_tokens_est += ctx_fixed + estimate_tokens(context)
     if prompt_tokens_est + MAX_OUTPUT_TOKENS + TOKEN_SAFETY_MARGIN > TPM_BUDGET_CEILING:
         raise CouldNotTell('estimated %d prompt tokens + %d capped output + %d '
                             'safety margin exceeds the %d TPM ceiling on its own, '
@@ -1448,7 +1479,10 @@ def run_check(range_, cwd, own_verdict=None, key_path=DEFAULT_KEY_PATH, gate=Non
     with open(key_path, encoding='utf-8') as f:
         api_key = f.read().strip()
 
-    findings, real_total_tokens = ask_groq(stripped, api_key)
+    if context:
+        findings, real_total_tokens = ask_groq(stripped, api_key, context=context)
+    else:
+        findings, real_total_tokens = ask_groq(stripped, api_key)
     gate.record_call(real_total_tokens)
     valid, dropped_count, dropped_reasons = validate_findings(findings, added)
     rc, out, err, agree = log_result(range_, valid, dropped_count, own_verdict)
@@ -1652,6 +1686,37 @@ def run_fixtures():
     msgs0 = (sent.get('req') or {}).get('messages') or [{}, {}]
     ck('E8 CONTROL: with no context the system prompt and the user message are byte-identical to before',
        msgs0[0].get('content') == SYSTEM_PROMPT and msgs0[1].get('content') == 'DIFF-TEXT')
+
+    # b100: --range context, driven against a real throwaway git repo.
+    import tempfile
+    with tempfile.TemporaryDirectory() as rc_dir:
+        def _g(*a):
+            return subprocess.run(['git', '-c', 'user.name=t', '-c', 'user.email=t@t'] + list(a), cwd=rc_dir,
+                                  capture_output=True, text=True, encoding='utf-8')
+        _g('init', '-q')
+        with open(os.path.join(rc_dir, 'a.js'), 'w', encoding='utf-8', newline='\n') as fh:
+            fh.write('function f() {\n  var q = 1;\n  var r = 2;\n  return 1;\n}\n')
+        with open(os.path.join(rc_dir, 'gone.js'), 'w', encoding='utf-8', newline='\n') as fh:
+            fh.write('x\n')
+        _g('add', '.')
+        _g('commit', '-q', '-m', 'one')
+        with open(os.path.join(rc_dir, 'a.js'), 'w', encoding='utf-8', newline='\n') as fh:
+            fh.write('function f() {\n  var newdecl = 9;\n  var r = 2;\n  return newdecl + r;\n}\n')
+        _g('rm', '-q', 'gone.js')
+        _g('add', '.')
+        _g('commit', '-q', '-m', 'two')
+        rc_added = {'a.js': {4}, 'gone.js': {1}}
+        rc1 = _try(lambda: range_context('HEAD~1..HEAD', rc_dir, rc_added, 1000))
+        ck('E9 --range context comes from the END revision and names the file and the enclosing function line',
+           isinstance(rc1, str) and '--- a.js ---' in rc1 and 'function f()' in rc1 and 'newdecl' in rc1)
+        ck('E10 a file absent at the end revision (deleted) is skipped, not a crash',
+           isinstance(rc1, str) and 'gone.js' not in rc1)
+        ck('E11 a bare rev (diffs the working tree) and a zero budget both give NO context',
+           _try(lambda: range_context('HEAD~1', rc_dir, rc_added, 1000)) == ''
+           and _try(lambda: range_context('HEAD~1..HEAD', rc_dir, rc_added, 0)) == '')
+        ck('E12 an empty end ("A..") means HEAD, and a missing path set gives no context',
+           'function f()' in (_try(lambda: range_context('HEAD~1..', rc_dir, rc_added, 1000)) or '')
+           and _try(lambda: range_context('HEAD~1..HEAD', rc_dir, {'a.js': set()}, 1000)) == '')
 
     def fake_http_post_clean(url, headers, body):
         req = json.loads(body.decode('utf-8'))
