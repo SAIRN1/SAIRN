@@ -4801,8 +4801,8 @@
       "task": "b61 sairn-fu-chip shoff-btn dark colours to var muted",
       "claimed_at": "2026-10-28T12:08:58Z",
       "claimed_at_epoch": 1793189338.2211485,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-28T19:20:03Z",
       "files": null
     },
     {
