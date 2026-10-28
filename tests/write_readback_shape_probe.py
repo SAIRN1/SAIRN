@@ -118,7 +118,10 @@ c2, o2 = run()
 sd = row(o2, 'stonedesk.html')
 results['arm2_writes_33_not_81'] = len(sd) >= 3 and sd[1] == '33'
 results['arm2_reads_match_writes'] = len(sd) >= 3 and sd[1] == sd[2]
-results['arm2_no_findings_at_all'] = c2 == 0 and 'WRITTEN AND NEVER READ BACK' in o2 \
+# cody b56: exit 1 is also COULD NOT TELL now (sairnmechanical's aliased
+# mechPushOne), which is not a NEVER-READ-BACK finding; this arm is about the
+# latter, so it reads the section, not the whole-run exit code.
+results['arm2_no_findings_at_all'] = c2 in (0, 1) and 'WRITTEN AND NEVER READ BACK' in o2 \
     and o2.split('WRITTEN AND NEVER READ BACK ===')[1].strip().startswith('none')
 
 src_sd = W.strip_comments(io.open(os.path.join(REPO, 'stonedesk.html'),

@@ -267,6 +267,40 @@ def resolve_generic_writes(src):
     return resolved
 
 
+def unresolved_generic_writers(src):
+    """Generic writers with ZERO literal call sites this file can resolve.
+
+    ADDED cody b56. resolve_generic_writes() resolves a generic writer only
+    through `fn('literal', ...)` call sites. A writer reached ONLY through an
+    alias -- sairnmechanical's `window.mechPushRecord = mechPushOne`, called as
+    `window.mechPushRecord('<resource>', ...)` -- resolved nothing, so its
+    four resources were in neither set, the app could return no record at all,
+    and the run said nothing: a write this never read, reported as no writes.
+    Same traversal and same body rule as the resolver, so the two cannot
+    disagree about what a generic writer is.
+    """
+    out = []
+    for fm in re.finditer(r'\b(?:async\s+)?function\s+(\w+)\s*\(\s*(\w+)\s*,', src):
+        fn, param = fm.group(1), fm.group(2)
+        body = _function_body(src, fm.end())
+        if body is None or param not in set(WRITE_VAR_RE.findall(body)):
+            continue
+        # ONLY AN ALIASED WRITER. A writer called with a VARIABLE key from a
+        # declared list (sdSyncCollection, bldSyncCollection, sfSyncCollection)
+        # is resolved by Shape A in resolve_generic_writes(); flagging those
+        # too was measured on the first run and was noise. The alias
+        # assignment `X = fn;` is the shape nothing here follows.
+        # And only when the alias is the ONLY way in: stonedesk exports
+        # sdSyncCollection on window too, but calls it directly 16 times.
+        direct = len(re.findall(r'(?<![\w$.])' + re.escape(fn) + r'\s*\(', src)) \
+            - len(re.findall(r'function\s+' + re.escape(fn) + r'\s*\(', src))
+        if (not re.search(r'(?<![\w$.])' + re.escape(fn) + r"\(\s*'(\w+)'\s*,", src)
+                and re.search(r'=\s*' + re.escape(fn) + r'\s*;', src)
+                and direct == 0):
+            out.append(fn)
+    return sorted(set(out))
+
+
 def resolve_generic_reads(src):
     """Resource names a GENERIC read provably covers, by the same two shapes.
 
@@ -514,7 +548,8 @@ def audit(path):
     src = strip_comments(open(path, encoding='utf-8', errors='replace').read())
     writes = (set(WRITE_RE.findall(src)) | set(WRITE_OBJ_RE.findall(src))
               | resolve_generic_writes(src)) - PLATFORM_RESOURCES
-    if not writes:
+    gw_unresolved = unresolved_generic_writers(src)
+    if not writes and not gw_unresolved:
         return None
     reads, unresolved, declared = read_coverage(src, writes)
     missing = sorted(writes - reads)
@@ -531,6 +566,11 @@ def audit(path):
     if unresolved and missing:
         reasons.append('a generic read loop exists (%s) but no declared list '
                        "overlaps this app's write set" % ', '.join(unresolved))
+    if gw_unresolved:
+        reasons.append('generic writer(s) %s have NO literal call site this can '
+                       'resolve (reached through an alias or a variable), so '
+                       'what they write -- and whether it is read back -- was '
+                       'never checked' % ', '.join(gw_unresolved))
     wrappers = sorted(set(WRAPPER_RE.findall(src)))
     return {
         'file': os.path.basename(path),
@@ -657,6 +697,24 @@ FIXTURES = [
       function appData(action, resource, rec) { return post(action, resource, rec); }
       function saveJob(r) { appData('write', 'x_jobs', r); }
     """, lambda a: a is not None and a['wrappers'] == ['appData']),
+    # cody b56: a generic writer reached ONLY through an alias wrote nothing
+    # this could see, so the file returned no record -- a not-run read as
+    # "no writes". It is COULD NOT TELL now, and a writer that is ALSO called
+    # directly (stonedesk's shape) is not.
+    ('a generic writer reached only through an alias is COULD NOT TELL',
+     'unresolved_generic_writers', """
+      function xPushOne(resource, rec) { return appData('write', resource, rec); }
+      window.xPushRecord = xPushOne;
+      function save(q) { window.xPushRecord('x_quotes', q); }
+    """, lambda a: a is not None
+         and any('xPushOne' in r for r in a['reasons'])),
+    ('...but not when the same writer is also called directly',
+     'unresolved_generic_writers', """
+      function xPushOne(resource, rec) { return appData('write', resource, rec); }
+      window.xPushRecord = xPushOne;
+      X_LIST.forEach(function (k) { xPushOne(k, store[k]); });
+    """, lambda a: a is None
+         or not any('xPushOne' in r for r in a['reasons'])),
 ]
 
 

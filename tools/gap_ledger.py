@@ -201,6 +201,17 @@ def section(text, head_re, stop_re=re.compile(r'^##\s+', re.M)):
     return rest[:nxt.start()] if nxt else rest
 
 
+def silent_synthesis(r):
+    """A Synthesis section that yields NO row and NO unbolded item (cody b55/b56).
+
+    Its items are in a shape neither ITEM nor ITEM_PLAIN reads -- bold
+    paragraphs with no number, say -- so the document contributed zero gaps
+    and nothing said so: the not-run read as "no gaps". Live on 2026-10-28:
+    docs/cloud-research/sairnbiz-external-competitive-gap-audit-2026-09-26.md.
+    """
+    return bool(r['has_synthesis'] and not r['rows'] and not r['unbolded_items'])
+
+
 def rows_for(path, text):
     """One record per synthesis item, plus the document's own limits."""
     synth = section(text, SYNTH_HEAD)
@@ -414,6 +425,19 @@ def run_fixtures(verbose=True):
         if verbose:
             mark = 'ok  ' if all(g == w for g, w, _ in checks) else 'FAIL'
             print('  %s %s' % (mark, label))
+    # cody b56: a synthesis in a shape this does not read is a FINDING, not
+    # zero gaps -- and a normal one is not.
+    _silent = rows_for('x.md', '## Synthesis' + chr(10) + chr(10) + '**A finding.** prose' + chr(10))
+    _normal = rows_for('x.md', FIXTURES[0][2])
+    for got, want, what in ((silent_synthesis(_silent), True,
+                             'an unnumbered bold synthesis is SILENT'),
+                            (silent_synthesis(_normal), False,
+                             'a numbered bold synthesis is not')):
+        if got != want:
+            bad.append((what, 'silent_synthesis', want, got))
+        elif verbose:
+            print('  ok   %s' % what)
+
     # the lead sentence must be the SENTENCE, not the whole item
     one = rows_for('x.md', FIXTURES[0][2])['rows'][0]['lead']
     if 'Supporting prose' in one:
@@ -553,6 +577,11 @@ def main(argv=None):
                 findings.append('%s: %s has %d numbered synthesis item(s) with '
                                 'no bolded lead, which yield no row'
                                 % (a, r['doc'], r['unbolded_items']))
+            if silent_synthesis(r):
+                findings.append('%s: %s has a Synthesis section that yields '
+                                'ZERO rows -- its items are not numbered '
+                                '`N. **lead**`, so it reads as no gaps when '
+                                'it was never read' % (a, r['doc']))
 
     if args.app:
         for a in sorted(led):
