@@ -1247,8 +1247,8 @@
       "task": "hover auditor b90 held patches manifest removed-lines closure redrive",
       "claimed_at": "2026-10-28T10:57:21Z",
       "claimed_at_epoch": 1793185041.3108916,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-28T11:14:07Z",
       "files": null
     }
   ],
