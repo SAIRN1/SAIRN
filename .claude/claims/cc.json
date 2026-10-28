@@ -4762,8 +4762,8 @@
       "task": "sen_caregivers HR field redaction fix 965 field scope check",
       "claimed_at": "2026-10-28T12:02:29Z",
       "claimed_at_epoch": 1793188949.9561596,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-28T12:38:00Z",
       "files": null
     }
   ],
