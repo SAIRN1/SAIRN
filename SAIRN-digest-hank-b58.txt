@@ -1,0 +1,29 @@
+HANK b58 DIGEST -- 2026-10-28 -- idleCompaction restored; callers' 502 verified on deployed code; ALF + SC-PINNACLE SQL
+CONTEXT 26.2% of 1,000,000 -- 261,691 tokens, measured.
+STATUS: pushed, NOT FORCED; no app code changed; the sql claim is released after the push.
+1. idleCompaction was ABSENT from ~/.claude/settings.json; it is RESTORED to false. Backup: settings.json.bak-hank-b58.
+2. Callers' 502: CLOSED. bridge.js push and the sd-data pre-gate, 16/16, in a deny-all sandbox at prod 098de0716.
+   The api manifest hash-matched inside the sandbox; mutation turned 10/10 red; api/ is unchanged at prod 131d2f8e2.
+3. ALF audit owner recovery SQL: sql/alf-audit-owner-recovery.sql
+   (rehearsed on a temp table; guard check OK; the licence is healthy today)
+4. SC-PINNACLE trial SQL: sql/sc-pinnacle-2026-trial-extend.sql
+   MEASURED: the trial is client-side localStorage (sairncode.html checkTrialGate); no SQL can extend it.
+   The browser unblock step is in the file header.
+   Legacy Stedi row owner: SC-PINNACLE-2026 itself (legacy_rows=1, v2=0).
+5. Sandbox treatment this batch, each with a mutation control:
+   - the callers' 502;
+   - W6 derive_charges 9/9;
+   - W2 claude.js+license.js end to end 9/9;
+   - the b51..b55 suites at the deployed sha, all green.
+   W1-W6, C1 and the callers are now all run on deployed code.
+6. Methodology: the sandbox fetches the exact-sha public tarball itself, then goes deny-all. No bytes pass through
+   the model.
+DECISION-NEEDED (Michael): S2 -- should demo licences skip checkTrialGate? A one-function change.
+NEXT (Michael):
+- A1: run the ALF recovery SQL with your own PIN and record where it lives.
+- S1: browser step, then re-save the Stedi key, then legacy_rows=0, then clear SD_AUTH_SECRET_PREVIOUS.
+CHANGED: the 2 sql files, 3 b58 docs, the chain-log entry in SAIRN-ACTIVE-WORK-hank.md, memory.
+EVIDENCE-path: SAIRN-handoff-hank-b58.md; the scratchpad b58/sandbox_evidence.txt.
+UNVERIFIED: none of the closed items. The 2 SQL files have not been run by Michael yet.
+NOTE: untracked files that are not mine (conflict_excerpt.txt, full_conflict.txt, resolve_conflict.py,
+schema_snapshot_raw.json, dir) were left as found.

@@ -1,0 +1,59 @@
+HANK b58 REPORT -- 2026-10-28
+
+METHODOLOGY: ship the provenance, not the bytes.
+- The sandbox fetches the exact-sha public tarball itself.
+- The whole api/ tree is hashed against the git blobs.
+- The network goes to deny-all before any driver runs.
+- Every green arm also has a local mutation of its guard that turns it red.
+- Memory: deployed-sandbox-verification-before-closing, updated.
+
+1. idleCompaction: it was ABSENT from C:\Users\marsh\.claude\settings.json and is RESTORED as false.
+   - Every other key is unchanged (checked with json.load); backup settings.json.bak-hank-b58.
+   - This is a standing first-action check every batch.
+
+2. Callers' 502: CLOSED.
+   - Sandbox sbx_kbNaQRph30Od3GYOQRNAYm2vMXLA, deny-all, prod dpl_4D9LaKrr79HfojJQ9tVqEuen9qxL @ 098de0716.
+     The 191-file api manifest matched (cdd26365...).
+   - bridge.js push and the sd-data pre-gate, 16/16:
+     - unreadable or non-list 2xx -> 502 ACTIVE_CHECK_UNREADABLE;
+     - 500/503/403 -> 502 ACTIVE_CHECK_FAILED;
+     - no write or data read on any refusal;
+     - controls: active 200, inactive 403, 404 proceeds.
+   - Mutation: 10/10 refusal arms red.
+   - The api/ diff to the current prod 131d2f8e2 is 0 lines, so the result holds there too.
+   - Deviation: sd-data.js did not need a subagent, because nothing was shipped through the model.
+
+3. sql/alf-audit-owner-recovery.sql
+   - It re-keys and unlocks audit-owner to a PIN Michael generates (the generator line is in the file).
+   - It is an upsert, with no delete, and carries the PR 3.4 guard plus placeholder and literal checks.
+   - Why: the only usable owner PIN is in a temp scratchpad.
+   - Live state today is healthy: 5 rows; audit-owner and zz-audit-owner both active owners, unlocked.
+   - Rehearsed on a temp-table copy: re-keyed and unlocked, the other rows untouched, prod untouched.
+   - Guard check OK.
+
+4. sql/sc-pinnacle-2026-trial-extend.sql -- MEASURED: the expired trial is NOT in the database.
+   - license_keys has no trial_ends_at column.
+   - SC-PINNACLE-2026 is active, plan demo, with no subscription.
+   - The block is sairncode.html checkTrialGate(), a 30-day count from localStorage sc_trial_start in that browser.
+   - No SQL can extend it. The file gives the browser unblock step.
+   - PART 2 is a guarded server-side exemption: a no-op today, rehearsed as one.
+   - Legacy Stedi row: owned by SC-PINNACLE-2026 itself (credential default, service stedi, written 2026-08-23).
+     legacy_rows = 1 and v2 = 0, re-measured today.
+
+5. The sandbox method on the other open fail-open/closed items:
+   - W6 derive_charges, sandbox sbx_paOfp1QNnJTQw5OFe3poAPyIS462 @ 131d2f8e2: 9/9.
+     Mutation red.
+   - W2 claude.js + license.js end to end, neither stubbed, sandbox sbx_vEPUUZAlz4rbtwLa0ZI761IroOVN: 9/9.
+     Every auth mode refuses 502 with 0 Anthropic calls. Mutation red.
+   - b51..b55 suites at the deployed sha: all green (11, 9, 12, 6, 13 passed; 0 failed).
+   - W1-W6, C1 and the callers have now all been run on deployed code.
+
+6. Push: not forced.
+   - The commit holds the two SQL files, the three b58 docs, and the chain-log entry in SAIRN-ACTIVE-WORK-hank.md.
+   - The claim on sql is released after the push.
+
+DECISION-NEEDED (Michael): S2 -- should demo licences skip checkTrialGate in sairncode.html? Yes would be a
+one-function change.
+
+Untracked files not mine, left as found: conflict_excerpt.txt, full_conflict.txt, resolve_conflict.py,
+schema_snapshot_raw.json, dir.

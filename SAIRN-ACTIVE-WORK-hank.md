@@ -3216,3 +3216,23 @@ comment does not assume.
 
 Full account: `SAIRN-handoff-hank-b23.md`, `SAIRN-report-hank-b23.txt`,
 `SAIRN-digest-hank-b23.txt`, `docs/2026-10-19-hank-b23-notes.md`.
+
+
+- hank b58 (2026-10-28) -- CHAIN LOG.
+  - Item 1: idleCompaction:false was ABSENT from C:\Users\marsh\.claude\settings.json and is restored.
+    - Other keys unchanged, verified with json.load.
+    - Backup: settings.json.bak-hank-b58.
+    - This is now a standing first-action check every batch.
+  - Item 2, the callers' 502: CLOSED. Driven on the deployed sha in a deny-all Vercel Sandbox: bridge.js push and the
+    sd-data pre-gate, 16/16, with the api/ manifest matched inside the sandbox.
+  - Item 5, the same method on the other open items:
+    - W6 derive_charges: 9/9.
+    - W2 claude.js + license.js, end to end: 9/9.
+    - The b51..b55 suites at the deployed sha: all green.
+    - Each driver has a mutation control.
+  - Item 3: sql/alf-audit-owner-recovery.sql, rehearsed on a temp table; the guard check is OK.
+  - Item 4: sql/sc-pinnacle-2026-trial-extend.sql.
+    - MEASURED: the expired trial is client-side localStorage (sairncode.html, checkTrialGate), so no SQL can extend
+      it. The file gives the browser unblock step.
+    - The one legacy Stedi row is owned by SC-PINNACLE-2026 itself.
+  - Full account: SAIRN-handoff-hank-b58.md, SAIRN-report-hank-b58.txt, SAIRN-digest-hank-b58.txt.
