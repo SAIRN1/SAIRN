@@ -37,4 +37,6 @@ SAIRN REPORT -- fourth b64 -- 2026-10-28
 
 PUSH: several attempts. Refusals: derived-docs; a transient file lock in the
 b18 guard's ablation (sd-data.js verified unmodified); remote races. 0 orphan
-scrutiny rows.
+scrutiny rows. The final push landed through push_retry's pure-base fast
+retry (--no-verify after the gate had passed on the same 3 patch-ids), logged
+in docs/BYPASS-LOG.jsonl.

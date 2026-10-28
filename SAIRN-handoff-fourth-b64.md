@@ -4,7 +4,7 @@
 - **Item 1, the EVV billing gate, was NOT started.** cc held an active `sairnsenior` claim (b67) for the whole batch, so I flagged it back per the standing rule. **Decision needed**, in section 2.
 - **Item 3:** both defects are fixed and landed. **The live drive was not possible**: SAIRNvet has no audit licence, and the permission classifier denied a live probe for one. I wrote the mint SQL for Michael.
 - **Items 4 and 5 are done.**
-- No force and no gate skip. Wrapped at 47.9% real context.
+- No force. **One logged gate bypass:** the deliverables push landed through `push_retry --loop`'s pure-base fast retry. That is `--no-verify`, but only after the gate had passed on the same 3 patch-ids; the retry is logged in `docs/BYPASS-LOG.jsonl`, 2026-10-28T23:53:03Z. Wrapped at 47.9% real context.
 
 **Transcript:** `C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\b6e28c25-eaee-4611-aeb3-d94f0198d47f.jsonl`
 **Scratchpad:** `C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\b6e28c25-eaee-4611-aeb3-d94f0198d47f\scratchpad\` (`docverify63.py` is the doc check)
