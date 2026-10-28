@@ -5173,6 +5173,19 @@
       "source": "status-registry",
       "why": "same app: stonedesk",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-28T18:05:52Z",
+      "my_subject": "platform",
+      "my_task": "CLAUDE.md wrap-up wording field-scope validate tier-a obligations",
+      "other_session": "fourth",
+      "other_subject": "platform",
+      "other_task": "b61 push timeout guard tool and pre-push hook wiring",
+      "other_claimed_at": "2026-10-28T17:25:57Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same subject",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
 }
