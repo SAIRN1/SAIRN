@@ -4703,6 +4703,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "hank-1793208400",
+      "session": "hank",
+      "subject": "tools",
+      "task": "sql placeholder lint push gate",
+      "claimed_at": "2026-10-28T17:26:40Z",
+      "claimed_at_epoch": 1793208400.064798,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
