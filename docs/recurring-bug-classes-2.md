@@ -28,6 +28,12 @@ Each section gives:
   - 1 manual fetch, rebase and push failed: the gate took 75 s and `main` moved during it.
   - The pure-base retry described below landed on its first try at 17:22:01Z.
 
+**Measured occurrences, hank (b61, 2026-10-28) -- the class is not cody-only:**
+- The b61 docs commit was refused 3 times out of 3, every time with `cannot lock ref 'refs/heads/main': is at X but
+  expected Y`. Each was a plain `git push` after fetch and rebase, and the gate PASSED each time.
+- origin moved `80d753ef1 -> fe0127562 -> 8798af1a5`, then `0f93cad83 -> b4cea6792`, each during one gate run.
+- It was bounded by hand at one retry per dispatch, so it needed three human-timed dispatches and still did not land.
+
 **Measured intervals:**
 - **Gate:** 75 s to about 4 min per run. An `api/sd-data.js` range is the slow case.
 - **Remote, 2026-10-28 12:00–17:20Z:** hank b59, hover b91, fourth and the claim commits landed every 1–7 minutes, and often less than 2 minutes apart.
@@ -43,7 +49,26 @@ Each section gives:
 - Every skip is logged twice: in the scratchpad `gate_skip.log`, and in the repo's `docs/BYPASS-LOG.jsonl` through `tools/bypass_log.py record()`. That way `bypass_log.py` counts it as a pattern rather than it being remembered.
 
 **NOT mitigated, and why it is still a class:**
-- **The skip is in a scratchpad script.** Only the session that has it is covered. The durable form belongs in `tools/push_retry.py`, which cc owns: a `--attempts N` single-shot mode with this patch-id rule, and a git timeout longer than the gate's runtime (today it is 120 s). Routed to cc, as before.
+- ~~**The skip is in a scratchpad script.**~~ **CLOSED (hank b61): the durable form is in `tools/push_retry.py --loop`.**
+  - It is the same rule:
+    1. The gate must have PASSED on this run. That means a full push that reached the remote and was refused as `transient`.
+    2. The `git patch-id --stable` set of `origin/main..HEAD` must be unchanged since then.
+    3. The incoming commits must touch none of our files, and none of `docs/CRITICALITY-TIERS.md`,
+       `tools/sairn_push_gate_hook.py` or `.githooks/`.
+  - If any of these fails or cannot be read, the retry runs the full gate.
+  - A skip pushes `--no-verify` and is recorded in `docs/BYPASS-LOG.jsonl` under cody's check name.
+  - The default is 5 attempts. The push has no timeout (b61, `79c4f10cf`).
+  - Selftest: 15 C1 arms. 4 mutants go red: no patch-id compare, no overlap check, a skip armed after a gate refusal,
+    and a skip never armed.
+- **STANDING PATTERN for all 4 build agents (Michael, hank b61): push through `python tools/push_retry.py --loop`,
+  never a bare or hand-looped `git push`.**
+  - The compare-before-update-ref is git's own: the remote's expected-old-value check is the `cannot lock ref` refusal.
+  - What closes the race is responding to it within seconds:
+    1. fetch;
+    2. rebase;
+    3. re-compare the outgoing patch-ids against the gated set;
+    4. push without re-paying the gate when nothing of ours changed.
+  - A scratchpad `push_fast.sh` and bare `git push` retries are superseded by this.
 - **The base move is not re-checked.** A skipped push never re-runs the whole-tree checks against the new base, such as the derived documents and the credential pattern over the combined range. Condition 2 bounds that risk, but does not remove it. The incoming commits passed their own gates; the combination of theirs and ours was not checked.
 - **The real fix is gate duration.** It is either a gate fast enough to beat the interval, or a merge queue. Retry tactics only lower the loss rate.
 

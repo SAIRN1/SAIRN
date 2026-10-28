@@ -785,33 +785,77 @@ def selftest():
     # ── AND THE LOOP OBEYS IT: cmd_loop driven with git stubbed, counting
     # pushes. FAILING-FIRST: the pre-b32 loop pushed 4 times on the Tier A text.
     g = globals()
-    keep = (g['git'], g['capture'], g['fold_scrutiny'])
+    names = ('git', 'capture', 'fold_scrutiny', '_outgoing_state',
+             '_incoming_files', '_log_fast_retry')
+    keep = tuple(g[n] for n in names)
 
-    def _drive(blob):
-        pushes = []
+    def _drive(blob, state=None, incoming=frozenset()):
+        pushes, logged = [], []
+        states = iter(state or [])
 
-        def _git(*a):
+        def _git(*a, **_k):
             if a[0] == 'push':
-                pushes.append(1)
+                pushes.append('--no-verify' in a)
                 return 1, '', blob
             if a[0] == 'rev-list':
                 return 0, '0', ''
             return 0, '', ''
         g['git'], g['capture'] = _git, (lambda write=True: ['s'])
         g['fold_scrutiny'] = lambda: (False, 'nothing')
+        g['_outgoing_state'] = lambda: next(states, (frozenset({'p1'}), {'a.py'}, 'B'))
+        g['_incoming_files'] = lambda o, n: set(incoming)
+        g['_log_fast_retry'] = lambda *a: logged.append(1)
         try:
             with contextlib.redirect_stdout(io.StringIO()), \
                     contextlib.redirect_stderr(io.StringIO()):
                 rc = cmd_loop(4)
         finally:
-            g['git'], g['capture'], g['fold_scrutiny'] = keep
-        return len(pushes), rc
-    n_gate, rc_gate = _drive(tier_a)
-    n_race, rc_race = _drive(race)
+            for n, v in zip(names, keep):
+                g[n] = v
+        return pushes, rc, len(logged)
+    p_gate, rc_gate, _l = _drive(tier_a)
+    p_race, rc_race, l_race = _drive(race)
     arm('the LOOP pushes ONCE on a gate refusal and stops (exit 5)',
-        n_gate == 1 and rc_gate == 5, 'pushes=%d rc=%s' % (n_gate, rc_gate))
+        len(p_gate) == 1 and rc_gate == 5, 'pushes=%s rc=%s' % (p_gate, rc_gate))
     arm('CONTROL -- the loop still retries a fetch-first race every attempt',
-        n_race == 4 and rc_race == 1, 'pushes=%d rc=%s' % (n_race, rc_race))
+        len(p_race) == 4 and rc_race == 1, 'pushes=%s rc=%s' % (p_race, rc_race))
+
+    # ── C1 (hank b61): after a PASS lost to a race, an unchanged range retries
+    # WITHOUT the gate, and every such skip is logged.
+    arm('C1 -- full gate first, then 3 FAST retries on an unchanged range, '
+        'each logged', p_race == [False, True, True, True] and l_race == 3,
+        'pushes=%s logged=%d' % (p_race, l_race))
+    p_chg, _rc, l_chg = _drive(race, state=[
+        (frozenset({'p%d' % k}), {'a.py'}, 'B') for k in range(4)])
+    arm('C1 -- our commits changing between attempts means the FULL gate '
+        'every time', p_chg == [False] * 4 and l_chg == 0,
+        'pushes=%s logged=%d' % (p_chg, l_chg))
+    p_ov, _rc, _l = _drive(race, incoming={'a.py'})
+    arm('C1 -- incoming commits touching our file means the FULL gate',
+        p_ov == [False] * 4, 'pushes=%s' % p_ov)
+    p_gl, _rc, _l = _drive(lock, state=[None] * 4)
+    arm('C1 -- an unreadable range is the FULL gate, never a skip',
+        p_gl == [False] * 4, 'pushes=%s' % p_gl)
+    p_g2, _rc, _l = _drive(tier_a)
+    arm('C1 -- a gate refusal never arms a skip (one push, no --no-verify)',
+        p_g2 == [False], 'pushes=%s' % p_g2)
+
+    S = (frozenset({'x'}), {'a.py'}, 'B2')
+    G = (frozenset({'x'}), 'B1')
+    for name, args, want in (
+            ('no pass yet', (None, S, set()), False),
+            ('unchanged range, disjoint incoming', (G, S, {'b.py'}), True),
+            ('our patch-ids changed', ((frozenset({'y'}), 'B1'), S, set()), False),
+            ('incoming overlaps ours', (G, S, {'a.py'}), False),
+            ('incoming changes the gate hook', (G, S, {'tools/sairn_push_gate_hook.py'}), False),
+            ('incoming changes .githooks/', (G, S, {'.githooks/pre-push'}), False),
+            ('incoming changes CRITICALITY-TIERS', (G, S, {'docs/CRITICALITY-TIERS.md'}), False),
+            ('state unreadable', (G, None, set()), False),
+            ('incoming unreadable', (G, S, None), False),
+            ('nothing outgoing', ((frozenset(), 'B1'), (frozenset(), set(), 'B2'), set()), False)):
+        got = fast_retry_decision(*args)[0]
+        arm('C1 decision -- %s -> %s' % (name, 'skip' if want else 'full gate'),
+            got == want, 'got %s' % got)
     return out, bad
 
 
@@ -951,6 +995,97 @@ def classify_refusal(blob):
     return 'unknown'
 
 
+# ── A LOST RACE RE-PAID THE WHOLE GATE (hank b61, C1) ─────────────────────
+# docs/recurring-bug-classes-2.md C1. The gate takes 75 s to ~4 min; other
+# clones land every 1-7 min. Every 'transient' retry above rebased and ran the
+# FULL gate again, so it landed only if the remote stood still for a whole gate
+# run. hank b61 lost three in a row (`cannot lock ref`), each after a PASS.
+# git's own compare-before-update-ref is what refused us; what was missing is a
+# retry fast enough to win, i.e. one that does not re-run the gate on code it
+# already passed.
+#
+# This is the durable form of cody b56's scratchpad push_fast.sh, Michael's
+# rule. A retry skips the gate (`--no-verify`) ONLY when ALL of these hold:
+#   1. the gate PASSED on this run -- a full push that reached the remote and
+#      was refused as 'transient';
+#   2. the `git patch-id --stable` set of origin/main..HEAD is exactly the set
+#      it passed (no commit of ours changed: no conflict, re-seat, fold, new
+#      commit);
+#   3. the incoming commits (the base it passed -> the new origin/main) touch
+#      none of the files ours change, and none of the gate's own inputs.
+# Anything unreadable is a full gate, never a skip. Every skip is a row in
+# docs/BYPASS-LOG.jsonl, under the same check name cody's rows use.
+_REGATE_PATHS = ('docs/CRITICALITY-TIERS.md', 'tools/sairn_push_gate_hook.py',
+                 '.githooks/')
+_FAST_CHECK = 'pre-push gate (whole hook, git push --no-verify)'
+
+
+def _outgoing_state():
+    """(patch-id set, files our commits change, origin/main sha), or None."""
+    rc1, base, _ = git('rev-parse', 'origin/main')
+    rc2, shas, _ = git('rev-list', 'origin/main..HEAD')
+    rc3, files, _ = git('diff', '--name-only', 'origin/main', 'HEAD')
+    if rc1 or rc2 or rc3 or not base:
+        return None
+    pids = set()
+    for sha in shas.split():
+        try:
+            show = subprocess.run(['git', 'show', sha], cwd=REPO,
+                                  capture_output=True, timeout=120)
+            pid = subprocess.run(['git', 'patch-id', '--stable'], cwd=REPO,
+                                 input=show.stdout, capture_output=True,
+                                 timeout=120)
+        except Exception:                                       # noqa: BLE001
+            return None
+        f = (pid.stdout or b'').decode('utf-8', 'replace').split()
+        if show.returncode or pid.returncode or not f:
+            return None
+        pids.add(f[0])
+    return frozenset(pids), set(files.split('\n')) - {''}, base
+
+
+def _incoming_files(old_base, new_base):
+    rc, out, _ = git('diff', '--name-only', old_base, new_base)
+    return None if rc else set(out.split('\n')) - {''}
+
+
+def fast_retry_decision(gated, now, incoming):
+    """(skip_gate, reason). Pure: `gated` is (patch-ids, base) the gate last
+    passed, `now` is _outgoing_state(), `incoming` is _incoming_files()."""
+    if gated is None:
+        return False, 'the gate has not passed on this run'
+    if now is None or incoming is None:
+        return False, 'could not read the outgoing range -- full gate'
+    if not now[0]:
+        return False, 'nothing outgoing'
+    if now[0] != gated[0]:
+        return False, 'our commits changed since the gate passed'
+    regate = sorted(p for p in incoming if p.startswith(_REGATE_PATHS))
+    if regate:
+        return False, 'incoming commits change the gate\'s inputs: %s' % ', '.join(regate)
+    overlap = sorted(incoming & now[1])
+    if overlap:
+        return False, 'incoming commits touch our files: %s' % ', '.join(overlap)
+    return True, ('pure base move: gate passed on these %d patch-id(s); %d '
+                  'incoming file(s), none of ours' % (len(now[0]), len(incoming)))
+
+
+def _log_fast_retry(gated, now, why, prc):
+    try:
+        sys.path.insert(0, os.path.join(REPO, 'tools'))
+        import bypass_log
+        _rc, tip, _ = git('rev-parse', '--short', 'HEAD')
+        bypass_log.record(
+            _FAST_CHECK,
+            'PURE-BASE RETRY (push_retry --loop): %s; patch-ids [%s]; base %s '
+            '-> %s; push exit %s' % (why, ' '.join(sorted(now[0])),
+                                     gated[1][:9], now[2][:9], prc),
+            command='git push --no-verify origin main', tip=tip)
+    except Exception as exc:                                    # noqa: BLE001
+        print('  NOTE: the skip was NOT logged to BYPASS-LOG: %s' % exc,
+              file=sys.stderr)
+
+
 def cmd_loop(attempts):
     cap = capture()
     if cap is None:
@@ -959,6 +1094,7 @@ def cmd_loop(attempts):
               'from anybody else\'s.', file=sys.stderr)
         return 3
     print('captured %d local-only subject(s) as safe to amend' % len(cap))
+    gated = None
     for i in range(1, attempts + 1):
         # The gate's write-back from the PREVIOUS attempt is a dirty tree that
         # would also block the rebase below; fold it into the one bookkeeping
@@ -1062,7 +1198,19 @@ def cmd_loop(attempts):
             _f, _why = _regenerate_and_fold()
             if _f:
                 print('  regenerated documents folded into your own commit')
-        prc, pout, perr = git('push', 'origin', 'main', timeout=None)
+        now = _outgoing_state()
+        skip = False
+        if gated is not None:
+            skip, why = fast_retry_decision(
+                gated, now, _incoming_files(gated[1], now[2]) if now else None)
+            print('  %s: %s' % ('FAST RETRY, gate not re-run' if skip
+                                else 'full gate', why))
+        if skip:
+            prc, pout, perr = git('push', '--no-verify', 'origin', 'main',
+                                  timeout=None)
+            _log_fast_retry(gated, now, why, prc)
+        else:
+            prc, pout, perr = git('push', 'origin', 'main', timeout=None)
         if prc == 0:
             print('PUSHED')
             return 0
@@ -1126,7 +1274,11 @@ def cmd_loop(attempts):
                       'refused the same way.' % _why, file=sys.stderr)
                 return 5
             print('    folded; retrying')
-        elif kind != 'transient':
+        elif kind == 'transient':
+            if not skip:
+                # The full gate ran and let the push reach the remote.
+                gated = (now[0], now[2]) if now else None
+        else:
             print('STOPPING: this refusal is %s, not a lost race. The gate '
                   'decides from the outgoing range, which another attempt '
                   'does not change, and it counts refusals per tip. Read it, '
@@ -1171,7 +1323,7 @@ def main(argv):
         return 3
 
     if '--loop' in argv:
-        n = 3
+        n = 5
         if '--attempts' in argv:
             try:
                 n = int(argv[argv.index('--attempts') + 1])
