@@ -4621,6 +4621,16 @@ correction is logged separately (b13 item 6) and the routing-doc row is
 marked CLOSED-with-correction rather than silently rewritten, per this
 role's own AS-FOUND/AS-LEFT rule.
 
+## Refute-or-promote, Tier 1 (b91, Michael's dispatch) and the boundary-stop rule
+
+**The critic's mandate on a Tier 1 finding is to KILL it.** Not to evaluate it, not to improve it. The finding survives only if a real test says the claim holds. `tools/hover_empirical_gate.py` is the gate and the only thing that promotes: `--run` executes a test script this role wrote (exit 0 = the claim held = the kill attempt failed = promoted; exit 1 = killed; anything else = COULD NOT RUN, a third state that promotes nothing), `--cite` stands in for execution on a legal or compliance claim (a verbatim quote must appear in the named primary source; a paraphrase is killed). A promotion writes the six-field record (finding_id, tier, test_command_hash, result, commit_sha, timestamp), its sha256, an RFC 3161 token over that sha256 from freetsa.org (unreachable means no promotion, never a local clock), a chain entry with `--detection-method empirical-gate`, and a row in `hover-audit-log/kill_attempts.jsonl`. Every attempt, survived or killed or could-not-run, gets the chain entry and the row; `--kill-report` groups them by finding category for the recurring-bug-classes feed. Reviewer or critic agreement promotes nothing; the tool has no flag that takes an opinion.
+
+**Context asymmetry is a procedure, not a mechanism.** Work from the diff and the test evidence; do not read the generator's own writeup first. The tool takes no prose about the finding, so it cannot be fed one, but it cannot stop anyone having read one and does not claim to.
+
+**NO BUILDER EXECUTION.** The test script must live in this skill directory or the audit-log directory (`hover-audit-log/empirical-tests/` is the home; a copy under this directory that names a Tier A resource is stopped by the platform push gate until an independent-review obligation is recorded for it, which is a builder-tool command this role does not run, so the first test, for #965, waits on branch `hover-b91-empirical-tests`), and runs under `python -I` from the repo root. A build agent's tool, test, script, skill or command is read as data and never run. Reading a repo file as text inside a test is fine; importing or executing one is not.
+
+**Every stop at the builder/auditor boundary is logged in the handoff, every time.** A cross-boundary write the scope gate refuses, a finding addressed to the wrong owner and caught, a manifest or ALLOWED entry this role may not make: each is a line in that batch's handoff under its own heading, with what was stopped, by which gate, and who decides. Silent compliance is the failure this rule exists to remove; the b85 to b89 history (#1705, #1698, the manifest patch, the local scope manifest) is the shape.
+
 ## Report to Michael only when
 
 A real finding needs a decision, or a deep pass completed with a real

@@ -35,6 +35,7 @@ mangled by bash command-substitution on an unescaped backtick inside
 read before typing the command, and it never mentioned --summary-file was an
 option at all:
     Write the text to a scratch file, then:
+    python hover_log.py --add --type note --target <x> --summary-file <path> --detection-method empirical-gate   (b91, written by hover_empirical_gate.py)
     python hover_log.py --add --type check --target <x> --summary-file <path>
 --summary is fine for a short line with no inline code; anything longer or
 carrying a `backtick`, a function name, or a file path should go through
@@ -212,6 +213,11 @@ if not LOG_PATH:
     _LOG_PATH_IS_UNSAFE_FALLBACK = True
 GENESIS = 'genesis:hover-auditor-self-log:v1'
 TYPES = ('check', 'finding', 'no-report', 'note')
+# b91: the structured field that marks an entry written by the EMPIRICAL GATE
+# (hover_empirical_gate.py). A tuple of one on purpose: a new method is a decision.
+# The key is present in an entry ONLY when set, so every older entry hashes and
+# verifies exactly as it did.
+DETECTION_METHODS = ('empirical-gate',)
 SEVERITIES = ('critical', 'high', 'moderate', 'low', '')
 
 # ── CLOSURE STATE, ADDED h1 b71 ─────────────────────────────────────────────
@@ -1160,6 +1166,12 @@ def cmd_add(argv):
     # one. undirected_sweep_freshness.py reads this field, never the prose.
     is_undirected_sweep = '--undirected-sweep' in argv
 
+    detection_method = opt('--detection-method', required=False, default='') or ''
+    if detection_method and detection_method not in DETECTION_METHODS:
+        print('--detection-method must be one of %s (got %r); nothing was appended'
+              % (DETECTION_METHODS, detection_method))
+        return EXIT_COULD_NOT_RUN
+
     # ── ROUTABLE FIELD, ADDED 2026-09-29 ─────────────────────────────────────
     # Same reason as process_pass/undirected_sweep: a structured field, not
     # the prose word ROUTABLE a future reader (or a checker) has to trust was
@@ -1423,6 +1435,8 @@ def cmd_add(argv):
                          for p, i in source_shas.items()},
         'staleness_check': {p: v['status'] for p, v in staleness_verdict.items()},
     }
+    if detection_method:
+        entry['detection_method'] = detection_method
     entry['hash'] = digest_of(prev_hash, entry)
 
     with open(LOG_PATH, 'a', encoding='utf-8') as f:
@@ -2047,6 +2061,60 @@ def run_finding_class_fixtures():
     return fail_count[0] == 0
 
 
+def run_detection_method_fixtures():
+    """b91: the --detection-method field. Isolated LOG_PATH, never the real log."""
+    global LOG_PATH
+    import contextlib
+    import io
+    import tempfile
+    ok = [0]
+    bad = [0]
+
+    def ck(name, cond):
+        if cond:
+            ok[0] += 1
+            print('  ok   ' + name)
+        else:
+            bad[0] += 1
+            print('  FAIL ' + name)
+
+    real = LOG_PATH
+    tmpdir = tempfile.mkdtemp(prefix='hover-dm-')
+    try:
+        LOG_PATH = os.path.join(tmpdir, 'dm-log.jsonl')
+        sink = io.StringIO()
+        with contextlib.redirect_stdout(sink):
+            rc0 = cmd_add(['--add', '--type', 'note', '--target', 'self', '--summary', 'plain entry'])
+            rc1 = cmd_add(['--add', '--type', 'note', '--target', 'self', '--summary', 'gate entry',
+                           '--detection-method', 'empirical-gate'])
+            rc2 = cmd_add(['--add', '--type', 'note', '--target', 'self', '--summary', 'bad method',
+                           '--detection-method', 'vibes'])
+        rows = [json.loads(x) for x in open(LOG_PATH, encoding='utf-8') if x.strip()]
+        ck('DM1 an entry without the flag carries NO detection_method key (older hashes unchanged)',
+           rc0 == EXIT_CLEAN and 'detection_method' not in rows[0])
+        ck('DM2 --detection-method empirical-gate is stored on the entry',
+           rc1 == EXIT_CLEAN and rows[1].get('detection_method') == 'empirical-gate')
+        ck('DM3 an unknown method is REFUSED and nothing is appended',
+           rc2 == EXIT_COULD_NOT_RUN and len(rows) == 2)
+        with contextlib.redirect_stdout(sink):
+            rv = cmd_verify([])
+        ck('DM4 the chain still verifies with a mix of entries with and without the field', rv == EXIT_CLEAN)
+        with open(LOG_PATH, 'r', encoding='utf-8') as f:
+            lines = f.read().split('\n')
+        lines[1] = lines[1].replace('empirical-gate', 'empirical-gatE')
+        with open(LOG_PATH, 'w', encoding='utf-8', newline='') as f:
+            f.write('\n'.join(lines))
+        with contextlib.redirect_stdout(sink):
+            rv2 = cmd_verify([])
+        ck('DM5 CONTROL: editing the field after the fact breaks the chain (the field is inside the hash)',
+           rv2 != EXIT_CLEAN)
+    finally:
+        LOG_PATH = real
+    print('%d ok, %d failed' % (ok[0], bad[0]))
+    return not bad[0]
+
+
+
 def run_closure_state_fixtures():
     """derive_closure_states() is pure over a list of rows -- no I/O, no
     git, no LOG_PATH. Every arm below is a hand-built row list, and the
@@ -2214,7 +2282,9 @@ def main(argv):
         ok_closure = run_closure_state_fixtures()
         print()
         ok_class = run_finding_class_fixtures()
-        return (EXIT_CLEAN if (ok_stale and ok_rotation and ok_closure and ok_class)
+        print()
+        ok_dm = run_detection_method_fixtures()
+        return (EXIT_CLEAN if (ok_stale and ok_rotation and ok_closure and ok_class and ok_dm)
                 else EXIT_FINDING_OR_BROKEN)
     # ── THE TWO h1 b32 GUARDS, BEFORE ANY REAL DISPATCH ────────────────────
     # Skipped only for --selftest above, which monkeypatches LOG_PATH itself
