@@ -1990,6 +1990,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/write_readback_shape_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "23efd4cf8fc475c54d601871ddc1e967d9dee706",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_role_gate_negative_coverage_probe.py",
    "class": "test file",
    "level": "WEAKENING",

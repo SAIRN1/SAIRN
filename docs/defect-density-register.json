@@ -39103,7 +39103,7 @@
       "recurrence_open": "Any OTHER hook-spawned tool that runs git in a temp dir is covered only by the hook-level unset; a tool invoked by a different hook or wrapper that exports GIT_DIR is not."
     },
     {
-      "commit": "9056977ce784",
+      "commit": "e567e2f56b6f",
       "date": "2026-10-28",
       "subject": "fix(tools, cody b56): two more not-runs read as clean -- a synthesis nobody parsed, and a writer only an alias reaches",
       "files": [

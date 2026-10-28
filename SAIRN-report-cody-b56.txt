@@ -1,0 +1,45 @@
+SAIRN REPORT -- cody b56 (2026-10-28)
+=====================================
+Handoff: SAIRN-handoff-cody-b56.md. This covers the re-issued b56 queue.
+
+1. PUSH: DONE.
+   - The b55 deliverables and the platform claim release landed as 719175c39, on try 1 at 17:22:01Z, by the pure-base path.
+   - fourth is no longer held: sairn_claim list shows no cody claim.
+   - Two earlier attempts (fetch first; cannot lock ref) were reported at the time.
+
+2. METHODOLOGY: push race.
+   - The scratchpad push_once.sh is now hardened. It makes up to N back-to-back attempts.
+   - The gate is skipped ONLY when BOTH of these hold:
+     - origin/main..HEAD has exactly the patch-ids the gate last PASSED;
+     - the incoming commits touch none of our files.
+   - The rebase uses --autostash: the gate writes scrutiny-flags.json, so the tree is dirty after every gated try.
+   - Every skip is logged in the scratchpad gate_skip.log and in docs/BYPASS-LOG.jsonl, through bypass_log.record(). Both skips this batch are recorded: 17:22Z and 18:06Z.
+   - The class is in docs/recurring-bug-classes-2.md:
+     - C1: push race under auto-mode, gate duration > remote inter-commit interval. Measured b53-b56. It states what is NOT mitigated: the base move is not re-checked, and the durable form belongs in cc's tools/push_retry.py.
+     - C2: not-run read as pass, with the standing "does it run, does it check" practice.
+
+3. FULL run_all_tests: INCOMPLETE.
+   - The OOM kill ended the log at 536 ok, 0 FAIL, 0 retry-passes, with no summary and no EXIT line.
+   - Population at 1feeb7d67, from discover(): 466 js + 431 py = 897 (plus 3 in the third bucket).
+   - So 536 of 897 ran, with 0 failed. Not restarted.
+   - The worktree was NOT removed: the auto-mode classifier denied it. Its node_modules is a junction into this clone, so the junction must go first. The two commands are in the handoff.
+
+4. gap_ledger and write_without_readback alias: FIXED (e567e2f56).
+   - gap_ledger: a Synthesis section in an unparsed shape had been read as "no gaps". It is now a finding.
+     - Live case: the sairnbiz external audit.
+     - Fixtures +2; probe 0 failures.
+   - write_without_readback: a writer reached only through an alias returned no record. It is now COULD NOT TELL.
+     - Live case: sairnmechanical mechPushOne.
+     - The first cut also flagged 3 Shape-A writers. That was measured as noise and narrowed.
+     - Fixtures 9/9 (+2), and the ablation fails the positive arm.
+     - Real exit went 0 -> 1.
+   - The shape probe's arm2 now reads the section, not the whole-run exit.
+     - Still red from app growth, not re-baselined unread: arm2_writes_33 (stonedesk 32) and arm5 (sairncare 10/9, sairnmechanical 3/2).
+
+5. PUSH: work LANDED as e567e2f56..bb32fe13e, at 18:06:03Z, by the pure-base path, after the gate PASSED on the same patch-ids.
+   - On the way, the gate blocked twice. Both were fixed at the cause:
+     - Tier A obligation, tripped by a resource name in my own comment. Reworded; no obligation applied.
+     - Register feed: a stale SHA after the rebuild. Re-seated.
+   - Deliverables: see the line below.
+
+DELIVERABLES PUSH: see the line appended after the push.

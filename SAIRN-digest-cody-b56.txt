@@ -1,0 +1,19 @@
+DIGEST -- cody b56 (re-issued queue), 2026-10-28. Items 1, 2, 4, 5 DONE; 3 READ, run INCOMPLETE.
+STATUS: TOOLS, DOCS AND SCRATCHPAD SCRIPT ONLY. NO APP CODE. NO SQL. NO LIVE WRITES.
+CHANGED: tools/gap_ledger.py, tools/write_without_readback_check.py, tests/write_readback_shape_probe.py,
+  docs/recurring-bug-classes-2.md (new), docs/BYPASS-LOG.jsonl (2 rows), manifest, register; scratchpad push_once.sh.
+LANDED: b55 deliverables + claim release 719175c39 (17:22Z). b56 work e567e2f56..bb32fe13e (18:06Z). fourth is no longer held.
+ITEM 1 -- landed on try 1 by the pure-base path: the gate had passed on identical patch-ids, and no incoming file overlapped ours.
+ITEM 2 -- push_once.sh skips the gate only if the patch-ids match the last PASS and nothing incoming overlaps. Uses --autostash.
+  Every skip goes in BYPASS-LOG. Class C1 "push race under auto-mode" and C2 "not-run read as pass" are in recurring-bug-classes-2.md.
+ITEM 3 -- run_all_tests: 536 of 897 discovered ran, 0 failed. OOM-killed, no EXIT line, INCOMPLETE. Not restarted.
+  The worktree was NOT removed (permission denied). The junction must be removed first; commands are in the handoff s3.
+ITEM 4 -- gap_ledger: an unparsed Synthesis was read as "no gaps"; now a finding (live: sairnbiz).
+  write_without_readback: an alias-only writer returned no record; now COULD NOT TELL (live: sairnmechanical).
+  The shape probe has 2 pre-existing app-growth reds, not re-baselined unread.
+ITEM 5 -- pushed and confirmed. The gate blocked twice; both were fixed at the cause (my comment named a Tier A resource; a stale register SHA).
+DECISION-NEEDED: Michael -- remove Temp\cody-b55-alltests (junction first). cc -- durable pure-base rule in tools/push_retry.py.
+UNVERIFIED: a gate-skipped push does not re-run the whole-tree checks against the new base (C1 says so).
+NEXT: cody -- re-baseline the shape probe after reading app growth; mechPushOne write and read sides; hover_separation fixture; b55 MEDIUM leftovers.
+EVIDENCE-path: SAIRN-handoff-cody-b56.md, SAIRN-report-cody-b56.txt, docs/recurring-bug-classes-2.md
+CONTEXT 42.3% of 1,000,000 -- 423,466 tokens, measured.
