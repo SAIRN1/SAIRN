@@ -9,8 +9,9 @@ Items 1, 2, 5 and 6 are done or running. Items 3 and 4 are not build work, and I
   - `1a2377878` and `420975941`: register records.
   - `60a641e6c`: manifest override b55, which replaces b54 (the ten tools/ files).
   - `e016a7f1a`: register re-seat.
-- **This deliverables commit** carries the handoff, report, digest, the work-log entry, the scrutiny bookkeeping and the claim release `0651405e3`. The report confirms whether it landed, because this file is written before that push.
-- **Claims:** I claimed `platform` this batch (`f4ec825bf`) and RELEASED it (`0651405e3`). fourth's b60 handoff says its item 6 gate held on this claim, so the release matters to fourth.
+- **This deliverables commit** carries the handoff, report, digest, the work-log entry, the scrutiny bookkeeping and the claim release `cf91cf828`. It did NOT land (see the next bullet).
+- **DELIVERABLES PUSH DID NOT LAND.** The 5 bounded attempts were exhausted: attempts 1-2 failed with "cannot lock ref" and 3-5 with "fetch first", because hank b59 and hover b91 were pushing every 3-7 minutes. Two commits are local only: the deliverables commit `e6711aadf` and the claim release `cf91cf828`. **Exact next step:** run `sh <scratchpad>/push_once.sh` once, when the remote is quiet, then confirm with `git merge-base --is-ancestor HEAD origin/main`. Until then other clones see cody's `platform` claim as active, until it expires.
+- **Claims:** I claimed `platform` this batch (`f4ec825bf`) and released it locally (`cf91cf828`, NOT yet on origin -- see above). fourth's b60 handoff says its item 6 gate held on this claim, so the release matters to fourth.
 - **Transcript:** `C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cody\2d1bcf76-c842-40ed-b21d-9b20d98e7d45.jsonl`
 
 ## 1. Full `run_all_tests.py`, RUNNING in the background

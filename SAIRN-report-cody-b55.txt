@@ -6,7 +6,7 @@ Handoff: SAIRN-handoff-cody-b55.md. It covers the full state, the sweep table an
 1. FULL run_all_tests.py: RUNNING, not blocking the batch
    - It runs in an isolated worktree (C:\Users\marsh\AppData\Local\Temp\cody-b55-alltests, at 1feeb7d67, which includes the b54 not-run fix).
    - I restarted it once, unbuffered (-u), because file stdout was block-buffered and showed no progress.
-   - SO FAR (11:58Z): 491 test files passed, 0 failed, 0 passed only on retry, 0 lines of any other kind. The run is not finished, so this is a floor, not a verdict.
+   - SO FAR (12:26Z): 536 test files passed, 0 failed, 0 passed only on retry, 0 lines of any other kind. The run is not finished, so this is a floor, not a verdict.
    - Log: ...\scratchpad\b55-alltests.log. The final line is EXIT=<n>.
 
 2. checker_confidence.py hardening: DONE, 98bb61e17
@@ -62,6 +62,12 @@ Handoff: SAIRN-handoff-cody-b55.md. It covers the full state, the sweep table an
    - Commits: 98bb61e17, 19a9a84b8, 8e2c18f48, and the register, manifest and claim bookkeeping.
    - The deliverables push is confirmed below.
    - Register --check: OK, 751 records.
-   - The platform claim was taken and released (0651405e3). fourth b60 had been held on it.
+   - The platform claim was taken and released locally (cf91cf828, NOT yet on origin). fourth b60 had been held on it.
 
-DELIVERABLES PUSH: see the line appended after the push.
+DELIVERABLES PUSH: NOT LANDED. The bounded set of 5 single attempts is exhausted, and I stopped as instructed.
+   - Attempts 1-2 failed with "cannot lock ref"; attempts 3-5 failed with "fetch first".
+   - Cause: hank b59 and hover b91 were pushing every 3-7 minutes, which is shorter than the ~4-minute gate.
+   - Local only, ahead of origin: the deliverables commit e6711aadf (handoff, report, digest, work log, scrutiny rows) and the claim release cf91cf828.
+   - So fourth still sees cody's platform claim as active until this lands, or until the claim expires 4h after it was taken.
+   - All b55 WORK commits (98bb61e17, 19a9a84b8, 8e2c18f48 plus bookkeeping) DID land in the first push.
+   - Next step: run scratchpad push_once.sh (one attempt, no loop) when the remote is quiet, then confirm with git merge-base --is-ancestor HEAD origin/main.
