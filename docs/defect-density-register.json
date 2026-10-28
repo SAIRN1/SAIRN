@@ -38989,7 +38989,7 @@
       "recurrence_open": "41 MEDIUM/LOW hits from the b55 sweep remain (handoff lists them); checker_kit.tracked() ignores git's exit code for every caller."
     },
     {
-      "commit": "c66c83dfa466",
+      "commit": "10e914b1c97a",
       "date": "2026-10-28",
       "subject": "fix(sd-data, cody b58): a sairnmechanical save the store did not echo is 502 WRITE_UNCONFIRMED, never ok",
       "files": [
@@ -39345,7 +39345,7 @@
       "recurrence_open": "Other consumers of FLAKY.classify or of report_only_checks --json output may have the same default-to-best or stdout-pollution shape; not swept."
     },
     {
-      "commit": "015e881c06ba",
+      "commit": "815240d1626e",
       "date": "2026-10-28",
       "subject": "fix(tools, cody b58): the b55 MEDIUM not-run-as-pass leftovers, M2-M23, each with an arm red on the old code",
       "files": [
