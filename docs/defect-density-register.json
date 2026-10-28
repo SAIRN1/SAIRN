@@ -39103,6 +39103,48 @@
       "recurrence_open": "Any OTHER hook-spawned tool that runs git in a temp dir is covered only by the hook-level unset; a tool invoked by a different hook or wrapper that exports GIT_DIR is not."
     },
     {
+      "commit": "7f554da1649d",
+      "date": "2026-10-28",
+      "subject": "fix(tools, cody b56): two more not-runs read as clean -- a synthesis nobody parsed, and a writer only an alias reaches",
+      "files": [
+        "tests/write_readback_shape_probe.py",
+        "tools/gap_ledger.py",
+        "tools/write_without_readback_check.py"
+      ],
+      "lines_added": 92,
+      "lines_removed": 2,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "Two cody-owned checkers read a not-run as clean: gap_ledger treated a Synthesis section in an unparsed shape as zero gaps (live: sairnbiz external audit), and write_without_readback_check returned no record for an app whose only generic writer is reached through an alias (live: sairnmechanical mechPushOne), so its writes were never checked. Now a finding and a COULD NOT TELL respectively; fixtures +4.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Both resolvers predate the shapes they miss; the sairnbiz synthesis format and the mechanical alias were written later. Not traced to single commits."
+      },
+      "citation_note": "PR 1.11 names the general shape; docs/recurring-bug-classes-2.md C2 now names it as a standing class.",
+      "contributing_factors": [
+        {
+          "factor": "Each resolver handled only the shapes it was written against, and an unmatched input produced an empty result indistinguishable from a clean one.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Unmatched-but-present input now yields a finding or COULD NOT TELL; fixtures for both directions."
+        },
+        {
+          "factor": "These were found only by a deliberate not-run sweep, not by the tools own probes.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Standing practice recorded as class C2 in docs/recurring-bug-classes-2.md: touched tools get a does-it-run/does-it-check pass."
+        }
+      ],
+      "recurrence_open": "Remaining b55-sweep MEDIUM items; write_without_readback still cannot attribute what an aliased writer writes (it reports that it cannot)."
+    },
+    {
       "commit": "8e2c18f48c37",
       "date": "2026-10-28",
       "subject": "fix(tools, cody b55): six more of my tools could exit 0, or publish a pass, for work that did not run",
@@ -39239,35 +39281,6 @@
       "recurrence_open": "No mechanical check yet refuses a placeholder token in a sql/ file at push time; the re-read is a discipline, not a gate."
     },
     {
-      "commit": "f9c5a22a35bb",
-      "date": "2026-10-28",
-      "subject": "fix(stonedesk b61): .sairn-fu-chip / .shoff-btn text uses theme tokens, not dark-surface rgba",
-      "files": [
-        "stonedesk.html"
-      ],
-      "lines_added": 6,
-      "lines_removed": 4,
-      "app": "stonedesk",
-      "layer": "product",
-      "severity": "low",
-      "detection_method": "code-review",
-      "summary": "fourth b61. .sairn-fu-chip and .shoff-btn text were rgba(240,240,255,0.65/0.6), hover #F0F0FF / 0.9 alpha; in the light AI chat log axe measured 1.08:1 and 1.07:1, hover 1.13:1 and 1.11:1. Now var(--muted) 5.52:1, hover var(--text) 16.36:1. LATENT -- rows dormant (no addMsg).",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "57db94fbf375",
-        "date": "2026-06-22",
-        "subject": "Fix JavaScript syntax errors in stonedesk.html - 94/106 scripts passing Node syntax check",
-        "lag_days": 128
-      },
-      "citation_note": "No coding rule covers a component's colours written for a different surface than the one it renders into. Proposed: injected UI takes colours from theme tokens, never literal rgba.",
-      "factors_unknown_reason": "same latent class as 56ec80530: the rows are dormant, so no rendered pass reached them; the b60 label fix named these and left them"
-    },
-    {
       "commit": "f02a61f023da",
       "date": "2026-10-28",
       "subject": "fix(sairnsenior, cc b61): sen_caregivers gave every colleague's name, phone, CPR expiry and ids to the caregiver role -- H1 #965",
@@ -39325,6 +39338,35 @@
         }
       ],
       "recurrence_open": "Reads with no declared rule are not gated: 23 role-scoped reads in the b61 sweep, plus every dispatch shape outside resource===/action=== in api/sd-data.js."
+    },
+    {
+      "commit": "f9c5a22a35bb",
+      "date": "2026-10-28",
+      "subject": "fix(stonedesk b61): .sairn-fu-chip / .shoff-btn text uses theme tokens, not dark-surface rgba",
+      "files": [
+        "stonedesk.html"
+      ],
+      "lines_added": 6,
+      "lines_removed": 4,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "fourth b61. .sairn-fu-chip and .shoff-btn text were rgba(240,240,255,0.65/0.6), hover #F0F0FF / 0.9 alpha; in the light AI chat log axe measured 1.08:1 and 1.07:1, hover 1.13:1 and 1.11:1. Now var(--muted) 5.52:1, hover var(--text) 16.36:1. LATENT -- rows dormant (no addMsg).",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "57db94fbf375",
+        "date": "2026-06-22",
+        "subject": "Fix JavaScript syntax errors in stonedesk.html - 94/106 scripts passing Node syntax check",
+        "lag_days": 128
+      },
+      "citation_note": "No coding rule covers a component's colours written for a different surface than the one it renders into. Proposed: injected UI takes colours from theme tokens, never literal rgba.",
+      "factors_unknown_reason": "same latent class as 56ec80530: the rows are dormant, so no rendered pass reached them; the b60 label fix named these and left them"
     }
   ],
   "started": "2026-09-09",
