@@ -1,0 +1,24 @@
+SAIRN DIGEST -- fourth b64 -- 2026-10-28
+CONTEXT 47.9% of 1,000,000 -- 479,147 tokens, measured.
+STATUS: items 3 and 5 landed; item 1 NOT started (flagged: cc held sairnsenior all batch); item 4 held for cc; no force, no skip.
+DECISION-NEEDED: (1) EVV billing gate -- go-ahead naming cc's sairnsenior claim, or release after cc b67. (2) Run sql/mint_sv_audit_2026.sql so the vet live drive can run.
+READ: SAIRN-handoff-fourth-b64.md (whole state). Detail: SAIRN-report-fourth-b64.txt.
+SQL: sql/mint_sv_audit_2026.sql (licence row only; bootstrap and live arms inside).
+CHANGED:
+  d21bf39aa sairnvet: SOAP note stored; sv_controlled push obtains the witness token after vet confirmation
+  b4592bd3b register record; 69916b60f mint SQL; derived docs regenerated
+  d92ead730 worldwide audits: sairnmechanical, sairnbuild
+  71fd4dd9d worldwide audits: sairncash, sairngrounds
+1 vet: tests 13/13 with the server's contentHash; NOT live-driven (no SV audit licence; probe classifier-denied)
+2 grounds: clearing a day's alcohol sale hours opens it all day -- fix first
+3 build: awardSubBid awards nothing since 66cf7b930 (2026-08-09)
+4 cash: a hidden checkbox suppresses the 110% warning; Solo 401(k) room uncapped at earnings
+5 mechanical: no job, invoice or inspection record; saveQuote drops the client
+NEXT, in order:
+  a EVV billing gate (handoff section 2 shape) once the claim clears
+  b vet live drive after the mint SQL
+  c audit defects: grounds sale hours, build award, cash checkbox/cap, mech quote client
+  d cc: deny-hook sh -n false positive; b62/b63 open items
+UNVERIFIED: vet fix live (no licence); every external claim in the 4 audits is as graded in the research on file.
+EVIDENCE-path: tests/sairnvet_witness_token_client.js; scratchpad docverify63.py.
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\b6e28c25-eaee-4611-aeb3-d94f0198d47f.jsonl

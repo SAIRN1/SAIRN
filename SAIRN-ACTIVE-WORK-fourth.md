@@ -2312,3 +2312,11 @@ Full account: `SAIRN-handoff-fourth-b62.md`.
 - All docs GFM-rendered and their citations checked. sairnmechanical skipped (cody's claim).
 
 Full account: `SAIRN-handoff-fourth-b63.md`.
+
+## batch b64 -- 2026-10-28, CLOSED (item 1 flagged back: cc held sairnsenior)
+
+- sairnvet (`d21bf39aa`): the SOAP note is now stored; the `sv_controlled` push obtains the witness token after the vet confirms. Tests 13/13. Not live-driven: there is no SV audit licence, so mint SQL is written for Michael.
+- Worldwide audits for sairnmechanical, sairnbuild, sairncash and sairngrounds (`d92ead730`, `71fd4dd9d`), each with defects routed.
+- Item 1 (EVV billing gate) not started: cc's active `sairnsenior` claim. Item 4 held for cc.
+
+Full account: `SAIRN-handoff-fourth-b64.md`.

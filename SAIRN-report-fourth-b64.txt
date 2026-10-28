@@ -1,0 +1,40 @@
+SAIRN REPORT -- fourth b64 -- 2026-10-28
+
+1 EVV BILLING GATE -- NOT STARTED: flagged back. cc held an active
+  sairnsenior claim (b67, FILES sairnsenior.html) for the whole batch;
+  sairn_claim check said BLOCKED at the start, twice mid-batch and at wrap.
+  Shape for next batch: a reviewable clock-flags view and a review record; a
+  server refusal on sen_claims submitted/paid while the visit carries an
+  unreviewed flag; a live test on SEN-AUDIT-2026 with real rows in both
+  states. Detail: handoff section 2.
+
+3 SAIRNVET -- fixed and landed (d21bf39aa), NOT live-driven.
+  SOAP: generateSOAP and scribeAcceptDraft now store the note itself.
+  Witness: svPushOne requests a token for the exact outbound sv_controlled
+  record and writes with X-SV-Witness; a refusal sends no write and is shown
+  on screen; logControlledUse requires the vet's confirmation first.
+  Tests: new suite 13/13 (the server's contentHash proves the token matches
+  the record; COULD NOT RUN against the unfixed file). Seed suite 23/23
+  after four arms moved off sv_controlled. audit_and_controlled 58/58.
+  node --check clean. Register record b4592bd3b.
+  No live drive: SAIRNvet has no audit licence, and the live probe was
+  classifier-denied and not routed around. sql/mint_sv_audit_2026.sql
+  (69916b60f) is for Michael. Still open: the register is rewritten in place
+  (upsert by drug).
+
+4 DENY-HOOK FALSE POSITIVE -- held for cc, untouched.
+
+5 AUDITS -- mechanical, build (d92ead730), cash, grounds (71fd4dd9d).
+  Research on file only; GFM-rendered; 77 citations checked.
+  Defects found in records the apps already write:
+  - grounds saveMsbHours: cleared hours = open all day (alcohol);
+  - build awardSubBid: awards nothing since 66cf7b930;
+  - cash: a hidden checkbox suppresses the 110% warning; $0 dropped;
+    Solo 401(k) room uncapped;
+  - mechanical saveQuote: drops the client;
+  - build WIP forecast: no writer;
+  - grounds quote lines: lose their text.
+
+PUSH: several attempts. Refusals: derived-docs; a transient file lock in the
+b18 guard's ablation (sd-data.js verified unmodified); remote races. 0 orphan
+scrutiny rows.
