@@ -13506,6 +13506,35 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/sd-data-sen-caregiver-pii-scope.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f02a61f023da6fa6e1870e56d571dbc5ebb6aa0b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-sen-caregiver-read-paths.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f02a61f023da6fa6e1870e56d571dbc5ebb6aa0b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "encoding='utf-8', errors='replace', timeout=600, cwd=repo)"
+    }
+   ],
+   "sha": "f02a61f023da6fa6e1870e56d571dbc5ebb6aa0b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_b12_routed_findings_probe.py",
    "class": "test file",
    "level": "WEAKENING",

@@ -21,16 +21,16 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**372 files in `tools/`.** By what actually invokes them:
+**374 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
-| **BLOCKING** | 26 | reachable from something that can refuse a push or a tool call |
+| **BLOCKING** | 27 | reachable from something that can refuse a push or a tool call |
 | **REPORT-ONLY** | 81 | runs automatically on every push, never blocks |
 | **ADVISORY** | 5 | session-start or prompt hooks, informational |
 | **DECIDED** | 79 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 79 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 102 | nothing runs these at all |
+| **UNWIRED** | 103 | nothing runs these at all |
 
 **THE HOOK-DERIVED HALF OF THE TABLE ABOVE IS THE RECORDED WIRING, NOT THE LIVE ONE.** This clone's `.claude/settings.json` carries an EMPTY `hooks` object, committed on 2026-10-13 after Michael disabled every hook on 2026-10-11 because they were causing agent compaction. The 19 tool wirings behind BLOCKING / REPORT-ONLY / ADVISORY are read from `docs\hooks-disabled-2026-10-13.json`, which records all 23 commands verbatim. **A tool shown as ADVISORY here is wired as a SessionStart or prompt hook in that record and is NOT running in this clone today.** The alternative was believing the zero, and that is what the generator did until 2026-10-16: ADVISORY came out empty, the push gate itself came out SUITE-ONLY, and three arms of `tests/run_tooling_inventory_probe.py` were red against a `--check` that said the document matched the repo -- both ends of that comparison came from the same blind reader.
 
@@ -40,10 +40,10 @@ By what they are, independent of wiring:
 |---|---:|
 | ADVISORY | 4 |
 | CHECKER | 249 |
-| GATE | 1 |
+| GATE | 2 |
 | GENERATOR | 23 |
 | GUARD | 4 |
-| LIBRARY | 27 |
+| LIBRARY | 28 |
 | LIVE | 29 |
 | PROBE | 5 |
 | PUSH-GATE | 1 |
@@ -152,7 +152,7 @@ outside world. Unwired is the right state for them and is not a finding.
 
 ---
 
-## BLOCKING (26)
+## BLOCKING (27)
 
 Two entry points, and they are not the same one. `.claude/settings.json`
 PreToolUse fires on a Claude Code **tool call**; `.githooks/pre-push` fires on
@@ -177,6 +177,7 @@ around it. The second exists because the first missed exactly that on
 | `probe_anchor_freshness.py` | CHECKER | a fault probe whose sabotage anchor no longer matches its subject the way the probe assumes -- VANISHED (0 matches), AMBIGUOUS (>1 with no declared count), or COUNT DISAGREES (the edit declares N and the subject no longer has N) | `run_probe_anchor_freshness_probe.py` |
 | `rebase_state_guard.py` | CHECKER | an amend or a blanket stage while a rebase, merge or cherry-pick is stopped, and an amend of a commit already on origin/main | `run_rebase_state_guard_probe.py` |
 | `redaction_check.py` | CHECKER | credential shapes in what is about to be written, and in what a push ships | &mdash; |
+| `sairn_field_scope_check.py` | GATE | a field, role or row scope meant to redact or refuse that instead returns in full to an unprivileged role: drives the REAL api handler once per role (token signed by the real auth) against tools/field_scope_rules.json, closed-world by unique markers, and fails on a LEAK, an over-redaction, a wrong scope flag, or a declared redaction in api/sd-data.js with no rule. Blocking pre-push check 4c, fails closed; --sweep maps every undeclared role-scoped read; --live reads the deployed endpoint per role. | &mdash; |
 | `sairn_load_state_check.py` | LIVE | live seed content differing from the repo seed (gate check 1) | `missing_checker_probe.py`, `refspec_and_override_probe.py` |
 | `sairn_path_manifest.py` | TOOL | a session editing ANOTHER population's files, before the push leaves the clone. Nothing checked that at all: the owner split -- api/ hank, tests/ cody, tools/ cc, docs/ and .html fourth -- lived in dispatch prose and in claim task strings, which is a convention four sessions follow by hand and nothing verifies. It CATCHES a path inside a population other than the pusher's (FOREIGN, naming the owner AND the declared route to request it), and any path inside the hover auditor's scope for ALL FOUR build populations (AUDITOR) -- that test runs FIRST, before any allowance, because an allowance that could reach into the auditor would be the separation failing in the one direction it exists to stop. A push is refused WHOLE: two in-scope paths do not license a third, because a partial refusal means splitting a commit to get past it. THE OWNERSHIP IS DATA, in docs/sairn-path-manifest.json with its reasons in it, because a rule written into the hook is invisible to everybody not reading Python and cannot be reviewed by the populations it governs. TWO NARROW ALLOWANCES EXIST AND THE MEASUREMENT FORCED THEM: over 2026-10-18..19 all four agents wrote docs/ and .claude/claims/ and every batch's three artefacts sit at the repo root, so SELF-NAMED (a path carrying the PUSHER's own session name, filled from the per-clone marker so it cannot be widened by a rename) and SHARED_LEDGERS (an explicit path LIST, never a prefix, of union-merge files) are allowed on top of the split. Measured over 400 commits: cc 0 refused, fourth 2, hank 2, cody 14 -- and that attribution is a commit-subject PROXY, stated as such, because the live check reads the clone's marker instead. WHAT IT IS NOT: a security boundary. It runs in the pushing clone and anyone who can push can edit the manifest; what it closes is DRIFT AND ACCIDENT. It exits 2 COULD NOT RUN -- never 0 -- on a missing, malformed or wrong-shaped manifest and on an unestablished identity, because "is this path mine" has no answer when "who am I" has none. 31 arms: the four shapes Michael named, an ablation on one manifest entry with a control proving it moved one thing, and a second ablation on the auditor list. An UNKNOWN agent owns nothing, so every owned path reads FOREIGN rather than defaulting open | &mdash; |
 | `sairn_push_gate_hook.py` | CHECKER | the numbered push checks; the only tool that calls deny(). GUARD_TESTS WENT 17 -> 35 ON 2026-10-16 (cc b16): eighteen of hank's api/ suites wired in, EVERY ONE RUN TO A KNOWN EXIT CODE FIRST, which is the admission bar the b13 entries set and the reason it exists -- a suite wired red denies every push on the platform until somebody turns the gate off, which this list has already survived once. All 18 exit 0 with zero failed and zero unproven. Total added cost to every code push: 4.83s across the eighteen, the slowest b17-trust-lock-hard.test.js at 1.63s -- measured, not estimated. THE DISPATCH SAID "b12-b17" AND THERE ARE NO b12 OR b13 SUITES: `ls api/` gives b14 (1), b15 (3), b16 (5), b17 (9), earliest b14. The range was wrong by two batches and the measured list is what is wired, because a registry covering a different set than its comment claims is this platform's most frequent defect. EXIT 3 NEEDED NOTHING ADDED: exit3_reason() already quotes a suite's OWN could-not-run line, says the reason is ABSENT when it gives none, and never asserts a platform cause the runner cannot know -- none of the eighteen exits 3 today, and if one starts to it leaves the required set for that run WITH its reason printed, which is not a pass. hank's files, RUN and not edited. tests/push_gate/check2_and_check5_probe.py 15 passed 0 failed after the wiring | `check11_probe.py`, `check12_probe.py`, `check2_and_check5_probe.py`, `check3_probe.py`, `check8_probe.py`, `check9_probe.py`, `gate_freshness_probe.py`, `graduated_exempt_consume_probe.py`, `missing_checker_probe.py`, `redaction_base_probe.py`, `refspec_and_override_probe.py`, `run_assurance_case_probe.py`, `run_baseline_readiness_probe.py`, `run_batch_manifest_probe.py`, `run_conflict_marker_probe.py`, `run_dora_metrics_probe.py`, `run_gate_skip_probe.py`, `run_graduated_exemption_probe.py`, `run_optimistic_success_probe.py`, `run_push_gate_preflight_probe.py`, `run_ref_probe.py`, `run_risk_event_tree_probe.py`, `run_scrutiny_flag_probe.py`, `run_staged_parse_probe.py`, `run_tier_a_review_gate_probe.py`, `run_tool_owner_header_probe.py`, `run_traceability_matrix_probe.py` |
@@ -511,7 +512,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (102)
+## UNWIRED (103)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -545,6 +546,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `extract_panels.py` | LIBRARY | panel containers out of an app file | &mdash; |
 | `extract_scripts.py` | LIBRARY | script blocks out of an app file, HTML-parser based | &mdash; |
 | `fetch_blocked_doc.sh` | LIBRARY | fetches a document a plain request cannot reach | &mdash; |
+| `field_scope_driver.js` | LIBRARY | a field-scope verdict reached through a stubbed role: the node half of sairn_field_scope_check.py, which loads the REAL api handler fresh per case with only the licence lookup and the database replaced, and signs each role session with the real api/_lib/auth so the role arrives the way a deployed request carries it. | &mdash; |
 | `gate_parity_check.py` | CHECKER | SIBLING ACTIONS on the SAME resource in the SAME handler file that disagree about whether a ROLE gate or an ASSIGNMENT gate is enforced. Built from H1 #877, fixed 2026-10-05: alf_family_contacts `read` resolved a role set AND the caller resident assignment and 403d a resident that was not theirs, while `family_mar` SIXTY LINES BELOW IT IN THE SAME BLOCK did neither -- it checked the family contact CONSENT and shipped that resident medication administration record, so any authenticated session on the licence, including a med_aide with no resident assigned, could pass any contact_id and read the MAR. WHY NO EXISTING CONTROL SAW IT: every other check asks about ONE branch -- is there a session check, is it licence-scoped, does it refuse cleanly -- and all of those answered YES, because a check WAS present and was answering a different question. THE MISSING QUESTION IS COMPARATIVE and nothing on this platform compared two branches to each other. A SHARED PRELUDE COUNTS FOR EVERY ACTION UNDER IT, without which it would flag every multi-action resource and be switched off in a day; and WRITES ARE NOT COMPARED AGAINST READS, because a write refusing more than a read is the design. CANNOT SEE a gate inside a called function, a gate in another file, a narrower projection that makes a weaker gate correct (#877 own `read` does exactly that), an asymmetry between two generic dispatch maps, or anything in a file it was not pointed at -- and every one of those errs toward FALSE POSITIVE, which is why it is a REPORT: exit 1 means "look at these", never "this is a defect". Unreadable target exits 2 COULD NOT RUN naming the file. Default file list printed on every run, because a silent universe is how a sweep reports clean for a file it never opened. TWO NUMBERS ADDED 2026-10-06 BY THE AUTHOR, both measured, neither quotable from the other: 4 groups flagged on the PRE-FIX file including alf_family_contacts, 3 on the fixed file -- so it catches the real defect and the real fix clears it -- and ALL THREE on the fixed file are triaged correct-by-design (rf_claims widens for management, rf_schedule refuses outright, alf_payer_rules discloses a statute table), so its PRECISION ON THIS FILE IS 0 OF 3. AND A BLIND SPOT FOUND THE DAY AFTER IT LANDED, measured with --json rather than reasoned: it groups by the resource the BRANCH is keyed on, so alf_compliance_rules/evaluate shipping every alf_staff_credentials row to any role is INVISIBLE to it -- the branch is keyed on one resource and the data disclosed belongs to another. A CROSS-RESOURCE disclosure is outside its model, which is the second time a tool built for a class has missed an instance of that class | &mdash; |
 | `gen_ma_calendar.py` | GENERATOR | a court-holiday calendar or deadline seed for one state | &mdash; |
 | `gen_ma_seed.py` | GENERATOR | a court-holiday calendar or deadline seed for one state | &mdash; |
@@ -654,9 +656,9 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      372   git ls-files tools/
+  tools on disk                      374   git ls-files tools/
   hook entries                        19   docs\hooks-disabled-2026-10-13.json (RECORDED wiring -- this clone's live hooks are the committed disarm, and the record is read rather than the zero being believed)
-  push-gate invocations               20   tools\sairn_push_gate_hook.py
+  push-gate invocations               21   tools\sairn_push_gate_hook.py
   report-only registry                78   report_only_checks.REGISTRY
   tools invoked by tests/            239   tests/**/*.py, *.js
   recorded NOT-promoted decisions     88   report_only_checks.NOT_PROMOTED

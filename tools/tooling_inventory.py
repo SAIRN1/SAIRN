@@ -129,6 +129,11 @@ PURPOSES = {
         'any shell-operator argument (it runs without a shell), and exits 3 if a '
         'gate or hook file changed during the run. Written after the 2026-10-27 '
         'push-gate truncation, whose originating command was never captured.'),
+    'field_scope_driver.js': ('LIBRARY',
+        'a field-scope verdict reached through a stubbed role: the node half of '
+        'sairn_field_scope_check.py, which loads the REAL api handler fresh per case with only '
+        'the licence lookup and the database replaced, and signs each role session with the '
+        'real api/_lib/auth so the role arrives the way a deployed request carries it.'),
     'sairn_field_scope_check.py': ('GATE',
         'a field, role or row scope meant to redact or refuse that instead returns in full to '
         'an unprivileged role: drives the REAL api handler once per role (token signed by the '
