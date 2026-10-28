@@ -4839,8 +4839,8 @@
       "task": "b63 push_timeout_guard live-drive mode, worldwide competitive-gap audits sairnroofing sairnsenior sairnvet FILES: tools/push_timeout_guard.py docs/cloud-research/sairnroofing-worldwide-competitive-gap-audit-2026-10-28.md docs/cloud-research/sairnsenior-worldwide-competitive-gap-audit-2026-10-28.md docs/cloud-research/sairnvet-worldwide-competitive-gap-audit-2026-10-28.md",
       "claimed_at": "2026-10-28T22:26:49Z",
       "claimed_at_epoch": 1793226409.0504115,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-28T22:47:23Z",
       "files": [
         "docs/cloud-research/sairnroofing-worldwide-competitive-gap-audit-2026-10-28.md",
         "docs/cloud-research/sairnsenior-worldwide-competitive-gap-audit-2026-10-28.md",
