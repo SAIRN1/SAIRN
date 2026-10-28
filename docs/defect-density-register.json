@@ -39101,6 +39101,49 @@
       "recurrence_open": "Other action names (soft_delete, upsert variants) are not in WRITE_RE; not swept."
     },
     {
+      "commit": "4222258b9b49",
+      "date": "2026-10-28",
+      "subject": "fix(sairnvet, fourth b64): the SOAP record stores the note; the controlled-drug push asks for the witness token the server requires",
+      "files": [
+        "docs/sairn-path-manifest.json",
+        "sairnvet.html",
+        "tests/sairnvet_seed_never_syncs.js",
+        "tests/sairnvet_witness_token_client.js"
+      ],
+      "lines_added": 229,
+      "lines_removed": 8,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "sairnvet stored no SOAP note body (generateSOAP and scribeAcceptDraft kept complaint.slice(0,60) only; the scribe path then cleared the draft) and never requested the X-SV-Witness token api/sd-data.js requires for every sv_controlled write, so the controlled-substance register could not reach the server. Found by the b63 worldwide audit code read. Fixed: note stored on both paths; svPushOne requests a token bound to the exact outbound record after an explicit vet confirmation.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the SOAP push predates the witness lock; not bisected"
+      },
+      "citation_note": "No standing rule says a stored record must be checked for its content rather than its existence; this is the shape.",
+      "contributing_factors": [
+        {
+          "factor": "generateSOAP and scribeAcceptDraft built a record from metadata and a 60-char complaint and never put the generated note in it; the witness token endpoint was built server-side and no client call was ever written",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "note stored on both paths; svPushOne requests a token for the exact outbound record"
+        },
+        {
+          "factor": "every audit and test counted SOAP notes and the witness lock as built from their presence, never from what the stored record or the outbound request contained",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/sairnvet_witness_token_client.js reads the stored record and checks the token with the server contentHash"
+        }
+      ],
+      "recurrence_open": "The register is still rewritten in place per drug on both client and server (upsert by drug name); append-only is a separate change."
+    },
+    {
       "commit": "56ec80530b50",
       "date": "2026-10-28",
       "subject": "fix(stonedesk b60): .sairn-fu-label / .shoff-label use var(--muted), not a dark-surface rgba",
@@ -39186,6 +39229,50 @@
       "recurrence_open": "Any OTHER hook-spawned tool that runs git in a temp dir is covered only by the hook-level unset; a tool invoked by a different hook or wrapper that exports GIT_DIR is not."
     },
     {
+      "commit": "4a60ab021f5f",
+      "date": "2026-10-28",
+      "subject": "fix(push_retry, hank b63): a REFUSED fast retry no longer logs, so the next rebase is not blocked",
+      "files": [
+        "docs/BYPASS-LOG.jsonl",
+        "tools/push_retry.py"
+      ],
+      "lines_added": 18,
+      "lines_removed": 4,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "live-verification",
+      "summary": "push_retry --loop's C1 fast path (b61) logged its BYPASS-LOG row even when the skipped push was refused; the tracked row dirtied the tree and the next attempt's rebase refused, so the loop stopped with exit 3 (fail-closed, HEAD intact). Seen on the hank b63 docs push. Fixed: log only a skip that landed. Selftest 58/0; log-always mutant red.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "fdb5ca7ee4d8",
+        "date": "2026-10-28",
+        "subject": "fix(push_retry, hank b61): a race lost after a gate PASS retries fast without re-paying the gate (C1)",
+        "lag_days": 0
+      },
+      "citation_note": "No standing rule says a retry loop must not write tracked files between attempts; C1 records it.",
+      "contributing_factors": [
+        {
+          "factor": "The fast-retry log call ran unconditionally after the push, so a refused skip wrote a tracked ledger row mid-loop",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "log only when prc == 0; selftest arm for the landed-skip log and the refused-skip no-log case"
+        },
+        {
+          "factor": "The b61 selftest stubbed _log_fast_retry and git, so it could not see the dirty-tree effect on the next rebase",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "an end-to-end arm that drives two fast retries against a real scratch repo"
+        }
+      ],
+      "recurrence_open": "Any other tracked write inside the loop (gate write-backs other than scrutiny rows) can block the rebase the same way."
+    },
+    {
       "commit": "79c4f10cf665",
       "date": "2026-10-28",
       "subject": "fix(push_retry b61): the push runs with no timeout -- git() killed it at 120 s",
@@ -39213,57 +39300,6 @@
       },
       "citation_note": "No standing rule covered a push run on a clock until b61; tools/push_timeout_guard.py is now the mechanical form of it.",
       "factors_unknown_reason": "the git() helper's 120 s timeout was right for every read and wrong for the one push, and nothing looked at the two lines together until the b61 scan"
-    },
-    {
-      "commit": "c2b3a90bbc22",
-      "date": "2026-10-28",
-      "subject": "fix(sairnsenior, cc b67): H1 #1756 -- a caregiver device purges colleagues' cached caregiver rows and the withheld HR fields on merge",
-      "files": [
-        "sairnsenior.html",
-        "tests/sairnsenior_caregiver_scope_purge.js"
-      ],
-      "lines_added": 171,
-      "lines_removed": 2,
-      "app": "sairnsenior",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "hover-audit",
-      "summary": "cc b67, H1 #1756. The #965 role scope (f02a61f0) was server-only. senServerWinsMerge only adds and replaces, so a caregiver device that had ever held the roster (hydrated before the fix, or used by a manager first) kept every colleague's name, personal phone and CPR expiry in localStorage after each merge, plus the HR fields on any kept row. The client now keeps the read envelope's roster_scope and hr_fields_visible, and purges out-of-scope rows and fields only on a successful read that carries those declarations. 13-arm test; ablating the purge call fails 5.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover",
-      "injection": {
-        "commit": "f02a61f023da",
-        "date": "2026-10-28",
-        "subject": "fix(sairnsenior, cc b61): sen_caregivers gave every colleague's name, phone, CPR expiry and ids to the caregiver role -- H1 #965",
-        "lag_days": 0
-      },
-      "contributing_factors": [
-        {
-          "factor": "the #965 fix narrowed what the server SENDS and never asked what the device already HOLDS; senServerWinsMerge only adds and replaces",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "senPurgeCaregiversOutOfScope applies the read envelope's roster_scope and hr_fields_visible on the device"
-        },
-        {
-          "factor": "the field-scope gate (check 4c) holds the server response per role and cannot see localStorage, so a server-only fix passed every gate",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "tests/sairnsenior_caregiver_scope_purge.js drives the hydrate per role against the real envelope shape"
-        },
-        {
-          "factor": "senData returned d.data only and dropped the envelope's declarations, so no hydrate could act on what the server said it withheld",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "senData keeps senLastScope per resource on every successful read"
-        }
-      ],
-      "recurrence_open": "Every other sairnsenior hydrate uses the same add-and-replace merge; any read whose server scope narrows (sen_clients caregiver scope, sen_visits) can leave the same residue on a device until it gets the same purge."
     },
     {
       "commit": "815240d1626e",
@@ -39557,47 +39593,55 @@
       "recurrence_open": "No mechanical check yet refuses a placeholder token in a sql/ file at push time; the re-read is a discipline, not a gate."
     },
     {
-      "commit": "4222258b9b49",
+      "commit": "c2b3a90bbc22",
       "date": "2026-10-28",
-      "subject": "fix(sairnvet, fourth b64): the SOAP record stores the note; the controlled-drug push asks for the witness token the server requires",
+      "subject": "fix(sairnsenior, cc b67): H1 #1756 -- a caregiver device purges colleagues' cached caregiver rows and the withheld HR fields on merge",
       "files": [
-        "docs/sairn-path-manifest.json",
-        "sairnvet.html",
-        "tests/sairnvet_seed_never_syncs.js",
-        "tests/sairnvet_witness_token_client.js"
+        "sairnsenior.html",
+        "tests/sairnsenior_caregiver_scope_purge.js"
       ],
-      "lines_added": 229,
-      "lines_removed": 8,
-      "app": "sairnvet",
+      "lines_added": 171,
+      "lines_removed": 2,
+      "app": "sairnsenior",
       "layer": "product",
       "severity": "high",
-      "detection_method": "code-review",
-      "summary": "sairnvet stored no SOAP note body (generateSOAP and scribeAcceptDraft kept complaint.slice(0,60) only; the scribe path then cleared the draft) and never requested the X-SV-Witness token api/sd-data.js requires for every sv_controlled write, so the controlled-substance register could not reach the server. Found by the b63 worldwide audit code read. Fixed: note stored on both paths; svPushOne requests a token bound to the exact outbound record after an explicit vet confirmation.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
+      "detection_method": "hover-audit",
+      "summary": "cc b67, H1 #1756. The #965 role scope (f02a61f0) was server-only. senServerWinsMerge only adds and replaces, so a caregiver device that had ever held the roster (hydrated before the fix, or used by a manager first) kept every colleague's name, personal phone and CPR expiry in localStorage after each merge, plus the HR fields on any kept row. The client now keeps the read envelope's roster_scope and hr_fields_visible, and purges out-of-scope rows and fields only on a successful read that carries those declarations. 13-arm test; ablating the purge call fails 5.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
       "phase_confidence": "inferred",
       "found_by_tool": null,
-      "found_by_session": null,
+      "found_by_session": "hover",
       "injection": {
-        "unknown_reason": "the SOAP push predates the witness lock; not bisected"
+        "commit": "f02a61f023da",
+        "date": "2026-10-28",
+        "subject": "fix(sairnsenior, cc b61): sen_caregivers gave every colleague's name, phone, CPR expiry and ids to the caregiver role -- H1 #965",
+        "lag_days": 0
       },
-      "citation_note": "No standing rule says a stored record must be checked for its content rather than its existence; this is the shape.",
       "contributing_factors": [
         {
-          "factor": "generateSOAP and scribeAcceptDraft built a record from metadata and a 60-char complaint and never put the generated note in it; the witness token endpoint was built server-side and no client call was ever written",
+          "factor": "the #965 fix narrowed what the server SENDS and never asked what the device already HOLDS; senServerWinsMerge only adds and replaces",
           "kind": "technical",
           "action_status": "done",
-          "action": "note stored on both paths; svPushOne requests a token for the exact outbound record"
+          "action": "senPurgeCaregiversOutOfScope applies the read envelope's roster_scope and hr_fields_visible on the device"
         },
         {
-          "factor": "every audit and test counted SOAP notes and the witness lock as built from their presence, never from what the stored record or the outbound request contained",
+          "factor": "the field-scope gate (check 4c) holds the server response per role and cannot see localStorage, so a server-only fix passed every gate",
           "kind": "detection",
           "action_status": "done",
-          "action": "tests/sairnvet_witness_token_client.js reads the stored record and checks the token with the server contentHash"
+          "action": "tests/sairnsenior_caregiver_scope_purge.js drives the hydrate per role against the real envelope shape"
+        },
+        {
+          "factor": "senData returned d.data only and dropped the envelope's declarations, so no hydrate could act on what the server said it withheld",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "senData keeps senLastScope per resource on every successful read"
         }
       ],
-      "recurrence_open": "The register is still rewritten in place per drug on both client and server (upsert by drug name); append-only is a separate change."
+      "recurrence_open": "Every other sairnsenior hydrate uses the same add-and-replace merge; any read whose server scope narrows (sen_clients caregiver scope, sen_visits) can leave the same residue on a device until it gets the same purge."
     },
     {
       "commit": "cdf71e894bf3",

@@ -81,7 +81,16 @@ live results → seed push.
 | 2 AK seed | `SAIRN_GATE_EXEMPT=seed` pair (not the loop) | 2 lost races (`fetch first`), and each rebase voided the sha-pinned exemption; the 3rd pair landed |
 | 3 ND gate+standards | --loop | lost the race, then **full gate** ("our commits changed since the gate passed"), PUSHED |
 | 4 ND seed | --loop | lost the race, then **full gate** (same reason), PUSHED |
-| 5 these docs | --loop | see the report |
+| 5 these docs, 1st run | --loop | lost the race, then FAST RETRY, which was refused (race again); attempt 3 **exit 3, REBASE STOPPED, 0 unmerged** -- see the defect below |
+| 5 these docs, 2nd run | --loop | after the fix; outcome in the report |
+
+**DEFECT IN hank's b61 C1 FIX, found by this run and FIXED in b63:**
+- `_log_fast_retry` wrote the BYPASS-LOG row even when the skipped push was REFUSED.
+- That row is a tracked write, so it dirtied the tree, and the next attempt's `git rebase` refused.
+- The loop stopped with exit 3. That is correct fail-closed behaviour: HEAD was intact and no rebase was in progress.
+- **Fix:** log only when the skipped push LANDED, because a refused push put nothing on main.
+- **Tests:** selftest 58/0, with C1 arms 16/16. A "log always" mutant goes red.
+- The row from the refused attempt was KEPT, because the ledger is append-only, and committed.
 
 **Evidence, not a single pass.** Every loop push lost the first race, and the loop landed every one by attempt 2.
 

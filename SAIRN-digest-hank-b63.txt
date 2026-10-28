@@ -10,13 +10,14 @@ STATUS: pushed via push_retry --loop; claim sairnlaw is released after landing.
 5. D1: the isolation guard is live; both arms ran (refuse under RR, count under RC); 0 rows left.
 6. push_retry --loop: 4 pushes; each lost its first race and landed by attempt 2; the fast path fired once.
    - AK seed push used the scoped SAIRN_GATE_EXEMPT=seed (approved).
+   - Bug fixed in my b61 fast retry: a refused skip logged a row, the next rebase stopped (exit 3). Selftest 58/0.
 7. UTC scan: the tool reads <script> only. Wrapped re-run found 6 hits, 1 real (sd-sub-data.js:71, low, open).
 DECISION-NEEDED (Michael):
 - J2: RI holiday readings.
 - J4: AK/ND lawyer's questions.
 - C1a: fold-amend and the sha-pinned exemption vs races.
 NEXT: J3 SD (hank). U2 sd-sub-data UTC. A1/T1 carried.
-CHANGED: api/_lib/deadline-engine.js, api/legal-deadlines.js, 2 new suites + 16 key-set suites, 4 sql seed/calendar
+CHANGED: tools/push_retry.py, api/_lib/deadline-engine.js, api/legal-deadlines.js, 2 new suites + 16 key-set suites, 4 sql seed/calendar
   JSON, 3 docs/sairnlaw-* gate docs, path manifest, b63 handoff/report/digest.
 SQL-path: none new (seeds are JSON in sql/).
 EVIDENCE-path: SAIRN-handoff-hank-b63.md

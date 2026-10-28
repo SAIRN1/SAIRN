@@ -21,6 +21,10 @@ HANK b63 REPORT -- 2026-10-28
    - Push 2 (AK seed) went via the scoped seed exemption (approved). It lost 2 races, and each rebase voided the
      sha-pinned exemption.
    - Two C1 findings were routed to cc.
+   - DEFECT in hank's b61 C1 fix, fixed in b63. A REFUSED fast retry logged its BYPASS-LOG row. That dirtied the tree,
+     the next rebase stopped, and the loop exited 3 (fail-closed, HEAD intact).
+     - Now it logs only a skip that landed. Selftest 58/0; the "log always" mutant is red.
+     - Push 5 was re-run after the fix.
 5. UTC / read-await-write scan:
    - The scanner reads <script> only, so 0/191 on raw .js was vacuous. Re-run wrapped: 6 UTC hits, 1 real and low
      (sd-sub-data.js:71, COI expiry vs the UTC day). Not fixed.
