@@ -39303,7 +39303,7 @@
       "recurrence_open": "Other consumers of FLAKY.classify or of report_only_checks --json output may have the same default-to-best or stdout-pollution shape; not swept."
     },
     {
-      "commit": "9c74373b6d52",
+      "commit": "fdb5ca7ee4d8",
       "date": "2026-10-28",
       "subject": "fix(push_retry, hank b61): a race lost after a gate PASS retries fast without re-paying the gate (C1)",
       "files": [
