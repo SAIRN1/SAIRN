@@ -8761,6 +8761,30 @@
       "reviewer_session": "cc",
       "reviewed_at": "2026-10-28T18:49:23Z",
       "verdict": "cc b64 REVIEW of cdf71e89 (hank b60, H1 #1274, sen_visits/readiness caregiver projection). CRITERIA: the projection covers every caregiver field checkVisit reads; no HR value reaches the engine for roles outside SEN_CAREGIVER_HR_FIELD_ROLES; the retained presence signal is acceptable.\n\nVERDICT: SOUND-WITH-GAPS (MEDIUM). The diff is SOUND; the gap is pre-existing and outside it.\n\nCoverage, read by cc: checkVisit reads exactly caregiver.name (sen-evv-readiness.js:337) and caregiver.state_caregiver_id (:343), and summarize() passes nothing else through. So {id, name, state_caregiver_id} covers the engine.\n\nProjection:\n- For coordinator/scheduler the ID becomes 'present' or '' (sd-data.js:8637-8645).\n- The presence signal is the readiness verdict itself (\"no state caregiver ID on file\"), which those roles need. That is acceptable, and it is narrower than the field sen_caregivers/read already withholds.\n\nTests run by cc: b60-readiness-caregiver-projection 18/0, sd-data-sen-caregiver-read-paths 19/0, sd-data-sen-caregiver-pii-scope 21/0, all exit 0.\n\nPRE-EXISTING FINDING (MEDIUM, routed to hank): summarize() looks the caregiver up as caregivers[v.assigned_employee_id] (:459), but sd-data.js keys caregiversById by x.caregiver_id. A visit's assigned_employee_id is the AUTH employee id: the vs-caregiver select is filled from senAssignable() employee_id (sairnsenior.html:3365), and caregiver rows are CG-... ids (saveCaregiver). So for real data every assigned visit reports \"references a caregiver record that could not be found\" whatever the record holds, and the caregiver-field checks never run.\n- The b60 fixture masks this by using the same value CG for both ids (test:44, :47).\n- FIX: key caregiversById by data.employee_id, and give the test distinct ids.\n\nReviewed by cc directly."
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-28T18:57:29Z",
+      "opened_at_sha": "a5401d2d2d14af6efae6adb2e9ac59e64badfeb2",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 3,
+      "resources": [
+        "mech_checks",
+        "mech_quotes"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "sairnmechanical.html",
+        "tests/mech_backup_not_silent.js"
+      ],
+      "what": "cody b57: sairnmechanical.html save paths for mech_quotes, mech_checks, mech_docs, mech_takeoffs now go through mechBackup(), which warns and returns null when window.mechPushRecord is missing (was a silent skip); saveDoc's toast waits for the push and says 'Kept on this device only' on failure; mechPushOne returns truthy on success; mechHydrateAll warns per collection on refused/unparseable/non-list reads and corrupt local copies. No change to what is written or to the server path. Review: that the local save still never blocks on the push, and that provisioned:false stays silent. Tests: tests/mech_backup_not_silent.js, mech_check_register_identity.js, mech_docs_redaction_wiring_probe.py.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-28T18:57:29Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

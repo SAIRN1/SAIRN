@@ -3569,6 +3569,30 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/mech_backup_not_silent.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "4343b12fb6e5400973467379179de77302fccb8e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/mech_check_register_identity.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "4343b12fb6e5400973467379179de77302fccb8e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/mech_docs_redaction_wiring_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "4343b12fb6e5400973467379179de77302fccb8e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sairnsenior_contract_auth_save.js",
    "class": "test file",
    "level": "CHANGE",
@@ -7889,6 +7913,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/write_readback_shape_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "92bccd97dc1a5b91ab2da285c80c6cb653211433",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sairncash_entitlement_gate_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -9403,6 +9435,14 @@
     }
    ],
    "sha": "a53650cdff72c14af11a328f782ac780b626886b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/mech_backup_not_silent.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a5401d2d2d14af6efae6adb2e9ac59e64badfeb2",
    "criteria_version": "2026-10-06.1"
   },
   {
