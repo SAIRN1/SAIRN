@@ -1951,6 +1951,13 @@ PURPOSES = {
         'finding: many are deliberately pinned, and a family where none or '
         'only a minority honour one is reported clean, because neither is a '
         'convention'),
+    'pure_base_skip.py': ('CHECKER',
+        'a push retry that skips the pre-push gate over a CHANGED gate or a stale '
+        'whole tree: our patches not the gated ones, a file overlap, an incoming '
+        'change to the tier register, .githooks/ or any tool the hook runs (the set '
+        'is derived from the hook), or a red defect_register / master_plan / '
+        'traceability --check. Exit 0 = skip allowed; 1 = gate; 2 = could not '
+        'decide, which also gates (C3, cody b58).'),
     'push_timeout_guard.py': ('CHECKER',
         'a git push run under a timeout. The push gate writes mutants into '
         'tracked files and restores them in `finally`, and a kill skips the '
