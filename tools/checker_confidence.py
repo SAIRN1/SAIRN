@@ -46,6 +46,7 @@ caps the fused result at UNKNOWN, and the run reports how many. PR 1.11 applied
 to a confidence score: could-not-tell is never folded into a pass.
 """
 import argparse
+import contextlib
 import io
 import json
 import os
@@ -54,9 +55,16 @@ import sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
 
-from checker_kit import EXIT_COULD_NOT_RUN, finish                # noqa: E402
-import flaky_checker_quarantine as FLAKY                          # noqa: E402
-import checker_control_check as CTRL                              # noqa: E402
+# IMPORT-TIME PRINTS GO TO STDERR (cody b55). report_only_checks.py, imported
+# under both modules below, prints a NOTE on stdout at import when it finds no
+# hook entry -- which is every run since the hook was removed on 2026-10-14. That
+# line led the --json output, so `--json` was not JSON, and section 5 of
+# tests/run_checker_confidence_probe.py died in json.loads before any real-fleet
+# arm ran. The NOTE still prints; it is not part of the document.
+with contextlib.redirect_stdout(sys.stderr):
+    from checker_kit import EXIT_COULD_NOT_RUN, finish            # noqa: E402
+    import flaky_checker_quarantine as FLAKY                      # noqa: E402
+    import checker_control_check as CTRL                          # noqa: E402
 
 UNKNOWN, LOW, MEDIUM, HIGH = 0, 1, 2, 3
 NAME = {UNKNOWN: 'UNKNOWN', LOW: 'LOW', MEDIUM: 'MEDIUM', HIGH: 'HIGH'}
@@ -91,6 +99,20 @@ def stability_band(entry, quarantined=False):
     if _tree is None:
         _tree = FLAKY._B54_TREE = FLAKY.tree_hash()
     verdict, rate, runs = FLAKY.classify(entry, _tree)
+    # WHICH TREE THE VERDICT IS OF. With no run at this tree the ledger judges
+    # on older ones and labels it; this said "no verdict has ever moved" without
+    # the label, so a HIGH read as current when it was a measurement of code
+    # that may be gone (cody b55: all 46 measured checkers were older-tree).
+    _basis = FLAKY.observations_at(entry, _tree)[1]
+    older = (' -- judged on an OLDER tree, no run at this one'
+             if _basis == 'older-tree' else '')
+    # COULD NOT RUN IS NOT STABLE (cody b55). classify() returns UNRUNNABLE
+    # when every observation raised; this function had no branch for it and
+    # fell through to HIGH, so metamorphic_check.py -- six launches, six
+    # errors -- was rated HIGH stability, "no verdict has ever moved".
+    if verdict == 'UNRUNNABLE':
+        return UNKNOWN, 'UNRUNNABLE: all %d run(s) raised -- could not run is ' \
+                        'not stable%s' % (runs, older)
     if quarantined:
         return LOW, 'QUARANTINED, flip rate %.3f over %d runs' % (rate, runs)
     if verdict == 'TOO-FEW-RUNS':
@@ -99,10 +121,16 @@ def stability_band(entry, quarantined=False):
         return UNKNOWN, 'only %d run(s), below the %d needed to judge' % (
             runs, FLAKY.MIN_RUNS_TO_JUDGE)
     if verdict == 'QUARANTINE':
-        return LOW, 'flip rate %.3f is over the quarantine bar' % rate
+        return LOW, 'flip rate %.3f is over the quarantine bar%s' % (rate, older)
     if verdict == 'WATCH':
-        return MEDIUM, 'flip rate %.3f -- it has disagreed with itself' % rate
-    return HIGH, '%d runs, no verdict has ever moved' % runs
+        return MEDIUM, 'flip rate %.3f -- it has disagreed with itself%s' % (
+            rate, older)
+    if verdict == 'STABLE':
+        return HIGH, '%d runs, no verdict has ever moved%s' % (runs, older)
+    # HIGH is earned by name, never by falling through: a verdict the ledger
+    # adds later is not known here, so it is not known to be stable.
+    return UNKNOWN, 'the ledger returned a verdict this tool does not know: ' \
+                    '%r' % (verdict,)
 
 
 def evidence_band(state):
@@ -114,6 +142,8 @@ def evidence_band(state):
         'NONE': (LOW, 'NO declared control: nothing has ever shown this checker '
                       'can fire'),
         'UNPARSED': (UNKNOWN, 'a control is declared but could not be parsed'),
+        'UNREAD': (UNKNOWN, 'no control found, but a test file could not be '
+                            'READ and a control may be in it'),
         'EXEMPT': (MEDIUM, 'exempt from the control requirement, with a recorded '
                            'reason -- exempt is not proven'),
     }.get(state, (UNKNOWN, 'no control state'))
@@ -146,20 +176,20 @@ def naming_candidates():
     """{tool: [test files that NAME it but declare no CONTROLS_FOR]}.
 
     Same traversal checker_control_check uses, so the two cannot disagree about
-    which files name what. Returns {} on any read failure rather than a partial
+    which files name what. A read failure RAISES rather than returning a partial
     map, because a partial map here would under-report candidates and the whole
     point is not to under-report.
+
+    RAISES, NOT {} (cody b55). This docstring said "returns {} on any read
+    failure" and main() printed {} as "none ... a MEASURED zero, not an unrun
+    join" -- the join that could not run reported as one that ran and found
+    nothing. And a single unreadable file was skipped, which is the partial map
+    the sentence above refuses. main() catches the raise and says COULD NOT TELL.
     """
     declared, mentions = {}, {}
-    try:
-        paths = CTRL.test_files()
-    except Exception:                                            # noqa: BLE001
-        return {}
+    paths = CTRL.test_files()
     for path in paths:
-        try:
-            src = io.open(path, encoding='utf-8', errors='replace').read()
-        except Exception:                                        # noqa: BLE001
-            continue
+        src = io.open(path, encoding='utf-8', errors='replace').read()
         stripped = CTRL.strip(path, src)
         for tool in CTRL.declared_controls(stripped):
             declared.setdefault(tool, []).append(path)
@@ -182,10 +212,17 @@ def control_states():
     """{tool: state} by reading checker_control_check's own machinery."""
     promoted = CTRL.promoted()
     declared = {}
+    # AN UNREAD FILE IS NOT A FILE WITH NO CONTROL IN IT (cody b55). A read
+    # failure was `continue`, so a checker whose only control sat in that file
+    # landed at NONE, "NO declared control" -- a could-not-read reported as a
+    # measured absence. Which checker an unread file controls cannot be known,
+    # so every would-be NONE becomes UNREAD while any file is unread.
+    unread = []
     for path in CTRL.test_files():
         try:
             src = io.open(path, encoding='utf-8', errors='replace').read()
         except Exception:
+            unread.append(path)
             continue
         for tool in CTRL.declared_controls(CTRL.strip(path, src)):
             declared.setdefault(tool, []).append((path, src))
@@ -196,10 +233,10 @@ def control_states():
             continue
         files = declared.get(tool)
         if not files:
-            out[tool] = 'NONE'
+            out[tool] = 'UNREAD' if unread else 'NONE'
             continue
         fires = silent = False
-        parsed = False
+        parsed = failed = False
         for path, src in files:
             try:
                 # evidence() returns a (fires, silent) TUPLE. Reading it as a
@@ -208,11 +245,14 @@ def control_states():
                 # only reason it is a footnote rather than a wrong number.
                 f, sl = CTRL.evidence(path, src)
             except Exception:
+                failed = True
                 continue
             parsed = True
             fires = fires or bool(f)
             silent = silent or bool(sl)
-        if not parsed:
+        # A DECLARED CONTROL THAT WOULD NOT PARSE may hold the direction the
+        # parsed ones lack, so anything short of BOTH is UNPARSED, not ONE/NONE.
+        if not parsed or (failed and not (fires and silent)):
             out[tool] = 'UNPARSED'
         elif fires and silent:
             out[tool] = 'BOTH'
@@ -292,7 +332,9 @@ def main(argv):
         return 0
 
     try:
-        rows = collect()
+        # --json: stdout is the document and nothing else (see the imports).
+        with contextlib.redirect_stdout(sys.stderr if args.json else sys.stdout):
+            rows = collect()
     except Exception as e:                                   # noqa: BLE001
         print('could not collect: %s: %s' % (type(e).__name__, e))
         return EXIT_COULD_NOT_RUN
@@ -374,7 +416,8 @@ def main(argv):
     return finish(
         ['%s is LOW confidence: %s / %s' % (r['tool'], r['stability_why'],
                                             r['evidence_why']) for r in low],
-        ['%s has not been measured on one or both signals' % r['tool']
+        ['%s has not been measured on one or both signals: %s / %s'
+         % (r['tool'], r['stability_why'], r['evidence_why'])
          for r in unknown],
         quiet=args.quiet,
         clean_line='\n  Every promoted checker is MEDIUM or better on both '

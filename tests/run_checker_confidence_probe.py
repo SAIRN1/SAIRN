@@ -99,6 +99,25 @@ def main():
           C.stability_band(flaky)[0] < C.HIGH, True)
     check('an explicitly QUARANTINED checker is LOW whatever its rate',
           C.stability_band(stable, True)[0], C.LOW)
+    # cody b55: UNRUNNABLE had no branch and fell through to HIGH.
+    unrun = {'observations': [{'digest': 'x', 'tree': 't', 'err': True}] * 8}
+    check('CONTROL: the ledger itself calls eight raised runs UNRUNNABLE, so the '
+          'next arm is about this tool and not the fixture',
+          FLAKY.classify(unrun, 't')[0], 'UNRUNNABLE')
+    check('an UNRUNNABLE checker is UNKNOWN, not HIGH -- could not run is not stable',
+          C.stability_band(unrun)[0], C.UNKNOWN)
+    check('...and the reason says UNRUNNABLE', 'UNRUNNABLE' in C.stability_band(unrun)[1], True)
+    check('...and it is UNKNOWN even when quarantined, not dressed as a measured LOW',
+          C.stability_band(unrun, True)[0], C.UNKNOWN)
+    _real_classify = FLAKY.classify
+    try:
+        FLAKY.classify = lambda e, t=None: ('SOME-NEW-VERDICT', 0.0, 8)
+        check('a verdict this tool does not know is UNKNOWN -- HIGH is earned by '
+              'name, never by falling through', C.stability_band(stable)[0], C.UNKNOWN)
+    finally:
+        FLAKY.classify = _real_classify
+    check('a verdict judged on an OLDER tree says so (this fixture\'s tree is not HEAD)',
+          'OLDER tree' in C.stability_band(stable)[1], True)
 
     # ── 4. THE EVIDENCE BANDS ────────────────────────────────────────────────
     print('\n4. one direction of a control is not two')
@@ -109,6 +128,42 @@ def main():
     check('a declared control that will not parse is UNKNOWN, not LOW',
           C.evidence_band('UNPARSED')[0], C.UNKNOWN)
     check('EXEMPT is MEDIUM -- exempt is not proven', C.evidence_band('EXEMPT')[0], C.MEDIUM)
+    check('UNREAD is UNKNOWN -- a file that could not be read may hold the control',
+          C.evidence_band('UNREAD')[0], C.UNKNOWN)
+
+    # ── 4b. A FILE THAT COULD NOT BE READ (cody b55) ─────────────────────────
+    print('\n4b. could-not-read is never a measured absence')
+    _real_tf = CTRL.test_files
+    _ghost = os.path.join(REPO, 'tests', '__b55_does_not_exist__.py')
+    try:
+        _baseline = C.control_states()
+        CTRL.test_files = lambda: list(_real_tf()) + [_ghost]
+        _with_ghost = C.control_states()
+        check('CONTROL: today at least one promoted checker has NO control, so the '
+              'next arm has something to move',
+              any(v == 'NONE' for v in _baseline.values()), True)
+        check('with one unreadable test file, no checker is reported NONE',
+              sorted(t for t, v in _with_ghost.items() if v == 'NONE'), [])
+        check('...each would-be NONE is UNREAD instead',
+              sorted(t for t, v in _baseline.items() if v == 'NONE'),
+              sorted(t for t, v in _with_ghost.items() if v == 'UNREAD'))
+        try:
+            C.naming_candidates()
+            _raised = False
+        except Exception:
+            _raised = True
+        check('the naming join RAISES on an unreadable file rather than returning a '
+              'partial map main() would print as a measured zero', _raised, True)
+        CTRL.test_files = lambda: (_ for _ in ()).throw(OSError('b55 fixture'))
+        try:
+            C.naming_candidates()
+            _raised = False
+        except Exception:
+            _raised = True
+        check('...and raises when the file list itself cannot be read -- this '
+              'returned {} and printed "none ... a MEASURED zero"', _raised, True)
+    finally:
+        CTRL.test_files = _real_tf
 
     # ── 5. THE REAL RUN ──────────────────────────────────────────────────────
     print('\n5. the real fleet')
@@ -116,7 +171,17 @@ def main():
                         '--json'], capture_output=True, text=True, encoding='utf-8',
                        errors='replace', cwd=REPO,
                        env=dict(os.environ, PYTHONIOENCODING='utf-8', PYTHONUTF8='1'))
-    doc = json.loads(r.stdout)
+    # --json IS JSON (cody b55). An import-time NOTE from report_only_checks led
+    # stdout from 2026-10-14, and json.loads crashed here before any arm below.
+    try:
+        doc = json.loads(r.stdout)
+    except ValueError:
+        doc = None
+    check('--json stdout parses as JSON, with nothing printed ahead of it',
+          isinstance(doc, dict), True)
+    if doc is None:
+        print('       first line: %r' % ((r.stdout or '').splitlines()[:1],))
+        doc = {'rows': []}
     rows = doc['rows']
     # ── A FLOOR UNDER A UNIVERSAL CLAIM, CORRECTED 2026-09-28 ────────────────
     # This read `len(rows) > 20` under the label "every promoted checker is
