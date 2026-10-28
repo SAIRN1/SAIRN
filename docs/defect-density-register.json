@@ -39018,6 +39018,47 @@
       "factors_unknown_reason": "the b59 fix stopped new refused drafts and nobody asked what the old ones were doing on devices until the b59 handoff named it"
     },
     {
+      "commit": "40af6a301113",
+      "date": "2026-10-28",
+      "subject": "fix(tools, cody b57): write_batch was invisible to the read-back check -- stonedesk's \"33 -> 32\" was a masked regression, not growth",
+      "files": [
+        "tests/write_readback_shape_probe.py",
+        "tools/write_without_readback_check.py"
+      ],
+      "lines_added": 20,
+      "lines_removed": 3,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "write_without_readback_check WRITE_RE matched only 'write', so stonedesk sd_customers, moved to sdData('write_batch', ...), fell out of the write set and its read-back stopped being checked; write_readback_shape_probe's 33 -> 32 read as app shrinkage. Fixed in the tool (write(?:_batch)?) with a fixture that fails on the old regex; two other drifts (sairncare, sairnmechanical) read and confirmed as real features with read-back before re-baselining.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The write_batch action was introduced for sd_customers in stonedesk after WRITE_RE was written; not traced to a single commit."
+      },
+      "citation_note": "C2 in docs/recurring-bug-classes-2.md (not-run read as pass); no standing rule names an action-name drift in a resolver.",
+      "contributing_factors": [
+        {
+          "factor": "A resolver keyed on one literal action name lost a resource silently when the app adopted a sibling action.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "WRITE_RE accepts write_batch; fixture plus ablation."
+        },
+        {
+          "factor": "A red baseline arm was carried as app growth without reading which resource changed.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Each drift diffed against the 2026-09-17 baseline commit before any re-baseline."
+        }
+      ],
+      "recurrence_open": "Other action names (soft_delete, upsert variants) are not in WRITE_RE; not swept."
+    },
+    {
       "commit": "56ec80530b50",
       "date": "2026-10-28",
       "subject": "fix(stonedesk b60): .sairn-fu-label / .shoff-label use var(--muted), not a dark-surface rgba",
@@ -39103,6 +39144,35 @@
       "recurrence_open": "Any OTHER hook-spawned tool that runs git in a temp dir is covered only by the hook-level unset; a tool invoked by a different hook or wrapper that exports GIT_DIR is not."
     },
     {
+      "commit": "79c4f10cf665",
+      "date": "2026-10-28",
+      "subject": "fix(push_retry b61): the push runs with no timeout -- git() killed it at 120 s",
+      "files": [
+        "tools/push_retry.py"
+      ],
+      "lines_added": 9,
+      "lines_removed": 4,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "fourth b61. tools/push_retry.py pushed through git(), which runs every command with timeout=120; the push gate takes minutes and writes mutants into tracked files, so a kill at 120 s could skip their restore (the b59 hazard). git() now takes timeout and the push passes None. Found by push_timeout_guard --scan on its first run.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/push_timeout_guard.py --scan (b61, first run)",
+      "found_by_session": null,
+      "injection": {
+        "commit": "ad11ef1c27e4",
+        "date": "2026-09-26",
+        "subject": "feat(methodology): the retry loop refuses to amend mid-rebase, instead of relying on somebody reading the log",
+        "lag_days": 32
+      },
+      "citation_note": "No standing rule covered a push run on a clock until b61; tools/push_timeout_guard.py is now the mechanical form of it.",
+      "factors_unknown_reason": "the git() helper's 120 s timeout was right for every read and wrong for the one push, and nothing looked at the two lines together until the b61 scan"
+    },
+    {
       "commit": "8259a6dd25fe",
       "date": "2026-10-28",
       "subject": "fix(sairnmechanical, cody b57): a backup that never ran, and a restore that never read, both said nothing",
@@ -39144,50 +39214,6 @@
         }
       ],
       "recurrence_open": "The generic sd-data server path was not re-audited for this class in b57."
-    },
-    {
-      "commit": "e318692427ec",
-      "date": "2026-10-28",
-      "subject": "fix(identity, cody b57): the fx identity is out of this clone's config, and two tools can no longer put it back unseen",
-      "files": [
-        "tools/committer_identity_check.py",
-        "tools/rework_tracker.py"
-      ],
-      "lines_added": 17,
-      "lines_removed": 2,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "SAIRN-cody committed as fx <fx@local> from 2026-10-27 (90 commits on origin/main) because a gate fixture's git init re-initialised the shared repo through an inherited absolute GIT_DIR (root cause fixed by cc b60 58801d4c7). This commit unsets the local identity, widens committer_identity_check to tools/ fixtures (it scanned tests/ only, so copy_exactly's fx was not on its list), and makes cody's own rework_tracker git fixture drop GIT_DIR so it cannot re-init the real repo or commit to its HEAD.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "config",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "0d2fe1eb3eac",
-        "date": "2026-10-27",
-        "subject": "chore(bypass-log, cody b51): the last honoured external-files skip row",
-        "lag_days": 1
-      },
-      "citation_note": "No rule names an inherited GIT_DIR beating git -C; PR 1.11 covers the unnoticed half (no gate reads the identity).",
-      "contributing_factors": [
-        {
-          "factor": "git exports an absolute GIT_DIR to a pre-push hook from a linked worktree, which overrides -C in fixtures that init temp repos.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Hook unsets it (cc b60); cody fixture drops it; driven with a hostile GIT_DIR."
-        },
-        {
-          "factor": "No gate reads the committing identity, so 90 commits went out before anyone looked.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "cody push script runs committer_identity_check and refuses core.bare!=false before pushing."
-        }
-      ],
-      "recurrence_open": "fourth's clone still carries fx@example.invalid in local config (fourth's to fix); other tools with git init fixtures (sairn_self_state, idempotence_double_run, push_retry) rely on the hook-level unset."
     },
     {
       "commit": "8e2c18f48c37",
@@ -39277,6 +39303,56 @@
       "recurrence_open": "Other consumers of FLAKY.classify or of report_only_checks --json output may have the same default-to-best or stdout-pollution shape; not swept."
     },
     {
+      "commit": "9c74373b6d52",
+      "date": "2026-10-28",
+      "subject": "fix(push_retry, hank b61): a race lost after a gate PASS retries fast without re-paying the gate (C1)",
+      "files": [
+        "docs/recurring-bug-classes-2.md",
+        "tools/push_retry.py"
+      ],
+      "lines_added": 192,
+      "lines_removed": 15,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "live-verification",
+      "summary": "push_retry --loop re-ran the full pre-push gate on every transient (lost-race) refusal, so a retry landed only if origin stood still for a whole 75s-4min gate run; hank b61 lost 3/3 after gate PASSes. Fixed: a retry after a gate pass skips the gate only when the outgoing patch-id set is unchanged and incoming commits touch none of our files nor the gate's inputs, logged to BYPASS-LOG. Also --selftest crashed (TypeError) since 79c4f10cf: its git stub took no timeout kwarg.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "c57e65a899cf",
+        "date": "2026-10-20",
+        "subject": "fix(cc b32): the push-retry loop stops on a gate refusal and retries only remote races",
+        "lag_days": 8
+      },
+      "citation_note": "No standing rule says a retry must not re-pay a check on unchanged code; C1 now names it.",
+      "contributing_factors": [
+        {
+          "factor": "The b32 retry classified a lost race correctly but answered it with a full gate re-run whose duration exceeds the remote inter-push interval",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "pure-base fast retry in push_retry --loop, 15 selftest arms, 4 mutants red"
+        },
+        {
+          "factor": "The durable form was routed to cc in C1 (cody b56) and lived only in a scratchpad script, so other clones pushed with bare git push",
+          "kind": "process",
+          "action_status": "done",
+          "action": "C1 standing pattern: all build agents push via push_retry --loop"
+        },
+        {
+          "factor": "The selftest crash after 79c4f10cf went unseen because nothing runs push_retry --selftest at push time",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "have the push gate run push_retry --selftest when tools/push_retry.py changes (not built this batch)"
+        }
+      ],
+      "recurrence_open": "A skipped push does not re-run whole-tree checks against the combined base; only gate duration or a merge queue closes that."
+    },
+    {
       "commit": "b676e7e79a2d",
       "date": "2026-10-28",
       "subject": "fix(sql, hank b59): alf-audit-owner-recovery.sql is run-ready -- real hash/salt written into the shipped file",
@@ -39326,45 +39402,92 @@
       "recurrence_open": "No mechanical check yet refuses a placeholder token in a sql/ file at push time; the re-read is a discipline, not a gate."
     },
     {
-      "commit": "40af6a301113",
+      "commit": "cdf71e894bf3",
       "date": "2026-10-28",
-      "subject": "fix(tools, cody b57): write_batch was invisible to the read-back check -- stonedesk's \"33 -> 32\" was a masked regression, not growth",
+      "subject": "fix(sairnsenior, hank b60): readiness engine gets only name + state-ID presence for non-HR roles (H1 #1274)",
       "files": [
-        "tests/write_readback_shape_probe.py",
-        "tools/write_without_readback_check.py"
+        "api/b60-readiness-caregiver-projection.test.js",
+        "api/sd-data.js"
       ],
-      "lines_added": 20,
-      "lines_removed": 3,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "write_without_readback_check WRITE_RE matched only 'write', so stonedesk sd_customers, moved to sdData('write_batch', ...), fell out of the write set and its read-back stopped being checked; write_readback_shape_probe's 33 -> 32 read as app shrinkage. Fixed in the tool (write(?:_batch)?) with a fixture that fails on the old regex; two other drifts (sairncare, sairnmechanical) read and confirmed as real features with read-back before re-baselining.",
+      "lines_added": 154,
+      "lines_removed": 1,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": "H1 #1274: sen_visits/readiness (open to coordinator/scheduler) built caregiversById from the whole sen_caregivers blob, so HR fields (bgcheck_date, notes, the state caregiver ID value) entered the readiness engine for roles SEN_CAREGIVER_HR_FIELD_ROLES excludes on sen_caregivers/read. No value reached the response (presence booleans only). Fixed by projecting to {id, name, state_caregiver_id} with a presence marker for non-HR roles; verdict unchanged.",
       "rules": [],
       "citation_confidence": "not-citable",
-      "injection_phase": "coding",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "f1d2b579c967",
+        "date": "2026-08-27",
+        "subject": "feat(sairnsenior): EVV submission-readiness panel -- report-only, persists nothing",
+        "lag_days": 62
+      },
+      "citation_note": "No standing rule requires a compute-only consumer to receive a role-projected object; the redaction was applied to the one emitting path only. Proposed: a consumer of a field-gated table receives exactly the fields it reads, projected by the caller's role.",
+      "contributing_factors": [
+        {
+          "factor": "The HR-field redaction (b384a513) was applied to the emitting read path only; the compute-only readiness path kept the whole blob",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "readiness projects to the two fields the engine reads, role-split on the state ID value"
+        },
+        {
+          "factor": "Routed to cody on 2026-10-13 and confirmed unfixed at seq1288; the routing never reached a paste for 15 days",
+          "kind": "process",
+          "action_status": "done",
+          "action": "pulled from the H1 log and resolved in hank b60"
+        }
+      ],
+      "recurrence_open": "The presence of a state caregiver ID remains visible to coordinators/schedulers through the readiness verdict by design (EVV readiness must report a missing ID); a role-suppressed element would be a product decision."
+    },
+    {
+      "commit": "e318692427ec",
+      "date": "2026-10-28",
+      "subject": "fix(identity, cody b57): the fx identity is out of this clone's config, and two tools can no longer put it back unseen",
+      "files": [
+        "tools/committer_identity_check.py",
+        "tools/rework_tracker.py"
+      ],
+      "lines_added": 17,
+      "lines_removed": 2,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "SAIRN-cody committed as fx <fx@local> from 2026-10-27 (90 commits on origin/main) because a gate fixture's git init re-initialised the shared repo through an inherited absolute GIT_DIR (root cause fixed by cc b60 58801d4c7). This commit unsets the local identity, widens committer_identity_check to tools/ fixtures (it scanned tests/ only, so copy_exactly's fx was not on its list), and makes cody's own rework_tracker git fixture drop GIT_DIR so it cannot re-init the real repo or commit to its HEAD.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "config",
       "phase_confidence": "inferred",
       "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "unknown_reason": "The write_batch action was introduced for sd_customers in stonedesk after WRITE_RE was written; not traced to a single commit."
+        "commit": "0d2fe1eb3eac",
+        "date": "2026-10-27",
+        "subject": "chore(bypass-log, cody b51): the last honoured external-files skip row",
+        "lag_days": 1
       },
-      "citation_note": "C2 in docs/recurring-bug-classes-2.md (not-run read as pass); no standing rule names an action-name drift in a resolver.",
+      "citation_note": "No rule names an inherited GIT_DIR beating git -C; PR 1.11 covers the unnoticed half (no gate reads the identity).",
       "contributing_factors": [
         {
-          "factor": "A resolver keyed on one literal action name lost a resource silently when the app adopted a sibling action.",
+          "factor": "git exports an absolute GIT_DIR to a pre-push hook from a linked worktree, which overrides -C in fixtures that init temp repos.",
           "kind": "technical",
           "action_status": "done",
-          "action": "WRITE_RE accepts write_batch; fixture plus ablation."
+          "action": "Hook unsets it (cc b60); cody fixture drops it; driven with a hostile GIT_DIR."
         },
         {
-          "factor": "A red baseline arm was carried as app growth without reading which resource changed.",
+          "factor": "No gate reads the committing identity, so 90 commits went out before anyone looked.",
           "kind": "process",
           "action_status": "done",
-          "action": "Each drift diffed against the 2026-09-17 baseline commit before any re-baseline."
+          "action": "cody push script runs committer_identity_check and refuses core.bare!=false before pushing."
         }
       ],
-      "recurrence_open": "Other action names (soft_delete, upsert variants) are not in WRITE_RE; not swept."
+      "recurrence_open": "fourth's clone still carries fx@example.invalid in local config (fourth's to fix); other tools with git init fixtures (sairn_self_state, idempotence_double_run, push_retry) rely on the hook-level unset."
     },
     {
       "commit": "e567e2f56b6f",
@@ -39495,79 +39618,6 @@
       },
       "citation_note": "No coding rule covers a component's colours written for a different surface than the one it renders into. Proposed: injected UI takes colours from theme tokens, never literal rgba.",
       "factors_unknown_reason": "same latent class as 56ec80530: the rows are dormant, so no rendered pass reached them; the b60 label fix named these and left them"
-    },
-    {
-      "commit": "cdf71e894bf3",
-      "date": "2026-10-28",
-      "subject": "fix(sairnsenior, hank b60): readiness engine gets only name + state-ID presence for non-HR roles (H1 #1274)",
-      "files": [
-        "api/b60-readiness-caregiver-projection.test.js",
-        "api/sd-data.js"
-      ],
-      "lines_added": 154,
-      "lines_removed": 1,
-      "app": "sairnsenior",
-      "layer": "product",
-      "severity": "low",
-      "detection_method": "hover-audit",
-      "summary": "H1 #1274: sen_visits/readiness (open to coordinator/scheduler) built caregiversById from the whole sen_caregivers blob, so HR fields (bgcheck_date, notes, the state caregiver ID value) entered the readiness engine for roles SEN_CAREGIVER_HR_FIELD_ROLES excludes on sen_caregivers/read. No value reached the response (presence booleans only). Fixed by projecting to {id, name, state_caregiver_id} with a presence marker for non-HR roles; verdict unchanged.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover",
-      "injection": {
-        "commit": "f1d2b579c967",
-        "date": "2026-08-27",
-        "subject": "feat(sairnsenior): EVV submission-readiness panel -- report-only, persists nothing",
-        "lag_days": 62
-      },
-      "citation_note": "No standing rule requires a compute-only consumer to receive a role-projected object; the redaction was applied to the one emitting path only. Proposed: a consumer of a field-gated table receives exactly the fields it reads, projected by the caller's role.",
-      "contributing_factors": [
-        {
-          "factor": "The HR-field redaction (b384a513) was applied to the emitting read path only; the compute-only readiness path kept the whole blob",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "readiness projects to the two fields the engine reads, role-split on the state ID value"
-        },
-        {
-          "factor": "Routed to cody on 2026-10-13 and confirmed unfixed at seq1288; the routing never reached a paste for 15 days",
-          "kind": "process",
-          "action_status": "done",
-          "action": "pulled from the H1 log and resolved in hank b60"
-        }
-      ],
-      "recurrence_open": "The presence of a state caregiver ID remains visible to coordinators/schedulers through the readiness verdict by design (EVV readiness must report a missing ID); a role-suppressed element would be a product decision."
-    },
-    {
-      "commit": "79c4f10cf665",
-      "date": "2026-10-28",
-      "subject": "fix(push_retry b61): the push runs with no timeout -- git() killed it at 120 s",
-      "files": [
-        "tools/push_retry.py"
-      ],
-      "lines_added": 9,
-      "lines_removed": 4,
-      "app": "PLATFORM",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "static-checker",
-      "summary": "fourth b61. tools/push_retry.py pushed through git(), which runs every command with timeout=120; the push gate takes minutes and writes mutants into tracked files, so a kill at 120 s could skip their restore (the b59 hazard). git() now takes timeout and the push passes None. Found by push_timeout_guard --scan on its first run.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": "tools/push_timeout_guard.py --scan (b61, first run)",
-      "found_by_session": null,
-      "injection": {
-        "commit": "ad11ef1c27e4",
-        "date": "2026-09-26",
-        "subject": "feat(methodology): the retry loop refuses to amend mid-rebase, instead of relying on somebody reading the log",
-        "lag_days": 32
-      },
-      "citation_note": "No standing rule covered a push run on a clock until b61; tools/push_timeout_guard.py is now the mechanical form of it.",
-      "factors_unknown_reason": "the git() helper's 120 s timeout was right for every read and wrong for the one push, and nothing looked at the two lines together until the b61 scan"
     }
   ],
   "started": "2026-09-09",
