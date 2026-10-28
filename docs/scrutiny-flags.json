@@ -9165,6 +9165,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/write_readback_shape_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a3050705c81842014cc1fce8f95f1e50a4c8284d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/push_gate/refspec_and_override_probe.py",
    "class": "test file",
    "level": "WEAKENING",
