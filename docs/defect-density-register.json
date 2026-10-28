@@ -38945,6 +38945,65 @@
       "recurrence_open": "NOT CLOSED. The archive/ snapshots carry the same components (not deployed apps). Other low-alpha dark-theme labels (.sairn-fu-label, .shoff-label) were not flagged by any rendered pass and are unchanged. cartAdd does not re-render the vendor quantity box (pre-existing)."
     },
     {
+      "commit": "21ad938e1c6f",
+      "date": "2026-10-28",
+      "subject": "fix(sairnsenior b60): sweep local-only claim drafts the server refused before b59",
+      "files": [
+        "sairnsenior.html",
+        "tests/sairnsenior_contract_auth_save.js"
+      ],
+      "lines_added": 70,
+      "lines_removed": 2,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "fourth b60, follow-on to H1 #1713. Claim drafts the server refused BEFORE the b59 fix stayed on devices and kept their visits out of Ready to bill. senHydrateClaims now re-sends every local-only draft: accepted stays, refused is withdrawn (visit back, biller told), no answer is kept. A read at the 1000-row cap sweeps nothing; a visit the server already bills under another claim is withdrawn without a write. 29 arms, 5/5 mutants.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "9c1bf690971e",
+        "date": "2026-08-20",
+        "subject": "feat: sairnsenior.html + api/sd-data.js -- Care Plan Tasks + Billing & Claims (sen_claims)",
+        "lag_days": 69
+      },
+      "citation_note": "No coding rule covers repairing state an earlier defect left on devices: a fix that stops new bad rows does not remove old ones. Proposed: a fix to a local-first save ships with a sweep for the rows it would have refused.",
+      "factors_unknown_reason": "the b59 fix stopped new refused drafts and nobody asked what the old ones were doing on devices until the b59 handoff named it"
+    },
+    {
+      "commit": "56ec80530b50",
+      "date": "2026-10-28",
+      "subject": "fix(stonedesk b60): .sairn-fu-label / .shoff-label use var(--muted), not a dark-surface rgba",
+      "files": [
+        "stonedesk.html"
+      ],
+      "lines_added": 4,
+      "lines_removed": 2,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "fourth b60. .sairn-fu-label and .shoff-label were rgba(240,240,255,0.3), a dark-surface colour; rendered into the light AI chat log they measure 1.03:1 (axe, Playwright). Now var(--muted): 5.52:1. LATENT -- both rows are dormant today because the addMsg hooks never install.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "57db94fbf375",
+        "date": "2026-06-22",
+        "subject": "Fix JavaScript syntax errors in stonedesk.html - 94/106 scripts passing Node syntax check",
+        "lag_days": 128
+      },
+      "citation_note": "No coding rule covers a component's colours written for a different surface than the one it renders into. Proposed: injected UI takes colours from theme tokens, never literal rgba.",
+      "factors_unknown_reason": "the rows are dormant (addMsg never installs), so no rendered axe pass ever reached them; found by grep in b59"
+    },
+    {
       "commit": "58801d4c79d8",
       "date": "2026-10-28",
       "subject": "fix(gates, cc b60): copy-exactly fixtures re-initialised the SHARED repo from a worktree push -- the core.bare=true source",
