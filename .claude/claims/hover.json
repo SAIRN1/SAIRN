@@ -1348,8 +1348,8 @@
       "task": "hover-tools b100 vendor context for cross_vendor_check range mode",
       "claimed_at": "2026-10-28T22:30:35Z",
       "claimed_at_epoch": 1793226635.3785589,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-28T22:35:16Z",
       "files": null
     }
   ],
