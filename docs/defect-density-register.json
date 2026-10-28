@@ -39215,6 +39215,57 @@
       "factors_unknown_reason": "the git() helper's 120 s timeout was right for every read and wrong for the one push, and nothing looked at the two lines together until the b61 scan"
     },
     {
+      "commit": "7dbf373840e2",
+      "date": "2026-10-28",
+      "subject": "fix(sairnsenior, cc b67): H1 #1756 -- a caregiver device purges colleagues' cached caregiver rows and the withheld HR fields on merge",
+      "files": [
+        "sairnsenior.html",
+        "tests/sairnsenior_caregiver_scope_purge.js"
+      ],
+      "lines_added": 171,
+      "lines_removed": 2,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "hover-audit",
+      "summary": "cc b67, H1 #1756. The #965 role scope (f02a61f0) was server-only. senServerWinsMerge only adds and replaces, so a caregiver device that had ever held the roster (hydrated before the fix, or used by a manager first) kept every colleague's name, personal phone and CPR expiry in localStorage after each merge, plus the HR fields on any kept row. The client now keeps the read envelope's roster_scope and hr_fields_visible, and purges out-of-scope rows and fields only on a successful read that carries those declarations. 13-arm test; ablating the purge call fails 5.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "f02a61f023da",
+        "date": "2026-10-28",
+        "subject": "fix(sairnsenior, cc b61): sen_caregivers gave every colleague's name, phone, CPR expiry and ids to the caregiver role -- H1 #965",
+        "lag_days": 0
+      },
+      "contributing_factors": [
+        {
+          "factor": "the #965 fix narrowed what the server SENDS and never asked what the device already HOLDS; senServerWinsMerge only adds and replaces",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "senPurgeCaregiversOutOfScope applies the read envelope's roster_scope and hr_fields_visible on the device"
+        },
+        {
+          "factor": "the field-scope gate (check 4c) holds the server response per role and cannot see localStorage, so a server-only fix passed every gate",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/sairnsenior_caregiver_scope_purge.js drives the hydrate per role against the real envelope shape"
+        },
+        {
+          "factor": "senData returned d.data only and dropped the envelope's declarations, so no hydrate could act on what the server said it withheld",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "senData keeps senLastScope per resource on every successful read"
+        }
+      ],
+      "recurrence_open": "Every other sairnsenior hydrate uses the same add-and-replace merge; any read whose server scope narrows (sen_clients caregiver scope, sen_visits) can leave the same residue on a device until it gets the same purge."
+    },
+    {
       "commit": "815240d1626e",
       "date": "2026-10-28",
       "subject": "fix(tools, cody b58): the b55 MEDIUM not-run-as-pass leftovers, M2-M23, each with an arm red on the old code",
@@ -39413,6 +39464,50 @@
       "recurrence_open": "Other consumers of FLAKY.classify or of report_only_checks --json output may have the same default-to-best or stdout-pollution shape; not swept."
     },
     {
+      "commit": "9e7d20c83ed0",
+      "date": "2026-10-28",
+      "subject": "fix(tools, cody b58): write_without_readback_check -- an empty target list exits 2; \"FILES SCANNED\" counts targets (M17, the last b55 row)",
+      "files": [
+        "docs/sairn-path-manifest.json",
+        "docs/scrutiny-flags.json",
+        "tools/write_without_readback_check.py"
+      ],
+      "lines_added": 171,
+      "lines_removed": 5,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "independent-review",
+      "summary": "write_without_readback_check exited 0 when it scanned no file at all (an empty target list, e.g. run from the wrong directory) and mislabelled files-with-a-write as files scanned, so a write-free scan said ZERO files were scanned. Now an empty target list is exit 2 and the line counts targets and writers separately; fixture arm ablated red on the old main().",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The disclosure was added 2026-09-10; not traced further."
+      },
+      "citation_note": "PR 1.11: could-not-run is a third state, never folded into passed.",
+      "contributing_factors": [
+        {
+          "factor": "The zero-scanned disclosure keyed on `results`, which holds only files with a write, so the message and the could-not-run case were bound to the wrong population.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Keyed on targets; two fixture arms, one ablated red on the old main()."
+        },
+        {
+          "factor": "The b55 fix attempt was reverted without the right fix being routed separately, so the row stayed open three batches.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Closed in b58."
+        }
+      ],
+      "recurrence_open": "Other checkers whose denominator is a filtered list rather than the targets were not swept for this shape."
+    },
+    {
       "commit": "b676e7e79a2d",
       "date": "2026-10-28",
       "subject": "fix(sql, hank b59): alf-audit-owner-recovery.sql is run-ready -- real hash/salt written into the shipped file",
@@ -39504,50 +39599,6 @@
         }
       ],
       "recurrence_open": "The presence of a state caregiver ID remains visible to coordinators/schedulers through the readiness verdict by design (EVV readiness must report a missing ID); a role-suppressed element would be a product decision."
-    },
-    {
-      "commit": "9e7d20c83ed0",
-      "date": "2026-10-28",
-      "subject": "fix(tools, cody b58): write_without_readback_check -- an empty target list exits 2; \"FILES SCANNED\" counts targets (M17, the last b55 row)",
-      "files": [
-        "docs/sairn-path-manifest.json",
-        "docs/scrutiny-flags.json",
-        "tools/write_without_readback_check.py"
-      ],
-      "lines_added": 171,
-      "lines_removed": 5,
-      "app": "PLATFORM",
-      "layer": "tooling",
-      "severity": "low",
-      "detection_method": "independent-review",
-      "summary": "write_without_readback_check exited 0 when it scanned no file at all (an empty target list, e.g. run from the wrong directory) and mislabelled files-with-a-write as files scanned, so a write-free scan said ZERO files were scanned. Now an empty target list is exit 2 and the line counts targets and writers separately; fixture arm ablated red on the old main().",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The disclosure was added 2026-09-10; not traced further."
-      },
-      "citation_note": "PR 1.11: could-not-run is a third state, never folded into passed.",
-      "contributing_factors": [
-        {
-          "factor": "The zero-scanned disclosure keyed on `results`, which holds only files with a write, so the message and the could-not-run case were bound to the wrong population.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Keyed on targets; two fixture arms, one ablated red on the old main()."
-        },
-        {
-          "factor": "The b55 fix attempt was reverted without the right fix being routed separately, so the row stayed open three batches.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Closed in b58."
-        }
-      ],
-      "recurrence_open": "Other checkers whose denominator is a filtered list rather than the targets were not swept for this shape."
     },
     {
       "commit": "e318692427ec",
