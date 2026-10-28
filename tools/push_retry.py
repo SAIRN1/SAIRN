@@ -789,13 +789,15 @@ def selftest():
              '_incoming_files', '_log_fast_retry')
     keep = tuple(g[n] for n in names)
 
-    def _drive(blob, state=None, incoming=frozenset()):
+    def _drive(blob, state=None, incoming=frozenset(), land_on=None):
         pushes, logged = [], []
         states = iter(state or [])
 
         def _git(*a, **_k):
             if a[0] == 'push':
                 pushes.append('--no-verify' in a)
+                if land_on is not None and len(pushes) == land_on:
+                    return 0, '', ''
                 return 1, '', blob
             if a[0] == 'rev-list':
                 return 0, '0', ''
@@ -822,9 +824,14 @@ def selftest():
 
     # ── C1 (hank b61): after a PASS lost to a race, an unchanged range retries
     # WITHOUT the gate, and every such skip is logged.
-    arm('C1 -- full gate first, then 3 FAST retries on an unchanged range, '
-        'each logged', p_race == [False, True, True, True] and l_race == 3,
+    arm('C1 -- full gate first, then 3 FAST retries on an unchanged range; a '
+        'REFUSED skip logs nothing (b63: the row dirtied the tree and the next '
+        'rebase stopped)', p_race == [False, True, True, True] and l_race == 0,
         'pushes=%s logged=%d' % (p_race, l_race))
+    p_land, rc_land, l_land = _drive(race, land_on=2)
+    arm('C1 -- a skip that LANDS is logged exactly once',
+        p_land == [False, True] and rc_land == 0 and l_land == 1,
+        'pushes=%s rc=%s logged=%d' % (p_land, rc_land, l_land))
     p_chg, _rc, l_chg = _drive(race, state=[
         (frozenset({'p%d' % k}), {'a.py'}, 'B') for k in range(4)])
     arm('C1 -- our commits changing between attempts means the FULL gate '
@@ -1208,7 +1215,13 @@ def cmd_loop(attempts):
         if skip:
             prc, pout, perr = git('push', '--no-verify', 'origin', 'main',
                                   timeout=None)
-            _log_fast_retry(gated, now, why, prc)
+            # LOGGED ONLY WHEN IT LANDED (hank b63). The row is a tracked
+            # write; written after a REFUSED skip it dirtied the tree and the
+            # next attempt's rebase stopped (exit 3). A refused push put
+            # nothing on main, so there is no bypass to record. The row a
+            # landed skip writes is left for the next commit to carry.
+            if prc == 0:
+                _log_fast_retry(gated, now, why, prc)
         else:
             prc, pout, perr = git('push', 'origin', 'main', timeout=None)
         if prc == 0:
