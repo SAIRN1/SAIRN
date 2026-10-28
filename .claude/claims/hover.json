@@ -1258,8 +1258,8 @@
       "task": "hover auditor b91 empirical gate 909 reconcile beacon drill",
       "claimed_at": "2026-10-28T11:57:06Z",
       "claimed_at_epoch": 1793188626.089535,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-28T12:19:56Z",
       "files": null
     }
   ],
