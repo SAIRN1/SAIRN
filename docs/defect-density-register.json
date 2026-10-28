@@ -39268,7 +39268,7 @@
       "factors_unknown_reason": "same latent class as 56ec80530: the rows are dormant, so no rendered pass reached them; the b60 label fix named these and left them"
     },
     {
-      "commit": "bd4e3d0264f7",
+      "commit": "f02a61f023da",
       "date": "2026-10-28",
       "subject": "fix(sairnsenior, cc b61): sen_caregivers gave every colleague's name, phone, CPR expiry and ids to the caregiver role -- H1 #965",
       "files": [
