@@ -38989,6 +38989,47 @@
       "recurrence_open": "41 MEDIUM/LOW hits from the b55 sweep remain (handoff lists them); checker_kit.tracked() ignores git's exit code for every caller."
     },
     {
+      "commit": "1a1054939daa",
+      "date": "2026-10-28",
+      "subject": "fix(sd-data, cody b58): a sairnmechanical save the store did not echo is 502 WRITE_UNCONFIRMED, never ok",
+      "files": [
+        "api/sd-data.js",
+        "tests/sd_data_mech_write_unconfirmed.js"
+      ],
+      "lines_added": 189,
+      "lines_removed": 10,
+      "app": "sairnmechanical",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "sairnmechanical server writes answered ok when the store echoed no row: the MECH_RECORDS branch (quotes, checks, docs, takeoffs) returned the request payload as if stored and mech_site_assets / mech_insurance_policies / mech_credentials returned data:null, so the app cleared the form and mechPushOne reported a backup the store never confirmed. Now 502 WRITE_UNCONFIRMED via wroteRow(); tests/sd_data_mech_write_unconfirmed.js 22 arms with ablation.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The fallback arms date from each branch's original wiring (2026-09-02 to 2026-09-25); not traced to single commits."
+      },
+      "citation_note": "C2 in docs/recurring-bug-classes-2.md (silent backup / premature ack), server half; no PR rule id names a return=representation fallback.",
+      "contributing_factors": [
+        {
+          "factor": "Four mech write branches were written before wroteRow()/refuseUnconfirmedWrite() existed (2026-09-18) and the sweep that introduced them covered PATCH and soft-delete sites, not POST upserts.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "All four mech branches now use the pair; tests/sd_data_mech_write_unconfirmed.js with ablation."
+        },
+        {
+          "factor": "The b57 audit of this class stopped at the client and recorded the server path as COULD NOT TELL rather than reading it.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "b58 read and drove every mech write and read branch on the server."
+        }
+      ],
+      "recurrence_open": "Three more ok-with-null write acks remain outside sairnmechanical (sd-data.js supplier_lead_times, sd_approvals, alf_family_contacts); routed in the cody b58 handoff."
+    },
+    {
       "commit": "21ad938e1c6f",
       "date": "2026-10-28",
       "subject": "fix(sairnsenior b60): sweep local-only claim drafts the server refused before b59",
@@ -39304,54 +39345,72 @@
       "recurrence_open": "Other consumers of FLAKY.classify or of report_only_checks --json output may have the same default-to-best or stdout-pollution shape; not swept."
     },
     {
-      "commit": "fdb5ca7ee4d8",
+      "commit": "b5349195e0d4",
       "date": "2026-10-28",
-      "subject": "fix(push_retry, hank b61): a race lost after a gate PASS retries fast without re-paying the gate (C1)",
+      "subject": "fix(tools, cody b58): the b55 MEDIUM not-run-as-pass leftovers, M2-M23, each with an arm red on the old code",
       "files": [
-        "docs/recurring-bug-classes-2.md",
-        "tools/push_retry.py"
+        "tests/run_assertion_label_shape_probe.py",
+        "tests/run_control_char_probe.py",
+        "tests/run_dead_rule_sweep_probe.py",
+        "tests/run_entry_point_scope_probe.py",
+        "tests/run_guard_ablation_probe.py",
+        "tests/run_metamorphic_probe.py",
+        "tests/run_parse_zero_third_state_probe.py",
+        "tests/run_route_suite_failures_probe.py",
+        "tests/run_sairn_dead_function_sweep_probe.py",
+        "tests/run_unproven_arm_probe.py",
+        "tests/run_verify_citator_feedback_probe.py",
+        "tools/assertion_label_shape_check.py",
+        "tools/clone_health_check.py",
+        "tools/control_char_check.py",
+        "tools/dead_rule_sweep.py",
+        "tools/entry_point_scope_check.py",
+        "tools/external_file_index_audit.py",
+        "tools/git_config_isolation.py",
+        "tools/guard_ablation.py",
+        "tools/metamorphic_check.py",
+        "tools/overrun_inversion_scan.py",
+        "tools/parse_zero_third_state_check.py",
+        "tools/route_suite_failures.py",
+        "tools/sairn_dead_function_sweep.py",
+        "tools/session_surface_check.py",
+        "tools/unproven_arm_check.py",
+        "tools/verify_citator_feedback.py"
       ],
-      "lines_added": 192,
-      "lines_removed": 15,
-      "app": "tooling",
+      "lines_added": 1132,
+      "lines_removed": 79,
+      "app": "PLATFORM",
       "layer": "tooling",
       "severity": "moderate",
-      "detection_method": "live-verification",
-      "summary": "push_retry --loop re-ran the full pre-push gate on every transient (lost-race) refusal, so a retry landed only if origin stood still for a whole 75s-4min gate run; hank b61 lost 3/3 after gate PASSes. Fixed: a retry after a gate pass skips the gate only when the outgoing patch-id set is unchanged and incoming commits touch none of our files nor the gate's inputs, logged to BYPASS-LOG. Also --selftest crashed (TypeError) since 79c4f10cf: its git stub took no timeout kwarg.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
+      "detection_method": "independent-review",
+      "summary": "Sixteen cody-owned checkers reported a pass for work that never ran (b55 sweep M2-M23): exit 0 on PARTIAL/COULD-NOT-RUN/NOT ASSESSED (verify_citator_feedback, guard_ablation, unproven_arm), a strip_comments arg slot that made a count structurally 0 (assertion_label_shape), value=2 matching indent=2, crashing checkers treated as holding a relation, unexercised relations, unread overlay rc, untrusted strips counted clean, absent claims ok, no-transcript runs reported as never-used, and selftest arms that never called the code. Each fixed with an arm red on the old copy.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
       "phase_confidence": "inferred",
       "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "commit": "c57e65a899cf",
-        "date": "2026-10-20",
-        "subject": "fix(cc b32): the push-retry loop stops on a gate refusal and retries only remote races",
-        "lag_days": 8
+        "unknown_reason": "Sixteen tools, each with its own history; the sweep that found them (cody b55) did not trace injection commits."
       },
-      "citation_note": "No standing rule says a retry must not re-pay a check on unchanged code; C1 now names it.",
+      "citation_note": "PR 1.11: could-not-run is a third state, never folded into passed.",
       "contributing_factors": [
         {
-          "factor": "The b32 retry classified a lost race correctly but answered it with a full gate re-run whose duration exceeds the remote inter-push interval",
+          "factor": "Checker tools folded could-not-run into pass in sixteen distinct shapes (exit 0 on partial runs, dead counters, selftest arms that never called the code they name); each was written before checker_kit.finish(could_not_run=) was the house pattern.",
           "kind": "technical",
           "action_status": "done",
-          "action": "pure-base fast retry in push_retry --loop, 15 selftest arms, 4 mutants red"
+          "action": "Each fixed with a test arm shown red on the pre-fix copy."
         },
         {
-          "factor": "The durable form was routed to cc in C1 (cody b56) and lived only in a scratchpad script, so other clones pushed with bare git push",
+          "factor": "The b55 sweep routed the MEDIUM rows to a later batch and two batches passed before they were picked up; a routed list in a handoff has no owner-side reminder.",
           "kind": "process",
           "action_status": "done",
-          "action": "C1 standing pattern: all build agents push via push_retry --loop"
-        },
-        {
-          "factor": "The selftest crash after 79c4f10cf went unseen because nothing runs push_retry --selftest at push time",
-          "kind": "detection",
-          "action_status": "planned",
-          "action": "have the push gate run push_retry --selftest when tools/push_retry.py changes (not built this batch)"
+          "action": "Closed in b58 as an explicit dispatch item."
         }
       ],
-      "recurrence_open": "A skipped push does not re-run whole-tree checks against the combined base; only gate duration or a merge queue closes that."
+      "recurrence_open": "Only cody's 41 tools were swept; other sessions' checkers were not, and checker_kit.tracked() still ignores git's exit code for every caller (cc's)."
     },
     {
       "commit": "b676e7e79a2d",
@@ -39619,6 +39678,56 @@
       },
       "citation_note": "No coding rule covers a component's colours written for a different surface than the one it renders into. Proposed: injected UI takes colours from theme tokens, never literal rgba.",
       "factors_unknown_reason": "same latent class as 56ec80530: the rows are dormant, so no rendered pass reached them; the b60 label fix named these and left them"
+    },
+    {
+      "commit": "fdb5ca7ee4d8",
+      "date": "2026-10-28",
+      "subject": "fix(push_retry, hank b61): a race lost after a gate PASS retries fast without re-paying the gate (C1)",
+      "files": [
+        "docs/recurring-bug-classes-2.md",
+        "tools/push_retry.py"
+      ],
+      "lines_added": 192,
+      "lines_removed": 15,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "live-verification",
+      "summary": "push_retry --loop re-ran the full pre-push gate on every transient (lost-race) refusal, so a retry landed only if origin stood still for a whole 75s-4min gate run; hank b61 lost 3/3 after gate PASSes. Fixed: a retry after a gate pass skips the gate only when the outgoing patch-id set is unchanged and incoming commits touch none of our files nor the gate's inputs, logged to BYPASS-LOG. Also --selftest crashed (TypeError) since 79c4f10cf: its git stub took no timeout kwarg.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "c57e65a899cf",
+        "date": "2026-10-20",
+        "subject": "fix(cc b32): the push-retry loop stops on a gate refusal and retries only remote races",
+        "lag_days": 8
+      },
+      "citation_note": "No standing rule says a retry must not re-pay a check on unchanged code; C1 now names it.",
+      "contributing_factors": [
+        {
+          "factor": "The b32 retry classified a lost race correctly but answered it with a full gate re-run whose duration exceeds the remote inter-push interval",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "pure-base fast retry in push_retry --loop, 15 selftest arms, 4 mutants red"
+        },
+        {
+          "factor": "The durable form was routed to cc in C1 (cody b56) and lived only in a scratchpad script, so other clones pushed with bare git push",
+          "kind": "process",
+          "action_status": "done",
+          "action": "C1 standing pattern: all build agents push via push_retry --loop"
+        },
+        {
+          "factor": "The selftest crash after 79c4f10cf went unseen because nothing runs push_retry --selftest at push time",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "have the push gate run push_retry --selftest when tools/push_retry.py changes (not built this batch)"
+        }
+      ],
+      "recurrence_open": "A skipped push does not re-run whole-tree checks against the combined base; only gate duration or a merge queue closes that."
     }
   ],
   "started": "2026-09-09",
