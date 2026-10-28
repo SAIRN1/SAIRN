@@ -4804,6 +4804,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "fourth-1793208357",
+      "session": "fourth",
+      "subject": "platform",
+      "task": "b61 push timeout guard tool and pre-push hook wiring",
+      "claimed_at": "2026-10-28T17:25:57Z",
+      "claimed_at_epoch": 1793208357.7575953,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
