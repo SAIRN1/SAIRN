@@ -39539,6 +39539,35 @@
         }
       ],
       "recurrence_open": "The presence of a state caregiver ID remains visible to coordinators/schedulers through the readiness verdict by design (EVV readiness must report a missing ID); a role-suppressed element would be a product decision."
+    },
+    {
+      "commit": "392755d69255",
+      "date": "2026-10-28",
+      "subject": "fix(push_retry b61): the push runs with no timeout -- git() killed it at 120 s",
+      "files": [
+        "tools/push_retry.py"
+      ],
+      "lines_added": 9,
+      "lines_removed": 4,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "fourth b61. tools/push_retry.py pushed through git(), which runs every command with timeout=120; the push gate takes minutes and writes mutants into tracked files, so a kill at 120 s could skip their restore (the b59 hazard). git() now takes timeout and the push passes None. Found by push_timeout_guard --scan on its first run.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/push_timeout_guard.py --scan (b61, first run)",
+      "found_by_session": null,
+      "injection": {
+        "commit": "ad11ef1c27e4",
+        "date": "2026-09-26",
+        "subject": "feat(methodology): the retry loop refuses to amend mid-rebase, instead of relying on somebody reading the log",
+        "lag_days": 32
+      },
+      "citation_note": "No standing rule covered a push run on a clock until b61; tools/push_timeout_guard.py is now the mechanical form of it.",
+      "factors_unknown_reason": "the git() helper's 120 s timeout was right for every read and wrong for the one push, and nothing looked at the two lines together until the b61 scan"
     }
   ],
   "started": "2026-09-09",
