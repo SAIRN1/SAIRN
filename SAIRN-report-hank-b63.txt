@@ -1,0 +1,29 @@
+HANK b63 REPORT -- 2026-10-28
+
+1. J1:
+   - Alaska and North Dakota are GATED, SEEDED and LIVE on LAW-PINNACLE-2026.
+     - AK: 12 rows, 45/0. ND: 9 rows, 37/0. 42/42 deadline suites green. Every mutant is red.
+     - Live before: NOT_PROVISIONED. After: AK 2026-10-20 x2; ND 2026-04-09, 2026-07-06, 2026-11-05. All equal the hand
+       derivation. Drift 0.
+     - Every open reading resolves EARLY and is disclosed in JURISDICTION_COVERAGE.ak / .nd.
+   - Rhode Island: GATED, NOT SEEDED. The holiday referent is unestablished: no official court list; the
+     §25-1-1 shifts are employees-only; the election-day and incorporation clauses are open.
+   - SD, VT, WY and DC were not started.
+2. H1: decided by Michael. The historical fx-authored commits stay as-is. No code change.
+3. D1: PASS live on sairn-platform.
+   - The isolation guard is present (md5 changed).
+   - REPEATABLE READ refuses (25000). READ COMMITTED returns a count.
+   - Both ran in rolled-back transactions; 0 rows left.
+   - The SAIRN project timed out (not checked).
+4. push_retry --loop: 4 loop pushes in b63. Every one lost its first race and landed by attempt 2.
+   - The FAST RETRY fired live on push 1.
+   - Pushes 3 and 4 correctly took the full gate, because the loop's fold had amended our commit.
+   - Push 2 (AK seed) went via the scoped seed exemption (approved). It lost 2 races, and each rebase voided the
+     sha-pinned exemption.
+   - Two C1 findings were routed to cc.
+5. UTC / read-await-write scan:
+   - The scanner reads <script> only, so 0/191 on raw .js was vacuous. Re-run wrapped: 6 UTC hits, 1 real and low
+     (sd-sub-data.js:71, COI expiry vs the UTC day). Not fixed.
+   - The read-await-write arm missed a planted server-side case, so its 0 is not evidence.
+6. Bypass forms used: SAIRN_GATE_EXEMPT=seed, for push 2 only, logged. Nothing blanket.
+Evidence: SAIRN-handoff-hank-b63.md

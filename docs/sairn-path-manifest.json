@@ -72,7 +72,8 @@
       "tools/push_retry.py",
       "docs/recurring-bug-classes-2.md",
       "docs/sairnlaw-alaska-deadline-seed-gate.md",
-      "docs/sairnlaw-northdakota-deadline-seed-gate.md"
+      "docs/sairnlaw-northdakota-deadline-seed-gate.md",
+      "docs/sairnlaw-rhodeisland-deadline-seed-blockers.md"
     ],
     "cc": [
       "api/sd-data.js",

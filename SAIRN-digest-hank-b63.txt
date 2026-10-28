@@ -1,0 +1,23 @@
+HANK b63 DIGEST -- 2026-10-28 -- AK+ND seeded live; RI gated; D1 live pass; push_retry x4; UTC scan
+CONTEXT 46.5% of 1,000,000 -- 464,565 tokens, measured.
+STATUS: pushed via push_retry --loop; claim sairnlaw is released after landing.
+1. AK and ND: gated, seeded and LIVE on LAW-PINNACLE-2026 (12 + 9 rows). Live dates match the hand derivation.
+   - Drift 0. 42/42 deadline suites.
+2. RI: gated, NOT seeded. The holiday referent is unestablished.
+   - See docs/sairnlaw-rhodeisland-deadline-seed-blockers.md.
+3. SD, VT, WY and DC: not started. Use the ND pattern: standards push, load, verify, seed push.
+4. H1 decided: the fx-authored history is left as-is.
+5. D1: the isolation guard is live; both arms ran (refuse under RR, count under RC); 0 rows left.
+6. push_retry --loop: 4 pushes; each lost its first race and landed by attempt 2; the fast path fired once.
+   - AK seed push used the scoped SAIRN_GATE_EXEMPT=seed (approved).
+7. UTC scan: the tool reads <script> only. Wrapped re-run found 6 hits, 1 real (sd-sub-data.js:71, low, open).
+DECISION-NEEDED (Michael):
+- J2: RI holiday readings.
+- J4: AK/ND lawyer's questions.
+- C1a: fold-amend and the sha-pinned exemption vs races.
+NEXT: J3 SD (hank). U2 sd-sub-data UTC. A1/T1 carried.
+CHANGED: api/_lib/deadline-engine.js, api/legal-deadlines.js, 2 new suites + 16 key-set suites, 4 sql seed/calendar
+  JSON, 3 docs/sairnlaw-* gate docs, path manifest, b63 handoff/report/digest.
+SQL-path: none new (seeds are JSON in sql/).
+EVIDENCE-path: SAIRN-handoff-hank-b63.md
+UNVERIFIED: the SAIRN project (ohzqfw...) RPC was not checked (connect timeout).
