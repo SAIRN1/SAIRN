@@ -1,0 +1,16 @@
+HANK b61 DIGEST -- 2026-10-28 -- post-restart reorientation; origin blob re-read; fx identity check
+CONTEXT 10.5% of 1,000,000 -- 105,243 tokens, measured.
+STATUS: docs-only batch; no code changed; claims held: none.
+1. The dispatch premise was WRONG.
+   - 0 commits ahead after fetch. All b60 commits were already on origin.
+   - There is no fx-identity commit. The push retry was not run: there was nothing to push.
+2. Origin blobs at 80d753ef1:
+   - The placeholder check exited 0 over 310 SQL blobs. backup_reader_role is declared operator input.
+   - The non-SQL b60 blobs have 0 markers.
+3. fx identity: CLEAN (no local user.*, mikied68, core.bare false). committer_identity_check exited 0.
+4. Window corrected from 200,000 to 1,000,000 (Michael). The first push lost a ref-lock race twice; one authorised retry.
+DECISION-NEEDED (Michael): P1 trial gate client-side; R1 presence signal (both from b60).
+NEXT: T1 cc Tier A on cdf71e894; A1 ALF recovery SQL; G1 cody/fourth fx identity.
+CHANGED: none (code); b61 handoff, report, digest only.
+EVIDENCE-path: SAIRN-handoff-hank-b61.md
+UNVERIFIED: none new.

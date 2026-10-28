@@ -1,0 +1,22 @@
+HANK b61 REPORT -- 2026-10-28 -- post-restart reorientation
+
+1. Reorientation: the latest handoff is b60, on Drive and local. They match; Drive has one extra line confirming the
+   docs commit 8c2607420 LANDED.
+2. Push: the dispatch premise did not hold. After fetch: 0 ahead, 28 behind. All b60 commits were already on origin.
+   - There is no fx-identity commit. b60 item 5 was a check.
+   - The fetch/rebase/push retry was not run, because there was nothing to push.
+   - main was fast-forwarded to 80d753ef1.
+3. Literal origin blobs at 80d753ef1:
+   - sql_placeholder_check --ref --all: exit 0 over 310 committed blobs. backup_reader_role.sql:96,98 are declared
+     operator input (NOT RUN-READY, as in b60).
+   - The non-SQL b60 blobs have 0 placeholder markers.
+   - 12/19 b60 files are unchanged since b60. The other 7 are shared ledgers that others appended to. My register and
+     Tier A entries for cdf71e894 are present.
+4. fx identity: CLEAN.
+   - There is no local user.*. The global identity is mikied68. core.bare=false, and the GIT_* env vars are unset.
+   - committer_identity_check exited 0.
+5. Methodology: no unlabeled exit 1 occurred. Both exit 2s printed their reasons.
+   - Context window: corrected from 200,000 to 1,000,000, per Michael. Re-measured at 10.5%, 105,243 tokens.
+   - The b61 push was refused twice by a ref-lock race (labelled). After the stop, Michael authorised one more retry.
+6. Open items: carried unchanged from b60 (T1, P1, R1, A1, G1, U1). See the handoff, section 6.
+Evidence: SAIRN-handoff-hank-b61.md
