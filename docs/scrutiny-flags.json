@@ -10427,6 +10427,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairnsenior_caregiver_scope_purge.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a9ec8ecf8ee035a77a47eee5af8bfd5cb94bd3c2",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/b27-sen-straight-time-floor-fixtures.test.js",
    "class": "test file",
    "level": "CHANGE",
