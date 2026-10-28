@@ -1370,8 +1370,8 @@
       "task": "hover-tools b102 deny hook block log LF fix",
       "claimed_at": "2026-10-28T23:15:39Z",
       "claimed_at_epoch": 1793229339.129567,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-28T23:19:24Z",
       "files": null
     }
   ],
