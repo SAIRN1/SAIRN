@@ -1313,8 +1313,8 @@
       "task": "hover auditor b96 sv_wildliferehab sv_comms scan rotation",
       "claimed_at": "2026-10-28T18:19:56Z",
       "claimed_at_epoch": 1793211596.1602435,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-28T18:43:28Z",
       "files": null
     }
   ],
