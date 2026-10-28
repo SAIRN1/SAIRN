@@ -39058,6 +39058,47 @@
         }
       ],
       "recurrence_open": "Any OTHER hook-spawned tool that runs git in a temp dir is covered only by the hook-level unset; a tool invoked by a different hook or wrapper that exports GIT_DIR is not."
+    },
+    {
+      "commit": "5e5f7aab862c",
+      "date": "2026-10-28",
+      "subject": "fix(tools, cody b55): checker_confidence -- an UNRUNNABLE checker was rated HIGH stability, and --json was not JSON",
+      "files": [
+        "tests/run_checker_confidence_probe.py",
+        "tools/checker_confidence.py"
+      ],
+      "lines_added": 129,
+      "lines_removed": 21,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/checker_confidence.py folded four could-not-run states into measured answers: stability_band had no branch for the ledger's UNRUNNABLE verdict and fell through to HIGH (live: metamorphic_check.py, six raised runs, rated HIGH stability); --json output led with an import-time NOTE from report_only_checks so its probe's real-fleet section crashed in json.loads since 2026-10-14; naming_candidates returned {} on a read failure and main printed it as a measured zero; control_states read an unreadable test file as NONE. All four now report UNKNOWN / COULD NOT TELL; +13 probe arms.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The UNRUNNABLE verdict was added to flaky_checker_quarantine.classify after checker_confidence mapped its verdicts; the --json break came from report_only_checks' NOTE once the hook was removed on 2026-10-14. Not traced to single commits."
+      },
+      "citation_note": "PR 1.11 names could-not-run folded into pass generally; no rule names a verdict enum that grows after its consumer was written.",
+      "contributing_factors": [
+        {
+          "factor": "A consumer mapped a producer verdict enum with a default of HIGH, so a verdict added later read as the best band.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "HIGH only for STABLE by name; unknown verdicts are UNKNOWN; arm drives a fake verdict."
+        },
+        {
+          "factor": "The probe crash in section 5 meant the real-fleet arms had not run for two weeks and nothing reported it as red-for-a-new-reason.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "--json routed import prints to stderr; probe arm asserts --json parses instead of crashing."
+        }
+      ],
+      "recurrence_open": "Other consumers of FLAKY.classify or of report_only_checks --json output may have the same default-to-best or stdout-pollution shape; not swept."
     }
   ],
   "started": "2026-09-09",
