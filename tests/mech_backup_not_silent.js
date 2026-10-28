@@ -1,5 +1,9 @@
 // tests/mech_backup_not_silent.js
 //
+// REQUIREMENT: a SAIRNmechanical record that is NOT backed up to the server, or a
+// collection that is NOT read back from it, is reported to the user's console by
+// name rather than looking exactly like a backup or restore that succeeded
+//
 // Run:  node tests/mech_backup_not_silent.js
 //
 // SAIRNmechanical's server backup: a push or a read-back that DID NOT HAPPEN

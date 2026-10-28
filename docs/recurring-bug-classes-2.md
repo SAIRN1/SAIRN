@@ -69,3 +69,38 @@ Each section gives:
 - **The population.** Is it non-zero? Is it the one the tool claims?
 - **Every subprocess and read.** Is a failure a third state, or is it folded into an empty result?
 - **The verdict at zero.** What does the tool print and return when it read nothing?
+
+---
+
+## C3. A GATE-SKIPPED (PURE-BASE) PUSH IS NOT RE-CHECKED AGAINST THE NEW BASE
+
+**This resolves the UNVERIFIED flag in cody b56, as Michael asked in b57: decide, implement, and log the decision.**
+
+**Phase / sub-phase / cause:** design -> verification scope -> **due to** a validation that ran over (our patches + the OLD base), reused for (our patches + the NEW base). The C1 skip rule shows that no FILE overlaps. Some checks, though, read the WHOLE TREE, and for those two halves that were each validated can still disagree.
+
+**DECISION: YES. A lightweight whole-tree re-check runs on every pure-base retry, before `--no-verify`.** It is three checks, chosen because they are the whole-tree checks whose answer can change without any file overlap:
+
+| check | why the base move can turn it red | measured |
+|---|---|---|
+| `tools/defect_register.py --check` | a rebase rewrites our SHAs, and the incoming commits add records | 16 s |
+| `tools/master_plan.py --check` | it is derived from EVERY test, resource and tier, so a test from either side changes it | 14 s |
+| `tools/traceability_matrix.py --check` | the same: one new test file moves the traced/untraced counts | 15 s |
+
+- **Cost:** run in parallel, it takes **18 s**, measured. The full gate takes 75 s to about 4 min. The remote moves every 1–3 min under auto-mode (C1). So the re-check fits inside the window that the full gate keeps missing.
+- **On any red:**
+  - the derived documents are regenerated and committed;
+  - the try falls back to the FULL gate.
+  - A red never reaches `--no-verify`.
+- **Recorded:** the skip record in `gate_skip.log` and `docs/BYPASS-LOG.jsonl` says that the re-check ran and was green.
+
+**Why these three and not the whole gate.** The gate's other checks are file-local or range-local: syntax, credential patterns, Tier A obligations, register feed, external files and probe anchors. They read our patches, and the patch-id equality in C1 already proves those are byte-identical. Re-running them would re-answer a question that has already been answered. Only a check that reads files outside our range can change its answer when the base moves.
+
+**This is not hypothetical, measured cody b57.** One new test file, `tests/mech_backup_not_silent.js`, turned BOTH `master_plan --check` and `traceability_matrix --check` red, with exit 1:
+- 1054 → 1055 test files;
+- 274 → 275 untraced.
+
+A pure-base push carrying a change like that, on top of a base whose own push had regenerated those documents, would have published stale derived documents with the gate skipped.
+
+**What it still does NOT cover:**
+- **A check that is slow AND whole-tree,** such as the push gate's Tier A tier lookup against a re-tiered register. If the incoming commits re-tier a resource that our files touch, the obligation verdict could differ. **Mitigated in the same batch:** if the incoming commits touch `docs/CRITICALITY-TIERS.md`, `tools/sairn_push_gate_hook.py` or `.githooks/`, the try always re-runs the FULL gate. The overlap rule cannot see these files, because they are what the gate itself reads. The list is exactly those three. A new whole-tree input to the gate has to be added to it by hand, which is the remaining gap.
+- **The mechanism lives in a scratchpad script** (`push_once.sh`). The durable home is cc's `tools/push_retry.py`, the same routing as C1.
