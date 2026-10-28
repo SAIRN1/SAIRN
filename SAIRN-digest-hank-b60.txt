@@ -1,0 +1,27 @@
+HANK b60 DIGEST -- 2026-10-28 -- S2 demo trial exemption; L1 SQL placeholder gate; H1 #1274 readiness projection
+CONTEXT 47.1% of 1,000,000 -- 471,417 tokens, measured.
+STATUS: pushed, NOT FORCED, LANDED; claims released (79640a636, 47fceba5b, b8a717c49); none held.
+1. S2 (414d26351): sc-auth returns trial_exempt true ONLY for plan 'demo'; checkTrialGate skips only on explicit true.
+   Customer plans (trial, b2b_starter, null) hit the gate. Test 18/0, mutants red.
+2. L1 (995e53c9a): tools/sql_placeholder_check.py plus push-gate CHECK 4d.
+   - Reads the changed sql/ blobs at the tip and lexes comments away.
+   - Denies on a finding AND on could-not-run.
+   - Fixtures 20/20; probe 5/5 (the b58 blob refused); the real hook refused a synthetic placeholder commit.
+3. #1274 (cdf71e894): the readiness engine gets {id, name, state_caregiver_id}.
+   - The state ID is a presence marker for coordinator/scheduler; the verdict is unchanged.
+   - Test 18/0; read-paths 19/0. Tier A open, assigned to cc.
+4. Literal origin blobs (bce658193): 9/9 identical to the tested files; suites run from the origin archive, all green.
+5. fx identity fix holds: no local user.*, core.bare false, GIT_DIR unset; the b60 commits are mikied68.
+6. Methodology: an exit 1 with no reason is ambiguous (memory kill vs gate) on this 16GB box. Re-run once cleanly,
+   in the foreground. Memory: memory-kill-vs-gate-refusal.
+DECISION-NEEDED (Michael):
+- P1: the SAIRNcode trial gate is client-side only (localStorage). A real customer paywall needs a server check.
+- R1 (optional): keep or suppress the state-ID presence signal for non-HR roles.
+NEXT:
+- T1: cc discharges the Tier A review of cdf71e894.
+- A1 (b59): Michael runs the ALF recovery SQL.
+- G1: cody and fourth unset the fx identity.
+CHANGED: api/sc-auth.js, sairncode.html, api/sd-data.js, tools/sql_placeholder_check.py, tools/sairn_push_gate_hook.py,
+  sql/backup_reader_role.sql (comment), 2 api tests, 1 probe, manifest, register, Tier A, derived docs, memory.
+EVIDENCE-path: SAIRN-handoff-hank-b60.md
+UNVERIFIED: a live sc-auth login on the deployed API showing trial_exempt (verified on the shipped blobs, not live).

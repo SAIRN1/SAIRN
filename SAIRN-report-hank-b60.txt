@@ -1,0 +1,52 @@
+HANK b60 REPORT -- 2026-10-28
+
+METHODOLOGY:
+(a) Each item was marked shipped only after its literal committed blob on origin was re-read and its suites were run
+    FROM that blob.
+(b) Michael, b60: an exit 1 with no printed reason on this 16GB machine is ambiguous between a gate refusal and a
+    memory kill. Re-run once, cleanly and in the foreground, before treating it as a gate failure.
+    Memory: memory-kill-vs-gate-refusal.
+
+1. S2 -- demo licences exempt from SAIRNcode checkTrialGate; the server decides, and it fails closed.
+   - api/sc-auth.js login/bootstrap return trial_exempt true ONLY for plan 'demo'.
+     - That is SC-PINNACLE-2026 and SC-AUDIT-2026 (sairn-demo-owner, owner and zz-audit-admin).
+     - trial, b2b_starter, null and 'Demo' all return false.
+   - The client skips the gate only on an explicit true.
+   - Test 18/0; 2 mutants red.
+   - DECISION (Michael): the trial gate is client-side localStorage, so a customer can reset it. A real paywall needs a
+     server-side check; there is no trial_ends_at column today.
+
+2. L1 -- tools/sql_placeholder_check.py plus push-gate CHECK 4d.
+   - It reads each changed sql/*.sql at the pushed tip, lexes comments away, and refuses dunder, mustache,
+     REPLACE_ME-style and operator '<...hash/key/id...>' tokens.
+   - Could-not-run denies, and so does a missing tool.
+   - Reasoned operator-input declarations are reported NOT RUN-READY. backup_reader_role.sql is the one declared.
+   - Evidence:
+     - fixtures 20/20;
+     - probe 5/5 (the b58 blob refused, the b59 blob clean);
+     - --all 307 files, 0 could-not-run;
+     - the real hook refused a synthetic placeholder commit and passed a clean control.
+
+3. Ticket #1274 -- H1 seq 1274, still unfixed at seq 1288.
+   - The sen_visits/readiness engine now gets only {id, name, state_caregiver_id}. For coordinator/scheduler the
+     state ID value is a presence marker.
+   - The verdict and the fetch are unchanged.
+   - Test 18/0; 2 mutants red; read-paths 19/0.
+   - Tier A obligation open, assigned to cc.
+   - The presence signal is retained by design.
+
+4. Literal blobs on origin (bce658193):
+   - 9/9 shipped files are byte-identical to the tested files.
+   - Suites run from the origin archive: 18/0, 18/0, 19/0.
+   - --all at origin: OK.
+
+5. The fx identity fix holds: no local user.*, core.bare false, GIT_DIR unset, author Michael Dibert. All 4 b60 commits
+   are authored by mikied68. idleCompaction is false.
+
+6. PUSH: not forced, LANDED. 414d26351 S2, cdf71e894 #1274, 995e53c9a L1, bce658193 bookkeeping.
+   The four attempts:
+   - a memory kill;
+   - a stale TOOLING-INVENTORY, which was regenerated;
+   - a shared-ledger conflict: the bookkeeping commit was dropped and re-applied as appends;
+   - one non-fast-forward: rebased and re-seated.
+   The register cites cdf71e894bf3 and Tier A cdf71e894, both verified on origin. Claims are released.
