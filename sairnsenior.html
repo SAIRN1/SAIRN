@@ -1546,6 +1546,7 @@ function senWriteFail(resource){
     return {kept:true,text:'Saved on this device only -- '+(msg||('the server could not store it ('+code+').'))+' Other devices will not see it.'};
   return {kept:false,text:'Not saved -- the server refused it: '+(msg||code)};
 }
+var senLastScope={};
 function senData(action,resource,payload,withSession){
   var lic=senLicenseKey();
   if(!lic){senLastErr[resource]={code:'NO_LICENSE',message:'This device has no licence key entered, so nothing can reach the server. Enter it in Settings.'};return Promise.resolve(null);}
@@ -1574,6 +1575,12 @@ function senData(action,resource,payload,withSession){
         return null;
       }
       delete senLastErr[resource];
+      // The read envelope's scope declarations, kept per resource (cc b67,
+      // H1 #1756). The server says what it withheld (roster_scope,
+      // hr_fields_visible) because a missing row and a deleted one look the
+      // same to a merge. Without this line those flags were dropped here, and
+      // no hydrate could act on them.
+      if(action==='read')senLastScope[resource]={roster_scope:d.roster_scope,hr_fields_visible:d.hr_fields_visible};
       // ONE LINE IN THE TRANSPORT (2026-09-21): a write past the guard above is
       // a write the server accepted, and the server-wins carve-out needs to know
       // which ids those are.
@@ -2731,9 +2738,52 @@ function senHydrateCaregivers(){
   return senData('read','sen_caregivers',null,true).then(function(serverRows){
     if(!serverRows||!Array.isArray(serverRows))return false;
     var changed=senServerWinsMerge('sen_caregivers',serverRows);
-
-    return !!changed;
+    var purged=senPurgeCaregiversOutOfScope(serverRows,senLastScope['sen_caregivers']);
+    return !!(changed||purged);
   });
+}
+// ── THE #965 SCOPE, HELD ON THE DEVICE TOO (cc b67, H1 #1756) ─────────────
+// The server narrowed sen_caregivers for a caregiver to its own row, and
+// withholds the HR fields from everyone but owner/billing. senServerWinsMerge
+// only ADDS and REPLACES, so a device that ever held the full roster -- one
+// hydrated before the fix, or one a manager used first -- kept every
+// colleague's name, personal phone and CPR expiry in localStorage after the
+// next merge, with the server fix in place. This applies the server's own
+// declaration, never a client guess at the role:
+//   roster_scope 'own'       -> drop every local row the server did not return;
+//   hr_fields_visible false  -> drop the HR fields from every row kept.
+// It acts ONLY on a successful read that carried the declaration. A failed
+// read never reaches here, and an unprovisioned store sends no flags. So
+// "could not ask" never deletes anything.
+//
+// DISCLOSED EDGE: a caregiver record a manager saved on THIS device and never
+// pushed is dropped when a caregiver signs in here next. It is a colleague's
+// record, and holding it is the leak. The manager's own device or a re-entry
+// restores it.
+var SEN_CAREGIVER_HR_FIELDS=['bgcheck_date','state_caregiver_id','notes'];
+function senPurgeCaregiversOutOfScope(serverRows,scope){
+  if(!scope||!Array.isArray(serverRows))return 0;
+  var own=scope.roster_scope==='own',noHr=scope.hr_fields_visible===false;
+  if(!own&&!noHr)return 0;
+  var local=senHydrateLoad('sen_caregivers');
+  if(!Array.isArray(local))return 0;
+  var keep={};
+  serverRows.forEach(function(r){if(r&&r.id!==undefined&&r.id!==null)keep[String(r.id)]=true;});
+  var touched=0,dropped=[],out=[];
+  local.forEach(function(rec){
+    var id=rec&&rec.id!==undefined&&rec.id!==null?String(rec.id):null;
+    if(own&&(id===null||!keep[id])){touched++;if(id!==null)dropped.push(id);return;}
+    if(noHr&&rec)SEN_CAREGIVER_HR_FIELDS.forEach(function(f){if(Object.prototype.hasOwnProperty.call(rec,f)){delete rec[f];touched++;}});
+    out.push(rec);
+  });
+  if(!touched)return 0;
+  senHydrateStore('sen_caregivers',out);
+  var r=senSyncedRead();
+  if(dropped.length&&r.state!=='unreadable'&&Array.isArray(r.map['sen_caregivers'])){
+    r.map['sen_caregivers']=r.map['sen_caregivers'].filter(function(id){return dropped.indexOf(String(id))===-1;});
+    st(SEN_SYNCED_KEY,r.map);
+  }
+  return touched;
 }
 function openCaregiverModal(){
   if(!senIsManagement()){toast('Only management can add or edit caregiver records');return;}
