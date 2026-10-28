@@ -4725,6 +4725,17 @@
       "status": "released",
       "released_at": "2026-10-28T21:51:38Z",
       "files": null
+    },
+    {
+      "id": "hank-1793226259",
+      "session": "hank",
+      "subject": "sairnlaw",
+      "task": "alaska deadline gate and seed",
+      "claimed_at": "2026-10-28T22:24:19Z",
+      "claimed_at_epoch": 1793226259.2922978,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
