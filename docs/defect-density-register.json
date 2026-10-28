@@ -39266,6 +39266,65 @@
       },
       "citation_note": "No coding rule covers a component's colours written for a different surface than the one it renders into. Proposed: injected UI takes colours from theme tokens, never literal rgba.",
       "factors_unknown_reason": "same latent class as 56ec80530: the rows are dormant, so no rendered pass reached them; the b60 label fix named these and left them"
+    },
+    {
+      "commit": "bd4e3d0264f7",
+      "date": "2026-10-28",
+      "subject": "fix(sairnsenior, cc b61): sen_caregivers gave every colleague's name, phone, CPR expiry and ids to the caregiver role -- H1 #965",
+      "files": [
+        "api/sd-data-sen-caregiver-pii-scope.test.js",
+        "api/sd-data-sen-caregiver-read-paths.test.js",
+        "api/sd-data.js",
+        "docs/sairn-path-manifest.json",
+        "tools/field_scope_driver.js",
+        "tools/field_scope_rules.json",
+        "tools/sairn_field_scope_check.py",
+        "tools/sairn_push_gate_hook.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 922,
+      "lines_removed": 9,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "hover-audit",
+      "summary": "cc b61, H1 #965 (re-driven H1 1725 PARTLY FIXED). After b384a513 redacted the three HR fields, sen_caregivers/read still returned every caregiver's name, personal phone, cpr_expiry, status, aide_type, program, employee_id and branch_id to ANY authenticated sairnsenior role, so a caregiver could read every colleague's phone and certification date. Row tier added: caregiver gets its own record only; scheduler/coordinator keep the roster's nine scheduling fields; owner/billing all twelve; declared as roster_scope. Held by the new blocking field-scope gate (check 4c), whose ablation on the pre-fix handler reports exactly this LEAK.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "b384a513f99e",
+        "date": "2026-10-12",
+        "subject": "fix(sairnsenior): a caregiver's BACKGROUND-CHECK DATE went to every signed-in role, and the branch's own comment compared it to the wrong thing",
+        "lag_days": 16
+      },
+      "citation_note": "A redaction whose partial fix was recorded as FIXED: a scope that was never checked per role against a design reported a pass it never performed.",
+      "contributing_factors": [
+        {
+          "factor": "the fix for the HR fields scoped FIELDS and never asked which ROWS a caregiver needs",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "own-record row tier for caregiver, same shape as sen_clients"
+        },
+        {
+          "factor": "every suite asserted what the most-cited role must NOT see, none asserted per role against a declared design, so a correct-looking partial fix closed as FIXED",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tools/sairn_field_scope_check.py, blocking pre-push, per role, closed-world against tools/field_scope_rules.json"
+        },
+        {
+          "factor": "a role/field scope lives only as code and comments, so nothing could diff the response against a design",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "declare the 12 DIFFERENTIATED and 7 COULD-NOT-TELL reads from the b61 sweep in the registry, per app owner"
+        }
+      ],
+      "recurrence_open": "Reads with no declared rule are not gated: 23 role-scoped reads in the b61 sweep, plus every dispatch shape outside resource===/action=== in api/sd-data.js."
     }
   ],
   "started": "2026-09-09",
