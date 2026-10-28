@@ -1,0 +1,43 @@
+SAIRN report -- cc b61 -- 2026-10-28
+
+LANDED f02a61f0 (fix + checker + gate + manifest), a5601dc1 + re-seat (register),
+2753eaf6 (inventory). 0 0 vs origin; blobs identical on origin. Production
+dpl_C224AwCk9ALTWdzggUaE1xxiKvQM at 2753eaf6 READY. No override, no skip.
+
+1 tools/sairn_field_scope_check.py -- blocking pre-push CHECK 4c, fails closed
+  Registry tools/field_scope_rules.json (per role: the seeded fields it MUST get;
+  every other seeded field is a unique marker that must be absent anywhere in the
+  body -> closed-world, shape-independent). tools/field_scope_driver.js drives the
+  REAL api/sd-data.js with a real-auth-signed token; only licence + DB stood in.
+  Exit 1: LEAK / MISSING / FLAG / REFUSE / COVERAGE (undeclared redaction branch,
+  anchor not exactly once, a ROLES_BY_APP role not declared). Exit 2: could not run.
+  Gate DENIES on 1 AND 2, at the pushed tip, on any api/*.js or its own files.
+  Pre-push is handler-level by necessity (a live read pre-push tests the OLD
+  deploy); --live is the deployed half, per role, read-only, audit licence only.
+  Blind lock 16/16. Real tree: 4 rules, 22/22 arms. Ablation (pre-fix handler):
+  caregiver LEAK of all 8 peer fields + 5 FLAG. E2E: leak re-introduced in a
+  scratch --local clone, real push --dry-run REFUSED by check 4c (capped, 213 s).
+  First real run found rf_settings, an undeclared tiered read; now declared.
+
+2 #965 sen_caregivers -- FIXED (server)
+  owner/billing: 12 fields, all rows | scheduler/coordinator: 9 scheduling
+  fields, all rows | caregiver: the 9, OWN record only. roster_scope declared.
+  Suites updated to the tier: 21/21, 19/19; cert gate 18/18; others green.
+  Pre-existing: write_attribution 3 rf_ fails, identical at HEAD.
+  LIVE per-role read UNVERIFIED: --live exit 2, no SEN audit licence/PINs in env.
+  Residual (route): caregiver devices that cached the full roster pre-fix keep it
+  until the person/role changes (additive merge; purge only on owner change).
+
+3 SWEEP (routed, not fixed): 23 undeclared role-scoped reads.
+  SUSPECT 0. DIFFERENTIATED 12: sd_crm, sdn_clients, bld_bids, sen_clients,
+  sen_visits, alf_clients, rf_jobs, rf_certifications, rf_claims, alf_staff,
+  alf_mar, alf_staff_credentials. OWN-ROW ONLY 4: employee_profile,
+  rf_company_programs, alf_billing, alf_claim_routes. COULD NOT TELL 7: employees,
+  exec_context, bld_tna, rf_warranty_tiers, rf_schedule, alf_incidents,
+  dnt_rollup. Each owner declares a rule; alf_mar first (facility class).
+  Not covered: other dispatch shapes, writes, cross-licence tenant scope.
+
+4 identity: --local user.name/email unset; effective Michael Dibert (global).
+  Rest of --local = fresh-init core.* + hookspath + remote/branch. Nothing else.
+
+5 truncation: logged UNRESOLVED / UNREPRODUCED / LOW in SAIRN-ACTIVE-WORK-cc.md.

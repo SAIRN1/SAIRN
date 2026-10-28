@@ -1,0 +1,23 @@
+DIGEST cc b61
+STATUS: items 1,2,4,5,6 closed; item 3 sweep ran, findings ROUTED not fixed. Landed f02a61f0..2753eaf6, 0/0, prod READY at 2753eaf6. No override/skip.
+ITEM 1: tools/sairn_field_scope_check.py = BLOCKING pre-push check 4c, denies on finding AND could-not-run. Drives the REAL api handler per role
+  (real-auth token) vs tools/field_scope_rules.json; closed-world by unique markers. Blind lock 16/16; real tree 4 rules 22/22 arms;
+  ablation on pre-fix handler = caregiver LEAK of 8 peer fields; E2E leak re-introduced in scratch clone -> real dry-run push REFUSED by 4c.
+  Pre-push is handler-level on purpose (a live read pre-push tests the OLD deploy); --live is the deployed half. Coverage found rf_settings.
+ITEM 2: #965 fixed: caregiver gets its OWN record only; scheduler/coordinator 9 scheduling fields all rows; owner/billing all 12. roster_scope declared.
+  Suites updated 21/21, 19/19; cert gate 18/18. Pre-existing: write_attribution 3 rf_ fails, identical at HEAD.
+ITEM 3: 23 undeclared role-scoped reads: SUSPECT 0, DIFFERENTIATED 12 (incl. alf_mar, sen_clients, sen_visits, rf_claims), OWN-ROW 4,
+  COULD NOT TELL 7. Full list + owners in handoff section 3. Route: each owner declares a rule; alf_mar first.
+ITEM 4: --local fx identity unset -> Michael Dibert (global). Remaining --local = fresh-init defaults + hookspath/remote/branch. Nothing else leaked.
+ITEM 5: truncation logged UNRESOLVED/UNREPRODUCED/LOW in SAIRN-ACTIVE-WORK-cc.md; repro stopped.
+DECISION-NEEDED: Michael -- scheduler/coordinator keep caregiver phone (scheduling reasoning, handoff section 2); keep or narrow?
+CHANGED: api/sd-data.js, 2 api caregiver tests, tools/sairn_field_scope_check.py + field_scope_driver.js + field_scope_rules.json (new),
+  tools/sairn_push_gate_hook.py (check 4c), tools/tooling_inventory.py, docs/TOOLING-INVENTORY.md, docs/sairn-path-manifest.json, register (+1).
+SQL: none.
+EVIDENCE-path: SAIRN-handoff-cc-b61.md, SAIRN-report-cc-b61.txt, scratchpad\sweep61.txt, scratchpad\gate61.log
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\332ab89b-94aa-4880-931e-d17413636dfc.jsonl
+UNVERIFIED: live per-role read of #965 (--live exit 2: no SEN_AUDIT_LICENSE / role EMP+PIN in env); the 12 DIFFERENTIATED reads vs any design.
+ROUTED: sweep list (app owners); pre-fix roster still cached on caregiver devices until sign-in changes (sairnsenior.html owner); H1 1274 (hank).
+NEXT: Michael -- SEN audit role creds, then `python tools/sairn_field_scope_check.py --live`. Owners -- declare rules for the sweep list.
+CONTEXT 35.9% of 1,000,000 -- 358,570 tokens, measured.
+END-OF-REPORT
