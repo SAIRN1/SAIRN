@@ -1351,6 +1351,17 @@
       "status": "released",
       "released_at": "2026-10-28T22:35:16Z",
       "files": null
+    },
+    {
+      "id": "hover-1793227878",
+      "session": "hover",
+      "subject": "hover",
+      "task": "hover-tools b101 vendor context for cross_vendor_check seq mode",
+      "claimed_at": "2026-10-28T22:51:18Z",
+      "claimed_at_epoch": 1793227878.0226076,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
