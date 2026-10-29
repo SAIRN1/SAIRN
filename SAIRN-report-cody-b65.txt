@@ -1,0 +1,36 @@
+SAIRN REPORT -- cody b65 (2026-10-29)
+=====================================
+Handoff: SAIRN-handoff-cody-b65.md.
+
+0. BATCH NUMBER: the dispatch ended "done b64", but b64 was already closed and its deliverables committed. This batch is b65, so that it does not overwrite them.
+
+1. ORIENTATION: HEAD 23f49fdc0 was behind origin/main by 6 at the start. Fast-forwarded before any work.
+
+2. BACKLOG (item 2): six routed gaps fixed, each fixture-first (the arm was RED on the old code).
+   - mech write-unconfirmed: a re-save request-shape arm, with an ignore-duplicates ablation (35/0). The ablation copy is now gitignored.
+   - sairnfreedom licence guard: a legacy device let a different licence open the old licence's data. New suite, 6/6.
+   - sairndental addCredential: a hold leaked outside its try. 20/0.
+   - sairngrounds: GPS waits (an empty $0 second Pro Shop order). 46/0.
+   - stonedesk: the POS 2.5 s reset window. Arm S4 had pinned the duplicate as its control. 17/0.
+   - No new red in any JS test that reads an edited app.
+
+3. REVIEW OBLIGATIONS (item 3): FOUR discharged, the most overdue first (580h, 573h, 565h, 221h).
+   - deploy_verify_notify: SOUND-WITH-GAPS. A chained real push is skipped silently. Routed to fourth.
+   - db/schema_snapshot.json, two records: SOUND against the live database, read-only.
+     - Columns: 500 tables / 4177 columns match.
+     - CHECK constraints: 561 of 561 present, with one later widening, which is the safe direction.
+     - The sairnvet restore is applied (2026-10-06).
+   - sb_ap + exit_status_attributable: SOUND-WITH-GAPS. Five silent suppressions. Routed to cc.
+   - Two remain assigned to cody: hank sdn_projects and hank sen_settings.
+
+4. H2 ROUTING (item 4): H2's claim file is deny-scoped to builders (the hook refuses even a read).
+   - Routed through the open-work index instead: NEW row B65-H2-CALIBRATION-CODY-2026-10-29 covers the 10 unresolved confidences, including seq1115. It sits beside B63-H2-SEQ813. A status note FOR HOVER2 names both.
+
+5. METHODOLOGY (item 5): every fix is cause-tagged.
+   - docs/recurring-bug-classes.md, section "batch 65 (cody)", rows 1-5. The file was declared in the path manifest after the scope gate refused it.
+   - 4 defect-register records, each with factors and recurrence_open.
+
+6. PUSH: LANDED through the full gate.
+   - Gate refusals hit and cleared at their cause: a timeout wrapper, a Tier A obligation (two opened, assigned to cc), the register requirement, path scope, and one register rebase conflict (merged by identity, 788 records).
+   - LIVE: grounds, freedom and dental serve their fix strings. stonedesk's live page is byte-identical to HEAD.
+   - The handoff landed at 2c0b3b3ddc410bf7d19830cb7982599b364bf6d7, measured as HEAD == origin/main after a fetch. This report and digest are the final commit; sairn_done_line.py verifies them on origin/main.

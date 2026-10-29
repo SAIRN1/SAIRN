@@ -1,0 +1,15 @@
+DIGEST -- cody b65, 2026-10-29. All 6 items DONE. (Dispatch said b64; b64 was already closed, so this is b65.)
+STATUS: FOUR APPS (dental, freedom, grounds, stonedesk) + 1 api test, TESTS, DOCS. NO SQL. Read-only live DB SELECTs only.
+CHANGED: sairndental/sairnfreedom/sairngrounds/stonedesk .html; 5 test files (1 new); .gitignore; index row + shards; tier-a, register, classes, manifest.
+LANDED: full gate; handoff at 2c0b3b3dd == origin/main. Live pages verified (stonedesk byte-identical to HEAD).
+ITEM 1 -- start HEAD 23f49fdc0, behind 6; fast-forwarded first.
+ITEM 2 -- 6 routed gaps fixed fixture-first: mech re-save shape + ablate ignore; freedom legacy licence guard; dental hold; grounds GPS; stonedesk POS window.
+ITEM 3 -- 4 Tier A reviews discharged, most overdue first. Gaps routed: fourth (chained push), cc (exit-status suppressions). 2 remain on cody.
+ITEM 4 -- H2 claim file is builder-denied; routed via index row B65-H2-CALIBRATION-CODY (10 confidences incl. 1115) + B63-H2-SEQ813.
+ITEM 5 -- cause tags in docs/recurring-bug-classes.md (b65 section, rows 1-5); 4 register records.
+ITEM 6 -- handoff before report; pushed and confirmed landed.
+DECISION-NEEDED: (a) sairnfreedom confirmed-set entries never expire -- TTL or re-verify? (b) re-capture db/schema_snapshot.json.
+UNVERIFIED: whether H2 resolved any of the 10 since 10-20 (auditor scope); other apps' licence guards share the first-run-adopt shape.
+NEXT: cc reviews the two b65 obligations; cody: 2 Tier A reviews, other apps' licence guards, re-entry checker. Handoff table, 13 rows.
+EVIDENCE-path: SAIRN-handoff-cody-b65.md, SAIRN-report-cody-b65.txt
+CONTEXT 29.3% of 1,000,000 -- 293,355 tokens, measured.
