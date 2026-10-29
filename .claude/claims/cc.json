@@ -4862,8 +4862,8 @@
       "task": "b68 cody hook refresh, watchdog live run, full replay, install regression test, inventory ownership FILES: tools/builder_auditor_deny_hook.py tools/builder_hook_presence.py tools/sairn_watchdog.py tools/tooling_inventory.py tests/run_builder_hook_install_regression.py",
       "claimed_at": "2026-10-29T10:13:18Z",
       "claimed_at_epoch": 1793268798.7921035,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-29T10:36:35Z",
       "files": [
         "tests/run_builder_hook_install_regression.py",
         "tools/builder_auditor_deny_hook.py",
