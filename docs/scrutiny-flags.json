@@ -424,6 +424,83 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/lib/save_reentry_harness.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "046e3f4f71a202acc146598c186bae2dc07ec9bc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairncare_save_reentry.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "046e3f4f71a202acc146598c186bae2dc07ec9bc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairncode_save_reentry.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "046e3f4f71a202acc146598c186bae2dc07ec9bc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairndental_coverage_edit.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "046e3f4f71a202acc146598c186bae2dc07ec9bc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairndental_save_reentry.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "046e3f4f71a202acc146598c186bae2dc07ec9bc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairngrounds_save_reentry.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "const AI_REFUSED = { json: () => Promise.resolve({ error: { message: 'rate limit"
+    }
+   ],
+   "sha": "046e3f4f71a202acc146598c186bae2dc07ec9bc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlaw_save_reentry.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "046e3f4f71a202acc146598c186bae2dc07ec9bc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnmechanical_save_reentry.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "046e3f4f71a202acc146598c186bae2dc07ec9bc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/stonedesk_save_reentry.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "046e3f4f71a202acc146598c186bae2dc07ec9bc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/_lib/deadline-southdakota.test.js",
    "class": "test file",
    "level": "WEAKENING",
@@ -5429,6 +5506,19 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "535c261c04ac198ad825b34d57cfb8fb62374892",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/mech_fetch_timeout_fallback.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "if (kind === 'no-timeout') {"
+    }
+   ],
+   "sha": "5368dca7abb40cb3c9d414495edec3ba69d5592c",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -13222,6 +13312,54 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "c5ab0b838ebf07f75b6e37bb959e5bbbf6837376",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairncode_save_reentry.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c654f1152ffbe197049abff15bb6bc1bc291d473",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairndental_save_reentry.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c654f1152ffbe197049abff15bb6bc1bc291d473",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairngrounds_save_reentry.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c654f1152ffbe197049abff15bb6bc1bc291d473",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlegacy_countersign_ui.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c654f1152ffbe197049abff15bb6bc1bc291d473",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlegacy_save_reentry.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c654f1152ffbe197049abff15bb6bc1bc291d473",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/stonedesk_save_reentry.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c654f1152ffbe197049abff15bb6bc1bc291d473",
    "criteria_version": "2026-10-06.1"
   },
   {
