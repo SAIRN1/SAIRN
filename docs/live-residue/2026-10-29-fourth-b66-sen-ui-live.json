@@ -1,0 +1,66 @@
+{
+ "what": "b66 item 2: the EVV Clock Flags card and the Ready-to-Bill badge on the LIVE sairnsenior.html, driven by real clicks in Chromium (Playwright), SEN-AUDIT-2026, signed in as audit-owner through the real login screen.",
+ "click_through": [
+  {
+   "name": "card lists the unreviewed visits",
+   "unrev": true,
+   "badge_visit": true,
+   "flags_shown": true
+  },
+  {
+   "name": "Ready to Bill shows the badge on the flagged visit",
+   "present": false,
+   "badge": false
+  },
+  {
+   "name": "clicking Submit on the unreviewed claim is REFUSED and the row stays Draft",
+   "toast": [
+    "This visit carries 2 EVV clock flag(s) (LATE_REPLAY on clock_in_at, LATE_REPLAY on clock_out_at) that nobody has reviewed. Review them on the EVV Clock Flags panel before moving this claim to submitted."
+   ],
+   "local_status": "draft",
+   "submit_button_still_there": true
+  },
+  {
+   "name": "note + Mark reviewed clears the row",
+   "toast": [
+    "Clock flags reviewed"
+   ],
+   "row_gone": true
+  },
+  {
+   "name": "Submit now succeeds",
+   "toast": [
+    "Claim updated"
+   ],
+   "local_status": "submitted"
+  },
+  {
+   "name": "Mark Paid succeeds",
+   "toast": [
+    "Claim updated"
+   ],
+   "local_status": "paid"
+  }
+ ],
+ "pageerrors": [],
+ "db_claims_after": {
+  "CLM-B65-UNREV": "paid",
+  "CLM-B65-REV": "paid"
+ },
+ "db_visits_reviewed_after": {
+  "VIS-B65-UNREV": true,
+  "VIS-B65-REV": true,
+  "VIS-B66-BADGE": false
+ },
+ "badge_arm": {
+  "complete_write": 200,
+  "stored_status": "completed",
+  "err": null,
+  "row_present": true,
+  "badge": true,
+  "card_lists_it": true
+ },
+ "note_on_first_badge_attempt": "The first run read no Ready-to-Bill row for VIS-B66-BADGE because the setup had clocked it but never marked it completed, and readyToBillVisits() lists completed visits only. The badge arm completes it as its caregiver and re-reads the live page: row present, badge shown.",
+ "screenshots": "scratchpad live66-1-card-and-badge.png, live66-2-refused.png, live66-3-paid.png, live66-4-badge.png (not committed)",
+ "residue": "VIS-B66-BADGE (completed, flags unreviewed, no claim) on SEN-AUDIT-2026; CLM-B65-UNREV moved draft -> submitted -> paid through the UI; VIS-B65-UNREV now reviewed."
+}
