@@ -15557,6 +15557,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairnvet_witness_token_client.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f0afc23b39ddc6d649e1e0f9af60b99a81566ce6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_b12_routed_findings_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -16581,6 +16589,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "fa6a390edbc3bc44dbcc171a5d66b4fdadd3745f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/fourth_b65_record_fixes.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "fac708f14ba031abb0c2161c15494d4c1c562ef2",
    "criteria_version": "2026-10-06.1"
   },
   {
