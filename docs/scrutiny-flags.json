@@ -14783,6 +14783,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b38-deleted-row-platform.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "db0bc67a680c2eef7fe96baff64d5e3ce453768f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b76-shared-deleted-row-session-app.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "db0bc67a680c2eef7fe96baff64d5e3ce453768f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": ".githooks/pre-push",
    "class": "CI / hook configuration",
    "level": "CHANGE",
