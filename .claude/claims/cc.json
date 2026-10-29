@@ -4896,8 +4896,8 @@
       "task": "b70 tier-a discharges, O7 push_retry regen after rebase, field-scope live fixtures, CRLF cross-check, bug-class tags FILES: tools/push_retry.py tools/field_scope_rules.json docs/recurring-bug-classes-2.md",
       "claimed_at": "2026-10-29T11:56:17Z",
       "claimed_at_epoch": 1793274977.369589,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-29T12:06:28Z",
       "files": [
         "docs/recurring-bug-classes-2.md",
         "tools/field_scope_rules.json",
