@@ -1482,6 +1482,16 @@ var COMPUTATION_STANDARDS = {
   // holiday' includes those holidays listed in § 1-5-1" (express). Governs
   // "any applicable statute" too, so the SDCL 15-26A-6 appeal row uses it.
   // docs/sairnlaw-southdakota-deadline-seed-gate.md.
+  // ── RHODE ISLAND (hank b65): THE FEDERAL COUNT, HOLIDAY BY READING ──────
+  // Super. R. Civ. P. 6(a): last day included "unless it is a Saturday,
+  // Sunday, or a legal holiday ... the next day which is neither a Saturday,
+  // Sunday, nor a holiday." No short-period exclusion. The rule names no
+  // holiday statute; the calendar is R.I. Gen. Laws 25-1-1 on the EARLY-side
+  // reading recorded in docs/sairnlaw-rhodeisland-deadline-seed-blockers.md,
+  // seeded on Michael's b65 direction.
+  ri_rcp_6a: { label: 'R.I. Super. R. Civ. P. 6(a)', impl: 'frcp_6a',
+    base_period_suffix: '', months_years_suffix: '',
+    rollover_suffix_forward: '', rollover_suffix_backward: '' },
   sd_rcp_6a: { label: 'SDCL 15-6-6(a)', impl: 'ohio_civ_r_6a',
     short_period_exclusion_days: 11,
     base_period_suffix: '', months_years_suffix: '',
@@ -2507,6 +2517,12 @@ var JURISDICTION_COVERAGE = {
     summary: 'Three Alaska days that may be legal holidays for time computation are NOT encoded -- MLK Day, the Friday before a Saturday holiday, and proclamation days -- and no row adds Rule 6(c) mail days to a deadline running from the clerk\'s certificate of distribution. This date may be EARLIER than the true deadline, never later.',
     detail: 'The calendar encodes Saturdays, Sundays and the AS 44.12.010 legal holidays, with the AS 44.12.020 Monday after a Sunday holiday. Each omission below can only make a date EARLIER: (1) MARTIN LUTHER KING, JR. DAY. AS 44.12.010(a)(2) lists it "as provided in (b)", and (b) makes it a legal holiday "for employment purposes" for state employees on collective-bargaining terms, so whether it is a legal holiday for a court deadline is a question of law; a deadline landing on it is shown on that Monday. (2) THE FRIDAY BEFORE A SATURDAY HOLIDAY. AS 44.12.025 makes it a legal holiday "for officers and employees of the state" only -- for example Friday 3 July 2026. (3) PROCLAMATION DAYS under AS 44.12.010(a)(14), which cannot be derived in advance. (4) MAIL DAYS ON DISTRIBUTION-TRIGGERED ROWS. Civil Rule 6(c) and Appellate Rule 502(c) add three days after a document is "distributed by" mail, which may reach a mailed judgment, but Civil Rule 6(b) forbids enlarging Rule 59(b) and a late notice of appeal is lost, so the Rule 59(b) and Appellate Rule 204(a)(1) rows add none. A court closure is NOT a legal holiday: the closed-court sentence printed beside Civil Rule 6 is the text of rescinded SCO 1875. If a computed date falls on MLK Day, the Friday before a Saturday holiday, or runs from a mailed judgment, confirm before relying on it.'
   },
+  ri: {
+    complete: false,
+    direction: 'early',
+    summary: 'Rhode Island\'s holiday list is a READING of R.I. Gen. Laws 25-1-1, which Super. R. Civ. P. 6(a) does not name, and every contested day is left out: the Monday state employees take for a Saturday holiday, legislative-only election years, and days the governor or General Assembly appoint. This date may be EARLIER than the true deadline, never later.',
+    detail: 'The calendar encodes Saturdays, Sundays and the days 25-1-1 names directly -- including Rhode Island Independence Day (4 May), Victory Day (second Monday of August), Columbus Day and Juneteenth -- with the general Sunday-to-Monday shift ("when either of the above days falls on the first day of the week, then the day following it"), Thanksgiving (appointed by the President and by Congress, which 25-1-1 incorporates), and general election day in the years general state officers are elected (2026, 2030). Each omission can only make a date EARLIER: (1) the following Monday "state employees will celebrate" when a listed day falls on a SATURDAY, scoped to employees; (2) election day in a year with only legislative races (2028); (3) days the governor or General Assembly appoint; (4) no Rule 6(d) day on the answer to a complaint (process) or on post-judgment motions running from entry; (5) a defendant\'s 60-day production and 45-day admission floors. Rule 6(a) says "legal holiday" and names no statute, and no official Judiciary holiday list could be reached (docs/sairnlaw-rhodeisland-deadline-seed-blockers.md). Confirm any date falling on or just after a Saturday holiday, an election day, or Victory Day.'
+  },
   sd: {
     complete: false,
     direction: 'early',
@@ -3486,6 +3502,19 @@ var SERVICE_EXTENSION_STANDARDS = {
   // transmission shall not be deemed service by mail." Whether the 11-day
   // threshold is tested before or after the three days is NOT stated, so no
   // seeded row with a base count under 11 carries this extension.
+  // ── RHODE ISLAND: ONE DAY, AND ELECTRONIC SERVICE EARNS IT (hank b65) ───
+  // Super. R. Civ. P. 6(d): "the notice or paper is served upon the party
+  // electronically or by mail, one (1) day shall be added to the prescribed
+  // period." ONE day, not three, and electronic service qualifies -- the
+  // opposite of AK/ND/SD. Added to the period, one rollover at the end.
+  ri_rcp_6d: {
+    label: 'R.I. Super. R. Civ. P. 6(d)',
+    sequence: 'add_to_period_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) {
+      return ({ mail: 1, email: 1, electronic: 1, efiling_service: 1 })[method] === 1;
+    }
+  },
   sd_rcp_6e: {
     label: 'SDCL 15-6-6(e)',
     sequence: 'add_to_period_then_roll',

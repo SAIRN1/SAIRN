@@ -75,3 +75,24 @@ did not.
 
 ## Next in the J1 order
 South Dakota, then Vermont, Wyoming and DC. None was started in b63.
+
+## b65 (2026-10-29): SEEDED on Michael's direction, on the EARLY-side reading above
+Michael's b65 instruction was to seed RI from the Superior Court Rules PDF (Rule 6).
+
+**Rule 6 was never the blocker.** It names no holiday statute, so the holiday list is still a reading of § 25-1-1. It
+is encoded exactly as "the direction to prefer, if forced" says, and disclosed in `JURISDICTION_COVERAGE.ri`.
+
+**Encoded:**
+- every day § 25-1-1 names, including 4 May, Victory Day, Columbus Day and Juneteenth;
+- the GENERAL Sunday→Monday shift;
+- **Thanksgiving**, because the President proclaims it and Congress made it a holiday (5 U.S.C. § 6103). The
+  incorporation clause reaches both, so this is no longer the "hard case";
+- general election day in 2026 and 2030, the years general officers are elected.
+
+**Omitted, each EARLY:**
+- the employee-only Monday after a SATURDAY holiday;
+- 2028 election day;
+- governor- or Assembly-appointed days.
+
+**Computation and rules:** `ri_rcp_6a` (the federal count) and `ri_rcp_6d` (+1 day, mail OR electronic). The 8 rows
+are read verbatim from the February 2024 PDF: Rules 12(a), 33, 34, 36, 59(b) and 59(e).

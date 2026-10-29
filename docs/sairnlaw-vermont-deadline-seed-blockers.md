@@ -25,3 +25,10 @@
 ## What would unblock it
 - The promulgated order adopting current V.R.C.P. 6 (2018), and each period rule to be seeded, from vtcourts.gov.
 - Or a Michael/counsel decision to accept the West/Lexis official compilation as the source.
+
+## b65 (2026-10-29): the URL supplied as the compiled source is NOT the rules
+- `https://www.vtcourts.gov/media/595` redirects to
+  `https://www.vtcourts.gov/sites/default/files/documents/AR-2014_VRCP.pdf`.
+- That is the **Advisory Committee on Rules of Civil Procedure 2014 Annual Report** (5 pages, 116,701 bytes). It
+  contains no rule text. Its item III.6 says the Committee "will continue to develop amendments to V.R.C.P. 6".
+- **Vermont is still not seeded.** The blocker is unchanged: the current V.R.C.P. text, as promulgated, is still needed.
