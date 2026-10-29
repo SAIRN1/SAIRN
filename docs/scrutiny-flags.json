@@ -15386,6 +15386,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b68-agent-poll-cas.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ea2a9db2d61daa2e4f6c9bf9576777d25fd5cb7a",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_tier_a_open_basis_probe.py",
    "class": "test file",
    "level": "CHANGE",
