@@ -1373,6 +1373,17 @@
       "status": "released",
       "released_at": "2026-10-28T23:19:24Z",
       "files": null
+    },
+    {
+      "id": "hover-1793268416",
+      "session": "hover",
+      "subject": "hover",
+      "task": "hover-tools b104 seq review log states windows sent",
+      "claimed_at": "2026-10-29T10:06:56Z",
+      "claimed_at_epoch": 1793268416.1593084,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
