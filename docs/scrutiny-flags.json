@@ -12355,6 +12355,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairngrounds_save_reentry.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bb92b9f557fb97119e5668a7875dcf3c4487116c",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/_lib/deadline-connecticut.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -13025,6 +13033,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "c059443620c65690db19764d6340f1ba440ab20b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/stonedesk_save_reentry.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c0d38bf76f39e8c5ed1efce6f8f9d59b21574452",
    "criteria_version": "2026-10-06.1"
   },
   {
