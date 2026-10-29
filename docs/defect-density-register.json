@@ -40257,7 +40257,7 @@
       "recurrence_open": "Other saves that now await a server answer before re-enabling (sairnmechanical saveQuote/saveCheck and other apps' push-then-toast paths) were not swept for the same re-entry window."
     },
     {
-      "commit": "a746b20e4a21",
+      "commit": "046e3f4f71a2",
       "date": "2026-10-29",
       "subject": "fix(apps, cody b64): the other 41 re-entrant saves are guarded -- all 47 found by the sweep are now fixed, each fixture-first",
       "files": [
@@ -40573,7 +40573,7 @@
       "recurrence_open": "Any other could-not-tell code added to the server later must be added to the kept list too; nothing enforces that."
     },
     {
-      "commit": "2f6e4c588c07",
+      "commit": "5368dca7abb4",
       "date": "2026-10-29",
       "subject": "fix(sairnmechanical, cody b64): every server call settles in every engine -- the saveDoc guard can no longer be held open by a fetch that never answers",
       "files": [
@@ -40617,7 +40617,7 @@
       "recurrence_open": "The other 14 apps' transport timeouts share the feature-detect-or-unbounded shape; only sairnmechanical has a guard that depends on settlement today, so they were not changed."
     },
     {
-      "commit": "23315f891029",
+      "commit": "c654f1152ffb",
       "date": "2026-10-29",
       "subject": "fix(apps, cody b64): the six highest-impact push-then-toast saves can no longer be re-entered while their server write is pending",
       "files": [
