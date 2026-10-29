@@ -1,0 +1,29 @@
+SAIRN REPORT -- cody b64 (2026-10-29)
+=====================================
+Handoff: SAIRN-handoff-cody-b64.md.
+
+1. DECISION RESOLVED: the b33 email-leg removal already covers H1's mirror (the RFC3161 mirror push has been live since 10-07).
+   - The index row B63-H1-DRILL is closed. No code change.
+
+2. THE saveDoc GUARD NO LONGER DEPENDS ON THE ENGINE.
+   - The fixture came first and was RED: in an engine without AbortSignal.timeout or without AbortController, a fetch that never settles HUNG the call.
+   - Fix: an AbortController timer fallback, plus a racing backstop in mechData().
+   - Fixture 6/6; transport_timeout_sweep 81/81; mech suites pass.
+
+3. RE-ENTRY SWEEP: 47 real instances, ALL FIXED, every one fixture-first (red on the old code, then green).
+   - The sweep scanned 507 handlers and read 87 suspects by hand.
+   - The six highest-impact are money, legal and patient-facing.
+   - The other 41 include 24 in sairncode, handled through one shared helper.
+   - No new failure across the tests that read the edited files.
+   - Out-of-shape items are routed: grounds GPS waits, the stonedesk 2.5 s POS reset window, and inputs that are never reset.
+
+4. COMPETITIVE-GAP RECOUNT: 6 of 17 apps have no committed WORLDWIDE audit.
+   - The six are sairncare, sairndental, sairnfreedom, sairnlegacy, sairnscape and stonedesk.
+   - 0 apps have no audit doc at all; each has an earlier-round doc.
+   - Research held only outside the repo cannot be counted from it. sairncare is next in fourth's queue.
+
+5. FIXTURE FIRST for items 2-3: every fix had its failing reproduction before the change.
+
+6. PUSH: LANDED at a5ad5f7c9.
+   - Register conflicts were merged by identity.
+   - A Tier A obligation was opened for the 35 resources the guards touch, and assigned to cc.

@@ -1,0 +1,14 @@
+DIGEST -- cody b64, 2026-10-29. All 6 items DONE.
+STATUS: SEVEN APPS (save handlers), sairnmechanical transport, TESTS, DOCS. NO SQL. NO LIVE DATA WRITES.
+CHANGED: sairnmechanical/code/care/dental/law/grounds/legacy/stonedesk .html; 9 test files + tests/lib harness; index row; register; manifest.
+LANDED: tip a5ad5f7c9, full gate. Register rebase conflicts merged by identity; Tier A obligation (35 resources) assigned to cc.
+ITEM 1 -- b33 email-leg removal covers H1's mirror (RFC3161 push live since 10-07): row B63-H1-DRILL closed, no code change.
+ITEM 2 -- mechData now settles in every engine (AbortController timer + backstop race). Fixture red first (4 HUNG), now 6/6.
+ITEM 3 -- 47 re-entrant saves found (507 scanned, 87 read); ALL 47 fixed, each arm red first. No new test failures.
+ITEM 4 -- 6 of 17 apps have no committed worldwide audit (care, dental, freedom, legacy, scape, stonedesk); 0 have none at all.
+ITEM 5 -- fixture first for every fix in items 2-3.
+DECISION-NEEDED: none.
+UNVERIFIED: out-of-shape re-entry (grounds GPS waits, stonedesk 2.5 s POS window) is routed, not fixed.
+NEXT: cody -- out-of-shape re-entry; make the sweep scanner a standing check. cc -- Tier A review of the 35 resources.
+EVIDENCE-path: SAIRN-handoff-cody-b64.md, SAIRN-report-cody-b64.txt
+CONTEXT 69.1% of 1,000,000 -- 691,129 tokens, measured.
