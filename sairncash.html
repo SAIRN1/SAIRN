@@ -1449,6 +1449,14 @@ function calcQuarterlySetAside(ytdNetProfit, filingStatus, priorYearTaxLiability
   const ninetyPct = 0.9 * estAnnual;
 
   const threshold = safeHarborAgiThreshold(filingStatus);
+  // A TYPED $0 IS AN ANSWER (fourth b68). `if (priorYearTaxLiability)` read
+  // 0 as "not provided" and dropped the prior-year leg, so a user with no
+  // 2025 tax was told 90% of the projection. 1040-ES line 12b is then $0 and
+  // line 12c, the smaller of 12a and 12b, is $0. Only null/undefined/'' and
+  // an unusable or negative figure mean "not provided".
+  const pyt = (priorYearTaxLiability === null || priorYearTaxLiability === undefined
+    || priorYearTaxLiability === '') ? NaN : Number(priorYearTaxLiability);
+  const hasPriorYearTax = isFinite(pyt) && pyt >= 0;
   let priorYearPct = 1.0;
   let agiBasisUncertain = false;
   if (priorYearAgi && typeof priorYearAgi === 'object') {
@@ -1459,8 +1467,9 @@ function calcQuarterlySetAside(ytdNetProfit, filingStatus, priorYearTaxLiability
     agiBasisUncertain = threshold !== 150000 && !priorYearAgi.legacyOver150k;
   } else if (typeof priorYearAgi === 'number') {
     priorYearPct = priorYearAgi > threshold ? 1.10 : 1.0;
-  } else if (priorYearTaxLiability) {
-    // A prior-year TAX with no prior-year AGI. 100% is the smaller basis and
+  } else if (hasPriorYearTax && pyt > 0) {
+    // A prior-year TAX with no prior-year AGI. (110% of $0 is still $0, so a
+    // $0 tax needs no AGI to settle it.) 100% is the smaller basis and
     // therefore the flattering assumption, so it is flagged.
     agiBasisUncertain = true;
   }
@@ -1477,8 +1486,8 @@ function calcQuarterlySetAside(ytdNetProfit, filingStatus, priorYearTaxLiability
   let priorYearBasis = null;
   let safeHarborBasis = projectionHasNoData ? null : ninetyPct;
   let hasFullBasis = false;
-  if (priorYearTaxLiability) {
-    priorYearBasis = priorYearPct * priorYearTaxLiability;
+  if (hasPriorYearTax) {
+    priorYearBasis = priorYearPct * pyt;
     safeHarborBasis = projectionHasNoData
       ? priorYearBasis
       : Math.min(ninetyPct, priorYearBasis);
@@ -1557,7 +1566,9 @@ function populateProfileForm() {
   const agi = document.getElementById('profAgiOver150k');
   const rv = document.getElementById('profRetirementVehicle');
   if (fs && profileCache.filing_status) fs.value = profileCache.filing_status;
-  if (pyt) pyt.value = profileCache.prior_year_tax_liability || '';
+  // `|| ''` showed a stored $0 as an empty box (fourth b68).
+  if (pyt) pyt.value = (profileCache.prior_year_tax_liability === null
+    || profileCache.prior_year_tax_liability === undefined) ? '' : profileCache.prior_year_tax_liability;
   if (agiAmt) agiAmt.value = profileCache.prior_year_agi || '';
   // THE LEGACY ANSWER IS CARRIED, NOT DISCARDED. A profile saved before this
   // change holds only the boolean. Clearing it would throw away a real answer
@@ -1584,7 +1595,11 @@ function priorYearAgiForCalc() {
 async function saveProfile() {
   if (!window._fbProfileRef || !window._fbSetRaw) { showToast('Sync not ready yet -- try again in a moment'); return; }
   const filing_status = document.getElementById('profFilingStatus').value;
-  const prior_year_tax_liability = Number(document.getElementById('profPriorYearTax').value) || null;
+  // `Number(v) || null` saved a typed 0 as null (fourth b68). A blank box is
+  // still null; 0 and up are kept as typed.
+  const pytRaw = String(document.getElementById('profPriorYearTax').value).trim();
+  const pytNum = Number(pytRaw);
+  const prior_year_tax_liability = (pytRaw !== '' && isFinite(pytNum) && pytNum >= 0) ? pytNum : null;
   const prior_year_agi = Number(document.getElementById('profPriorYearAgi').value) || null;
   // THE LEGACY ANSWER IS CARRIED ONLY IF IT EXISTS (fourth b65). The hidden
   // checkbox reads false for every user who never gave the old answer, and
