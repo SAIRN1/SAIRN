@@ -41538,6 +41538,48 @@
         }
       ],
       "recurrence_open": "Any other could-not-tell code added to the server later must be added to the kept list too; nothing enforces that."
+    },
+    {
+      "commit": "faf0c8b2ee61",
+      "date": "2026-10-29",
+      "subject": "fix(tools, fourth b69): deploy_verify_notify skipped a real push chained after echo, grep or `;` (cc b74 F-1)",
+      "files": [
+        "docs/sairn-path-manifest.json",
+        "tests/run_deploy_verify_entry_probe.py",
+        "tools/deploy_verify_notify.py"
+      ],
+      "lines_added": 62,
+      "lines_removed": 10,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "tools/deploy_verify_notify.py classify_command filed a real git push as not-a-push when it followed echo, cat, grep or ; on the same line (echo start; git push origin main), because the mention-only filter tested whole lines; the post-push deploy check was then skipped silently. Found by cc b74's independent review (3 of 10 probe cases wrong). Now classified per shell segment outside quotes, comments dropped.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The line-level _MENTION_ONLY filter came with the 2026-10-05 entry-condition rewrite; that commit was not re-traced this batch."
+      },
+      "citation_note": "No standing rule names per-segment parsing of shell commands.",
+      "contributing_factors": [
+        {
+          "factor": "A filter correct for one command was applied to a whole line holding several.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "_segments() splits on separators outside quotes; each segment is judged."
+        },
+        {
+          "factor": "The entry probe had mention-only and push rows but none chaining the two.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Six rows added, including quoted and commented-out pushes."
+        }
+      ],
+      "recurrence_open": "Other hooks that classify Bash commands by substring (e.g. the deny hook) were not swept for the same line-vs-segment shape."
     }
   ],
   "started": "2026-09-09",
