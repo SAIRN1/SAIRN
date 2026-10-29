@@ -148,6 +148,8 @@
       "api/_resources/sairnsenior.js",
       "api/_resources/index.js",
       "api/sen-evv-billing-gate.test.js",
+      "api/_resources/sairnmechanical.js",
+      "tests/sairnmechanical_records_b67.js",
       "tests/sairnvet_seed_never_syncs.js",
       "tests/run_push_timeout_guard_probe.py",
       "tools/push_retry.py",

@@ -18905,7 +18905,11 @@ module.exports = async (req, res) => {
     // not a credential. See sql/sairnmechanical_records_schema.sql.
     const MECH_RECORDS = {
       mech_quotes: 'quote_id', mech_checks: 'check_id',
-      mech_docs: 'doc_id', mech_takeoffs: 'takeoff_id'
+      mech_docs: 'doc_id', mech_takeoffs: 'takeoff_id',
+      // THE THREE RECORDS THE APP NEVER HAD (fourth b67): a job, an invoice
+      // and an inspection. Same generic upsert and the same 64KB row cap as
+      // the four above; sql/sairnmechanical_jobs_invoices_inspections_schema.sql.
+      mech_jobs: 'job_id', mech_invoices: 'invoice_id', mech_inspections: 'inspection_id'
     };
     if (MECH_RECORDS[resource] && action === 'read') {
       const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });

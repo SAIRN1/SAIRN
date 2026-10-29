@@ -70,6 +70,10 @@ module.exports = {
     'mech_checks',
     'mech_docs',
     'mech_takeoffs',
+    // fourth b67: the job, invoice and inspection records, same generic branch.
+    'mech_jobs',
+    'mech_invoices',
+    'mech_inspections',
   ],
   // ── DECLARED NOT SYNCED ─────────────────────────────────────────────────
   // Storage keys this app deliberately keeps on the device, in the form

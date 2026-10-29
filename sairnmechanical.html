@@ -729,7 +729,18 @@ async function callClaude(system, messages, maxTokens) {
 <div class="page" id="page-jobs">
   <div class="ph">
     <div><div class="ptitle">🔧 Jobs</div><div class="psub">All active and scheduled service calls</div></div>
-    <div class="pacts"><button class="btn bp" onclick="mechNotLive('Job entry','created')">+ New Job</button></div>
+    <div class="pacts"><button class="btn bp" onclick="mechRecToggle('mj-form')">+ New Job</button></div>
+  </div>
+  <div class="card" id="mj-form" style="display:none;padding:14px">
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px">
+      <input class="fi" id="mj-customer" placeholder="Customer *"><input class="fi" id="mj-address" placeholder="Address">
+      <select class="fi" id="mj-type"><option>Service call</option><option>Install</option><option>Maintenance</option><option>Inspection</option></select>
+      <input class="fi" id="mj-tech" placeholder="Technician">
+      <select class="fi" id="mj-priority"><option>Normal</option><option>High</option><option>Emergency</option></select>
+      <select class="fi" id="mj-status"><option value="scheduled">Scheduled</option><option value="in_progress">In progress</option><option value="completed">Completed</option></select>
+      <input class="fi" id="mj-date" type="date">
+      <button class="btn bp" onclick="mechJobSave()">Save job</button>
+    </div>
   </div>
   <div class="sgrid"><div class="sc"><div class="sl">Jobs Today</div><div class="sv">--</div><div class="sd">-- in progress</div></div><div class="sc"><div class="sl">Revenue This Week</div><div class="sv">--</div><div class="sd">This week</div></div><div class="sc"><div class="sl">Pending Estimates</div><div class="sv">--</div><div class="sd">-- open</div></div><div class="sc"><div class="sl">Maintenance Contracts</div><div class="sv">--</div><div class="sd">-- this month</div></div></div>
   <div class="card">
@@ -744,7 +755,19 @@ async function callClaude(system, messages, maxTokens) {
           Dispatch board is not live yet &mdash; nothing recorded.
         </td></tr>
       </tbody>
+      <tbody id="mj-tbody"></tbody>
     </table></div>
+  </div>
+  <div class="card" style="padding:14px">
+    <div class="ptitle" style="font-size:15px;margin-bottom:8px">Inspections</div>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px">
+      <select class="fi" id="mx-job"></select><input class="fi" id="mx-asset" placeholder="Equipment / asset *">
+      <input class="fi" id="mx-type" placeholder="Inspection type (e.g. annual furnace)"><input class="fi" id="mx-tech" placeholder="Inspected by *">
+      <input class="fi" id="mx-date" type="date"><select class="fi" id="mx-result"><option value="pass">Pass</option><option value="fail">Fail</option><option value="needs_repair">Needs repair</option></select>
+      <input class="fi" id="mx-next" type="date" title="Next inspection due"><input class="fi" id="mx-notes" placeholder="Findings">
+    </div>
+    <button class="btn bp" onclick="mechInspectionSave()">Record inspection</button>
+    <div class="tw" style="margin-top:10px"><table><thead><tr><th>Date</th><th>Asset</th><th>Type</th><th>Result</th><th>By</th><th>Next due</th><th>Job</th></tr></thead><tbody id="mx-tbody"></tbody></table></div>
   </div>
 </div>
 <div class="page" id="page-scheduling">
@@ -1088,7 +1111,15 @@ async function callClaude(system, messages, maxTokens) {
     <div><div class="ptitle">💳 Invoices</div><div class="psub">Service invoices and payment tracking</div></div>
     <div class="pacts">
       <button class="btn bo bsm" onclick="window.print()">🖨️ Print</button>
-      <button class="btn bp" onclick="mechNotLive('Invoice entry','created')">+ New Invoice</button>
+      <button class="btn bp" onclick="mechRecToggle('mi-form')">+ New Invoice</button>
+    </div>
+  </div>
+  <div class="card" id="mi-form" style="display:none;padding:14px">
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px">
+      <select class="fi" id="mi-job"></select><input class="fi" id="mi-customer" placeholder="Customer *">
+      <input class="fi" id="mi-amount" type="number" min="0" step="0.01" placeholder="Amount *"><input class="fi" id="mi-due" type="date">
+      <select class="fi" id="mi-status"><option value="unpaid">Unpaid</option><option value="paid">Paid</option></select>
+      <button class="btn bp" onclick="mechInvoiceSave()">Save invoice</button>
     </div>
   </div>
   <div class="sgrid"><div class="sc"><div class="sl">Revenue This Week</div><div class="sv">--</div><div class="sd">-- jobs</div></div><div class="sc"><div class="sl">Outstanding</div><div class="sv">--</div><div class="sd">-- invoices</div></div><div class="sc"><div class="sl">Overdue 30+</div><div class="sv">--</div><div class="sd">-- invoices</div></div><div class="sc"><div class="sl">Avg Job Value</div><div class="sv">--</div><div class="sd">This month</div></div></div>
@@ -1104,6 +1135,7 @@ async function callClaude(system, messages, maxTokens) {
           Invoices are not live yet &mdash; nothing recorded.
         </td></tr>
       </tbody>
+      <tbody id="mi-tbody"></tbody>
     </table></div>
   </div>
 </div>
@@ -1683,6 +1715,55 @@ function syncAll(){
 // wired to a fixture: there is no jobs/contracts/invoices data layer to write
 // to and no records to export, and inventing either is exactly the fabrication
 // this file was cleaned of on 2026-08-27.
+// ══ JOBS, INVOICES AND INSPECTIONS (fourth b67) ════════════════════════════
+// The b64 worldwide audit found no job, invoice or inspection record here --
+// 'Job entry' and 'Invoice entry' were mechNotLive() placeholders. Each record
+// is saved locally first (mechSt), then ONE record is backed up (mechBackup ->
+// mech_jobs / mech_invoices / mech_inspections, the generic MECH_RECORDS branch).
+// Invoice numbers are SEQUENTIAL over this device's list (INV-0001...), never a
+// time stamp: two invoices minted in the same second must not share a number.
+// A record id is time PLUS randomness: two saves in the same millisecond must
+// not share an id, because the server upserts on it and the second would
+// silently overwrite the first.
+function mechRecId(){return Date.now().toString(36).toUpperCase()+'-'+Math.random().toString(36).slice(2,8).toUpperCase();}
+function mechRecList(k){try{var v=JSON.parse(localStorage.getItem(APP_ID+'_'+k)||'[]');return Array.isArray(v)?v:[];}catch(e){return [];}}
+function mechRecVal(id){var el=document.getElementById(id);return el?String(el.value||'').trim():'';}
+function mechRecEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function mechRecToggle(id){var el=document.getElementById(id);if(el)el.style.display=el.style.display==='none'?'block':'none';mechRenderRecords();}
+function mechRecSave(k,rec){var list=mechRecList(k);list.unshift(rec);var ok=mechSt(APP_ID+'_'+k,list);if(ok)mechBackup('mech_'+k,rec);mechRenderRecords();return ok;}
+function mechJobSave(){
+  var c=mechRecVal('mj-customer');if(!c){showToast('A job needs a customer');return false;}
+  var ok=mechRecSave('jobs',{id:'JOB-'+mechRecId(),customer:c,address:mechRecVal('mj-address'),type:mechRecVal('mj-type'),
+    tech:mechRecVal('mj-tech'),priority:mechRecVal('mj-priority'),status:mechRecVal('mj-status')||'scheduled',scheduled_on:mechRecVal('mj-date'),created_at:new Date().toISOString()});
+  if(ok)showToast('Job saved');return ok;
+}
+function mechInvoiceSave(){
+  var c=mechRecVal('mi-customer'),a=Number(mechRecVal('mi-amount'));
+  if(!c||!(a>0)){showToast('An invoice needs a customer and an amount above 0');return false;}
+  var max=0;mechRecList('invoices').forEach(function(x){var n=parseInt(String(x.number||'').replace(/\D/g,''),10);if(n>max)max=n;});
+  var ok=mechRecSave('invoices',{id:'INVR-'+mechRecId(),number:'INV-'+String(max+1).padStart(4,'0'),job_id:mechRecVal('mi-job'),
+    customer:c,amount:Math.round(a*100)/100,due_on:mechRecVal('mi-due'),status:mechRecVal('mi-status')||'unpaid',issued_on:new Date().toISOString().slice(0,10)});
+  if(ok)showToast('Invoice saved');return ok;
+}
+function mechInspectionSave(){
+  var asset=mechRecVal('mx-asset'),by=mechRecVal('mx-tech');
+  if(!asset||!by){showToast('An inspection needs the equipment and who inspected it');return false;}
+  var ok=mechRecSave('inspections',{id:'INSP-'+mechRecId(),job_id:mechRecVal('mx-job'),asset:asset,type:mechRecVal('mx-type'),
+    inspected_by:by,inspected_on:mechRecVal('mx-date')||new Date().toISOString().slice(0,10),result:mechRecVal('mx-result')||'pass',next_due_on:mechRecVal('mx-next'),findings:mechRecVal('mx-notes')});
+  if(ok)showToast('Inspection recorded');return ok;
+}
+function mechRenderRecords(){
+  var E=mechRecEsc,jobs=mechRecList('jobs'),inv=mechRecList('invoices'),ins=mechRecList('inspections');
+  var opts='<option value="">(no job)</option>'+jobs.map(function(j){return '<option value="'+E(j.id)+'">'+E(j.customer+' - '+(j.type||'')+' '+(j.scheduled_on||''))+'</option>';}).join('');
+  ['mi-job','mx-job'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML=opts;});
+  var tb=document.getElementById('mj-tbody');
+  if(tb)tb.innerHTML=jobs.map(function(j){return '<tr><td>'+E(j.id)+'</td><td>'+E(j.customer)+'</td><td>'+E(j.address)+'</td><td>'+E(j.type)+'</td><td>'+E(j.tech)+'</td><td>'+E(j.priority)+'</td><td>'+E(j.status)+'</td></tr>';}).join('');
+  tb=document.getElementById('mi-tbody');
+  if(tb)tb.innerHTML=inv.map(function(x){return '<tr><td>'+E(x.number)+'</td><td>'+E(x.customer)+'</td><td>'+E(x.job_id)+'</td><td>$'+E(Number(x.amount).toFixed(2))+'</td><td>'+E(x.due_on)+'</td><td>'+E(x.status)+'</td></tr>';}).join('');
+  tb=document.getElementById('mx-tbody');
+  if(tb)tb.innerHTML=ins.map(function(x){return '<tr><td>'+E(x.inspected_on)+'</td><td>'+E(x.asset)+'</td><td>'+E(x.type)+'</td><td>'+E(x.result)+'</td><td>'+E(x.inspected_by)+'</td><td>'+E(x.next_due_on)+'</td><td>'+E(x.job_id)+'</td></tr>';}).join('');
+}
+try{window.addEventListener('load',function(){mechRenderRecords();setTimeout(mechRenderRecords,5000);});}catch(e){}
 function mechNotLive(subject, verb){
   showToast(subject + ' is not live yet -- nothing was ' + verb, 6000);
 }
@@ -2218,7 +2299,11 @@ function mechData(action, resource, payload) {
     ['mech_quotes',   APP_ID + '_quotes'],
     ['mech_checks',   APP_ID + '_checks'],
     ['mech_docs',     APP_ID + '_docs'],
-    ['mech_takeoffs', APP_ID + '_takeoffs']
+    ['mech_takeoffs', APP_ID + '_takeoffs'],
+    // fourth b67: the job, invoice and inspection records.
+    ['mech_jobs',        APP_ID + '_jobs'],
+    ['mech_invoices',    APP_ID + '_invoices'],
+    ['mech_inspections', APP_ID + '_inspections']
   ];
   // MECH_ID_FIELD USED TO SAY `{ mech_checks: 'num' }`, AND IT WAS WRONG.
   // Keying the server record on the cheque number made the upsert on
