@@ -39955,7 +39955,7 @@
       "recurrence_open": "A skipped push does not re-run whole-tree checks against the combined base; only gate duration or a merge queue closes that."
     },
     {
-      "commit": "1e892a1a6788",
+      "commit": "366c1296df86",
       "date": "2026-10-29",
       "subject": "fix(server-stale-snapshot, hank b67): conditional writes are compare-and-set guards (S3 triage)",
       "files": [
