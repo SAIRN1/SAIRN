@@ -40010,7 +40010,7 @@
       "recurrence_open": "Out-of-shape re-entry remains open: grounds GPS waits (gcdPlaceOrder, gcdMarkShotEnd), stonedesk's 2.5 s no-slab POS reset window, and handlers that never reset their inputs; no standing checker for the shape yet."
     },
     {
-      "commit": "0f8c36e107da",
+      "commit": "bdfe0609adeb",
       "date": "2026-10-29",
       "subject": "fix(sairnfreedom, cody b66): a server confirmation expires after 90 days and is re-verified",
       "files": [
@@ -40098,7 +40098,7 @@
       "recurrence_open": "Other surfaces that print skew_ms (none found by grep in sairnsenior.html) would need the same treatment."
     },
     {
-      "commit": "23421fd517db",
+      "commit": "bea263709094",
       "date": "2026-10-29",
       "subject": "fix(done-line, cody b66): a hand-typed done line with no record this turn is refused",
       "files": [
@@ -40519,7 +40519,7 @@
       "recurrence_open": "Other fixed 'this device only' / 'not synced' sentences in other apps are not checked against their SYNCED lists; only this panel is now rendered from confirmed state."
     },
     {
-      "commit": "824bab9dddff",
+      "commit": "de354736590f",
       "date": "2026-10-29",
       "subject": "fix(sairnmechanical, cody b66): a failed credential or asset write is reported, not swallowed (cc b73 R-12)",
       "files": [
@@ -40560,7 +40560,7 @@
       "recurrence_open": "Other b64-guarded .then handlers may share the shape; only these two were checked."
     },
     {
-      "commit": "862ed35910eb",
+      "commit": "45bf57f0c2cf",
       "date": "2026-10-29",
       "subject": "fix(platform, cody b66): 12 more licence guards no longer adopt a different licence on a legacy device",
       "files": [
