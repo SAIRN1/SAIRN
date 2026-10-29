@@ -40010,6 +40010,48 @@
       "recurrence_open": "Out-of-shape re-entry remains open: grounds GPS waits (gcdPlaceOrder, gcdMarkShotEnd), stonedesk's 2.5 s no-slab POS reset window, and handlers that never reset their inputs; no standing checker for the shape yet."
     },
     {
+      "commit": "17821dc5c4af",
+      "date": "2026-10-29",
+      "subject": "fix(sairnbuild, fourth b68): the WIP forecast had no writer -- the cost modal now enters, edits and clears it",
+      "files": [
+        "docs/sairn-path-manifest.json",
+        "sairnbuild.html",
+        "tests/sairnbuild_cost_forecast_writer.js"
+      ],
+      "lines_added": 127,
+      "lines_removed": 5,
+      "app": "sairnbuild",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "sairnbuild's WIP schedule divides cost-to-date by forecastFor(), which reads each cost line's forecast and falls back to budget, but saveCost() never wrote a forecast and the cost modal had no input for it. Every job's estimated cost at completion was its budget, and the 're-forecast the affected cost lines' warning could not be acted on. The modal now enters, edits and clears it (blank = budget, a cleared box clears, 0 is kept).",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "requirement",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "forecastFor() and the WIP copy were added in an earlier batch without a writer; the commit was not traced this batch."
+      },
+      "citation_note": "No standing rule requires a computed field's reader to ship with a writer.",
+      "contributing_factors": [
+        {
+          "factor": "A reader (forecastFor) and its UI copy shipped with no input or save path for the field it reads.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "#cm-forecast input; openCostModal, editCost and saveCost write it."
+        },
+        {
+          "factor": "The WIP suites tested forecastFor() with fixtures that already carried forecast, so the missing writer could not show.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "tests/sairnbuild_cost_forecast_writer.js drives the real modal functions."
+        }
+      ],
+      "recurrence_open": "Other computed fields with a reader and no writer were not swept."
+    },
+    {
       "commit": "1d2aea0e2b32",
       "date": "2026-10-29",
       "subject": "fix(sairnsenior, fourth b67): the EVV Clock Flags card says '240 h late', not '-240 h'",
