@@ -427,6 +427,9 @@ def reseat_only():
 # row the gate just wrote.
 SCRUTINY_FILE = 'docs/scrutiny-flags.json'
 BOOKKEEPING_PREFIX = 'chore(gate-bookkeeping '
+# The loop's own derived-docs commit (hank b64): regenerated documents go here,
+# never into the author's commit, so the author's patch-ids survive a rebase.
+REGEN_PREFIX = 'chore(derived-docs '
 
 
 def scrutiny_append_only():
@@ -863,6 +866,22 @@ def selftest():
         got = fast_retry_decision(*args)[0]
         arm('C1 decision -- %s -> %s' % (name, 'skip' if want else 'full gate'),
             got == want, 'got %s' % got)
+
+    # ── C1a (hank b64): regenerated docs live in their OWN commit, excluded
+    # from the patch-id set, so a pure base move can still take the fast path.
+    log = ['a1\tfeat(x): the author\'s change',
+           'b2\t' + REGEN_PREFIX + 'a1): regenerated after rebase',
+           'c3\t' + BOOKKEEPING_PREFIX + 'a1): the push gate\'s own scrutiny rows',
+           'd4\tfix(y): a second authored commit', '']
+    arm('C1a -- authored_commits drops the derived-docs and gate-bookkeeping commits',
+        authored_commits(log) == ['a1', 'd4'], 'got %s' % authored_commits(log))
+    arm('C1a -- CONTROL: an authored subject that merely MENTIONS derived docs is kept',
+        authored_commits(['e5\tdocs(z): chore(derived-docs is a phrase here']) == ['e5'],
+        'got %s' % authored_commits(['e5\tdocs(z): chore(derived-docs is a phrase here']))
+    arm('C1a -- the fold no longer amends the author\'s commit',
+        "git('commit', '--amend', '--no-edit')\n        else:" in __import__('inspect').getsource(_regenerate_and_fold)
+        or 'REGEN_PREFIX' in __import__('inspect').getsource(_regenerate_and_fold),
+        'the regenerate step does not reference REGEN_PREFIX')
     return out, bad
 
 
@@ -946,10 +965,32 @@ def _regenerate_and_fold():
                   'stages only the documents it regenerates:')
             for ln in _unstaged:
                 print('    %s' % ln)
-        arc, _, aerr = git('commit', '--amend', '--no-edit')
+        # ── INTO ITS OWN COMMIT, NOT OURS (hank b64, Michael's C1a) ─────────
+        # Amending the author's commit changed its patch-id on every rebase,
+        # so the C1 fast retry (which compares patch-ids) could never fire
+        # after a regenerate -- b63 pushes 3 and 4 both fell to the full gate
+        # for exactly that. Regenerated documents now live in ONE derived-docs
+        # commit on top, amended in place on later attempts, and excluded from
+        # the patch-id set by subject (see _outgoing_state).
+        subj = head_subject() or ''
+        _rc, _pub, _ = git('branch', '--remotes', '--contains', 'HEAD')
+        if subj.startswith(REGEN_PREFIX) and _rc == 0 and not _pub.strip():
+            arc, _, aerr = git('commit', '--amend', '--no-edit')
+        else:
+            _trc, tip, _ = git('rev-parse', '--short', 'HEAD')
+            new_subj = '%s%s): regenerated after rebase' % (REGEN_PREFIX, tip)
+            arc, _, aerr = git('commit', '-m', new_subj, '-m',
+                               'Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>')
+            if arc == 0:
+                subs = captured_subjects() or []
+                try:
+                    io.open(STATE_FILE, 'w', encoding='utf-8').write(
+                        json.dumps({'safe_subjects': subs + [new_subj]}, ensure_ascii=False))
+                except Exception:                               # noqa: BLE001
+                    pass
         if arc != 0:
-            print('amend failed: %s' % aerr, file=sys.stderr)
-            return False, 'amend failed: %s' % (aerr or '')[:120]
+            print('derived-docs commit failed: %s' % aerr, file=sys.stderr)
+            return False, 'derived-docs commit failed: %s' % (aerr or '')[:120]
         return True, 'folded'
     return False, 'nothing to fold -- the generated documents already match'
 
@@ -1027,15 +1068,39 @@ _REGATE_PATHS = ('docs/CRITICALITY-TIERS.md', 'tools/sairn_push_gate_hook.py',
 _FAST_CHECK = 'pre-push gate (whole hook, git push --no-verify)'
 
 
+def authored_commits(log_lines):
+    """The (sha) of outgoing commits that carry AUTHORED changes. Pure.
+
+    Bookkeeping that the loop or the gate regenerates after every rebase --
+    the derived-docs commit and the gate's scrutiny-rows commit -- is excluded,
+    because its content is re-derived from the new base each attempt and
+    would otherwise change the patch-id set on every pure base move (b64)."""
+    keep = []
+    for ln in log_lines:
+        sha, _t, subj = ln.partition('\t')
+        if not sha.strip():
+            continue
+        if subj.startswith((REGEN_PREFIX, BOOKKEEPING_PREFIX)):
+            continue
+        keep.append(sha.strip())
+    return keep
+
+
 def _outgoing_state():
     """(patch-id set, files our commits change, origin/main sha), or None."""
     rc1, base, _ = git('rev-parse', 'origin/main')
-    rc2, shas, _ = git('rev-list', 'origin/main..HEAD')
-    rc3, files, _ = git('diff', '--name-only', 'origin/main', 'HEAD')
-    if rc1 or rc2 or rc3 or not base:
+    rc2, log, _ = git('log', '--format=%H%x09%s', 'origin/main..HEAD')
+    if rc1 or rc2 or not base:
         return None
+    shas = authored_commits(log.split('\n'))
+    files = set()
+    for sha in shas:
+        rcf, fl, _ = git('show', '--name-only', '--format=', sha)
+        if rcf:
+            return None
+        files |= set(fl.split('\n')) - {''}
     pids = set()
-    for sha in shas.split():
+    for sha in shas:
         try:
             show = subprocess.run(['git', 'show', sha], cwd=REPO,
                                   capture_output=True, timeout=120)
@@ -1048,7 +1113,7 @@ def _outgoing_state():
         if show.returncode or pid.returncode or not f:
             return None
         pids.add(f[0])
-    return frozenset(pids), set(files.split('\n')) - {''}, base
+    return frozenset(pids), files, base
 
 
 def _incoming_files(old_base, new_base):
