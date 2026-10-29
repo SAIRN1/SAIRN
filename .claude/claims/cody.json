@@ -4607,8 +4607,8 @@
       "task": "posCompleteSale no-slab reset window re-entry",
       "claimed_at": "2026-10-29T19:31:05Z",
       "claimed_at_epoch": 1793302265.3578053,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-29T19:33:45Z",
       "files": null
     }
   ],
