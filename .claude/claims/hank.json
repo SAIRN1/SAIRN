@@ -4813,6 +4813,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "hank-1793300418",
+      "session": "hank",
+      "subject": "platform",
+      "task": "H1 1747 sql_placeholder_check lexer, S4 api/agent/poll.js double delivery, S6 push_retry fold",
+      "claimed_at": "2026-10-29T19:00:18Z",
+      "claimed_at_epoch": 1793300418.9919038,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
