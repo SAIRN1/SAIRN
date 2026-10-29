@@ -1,0 +1,50 @@
+HANK b68 REPORT -- 2026-10-29
+
+0. Re-orientation:
+   - HEAD 1fcd7e9f2 was 12 behind origin/main. Fast-forwarded to fcc8bcaf0 before any work.
+   - The b67 handoff was read from the repo copy.
+
+1. H1 BLOCKED-ON items, each checked against HEAD and present, all fixed in b9e85ee57:
+   - #1734: sairnlegacy keepsake quantity is now escaped with H() (:4836).
+   - #1740: CRITICALITY-TIERS leg_memorials / leg_liveryvendors were read individually.
+     - The false "no PII" clause is corrected. Tier B holds for both.
+   - #1744: sairnvet saveWildlifeEdit now refuses a closing status that has no outcome date.
+     - The register cell notes this, and notes that Transferred sits outside Release Rate.
+   - #1747: sql_placeholder_check now handles E-string escapes and quoted identifiers.
+     - Declarations must match the exact token, on a whole comment line.
+     - Criteria 2026-10-29.1. 26/26 fixtures. 5 of the 6 new arms are red on the old code. --all is clean over 312 files.
+
+2. Tier A obligations: every obligation assigned to hank is discharged. There were 6, taken most overdue first:
+   - leg_cremations (cody b51): SOUND.
+   - slabs (fourth b57): SOUND.
+   - law_trust_reconcile (cc b55): SOUND-WITH-GAPS.
+     - M5 is a real reconciler defect.
+     - M6 is a limit of reconciliation, not a reconciler FAIL.
+   - sd_approvals (cc b56): SOUND. The 8 FAILs are real.
+   - leg_cremations + leg_invoices (cc b58): SOUND. The 5 FAILs are real.
+   - dnt/exec/sd_crm field-scope (cc b69): SOUND. 38/38.
+
+3. Backlog:
+   - S4 (29cfd2807): agent poll now delivers by compare-and-set. Test 4/4. The ablation arm is red on the pre-fix file.
+   - S6 (c3b7e2ec5): the push_retry fold reports "nothing to fold" when nothing is staged. The new selftest arm went red, then green.
+   - J5 (a856ba05e): VT is NOT seeded. The 2018 V.R.C.P. text and 1 V.S.A. 371 are tabled, with 3 named gaps:
+     - amendments after 2018 cannot be ruled out;
+     - whether e-service still gets +3 days;
+     - 371(b) observed days.
+
+4. Cause tags: all 6 fixes are tagged in docs/recurring-bug-classes.md, "batch 68 (hank)".
+
+5. Context window:
+   - First declared as 200,000. That was a guess.
+   - Re-declared as 1,000,000, on b67's measured 758,507 tokens in this clone.
+
+6. Push and live check:
+   - First push refused by the register-feed gate; five defect-register records added.
+   - Second push refused by the path-scope gate (sairnlegacy.html, sairnvet.html, docs/recurring-bug-classes.md are fourth's).
+     Michael authorised the manifest assigned_overrides entry in chat; no SAIRN_SKIP was used.
+   - Landed: 40eb7f006, HEAD == origin/main.
+   - Live (sairn.vercel.app, tools/sairn_http.py): both HTML fixes PRESENT in the served files.
+     /api/agent/poll answers 401 to an unauthenticated POST, so it loads. The CAS fix itself is NOT
+     observed live: Vercel's deployment-file API returned 403, and driving it needs an agent token.
+
+Evidence: SAIRN-handoff-hank-b68.md

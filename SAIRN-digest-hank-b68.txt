@@ -1,0 +1,16 @@
+HANK b68 DIGEST -- 2026-10-29 -- H1 1734/1740/1744/1747 cleared; all 6 hank Tier A obligations discharged; S4+S6 fixed; VT not seeded
+CONTEXT 28.5% of 1,000,000 -- 285,220 tokens, measured.
+STATUS: work landed 40eb7f006 (HEAD == origin/main) after the manifest override Michael authorised; live: sairnlegacy + sairnvet fixes PRESENT on sairn.vercel.app, /api/agent/poll answers 401 (loads).
+1. H1 #1734/#1740/#1744/#1747: each present at HEAD, fixed and cause-tagged (b9e85ee57).
+2. Tier A: 6 of 6 assigned to hank discharged. 5 SOUND, 1 SOUND-WITH-GAPS (IOLTA M5 real, M6 a limit).
+3. S4: api/agent/poll.js compare-and-set delivery. 4/4 tests; ablation red on the pre-fix file.
+4. S6: push_retry fold "nothing to fold" when nothing is staged. Selftest arm red, then green.
+5. J5 VT: 2018 text + 1 V.S.A. 371 tabled. NOT seeded: 3 named gaps (handoff 2b, blocker doc b68).
+DECISION-NEEDED (Michael): VT. Either a current compiled V.R.C.P. dated "as amended through", or confirmation the promulgated page covers 2018 onward. Plus: does e-service still get +3?
+NEXT (hank): H1x, the raw o.id onclick pass (38 sites).
+NEXT (owners): M5 (IOLTA aged in-transit), StoneDesk + SAIRNlegacy presence FAILs (handoff 4).
+CARRIED: J6, J4, J2, A1, P1, R1, G1, S5, S7, T1 (b67 section 8).
+CHANGED: sairnlegacy.html, sairnvet.html, api/agent/poll.js, tools/sql_placeholder_check.py, tools/push_retry.py, register, VT blocker doc.
+SQL-path: none new.
+EVIDENCE-path: SAIRN-handoff-hank-b68.md
+UNVERIFIED: T3a/T3b and L2a, read only through the probes, not at source. The 2018 VT rule values are from OCR'd redline, second figure of each pair.

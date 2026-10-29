@@ -11,7 +11,7 @@ This handoff was written before the report.
 
 ## 1. H1 items — each checked against HEAD, fixed, and cause-tagged
 
-All fixes are in commit `d4867af07`. The cause tags are in `docs/recurring-bug-classes.md`, under "batch 68 (hank)".
+All fixes are in commit `b9e85ee57`. The cause tags are in `docs/recurring-bug-classes.md`, under "batch 68 (hank)".
 
 | H1 | what | live state at HEAD | action |
 |---|---|---|---|
@@ -38,13 +38,13 @@ All fixes are in commit `d4867af07`. The cause tags are in `docs/recurring-bug-c
 - The oldest obligation that anybody may take over is fourth's 2026-10-05 `quotes`, at 580h, held by cody.
 
 ## 2b. Backlog
-- **S4 fixed (`a4069b882`):** `api/agent/poll.js` now delivers by compare-and-set.
+- **S4 fixed (`29cfd2807`):** `api/agent/poll.js` now delivers by compare-and-set.
   - The PATCH carries `&status=eq.pending` and `return=representation`.
   - Only the poll whose PATCH returned the row delivers it.
   - A failed PATCH delivers nothing: the response is 502 and the row stays pending.
   - `api/b68-agent-poll-cas.test.js` passes 4/4. **Arm X is red on the pre-fix file**: the same race delivered the command twice.
-- **S6 fixed (`aeb3f2b80`):** the push_retry fold returns `nothing to fold` when nothing is staged. The new selftest arm was red before the fix, and ALL ARMS PASS after it.
-- **J5 NOT seeded (`aca5b364f`):** the 2018 V.R.C.P. text and the 1 V.S.A. § 371 holiday list are tabled in `docs/sairnlaw-vermont-deadline-seed-blockers.md` §b68. Three named gaps would each force a guess:
+- **S6 fixed (`c3b7e2ec5`):** the push_retry fold returns `nothing to fold` when nothing is staged. The new selftest arm was red before the fix, and ALL ARMS PASS after it.
+- **J5 NOT seeded (`a856ba05e`):** the 2018 V.R.C.P. text and the 1 V.S.A. § 371 holiday list are tabled in `docs/sairnlaw-vermont-deadline-seed-blockers.md` §b68. Three named gaps would each force a guess:
   - amendments after 2018 cannot be ruled out, because the official page is a rolling window from 2020;
   - whether electronic service still gets +3 days under 6(e);
   - the observed days under § 371(b).
