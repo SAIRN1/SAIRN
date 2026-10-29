@@ -1,0 +1,42 @@
+SAIRN REPORT -- fourth b65 -- 2026-10-29
+
+All shipped pages fetched live: byte-identical to local. No force. The pushes
+used push_retry's logged pure-base fast retry (--no-verify, made only after
+the gate had passed on the same patch-ids).
+
+1 EVV BILLING GATE (1e2934ed1) -- live-verified on real rows.
+  Server: a sen_claims move to submitted/paid is refused 409 EVV_UNREVIEWED
+  while the visit has clock_flags with no review of that exact set.
+  Fails closed on any read failure (503 EVV_CHECK_FAILED). New action
+  review_clock_flags (management only, note required); a later flag
+  re-opens the visit. Client: an EVV Clock Flags card in Billing, a
+  Ready-to-Bill badge, and a refused claim is put back on the device.
+  api/sen-evv-billing-gate.test.js 15/15.
+  LIVE (SEN-AUDIT-2026): the server wrote LATE_REPLAY on two late-clocked
+  visits. Unreviewed -> 409, still draft in the DB. Reviewed -> 200, paid
+  in the DB.
+
+2 GROUNDS (c741681e2): a cleared day was saved 00:00-23:59 (open all day).
+  It is now saved closed; a day with one time missing is refused.
+
+3 BUILD (0d6e6a473): 66cf7b930's refactor hunk deleted the line that set
+  awarded. Restored.
+
+4 CASH (7b744bb14): the hidden legacy checkbox was saved unconditionally,
+  manufacturing a "no" that hid the 110% warning; it is now carried only if
+  it exists. Solo 401(k) room is capped at earnings.
+  MECHANICAL (25df11ed8): saveQuote stores the client.
+  NOT BUILT: mechanical job/invoice/inspection records. They are a
+  product build (server branch, SQL, UI, tests), not a patch; next batch.
+  tests/fourth_b65_record_fixes.js 13/13; every defect arm fails on the
+  unfixed files.
+
+5 VET LIVE (SV-AUDIT-2026), 5/5:
+  no token -> 403 WITNESS_REQUIRED;
+  token for the exact record, then write -> 200, and the row reads back;
+  replayed token -> 409 WITNESS_ALREADY_SPENT.
+
+Residue (audit licences only):
+  SEN-AUDIT-2026: VIS-/CLM-B65-UNREV and -REV; employee audit-cg-b65.
+  SV-AUDIT-2026: audit-owner; ZZ-B65-LIVE-TEST.
+  The PIN files are in the scratchpad for Michael.

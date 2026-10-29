@@ -1,0 +1,22 @@
+SAIRN DIGEST -- fourth b65 -- 2026-10-29
+CONTEXT 58.7% of 1,000,000 -- 587,143 tokens, measured.
+STATUS: items 1,2,3,5 landed and live-verified; item 4 landed except mechanical job/invoice/inspection records (not built: product build); no force.
+DECISION-NEEDED: none blocking. Michael: move the two PIN files (scratchpad sv-audit-owner.pin, audit-cg-b65.pin) to the password manager.
+READ: SAIRN-handoff-fourth-b65.md (whole state). Detail: SAIRN-report-fourth-b65.txt.
+SQL: none.
+CHANGED:
+  1e2934ed1 sairnsenior + api/sd-data.js: EVV billing gate + review_clock_flags + EVV Clock Flags card
+  c741681e2 grounds sale hours; 0d6e6a473 build award; 7b744bb14 cash checkbox/401k; 25df11ed8 mech quote client
+  1d5862edf live-residue: senior gate 5/5 and vet witness 5/5, both on audit licences
+1 senior LIVE: unreviewed claim 409 and still draft in the DB; reviewed claim 200 and paid in the DB
+2 vet LIVE: no token 403, token write 200, replay 409 -- the b63 inference is now measured
+3 build root cause: 66cf7b930's refactor hunk deleted the line that set awarded
+4 cash root cause: a hidden checkbox saved unconditionally manufactured a "no"
+5 every page fetched live, byte-identical to local
+NEXT, in order:
+  a mechanical job record, then invoice and inspection (dedicated batch)
+  b cc: KNOWN_AUDIT_KEYS += SV-AUDIT-2026; the claim matcher's "files fix" self-match; deny-hook sh -n
+  c audit leftovers: vet in-place register, build forecast/lien gate, grounds quote lines, cash $0
+UNVERIFIED: the senior card and badge were not clicked in a browser (the gate itself is server-side and live-verified).
+EVIDENCE-path: docs/live-residue/2026-10-29-fourth-b65-*.json; api/sen-evv-billing-gate.test.js; tests/fourth_b65_record_fixes.js.
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\b6e28c25-eaee-4611-aeb3-d94f0198d47f.jsonl

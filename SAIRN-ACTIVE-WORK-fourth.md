@@ -2320,3 +2320,12 @@ Full account: `SAIRN-handoff-fourth-b63.md`.
 - Item 1 (EVV billing gate) not started: cc's active `sairnsenior` claim. Item 4 held for cc.
 
 Full account: `SAIRN-handoff-fourth-b64.md`.
+
+## batch b65 -- 2026-10-29, CLOSED
+
+- EVV billing gate (`1e2934ed1`), live on SEN-AUDIT-2026: the unreviewed claim was refused 409 and is still draft; the reviewed claim paid.
+- Fixes: grounds sale hours (`c741681e2`), build award (`0d6e6a473`), cash checkbox and 401(k) cap (`7b744bb14`), mechanical quote client (`25df11ed8`).
+- Vet witness flow live on SV-AUDIT-2026: 5/5.
+- Not built: the mechanical job, invoice and inspection records (a product build).
+
+Full account: `SAIRN-handoff-fourth-b65.md`.
