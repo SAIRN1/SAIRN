@@ -4758,6 +4758,17 @@
       "status": "released",
       "released_at": "2026-10-29T11:06:04Z",
       "files": null
+    },
+    {
+      "id": "hank-1793272303",
+      "session": "hank",
+      "subject": "sairnlaw",
+      "task": "vermont rhode island wyoming dc deadline seed",
+      "claimed_at": "2026-10-29T11:11:43Z",
+      "claimed_at_epoch": 1793272303.6553698,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
