@@ -4933,8 +4933,8 @@
       "task": "b67 H1-1754 senWriteFail keeps drafts on ACTIVE_CHECK codes FILES: sairnsenior.html",
       "claimed_at": "2026-10-29T12:57:22Z",
       "claimed_at_epoch": 1793278642.3051066,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-29T13:14:45Z",
       "files": [
         "sairnsenior.html"
       ]
