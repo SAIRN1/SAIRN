@@ -40560,6 +40560,56 @@
         }
       ],
       "recurrence_open": "The other 14 apps' transport timeouts share the feature-detect-or-unbounded shape; only sairnmechanical has a guard that depends on settlement today, so they were not changed."
+    },
+    {
+      "commit": "23315f891029",
+      "date": "2026-10-29",
+      "subject": "fix(apps, cody b64): the six highest-impact push-then-toast saves can no longer be re-entered while their server write is pending",
+      "files": [
+        "sairncode.html",
+        "sairndental.html",
+        "sairngrounds.html",
+        "sairnlegacy.html",
+        "stonedesk.html",
+        "tests/sairncode_save_reentry.js",
+        "tests/sairndental_save_reentry.js",
+        "tests/sairngrounds_save_reentry.js",
+        "tests/sairnlegacy_countersign_ui.js",
+        "tests/sairnlegacy_save_reentry.js",
+        "tests/stonedesk_save_reentry.js"
+      ],
+      "lines_added": 769,
+      "lines_removed": 11,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "47 user-triggered save handlers across the apps await a server write before their visible step while the trigger stays live, so a second press during the wait creates a duplicate record. The six highest-impact are fixed fixture-first: sairnlegacy confirmPayment (pre-need amount_paid applied twice) and saveCremation, stonedesk posCompleteSale (slab re-reserve, duplicate invoice), sairngrounds dcCreateInvoiceAndSchedule, sairncode addClaimEntry, sairndental respondToComplaint (duplicate reply in a patient's thread).",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Each handler gained its await when its resource was wired to the server, across many sessions from 2026-09 on; not traced per handler."
+      },
+      "citation_note": "C5 class in docs/recurring-bug-classes-2.md (re-entrant push-then-toast saves); no PR rule id.",
+      "contributing_factors": [
+        {
+          "factor": "Save handlers across the apps await a server write before their visible completion step and leave the trigger live during the wait; no shared helper or convention makes a pending save refuse a second press.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Six highest-impact handlers guarded with a hold released in finally; arms drive the real handlers."
+        },
+        {
+          "factor": "No check in the repo looks for the await-before-completion re-entry shape, so it was only found by the b63 review of one handler and then a manual sweep.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "Turn the b64 sweep scanner into a standing checker once all 47 are fixed."
+        }
+      ],
+      "recurrence_open": "41 further real instances are being fixed in the same batch; any handler added later can reintroduce the shape until the sweep scanner becomes a standing check."
     }
   ],
   "started": "2026-09-09",
