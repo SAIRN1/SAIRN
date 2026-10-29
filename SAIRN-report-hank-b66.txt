@@ -1,0 +1,33 @@
+HANK b66 REPORT -- 2026-10-29
+
+1. Hook presence: re-verified before the BYPASS-LOG touch. builder_hook_presence exit 0; cody, fourth and hank OK.
+2. C1b: docs/BYPASS-LOG.jsonl merge=union (and eol=lf).
+   - Proven first: a plain merge gives 1 conflict marker; union gives 0 markers and keeps 3 rows.
+   - check-attr confirms the attributes.
+3. S2: tools/server_stale_snapshot_scan.py. Selftest 8/8; 2 mutants red.
+   - api/: 191 files scanned, 41 sites to judge. They are questions; not triaged this batch.
+4. VT: NOT seeded. The official index has no Rule 6 and points to LexisNexis. Needs Michael.
+5. DC: NOT seeded. dccourts.gov returns 403 to every automated request. Needs Michael.
+6. J4, the questions VERBATIM:
+   (1) "Under Alaska Civil Rule 6(a), is Martin Luther King, Jr.'s Birthday a 'legal holiday' for computing a court
+       deadline, given that AS 44.12.010(a)(2) lists it 'as provided in (b)' and AS 44.12.010(b) makes it a legal
+       holiday 'for employment purposes' for state employees on collective-bargaining terms?"
+   (2) "Does Alaska Civil Rule 6(c) add three days to the Civil Rule 59(b) period, and does Appellate Rule 502(c) add
+       three days to the Appellate Rule 204(a)(1) period, when the judgment was distributed by non-electronic mail and
+       the period runs 'from the date shown in the clerk's certificate of distribution'?"
+   (3) "Does N.D.R.Civ.P. 6(e)(1) add three days to the Rule 59(c)(2) period when notice of entry of judgment was
+       served by mail?"
+   (4) "Is June 19 a 'legal holiday' under N.D.R.Civ.P. 6(a)(6), given that N.D.C.C. 1-03-01 does not list it and
+       1-03-01(12) reaches only days 'appointed by the President of the United States or by the governor of this state
+       for a public holiday'?"
+   (5) "Under SDCL 15-6-6(a) and (e), is the 'less than eleven days' threshold applied to the prescribed period before
+       or after the three days added for service by mail?"
+   (6) "Does SDCL 15-6-6(e) add three days to the SDCL 15-6-59(b) and 15-26A-6 periods when written notice of entry was
+       given by mail?"
+   (7) "For R.I. Super. R. Civ. P. 6(a), which days are 'legal holidays': (a) does R.I. Gen. Laws § 25-1-1 supply the
+       list although it says 'holidays'; (b) is the Monday 'state employees will celebrate' after a holiday falling on
+       a Saturday a legal holiday for court deadlines; (c) is general election day a holiday in a year with only
+       legislative races; (d) does the clause 'any other days as … the president or the Congress of the United States
+       shall appoint as holidays for any purpose' bring in every federal holiday?"
+   All 7 are encoded EARLY and disclosed in JURISDICTION_COVERAGE.
+Evidence: SAIRN-handoff-hank-b66.md

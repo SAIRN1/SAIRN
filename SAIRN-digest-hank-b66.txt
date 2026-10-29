@@ -1,0 +1,17 @@
+HANK b66 DIGEST -- 2026-10-29 -- BYPASS-LOG merge=union; S2 built; VT and DC blocked on source; J4 verbatim
+CONTEXT 70.3% of 1,000,000 -- 703,238 tokens, measured.
+STATUS: pushed via push_retry --loop; claim sairnlaw is released after landing.
+1. Hook presence re-verified OK before the ledger touch.
+2. C1b: BYPASS-LOG merge=union and eol=lf. Proven with merge-file (0 markers vs 1).
+3. S2: server_stale_snapshot_scan.py. 8/8 arms; 2 mutants red.
+   - 41 api sites to judge (not triaged).
+4. VT: not seeded. The official index has no Rule 6 and points to LexisNexis.
+5. DC: not seeded. dccourts.gov returns 403 to all automated fetches.
+6. J4: 7 questions stated verbatim in the report and handoff, section 6.
+DECISION-NEEDED (Michael): J5 VT text; J6 DC text; J4 answers.
+NEXT: S3 triage of the 41 S2 sites.
+CHANGED: .gitattributes, tools/server_stale_snapshot_scan.py, tools/tooling_inventory.py, VT blocker doc, manifest,
+  b66 docs.
+SQL-path: none new.
+EVIDENCE-path: SAIRN-handoff-hank-b66.md
+UNVERIFIED: the S2 sites are untriaged candidates, not confirmed defects.
