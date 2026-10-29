@@ -39955,50 +39955,6 @@
       "recurrence_open": "A skipped push does not re-run whole-tree checks against the combined base; only gate duration or a merge queue closes that."
     },
     {
-      "commit": "7ae231b4721b",
-      "date": "2026-10-29",
-      "subject": "fix(sairnfreedom, cody b61): the trustee-audit panel shows what the server has confirmed, not a fixed \"held on this device only\"",
-      "files": [
-        "sairnfreedom.html",
-        "tests/sairnfreedom_segregation_of_duties.js"
-      ],
-      "lines_added": 110,
-      "lines_removed": 14,
-      "app": "sairnfreedom",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "SAIRNfreedom's trustee-audit panel told the user every audit was 'held on this device only' for weeks after sf_trustee_audits started syncing (e3446a48b) -- a false statement about where audit evidence is. The fixed flagbox is replaced by a line rendered from what the server has confirmed per record (sf_server_confirmed, written only on an accepted write or a returned row, never by the bootstrap seed); D4/D4b/D4c red on the old page.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "e3446a48bfc6",
-        "date": "2026-09-29",
-        "subject": "feat(sairnfreedom): sf_trustee_audits reached the server for the first time -- and the registry's own reconciliation had been one short for weeks",
-        "lag_days": 30
-      },
-      "citation_note": "A disclosure that outlived the limitation it disclosed; no PR rule id names stale UI copy.",
-      "contributing_factors": [
-        {
-          "factor": "The panel's sync disclosure was a fixed sentence written while the resource could not sync, and nothing tied it to SF_SYNCED, so it stayed when the resource joined the synced list.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The line is rendered from a server-confirmed set; test D4/D4b/D4c drive it."
-        },
-        {
-          "factor": "The test arm that guarded the sentence said in its own message it must be rewritten when the resource synced, and the change that synced it did not run or update that arm.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Arm rewritten in b61; it now fails if the fixed sentence returns."
-        }
-      ],
-      "recurrence_open": "Other fixed 'this device only' / 'not synced' sentences in other apps are not checked against their SYNCED lists; only this panel is now rendered from confirmed state."
-    },
-    {
       "commit": "2c776fcbd474",
       "date": "2026-10-29",
       "subject": "fix(sairngrounds, fourth b65): clearing a day's alcohol sale hours CLOSES it -- it saved the day open 00:00-23:59",
@@ -40166,6 +40122,93 @@
         }
       ],
       "recurrence_open": "A typed 0 prior-year tax is still read as not provided, in both the save and the calculation."
+    },
+    {
+      "commit": "7ae231b4721b",
+      "date": "2026-10-29",
+      "subject": "fix(sairnfreedom, cody b61): the trustee-audit panel shows what the server has confirmed, not a fixed \"held on this device only\"",
+      "files": [
+        "sairnfreedom.html",
+        "tests/sairnfreedom_segregation_of_duties.js"
+      ],
+      "lines_added": 110,
+      "lines_removed": 14,
+      "app": "sairnfreedom",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "SAIRNfreedom's trustee-audit panel told the user every audit was 'held on this device only' for weeks after sf_trustee_audits started syncing (e3446a48b) -- a false statement about where audit evidence is. The fixed flagbox is replaced by a line rendered from what the server has confirmed per record (sf_server_confirmed, written only on an accepted write or a returned row, never by the bootstrap seed); D4/D4b/D4c red on the old page.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "e3446a48bfc6",
+        "date": "2026-09-29",
+        "subject": "feat(sairnfreedom): sf_trustee_audits reached the server for the first time -- and the registry's own reconciliation had been one short for weeks",
+        "lag_days": 30
+      },
+      "citation_note": "A disclosure that outlived the limitation it disclosed; no PR rule id names stale UI copy.",
+      "contributing_factors": [
+        {
+          "factor": "The panel's sync disclosure was a fixed sentence written while the resource could not sync, and nothing tied it to SF_SYNCED, so it stayed when the resource joined the synced list.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The line is rendered from a server-confirmed set; test D4/D4b/D4c drive it."
+        },
+        {
+          "factor": "The test arm that guarded the sentence said in its own message it must be rewritten when the resource synced, and the change that synced it did not run or update that arm.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Arm rewritten in b61; it now fails if the fixed sentence returns."
+        }
+      ],
+      "recurrence_open": "Other fixed 'this device only' / 'not synced' sentences in other apps are not checked against their SYNCED lists; only this panel is now rendered from confirmed state."
+    },
+    {
+      "commit": "8688e95119ca",
+      "date": "2026-10-29",
+      "subject": "fix(push_retry, hank b65): a landed fast retry's BYPASS-LOG row no longer blocks the next run's rebase",
+      "files": [
+        "tools/push_retry.py"
+      ],
+      "lines_added": 42,
+      "lines_removed": 0,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "live-verification",
+      "summary": "push_retry --loop left a landed fast retry's BYPASS-LOG row uncommitted, so the next loop run started with a dirty tracked file and its first rebase refused (exit 3, fail-closed). Fixed: an append-only BYPASS-LOG change is committed as gate bookkeeping before each rebase.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "4a60ab021f5f",
+        "date": "2026-10-28",
+        "subject": "fix(push_retry, hank b63): a REFUSED fast retry no longer logs, so the next rebase is not blocked",
+        "lag_days": 1
+      },
+      "citation_note": "No rule says a retry tool must leave a clean tree between runs; C1 records it.",
+      "contributing_factors": [
+        {
+          "factor": "The landed-skip row was deliberately left uncommitted, and the loop never folded BYPASS-LOG before its rebase",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "_fold_bypass_rows() commits an append-only change as gate bookkeeping each attempt"
+        },
+        {
+          "factor": "b63 fixed the refused-skip case and reasoned about the landed one without driving it across two loop runs",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "an end-to-end arm driving two consecutive loop runs against a scratch repo"
+        }
+      ],
+      "recurrence_open": "Any other tool-written tracked file left dirty between loop runs stops the rebase the same way."
     },
     {
       "commit": "c21eb4ebe653",
