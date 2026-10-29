@@ -39955,20 +39955,20 @@
       "recurrence_open": "A skipped push does not re-run whole-tree checks against the combined base; only gate duration or a merge queue closes that."
     },
     {
-      "commit": "366c1296df86",
+      "commit": "0dfb66fc2444",
       "date": "2026-10-29",
-      "subject": "fix(server-stale-snapshot, hank b67): conditional writes are compare-and-set guards (S3 triage)",
+      "subject": "fix(sairnsenior, fourth b67): the EVV Clock Flags card says '240 h late', not '-240 h'",
       "files": [
-        "docs/sairnlaw-vermont-deadline-seed-blockers.md",
-        "tools/server_stale_snapshot_scan.py"
+        "sairnsenior.html",
+        "tests/fourth_b65_record_fixes.js"
       ],
-      "lines_added": 23,
-      "lines_removed": 2,
-      "app": "tooling",
-      "layer": "tooling",
+      "lines_added": 16,
+      "lines_removed": 1,
+      "app": "sairnsenior",
+      "layer": "product",
       "severity": "low",
       "detection_method": "live-verification",
-      "summary": "tools/server_stale_snapshot_scan.py (S2, b66) reported compare-and-set writes (spent_at=is.null, status=neq.revoked, renewal_count=eq.<read>) as unguarded read-await-write sites; 6-7 of 41 api/ hits were false positives found by S3 triage. Fixed with a conditional-filter guard.",
+      "summary": "sairnsenior EVV Clock Flags card printed LATE_REPLAY skew as negative hours (-240 h); found in the b66 live browser drive. Now '240 h late' / 'ahead'.",
       "rules": [],
       "citation_confidence": "not-citable",
       "injection_phase": "coding",
@@ -39976,27 +39976,27 @@
       "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "commit": "cf29ca94d3a1",
+        "commit": "1e2934ed1123",
         "date": "2026-10-29",
-        "subject": "feat(tools, hank b66): S2 -- server-side read-await-write (lost-update) detector, with its own selftest",
+        "subject": "feat(sairnsenior, fourth b65): EVV billing gate -- no claim moves to submitted or paid over an unreviewed clock flag; flags are shown and reviewed",
         "lag_days": 0
       },
-      "citation_note": "No rule defines what counts as a concurrency guard for the S2 shape; the selftest now does.",
+      "citation_note": "No standing rule names this shape.",
       "contributing_factors": [
         {
-          "factor": "The guard list named specific columns and missed generic conditional filters",
+          "factor": "senFlagText printed skew_ms hours with its raw sign, so a late replay read -240 h",
           "kind": "technical",
           "action_status": "done",
-          "action": "CAS regex: any non-id filter in the write URL"
+          "action": "size plus late/ahead direction"
         },
         {
-          "factor": "The b66 selftest had no compare-and-set fixture",
+          "factor": "the b65 tests drove the gate, not the card text; the b66 browser drive showed it",
           "kind": "detection",
           "action_status": "done",
-          "action": "FIX_CAS negative and id-only positive arms"
+          "action": "two wording arms in tests/fourth_b65_record_fixes.js"
         }
       ],
-      "recurrence_open": "Guards expressed through a variable URL (e.g. rest(mine)) are invisible to a window regex; those sites stay as questions."
+      "recurrence_open": "Other surfaces that print skew_ms (none found by grep in sairnsenior.html) would need the same treatment."
     },
     {
       "commit": "2c776fcbd474",
@@ -40428,50 +40428,6 @@
         }
       ],
       "recurrence_open": "No SQL rule exists, so the 313 tracked .sql files remain unscanned by Semgrep; only the disclosure is new. H2's tools-hover2 semgrep_risk_pack has the same .html gap and is H2's."
-    },
-    {
-      "commit": "1beab0796779",
-      "date": "2026-10-29",
-      "subject": "fix(sairnsenior, fourth b67): the EVV Clock Flags card says '240 h late', not '-240 h'",
-      "files": [
-        "sairnsenior.html",
-        "tests/fourth_b65_record_fixes.js"
-      ],
-      "lines_added": 16,
-      "lines_removed": 1,
-      "app": "sairnsenior",
-      "layer": "product",
-      "severity": "low",
-      "detection_method": "live-verification",
-      "summary": "sairnsenior EVV Clock Flags card printed LATE_REPLAY skew as negative hours (-240 h); found in the b66 live browser drive. Now '240 h late' / 'ahead'.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "1e2934ed1123",
-        "date": "2026-10-29",
-        "subject": "feat(sairnsenior, fourth b65): EVV billing gate -- no claim moves to submitted or paid over an unreviewed clock flag; flags are shown and reviewed",
-        "lag_days": 0
-      },
-      "citation_note": "No standing rule names this shape.",
-      "contributing_factors": [
-        {
-          "factor": "senFlagText printed skew_ms hours with its raw sign, so a late replay read -240 h",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "size plus late/ahead direction"
-        },
-        {
-          "factor": "the b65 tests drove the gate, not the card text; the b66 browser drive showed it",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "two wording arms in tests/fourth_b65_record_fixes.js"
-        }
-      ],
-      "recurrence_open": "Other surfaces that print skew_ms (none found by grep in sairnsenior.html) would need the same treatment."
     }
   ],
   "started": "2026-09-09",
