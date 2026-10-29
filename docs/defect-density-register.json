@@ -40516,6 +40516,50 @@
         }
       ],
       "recurrence_open": "Any other could-not-tell code added to the server later must be added to the kept list too; nothing enforces that."
+    },
+    {
+      "commit": "2f6e4c588c07",
+      "date": "2026-10-29",
+      "subject": "fix(sairnmechanical, cody b64): every server call settles in every engine -- the saveDoc guard can no longer be held open by a fetch that never answers",
+      "files": [
+        "sairnmechanical.html",
+        "tests/mech_fetch_timeout_fallback.js"
+      ],
+      "lines_added": 138,
+      "lines_removed": 5,
+      "app": "sairnmechanical",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "In an engine without AbortSignal.timeout, sairnmechanical's mechData() fetch had no timeout, so since the b63 saveDoc re-entry guard a request that never settled held the Save button refused until the browser gave up. Now an AbortController timer fallback and a racing backstop make every call settle; tests/mech_fetch_timeout_fallback.js was red first (4 HUNG) and is 6/6.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "e94ebe4241cb",
+        "date": "2026-10-29",
+        "subject": "fix(sairnmechanical, cody b63): close cc's four b67 Tier A gaps on the backup path, and the redaction probe b58 broke",
+        "lag_days": 0
+      },
+      "citation_note": "A fallback that was harmless until a later change made a guard depend on settlement; no PR rule id.",
+      "contributing_factors": [
+        {
+          "factor": "The timeout was feature-detected with a fallback to NO timeout, documented as harmless 'previous unbounded behaviour', and that judgement was not revisited when b63 made a UI guard depend on the call settling.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "AbortController timer fallback plus a racing backstop; fixture drives three engines."
+        },
+        {
+          "factor": "The b63 fix named this hang as 'known uncovered' instead of closing it in the same change.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Closed in b64, fixture first."
+        }
+      ],
+      "recurrence_open": "The other 14 apps' transport timeouts share the feature-detect-or-unbounded shape; only sairnmechanical has a guard that depends on settlement today, so they were not changed."
     }
   ],
   "started": "2026-09-09",
