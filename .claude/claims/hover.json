@@ -1392,8 +1392,8 @@
       "task": "hover-tools b106 planted bug recall with-vendor refuses",
       "claimed_at": "2026-10-29T11:05:19Z",
       "claimed_at_epoch": 1793271919.291362,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-29T11:08:43Z",
       "files": null
     }
   ],
