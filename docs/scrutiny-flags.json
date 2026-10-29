@@ -7248,6 +7248,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/_lib/law-trust-reconcile.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6cd786113de1b135d84580dace0817289bdafe61",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_hover_separation_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -11915,6 +11923,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "aed82209c52d472ace4c99f87f2aebaf0caf9285",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b69-sairnlegacy-inline-handler-args.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "af2db16b3c87cbfdd36deaf09ebd653f66bea68e",
    "criteria_version": "2026-10-06.1"
   },
   {
