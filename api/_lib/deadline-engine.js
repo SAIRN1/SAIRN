@@ -1475,6 +1475,17 @@ var COMPUTATION_STANDARDS = {
   nd_app_r_26a: { label: 'N.D.R.App.P. 26(a)', impl: 'frcp_6a',
     base_period_suffix: '(1)(A)-(B)', months_years_suffix: '(1)(C)',
     rollover_suffix_forward: '(1)(C)', rollover_suffix_backward: '(5)' },
+  // ── SOUTH DAKOTA (hank b64): OHIO'S MECHANISM WITH **ELEVEN** ──────────
+  // SDCL 15-6-6(a): "When the period of time prescribed or allowed is less
+  // than eleven days, intermediate Saturdays, Sundays, and legal holidays shall
+  // be excluded" -- the old federal threshold, not Ohio's seven. "'legal
+  // holiday' includes those holidays listed in § 1-5-1" (express). Governs
+  // "any applicable statute" too, so the SDCL 15-26A-6 appeal row uses it.
+  // docs/sairnlaw-southdakota-deadline-seed-gate.md.
+  sd_rcp_6a: { label: 'SDCL 15-6-6(a)', impl: 'ohio_civ_r_6a',
+    short_period_exclusion_days: 11,
+    base_period_suffix: '', months_years_suffix: '',
+    rollover_suffix_forward: '', rollover_suffix_backward: '' },
   // ── MINNESOTA: DAYS ARE DAYS, AND THE EXCLUSION IS OPT-IN PER RULE ───────
   // Minn. R. Civ. P. 6.01(a), verbatim on the parts that decide these fields:
   //
@@ -2496,6 +2507,12 @@ var JURISDICTION_COVERAGE = {
     summary: 'Three Alaska days that may be legal holidays for time computation are NOT encoded -- MLK Day, the Friday before a Saturday holiday, and proclamation days -- and no row adds Rule 6(c) mail days to a deadline running from the clerk\'s certificate of distribution. This date may be EARLIER than the true deadline, never later.',
     detail: 'The calendar encodes Saturdays, Sundays and the AS 44.12.010 legal holidays, with the AS 44.12.020 Monday after a Sunday holiday. Each omission below can only make a date EARLIER: (1) MARTIN LUTHER KING, JR. DAY. AS 44.12.010(a)(2) lists it "as provided in (b)", and (b) makes it a legal holiday "for employment purposes" for state employees on collective-bargaining terms, so whether it is a legal holiday for a court deadline is a question of law; a deadline landing on it is shown on that Monday. (2) THE FRIDAY BEFORE A SATURDAY HOLIDAY. AS 44.12.025 makes it a legal holiday "for officers and employees of the state" only -- for example Friday 3 July 2026. (3) PROCLAMATION DAYS under AS 44.12.010(a)(14), which cannot be derived in advance. (4) MAIL DAYS ON DISTRIBUTION-TRIGGERED ROWS. Civil Rule 6(c) and Appellate Rule 502(c) add three days after a document is "distributed by" mail, which may reach a mailed judgment, but Civil Rule 6(b) forbids enlarging Rule 59(b) and a late notice of appeal is lost, so the Rule 59(b) and Appellate Rule 204(a)(1) rows add none. A court closure is NOT a legal holiday: the closed-court sentence printed beside Civil Rule 6 is the text of rescinded SCO 1875. If a computed date falls on MLK Day, the Friday before a Saturday holiday, or runs from a mailed judgment, confirm before relying on it.'
   },
+  sd: {
+    complete: false,
+    direction: 'early',
+    summary: 'South Dakota days the calendar cannot see -- an inaccessible clerk\'s office and proclaimed holidays -- are NOT modelled, late-evening electronic service is not moved to the next weekday, and no mail days are added to the answer, Rule 59(b) or appeal rows. This date may be EARLIER than the true deadline, never later.',
+    detail: 'The calendar encodes Saturdays, Sundays and the SDCL 1-5-1 legal holidays, including Juneteenth and Native Americans\' Day, with BOTH weekend shifts (Sunday to Monday, Saturday to Friday) for the five days 1-5-1 names, because SDCL 15-6-6(a) defines "legal holiday" by reference to 1-5-1. Each omission can only make a date EARLIER: (1) the 15-6-6(a) rollover for a day "on which weather or other conditions have made the office of the clerk of court inaccessible"; (2) days "appointed by the President of the United States, or by the Governor of this state for a public fast, thanksgiving, or holiday"; (3) electronic service completed after 11:59 p.m., which 15-6-6(a) deems made "on the following weekday" -- the trigger date supplied may be a day early; (4) Rules 33, 34 and 36 give a DEFENDANT 45 days from service of the summons where later than 30; (5) no 15-6-6(e) mail days on the answer to a complaint, the 15-6-59(b) motion (10 days, so under the 11-day threshold) or the 15-26A-6 appeal, which run from process or notice of entry. If a computed date falls near a proclaimed day or runs from a mailed notice of entry, confirm before relying on it.'
+  },
   nd: {
     complete: false,
     direction: 'early',
@@ -3462,6 +3479,18 @@ var SERVICE_EXTENSION_STANDARDS = {
     sequence: 'roll_then_add_then_roll',
     shape: 'enumerated_allowlist',
     qualifies: function (method) { return method === 'mail' || method === 'third_party_commercial_carrier'; }
+  },
+  // ── SOUTH DAKOTA: MAIL ONLY, ADDED TO THE PERIOD (hank b64) ─────────────
+  // SDCL 15-6-6(e): "the notice or paper is served by mail, three days shall
+  // be added to the prescribed period. Service by facsimile or electronic mail
+  // transmission shall not be deemed service by mail." Whether the 11-day
+  // threshold is tested before or after the three days is NOT stated, so no
+  // seeded row with a base count under 11 carries this extension.
+  sd_rcp_6e: {
+    label: 'SDCL 15-6-6(e)',
+    sequence: 'add_to_period_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) { return method === 'mail'; }
   },
   nd_app_r_26c: {
     label: 'N.D.R.App.P. 26(c)',

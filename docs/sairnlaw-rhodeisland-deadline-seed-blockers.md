@@ -52,5 +52,26 @@ general Sunday→Monday shift. Omit the employee-only Monday shifts, 2028 electi
 those omissions is EARLY. Thanksgiving is the hard case: omitting it is EARLY, but a Thanksgiving deadline the courts
 are closed for would read a day short.
 
+## b64 (2026-10-29): official referent searched for again — NOT FOUND, so still not seeded
+Michael's b64 item 4 was to source the official referent, seed, and document the source here. Tried:
+- **courts.ri.gov:**
+  - `/PublicResources/holidays/Pages/default.aspx` returned 404.
+  - `/Pages/holidays.aspx` returned 404.
+  - The Superior Court rules PDF (above) carries no holiday list.
+- **State HR:**
+  - `admin.ri.gov/holidays` returned **403**.
+  - `hr.ri.gov/holidays` and `ri.gov/holidays/` returned 404.
+- **Two web searches** returned only third-party calendars (publicholidays.com, officeholidays.com and similar). One
+  utility schedule was also found: RI Resource Recovery's 2026 PDF, which lists Victory Day as 10 August 2026. None of
+  these is a permitted source for a gate.
+
+Also found: **2026 House bill H 7781** (webserver.rilegislature.gov/BillText26/HouseText26/H7781.htm) carries
+§ 25-1-1 text. Its enactment status was not confirmed. If it changes § 25-1-1, a seed built on today's text could go
+stale on day one, which is one more reason not to guess.
+
+**Still blocked, for the same reasons.** The single most useful unblock is the Rhode Island Judiciary's own annual
+holiday or closure notice. The 403 on admin.ri.gov may be a bot block, so a human may get through where this fetch
+did not.
+
 ## Next in the J1 order
 South Dakota, then Vermont, Wyoming and DC. None was started in b63.
