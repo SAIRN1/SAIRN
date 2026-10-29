@@ -38,143 +38,145 @@ closed-ish word. Every row, open or not, is in its shard in full.
 | Platform         | &#128308; THE TIER A REVIEW GATE MATCHES RESOURCE NAMES OUT OF COMMENTS~ | OPENED 2026-09-29 (hank). R~ | unassigned   | `open-work/platform.md:21` |
 | Platform         | &#128308; tools/gh_token.py is the platform&rsquo;s ONE credential look~ | FOUND 2026-10-04 (hank) by ~ | unassigned   | `open-work/platform.md:22` |
 | Platform         | &#128993; HOVER2&rsquo;s AUDIT LOG CARRIES NO ROUTABLE KEY ON 376 OF IT~ | MEASURED 2026-09-29 (hank) ~ | hover2 &mda~ | `open-work/platform.md:23` |
-| Platform         | &#128993; 50 UNROUTED AUDITOR FINDINGS reachable only by PROSE FALLBACK~ | MEASURED 2026-09-29 (hank).~ | unassigned   | `open-work/platform.md:24` |
-| Platform         | &#128993; Three MORE structured routable findings went unrouted while t~ | MEASURED 2026-09-29 (hank) ~ | unassigned   | `open-work/platform.md:25` |
-| Platform         | &#128308; FOUR MORE resources persist RAW MODEL OUTPUT OVER A PHOTOGRAP~ | FOUND 2026-09-29 (hank). Pa~ | fourth &mda~ | `open-work/platform.md:27` |
-| Platform         | &#128993; dnt_vendor_contacts, sv_staff and SAIRNscape&rsquo;s customer~ | FOUND 2026-09-29 (hank) by ~ | unassigned   | `open-work/platform.md:28` |
-| Platform         | &#128993; 70 of 90 drifted register citations are in ONE file, and 158 ~ | MEASURED 2026-09-28 (CC)     | unassigned   | `open-work/platform.md:30` |
-| Platform         | &#128993; A REVOKED licence is not refused by api/claude.js in enforce ~ | FOUND 2026-09-28 (CC) while~ | unassigned   | `open-work/platform.md:33` |
-| Platform         | &#128308; 16 sabotage anchors are DEAD across 8 probe files &mdash; unm~ | FOUND 2026-09-28 (CC), corr~ | unassigned   | `open-work/platform.md:34` |
-| Platform         | &#128993; 30 Tier A review obligations are OPEN across all four build s~ | MEASURED 2026-09-28 (CC) fr~ | unassigned ~ | `open-work/platform.md:35` |
-| Platform         | &#128993; Item 94 named on this platform: blob-composition is INFORMATI~ | NAMED AND PARTLY CONSOLIDAT~ | unassigned   | `open-work/platform.md:40` |
-| Platform         | &#128308; UNTRUSTED TEXT REACHES A SYSTEM PROMPT UNFENCED AT 15 SITES, ~ | BUILT AND MEASURED 2026-09-~ | unassigned ~ | `open-work/platform.md:41` |
-| Platform         | &#128308; TWO WAYS TO REACH ZERO PROVISIONERS THAT THE LAST-ADMIN GUARD~ | OPEN. Found 2026-09-21 (cc)~ | unassigned   | `open-work/platform.md:45` |
-| Platform         | &#9989;&#9888; api/sd-data.js retainage release answered the DELETE-sha~ | LARGELY ANSWERED 2026-09-21~ | unassigned   | `open-work/platform.md:48` |
-| Platform         | The .json().catch(() =&gt; null) write-confirmation shape, measured rat~ | MEASURED 2026-09-21 (Cody),~ | unassigned   | `open-work/platform.md:60` |
-| Platform         | Findings #276/#278 &mdash; all 84 Tier A resources filter by license_ha~ | SCOPED 2026-09-21 (Hank) &m~ | Hank (scopi~ | `open-work/platform.md:61` |
-| Platform         | &#128994; SERVER-WINS is the hydration rule, with a ONE-TIME READ-ONLY ~ | DECIDED 2026-09-21 (Michael~ | cc           | `open-work/platform.md:62` |
-| Platform         | &#9989; The deployed product has no build provenance and cannot be give~ | BUILT AND EXERCISED 2026-09~ | Fourth       | `open-work/platform.md:63` |
-| Platform         | &#9888; SD_AUTH_SECRET IS ALSO THE ENCRYPTION KEY, so rotating it today~ | INVESTIGATED 2026-09-17 (Ha~ | Michael (th~ | `open-work/platform.md:67` |
-| Platform         | Which tenants share a backend &mdash; the real map, and app_id turns ou~ | MAPPED 2026-09-17 (Hank) &m~ | Michael (fi~ | `open-work/platform.md:68` |
-| Platform         | &#9989; THE SECOND WATCHDOG IS GREEN FOR THE FIRST TIME &mdash; two sta~ | VERIFIED END TO END 2026-09~ | &mdash;      | `open-work/platform.md:69` |
-| Platform         | SAIRN_OPS_EMAIL IS LIVE &mdash; and the &ldquo;falsification&rdquo; tha~ | VERIFIED 2026-09-17 (Hank) ~ | &mdash;      | `open-work/platform.md:72` |
-| Platform         | The :00 cron collision fix was applied two days ago and NOBODY EVER CHE~ | VERIFIED 2026-09-16 (Hank) ~ | Hank (the v~ | `open-work/platform.md:74` |
-| Platform         | The no-removal-path burn-down had gone 53 &rarr; 58, and TWO of the fiv~ | RE-DERIVED AND THE TOOL COR~ | Hank (the c~ | `open-work/platform.md:75` |
-| Platform         | The multi-location/multi-brand DESIGN LANDED 2026-09-16 and the row abo~ | SCOPED 2026-10-17 (Cody) &m~ | Cody         | `open-work/platform.md:77` |
-| Platform         | Item 40 continued: does anything holding the RLS-BYPASSING key write Ti~ | MEASURED AND BUILT 2026-09-~ | Hank         | `open-work/platform.md:78` |
-| Platform         | Biometric consent and retention, built ONCE cross-app so the first feat~ | BUILT 2026-09-15 (CC) &mdas~ | CC           | `open-work/platform.md:80` |
-| Platform         | 83 stated claims across 7 artefacts shipped today have NO suite at all ~ | MEASURED 2026-09-15 (CC), i~ | CC (the mea~ | `open-work/platform.md:81` |
-| Platform         | ZERO of 22 credentials record what to do if that one leaks &mdash; ever~ | MEASURED 2026-09-15 (CC), i~ | CC (the mea~ | `open-work/platform.md:82` |
-| Platform         | AR-1 carries the only MECHANICAL trigger on the accepted-risk register,~ | FOUND 2026-09-15 (CC), item~ | CC (the fin~ | `open-work/platform.md:83` |
-| Platform         | The traceability headline improves every day while the backlog it is a ~ | MEASURED 2026-09-15 (CC), i~ | CC (the mea~ | `open-work/platform.md:84` |
-| Platform         | The traceability headline is fixed, the GAP is not: 213 test files stat~ | ROOT-CAUSED AND RESTRUCTURE~ | CC (the res~ | `open-work/platform.md:85` |
-| Platform         | Compromise procedures drafted for the five identities where neither rot~ | DRAFTED 2026-09-15 (CC) &md~ | CC (the dra~ | `open-work/platform.md:86` |
-| Platform         | &ldquo;83 unverified claims&rdquo; was wrong about five of the seven &m~ | CORRECTED AND WIRED 2026-09~ | CC; the rem~ | `open-work/platform.md:87` |
-| Platform         | Item 79: the reviewer judges BEFORE seeing the score &mdash; and the fi~ | BUILT 2026-09-15 (CC) &mdas~ | CC (the flo~ | `open-work/platform.md:89` |
-| Platform         | A third citing source for traceability &mdash; a REQUIREMENT declared i~ | BUILT 2026-09-15 (CC) &mdas~ | CC (the mec~ | `open-work/platform.md:90` |
-| Platform         | The last Tier A artefact with no suite, and three whose only check was ~ | BUILT 2026-09-15 (CC) &mdas~ | CC           | `open-work/platform.md:91` |
-| Platform         | Item 79 round two: 6 of 14 agree, and the 8 disagreements split 4 MORE ~ | MEASURED 2026-09-15 (CC) &m~ | CC (the mea~ | `open-work/platform.md:92` |
-| Platform         | &#9888; credentialStillActive() NEEDS AN INDEPENDENT LIVE DRIVE &mdash;~ | BUILT AND UNIT-PROVEN 2026-~ | Hank / Four~ | `open-work/platform.md:96` |
-| Platform         | New skill: sairn-resilience-patterns &mdash; seven hardening patterns, ~ | BUILT 2026-09-15 (Hank) &md~ | Hank         | `open-work/platform.md:97` |
-| Platform         | The AI quota was shared by every customer of an app, and the question h~ | BUILT 2026-09-15 (Hank) &md~ | Hank (built~ | `open-work/platform.md:98` |
-| Platform         | The list-drift sweep: 12 candidates, ONE real defect &mdash; and it was~ | SWEPT 2026-09-15 (CC) &mdas~ | CC           | `open-work/platform.md:99` |
-| Platform         | Item 93 widened: which TENANTS share a backend &mdash; three sharing sc~ | SCOPED 2026-09-15 (Hank), n~ | Michael (th~ | `open-work/platform.md:100` |
-| Platform         | Item 97: seven Tier A artifacts can be DESTROYED rather than hidden, an~ | MEASURED 2026-09-15 (CC), n~ | CC (the mea~ | `open-work/platform.md:104` |
-| Platform         | The upgrade audit Michael flagged weeks ago and nobody had ever run &md~ | MEASURED 2026-09-15 (Hank),~ | Michael (al~ | `open-work/platform.md:105` |
-| Platform         | Item 52: the fusion, and the two checkers whose CORRECTOR fails its own~ | BUILT 2026-09-15 (Fourth) &~ | Fourth       | `open-work/platform.md:107` |
-| Platform         | Item 59: the Gini said 0.971 and it was NOT evidence of clustering &mda~ | BUILT 2026-09-15 (Fourth) &~ | Fourth       | `open-work/platform.md:108` |
-| Platform         | Item 51: a per-entity defect baseline &mdash; measured by hand twice, a~ | BUILT 2026-09-15 (Fourth) &~ | Fourth       | `open-work/platform.md:109` |
-| Platform         | Item 81 MERGED &mdash; and fixing the scope hole turned &ldquo;zero ret~ | MERGED 2026-09-16 (Fourth) ~ | Fourth       | `open-work/platform.md:110` |
-| Platform         | Item 81 has TWO tools by two sessions, they AGREE, and the newer one ha~ | MEASURED 2026-09-16 (Fourth~ | Fourth       | `open-work/platform.md:111` |
-| Platform         | The FAI record went STALE and was RE-INSPECTED, not re-hashed &mdash; a~ | BUILT 2026-09-16 (Fourth) &~ | Fourth       | `open-work/platform.md:112` |
-| Platform         | G5: the roofing claim gate, and I withdrew one of my own findings as an~ | BUILT 2026-09-16 (Fourth) &~ | Fourth       | `open-work/platform.md:113` |
-| Platform         | G5 continued: the PHI cache suite was testing a wiring IT HAD WRITTEN I~ | BUILT 2026-09-16 (Fourth) &~ | Fourth       | `open-work/platform.md:114` |
-| Platform         | Item 84: item 65&rsquo;s band is now DERIVED from a recorded result, so~ | BUILT 2026-09-16 (Fourth) &~ | Fourth       | `open-work/platform.md:115` |
-| Platform         | Item 47: the FAI gate demanded three inspections on its own author&rsqu~ | BUILT 2026-09-16 (Fourth) &~ | Fourth       | `open-work/platform.md:116` |
-| Platform         | Item 5: the assurance case &mdash; an argument that RUNS, and today it ~ | BUILT 2026-09-15 (Fourth) &~ | Fourth       | `open-work/platform.md:117` |
-| Platform         | Item 84: items 6, 19, 35 and 65 are not four risks &mdash; they are fou~ | BUILT 2026-09-15 (Fourth) &~ | Fourth       | `open-work/platform.md:118` |
-| Platform         | DORA metrics measured from the real history &mdash; and two of the four~ | BUILT 2026-09-15 (Fourth) &~ | Fourth       | `open-work/platform.md:119` |
-| Platform         | Item 81: rebuilt on call-site STRUCTURE &mdash; and the answer is that ~ | BUILT 2026-09-15 (Fourth) &~ | Fourth       | `open-work/platform.md:120` |
-| Platform         | Item 75: Cook&rsquo;s CAPA critique &mdash; the register refuses a root~ | BUILT 2026-09-15 (Fourth) &~ | Fourth       | `open-work/platform.md:121` |
-| Platform         | 7 of 154 suites had ever been proven to catch a sabotage; now 10, and c~ | BUILT 2026-09-15 (Fourth) &~ | Fourth       | `open-work/platform.md:122` |
-| Platform         | Cluster 5b98fd27: both root causes closed at the CLASS level &mdash; th~ | BUILT 2026-09-15 (Fourth) &~ | Fourth       | `open-work/platform.md:123` |
-| Platform         | Item 47: First Article Inspection &mdash; the pre-deployment half item ~ | BUILT 2026-09-15 (Fourth) &~ | Fourth       | `open-work/platform.md:124` |
-| Platform         | The pinned-list technique on a FRESH target: object-literal resource ma~ | MEASURED 2026-09-15 (Fourth~ | Fourth       | `open-work/platform.md:129` |
-| Platform         | Item 98 ablation &mdash; 17 of 38 role gates in api/sd-data.js can be r~ | BUILT 2026-09-15 (Fourth) &~ | Fourth       | `open-work/platform.md:132` |
-| Platform         | &#128308; rt_stops.license_hash IS A SECOND COPY OF THE TENANCY KEY AND~ | OPEN &mdash; OBLIGATION AT ~ | cody (the h~ | `open-work/platform.md:133` |
-| Platform         | Competitive-gap status re-derived across all four audits &mdash; and a ~ | RE-DERIVED 2026-09-15 (Four~ | Fourth       | `open-work/platform.md:134` |
-| Platform         | The four Class A export gaps item 39c found are CLOSED &mdash; and a co~ | BUILT 2026-09-14 (Hank) &md~ | Hank         | `open-work/platform.md:136` |
-| Platform         | The route-vs-resource unit mismatch is NOT unique to /api/sd-data: 182 ~ | SWEPT AND BUILT 2026-09-14 ~ | CC (the run~ | `open-work/platform.md:137` |
-| Platform         | Item 39c: the nine UNASSESSED Class A resources, answered &mdash; and a~ | BUILT 2026-09-14 (Hank) &md~ | Hank         | `open-work/platform.md:138` |
-| Platform         | Item 39c is CLOSED: eleven of eleven Class A records can now be produce~ | BUILT 2026-09-16 (CC) &mdas~ | CC           | `open-work/platform.md:139` |
-| Platform         | Item 8's attack-generation half, deterministically: 5 metamorphic relat~ | BUILT 2026-09-14 (Cody) &md~ | Cody         | `open-work/platform.md:140` |
-| Platform         | Item 34: state meant to be temporary that silently outlives its invocat~ | BUILT 2026-09-14 (Hank) &md~ | Hank         | `open-work/platform.md:141` |
-| Platform         | Item 40: an unauthenticated POST returns a Stripe Billing Portal URL fo~ | AUDITED 2026-09-14 (Hank) &~ | Hank (audit~ | `open-work/platform.md:142` |
-| Platform         | Item 43: the one literal Copy-Exactly block no longer matches its own a~ | BUILT 2026-09-14 (Hank) &md~ | Hank (check~ | `open-work/platform.md:143` |
-| Platform         | Item 32 gets R6: the rung R4 and R5 cannot reach &mdash; is the RESOURC~ | BUILT 2026-09-14 (CC) &mdas~ | CC           | `open-work/platform.md:145` |
-| Platform         | A branch gated on a field name NOTHING SETS &mdash; THREE CONFIRMED and~ | SWEPT 2026-09-27 (Hank) &md~ | Hank         | `open-work/platform.md:148` |
-| Platform         | Item 8's deterministic half: a law app's own CRITICAL RULE forbidding c~ | BUILT 2026-09-14 (Cody), re~ | Cody (tool)~ | `open-work/platform.md:151` |
-| Platform         | Item 84: probabilistic risk assessment &mdash; the event tree, and the ~ | BUILT 2026-09-14 (CC) &mdas~ | CC           | `open-work/platform.md:152` |
-| Platform         | Item 80: reliability growth models &mdash; built, proven on synthetic c~ | BUILT 2026-09-14 (CC) &mdas~ | CC           | `open-work/platform.md:153` |
-| Platform         | Item 78 target 2: the racy count-then-insert is THE PATH RUNNING TODAY,~ | BUILT 2026-09-14 (Fourth) &~ | Michael to ~ | `open-work/platform.md:154` |
-| Platform         | Item 38: the completeness detector &mdash; a rule that is DECLARED and ~ | BUILT 2026-09-14 (CC) &mdas~ | CC (the too~ | `open-work/platform.md:155` |
-| Platform         | Item 78: the role gates are specified formally &mdash; ~~and only 19 of~ | BUILT 2026-09-14 (Fourth), ~ | unassigned   | `open-work/platform.md:156` |
-| Platform         | isDate was defined FOURTEEN times, all byte-identical, and all wrong th~ | BUILT 2026-09-14 (Fourth) &~ | unassigned   | `open-work/platform.md:157` |
-| Platform         | Item 69: can one app&rsquo;s employee session reach another app&rsquo;s~ | MEASURED 2026-09-14 (CC) &m~ | CC (the mea~ | `open-work/platform.md:158` |
-| Platform         | The free-tier recovery gap is closed in code &mdash; nightly encrypted ~ | BUILT 2026-09-14 (Fourth), ~ | Michael to ~ | `open-work/platform.md:159` |
-| Platform         | Item 61: every secret the platform reads, what it unlocks, and &mdash; ~ | BUILT 2026-09-14 (CC) &mdas~ | CC           | `open-work/platform.md:160` |
-| Platform         | &#128308; ITEMS 61, 69 AND 88 ARE ONE DECISION, NOT THREE TICKETS &mdas~ | DISPATCHED AS ONE 2026-09-2~ | Michael &md~ | `open-work/platform.md:161` |
-| Platform         | Items 88, 53 and 91: the dependency graph, the pairs that are only fata~ | BUILT 2026-09-14 (CC) &mdas~ | CC (the too~ | `open-work/platform.md:162` |
-| Platform         | There is now something to run the day a restore happens by hand &mdash;~ | BUILT 2026-09-14 (Fourth) &~ | unassigned   | `open-work/platform.md:164` |
-| Platform         | Item 65e: the ACCEPTANCE half &mdash; what a human decides when the res~ | WRITTEN 2026-09-25 (Hank) &~ | unassigned ~ | `open-work/platform.md:165` |
-| Platform         | Item 65b: the file NOTHING WROTE &mdash; restore_coherence_check.js too~ | WRITER BUILT 2026-09-25 (Ha~ | Michael &md~ | `open-work/platform.md:166` |
-| Platform         | Task #19 second half: the fire-and-forget write audit RUN and triaged &~ | RUN 2026-09-26 (Hank) &mdas~ | unassigned ~ | `open-work/platform.md:167` |
-| Platform         | 🚫 NO REAL RECOVERY PATH BEYOND 24 HOURS for sv_controlled, law_trusttx ~ | ANSWERED 2026-09-14 &mdash;~ | Michael &md~ | `open-work/platform.md:168` |
-| Platform         | There is no backup mechanism, no restore tooling and no DR document any~ | SCOPED 2026-09-14 (Fourth) ~ | Michael for~ | `open-work/platform.md:170` |
-| Platform         | The watchdog now DOES something, and the response was decided before th~ | BUILT 2026-09-14 (Fourth) &~ | &mdash;      | `open-work/platform.md:171` |
-| Platform         | Nothing watched for a scheduled job going silent &mdash; now something ~ | BUILT 2026-09-14 (Fourth), ~ | Michael to ~ | `open-work/platform.md:172` |
-| Platform         | Daily audit checkpoints are BUILT &mdash; and sql/audit_checkpoint_sche~ | BUILT 2026-09-14 (Fourth), ~ | Michael to ~ | `open-work/platform.md:173` |
-| Platform         | The audit log cannot be edited or deleted &mdash; it CAN be written      | SCOPED 2026-09-14 (Fourth),~ | unassigned   | `open-work/platform.md:174` |
-| Platform         | Web Analytics turned on &mdash; and the three public pages that carried~ | BUILT 2026-09-13 (CC) on Mi~ | Michael for~ | `open-work/platform.md:175` |
-| Platform         | CORRECTION to the 26-table triage: mech_credentials is NOT the auth gat~ | CORRECTED 2026-09-13 (CC), ~ | CC           | `open-work/platform.md:176` |
-| Platform         | The 26 never-run tables, TRIAGED: routine, not urgent &mdash; and the r~ | TRIAGED 2026-09-13 (CC), ag~ | Michael (th~ | `open-work/platform.md:178` |
-| Platform         | Item 8: nothing adversarial has ever been run against 17 AI surfaces an~ | SAIRN-OWNED HALF BUILT 2026~ | Hank         | `open-work/platform.md:179` |
-| Platform         | Item 41: the ledger already contains the prevent-by-construction patter~ | PHASES A AND B BUILT 2026-0~ | Hank (A, B)~ | `open-work/platform.md:180` |
-| Platform         | The published skill marketplace still carries the OLD entity name, and ~ | Open &mdash; NEEDS A PUSH T~ | Michael      | `open-work/platform.md:181` |
-| Platform         | A hard WITNESSING LOCK on append-only writes — verification must comple~ | SCOPED 2026-09-13 (Fourth),~ | —            | `open-work/platform.md:182` |
-| Platform         | SOUP register &mdash; every third-party component, with a real stated r~ | BUILT 2026-09-10 (Hank), an~ | Hank         | `open-work/platform.md:183` |
-| Platform         | &#9888; MICHAEL: 89 tables declared in sql/ were absent from the live d~ | Open &mdash; BLOCKED ON A R~ | Michael      | `open-work/platform.md:189` |
-| Platform         | Financial-write invariants, both halves: a three-invariant property run~ | BUILT 2026-09-13 (Hank) &md~ | Hank         | `open-work/platform.md:190` |
-| Platform         | 53 TIER A resources have no removal path (was 56) &mdash; the burn-down~ | Open &mdash; DERIVED 2026-0~ | unassigned   | `open-work/platform.md:194` |
-| Platform         | Semgrep installed and running platform-wide, and TWO of its defaults we~ | BUILT 2026-09-10 (CC) &mdas~ | CC           | `open-work/platform.md:195` |
-| Platform         | The NOT RUN label on 29 cleanup SQL files is a claim about the FILE, no~ | BUILT 2026-09-10 (CC) &mdas~ | CC           | `open-work/platform.md:197` |
-| Platform         | Criticality tiering -- the third standing discipline, and the one nothi~ | BUILT 2026-09-10 (Fourth), ~ | Fourth       | `open-work/platform.md:199` |
-| Platform         | Nothing stated what FINISHED means across all four gates, or where each~ | WRITTEN 2026-09-10 (Fourth)~ | Fourth (the~ | `open-work/platform.md:200` |
-| Platform         | Nothing enforced the per-statement confirm query CLAUDE.md has required~ | BUILT AND CLEAN 2026-09-10 ~ | Cody         | `open-work/platform.md:204` |
-| Platform         | Live write-path verification leaves rows the product cannot delete — 15~ | Open (process)               | unassigned   | `open-work/platform.md:205` |
-| Platform         | ai_memories has no unique constraint at all — append-only log, or per-l~ | Open (product decision)      | Michael      | `open-work/platform.md:209` |
-| Platform         | anon and authenticated hold TRUNCATE/REFERENCES/TRIGGER on 158 tables e~ | Open — STAGE A RUN AND VERI~ | Michael to ~ | `open-work/platform.md:211` |
-| Platform         | Load-state gates: every per-licence reference table now has a read-only~ | Open — built and proven, bu~ | unassigned   | `open-work/platform.md:215` |
-| Platform         | (x \                                                                     | \                            | 0) in a num~ | `open-work/platform.md:216` |
-| Platform         | PATTERN 13's TRIAL-EXPIRY GATE HAS NEVER FIRED ON ANY LICENCE — the col~ | Open &mdash; found 2026-09-~ | unassigned ~ | `open-work/platform.md:224` |
-| Platform         | anon CANNOT read license_keys — MEASURED, not assumed, and it closes th~ | Probed live 2026-09-05 (Cod~ | unassigned ~ | `open-work/platform.md:225` |
-| Platform         | Parts 2-4 progress: the defect REGISTER is live, and a portfolio-wide s~ | PART 4 BUILT 2026-09-10 (Co~ | Cody (parts~ | `open-work/platform.md:228` |
-| Platform         | 131 COMMITS ON origin/main WERE AUTHORED AND COMMITTED BY A TEST FIXTUR~ | LEAK STOPPED AND HELD 2026-~ | Cody         | `open-work/platform.md:233` |
-| Platform         | Item 83: the two questions a FAIL-SAFE DEFAULT is never asked &mdash; i~ | BUILT 2026-09-14 (Cody) &md~ | Cody         | `open-work/platform.md:234` |
-| Platform         | ~~FAIL-OPEN IN THE BLOCKING PUSH GATE: an unresolvable base returned an~ | REVERTED 2026-09-11 (Cody),~ | Cody         | `open-work/platform.md:235` |
-| Platform         | Part 3 -- FAULT INJECTION. Break the WORLD, not the logic: a refused wr~ | BUILT 2026-09-10 (Cody) &md~ | Cody         | `open-work/platform.md:236` |
-| Platform         | The four-part verification programme &mdash; traceability matrix, mock ~ | PART 1 BUILT 2026-09-10 (Co~ | Cody (part ~ | `open-work/platform.md:237` |
-| Platform         | THE SWEEP IS DONE: the pre-auth ordering is not two endpoints, it is th~ | Detector shipped and triage~ | Cody (sweep~ | `open-work/platform.md:242` |
-| Platform         | api/sd-data.js now makes an UNAUTHENTICATED database round trip on ever~ | ⚠ BUILT AND MEASURED INERT ~ | Michael — t~ | `open-work/platform.md:246` |
-| Platform         | ~~The SAME pre-auth verb disclosure survives in roughly twenty api/-aut~ | Split 2026-09-05 (Cody). Th~ | unassigned   | `open-work/platform.md:247` |
-| Platform         | OBSERVATION WINDOW RUNNING TO 2026-09-12: two log-only WAF rate-limit r~ | Staged and published 2026-0~ | Cody (stagi~ | `open-work/platform.md:248` |
-| Platform         | 🚫 api/claude.js IS AN OPEN ANTHROPIC PROXY. No credential of any kind, ~ | CONFIRMED LIVE 2026-09-05 (~ | Michael — t~ | `open-work/platform.md:249` |
-| Platform         | api/agent/enqueue.js: anyone knowing an agent_id can queue an arbitrary~ | CONFIRMED SAFE FOR NOW 2026~ | Fourth (que~ | `open-work/platform.md:251` |
-| Platform         | 19 bare-named tables carrying the excess grant baseline are reachable b~ | Open — found 2026-08-25, co~ | unassigned   | `open-work/platform.md:257` |
-| Platform         | ~~The 227-table grant export was truncated a second time~~               | RETRACTED 2026-08-25 — the ~ | —            | `open-work/platform.md:258` |
-| Platform         | ~~A live licence is API-unrecoverable: RF-PINNACLE-2026 has ZERO active~ | Recovered; the PATTERN row ~ | unassigned   | `open-work/platform.md:266` |
-| Platform         | &#128993; Item 94's blob migration: SIX more branches converted individ~ | SIX CONVERTED 2026-09-26 (c~ | unassigned ~ | `open-work/platform.md:270` |
-| Platform         | &#128993; The prompt-injection scanner's untrusted-field list is GENERI~ | THREE SITES FENCED 2026-09-~ | unassigned ~ | `open-work/platform.md:271` |
+| Platform         | &#128993; H2 seq813 says the emailed mirror anchor was RETIRED in b19; ~ | ROUTED 2026-10-29 (cody b63~ | hover2 &mda~ | `open-work/platform.md:24` |
+| Platform         | &#128993; H1 &ldquo;DRILL PASSED&rdquo; (seq1704, 1715, 1721) overstate~ | ROUTED 2026-10-29 (cody b63~ | hover1 &mda~ | `open-work/platform.md:25` |
+| Platform         | &#128993; 50 UNROUTED AUDITOR FINDINGS reachable only by PROSE FALLBACK~ | MEASURED 2026-09-29 (hank).~ | unassigned   | `open-work/platform.md:26` |
+| Platform         | &#128993; Three MORE structured routable findings went unrouted while t~ | MEASURED 2026-09-29 (hank) ~ | unassigned   | `open-work/platform.md:27` |
+| Platform         | &#128308; FOUR MORE resources persist RAW MODEL OUTPUT OVER A PHOTOGRAP~ | FOUND 2026-09-29 (hank). Pa~ | fourth &mda~ | `open-work/platform.md:29` |
+| Platform         | &#128993; dnt_vendor_contacts, sv_staff and SAIRNscape&rsquo;s customer~ | FOUND 2026-09-29 (hank) by ~ | unassigned   | `open-work/platform.md:30` |
+| Platform         | &#128993; 70 of 90 drifted register citations are in ONE file, and 158 ~ | MEASURED 2026-09-28 (CC)     | unassigned   | `open-work/platform.md:32` |
+| Platform         | &#128993; A REVOKED licence is not refused by api/claude.js in enforce ~ | FOUND 2026-09-28 (CC) while~ | unassigned   | `open-work/platform.md:35` |
+| Platform         | &#128308; 16 sabotage anchors are DEAD across 8 probe files &mdash; unm~ | FOUND 2026-09-28 (CC), corr~ | unassigned   | `open-work/platform.md:36` |
+| Platform         | &#128993; 30 Tier A review obligations are OPEN across all four build s~ | MEASURED 2026-09-28 (CC) fr~ | unassigned ~ | `open-work/platform.md:37` |
+| Platform         | &#128993; Item 94 named on this platform: blob-composition is INFORMATI~ | NAMED AND PARTLY CONSOLIDAT~ | unassigned   | `open-work/platform.md:42` |
+| Platform         | &#128308; UNTRUSTED TEXT REACHES A SYSTEM PROMPT UNFENCED AT 15 SITES, ~ | BUILT AND MEASURED 2026-09-~ | unassigned ~ | `open-work/platform.md:43` |
+| Platform         | &#128308; TWO WAYS TO REACH ZERO PROVISIONERS THAT THE LAST-ADMIN GUARD~ | OPEN. Found 2026-09-21 (cc)~ | unassigned   | `open-work/platform.md:47` |
+| Platform         | &#9989;&#9888; api/sd-data.js retainage release answered the DELETE-sha~ | LARGELY ANSWERED 2026-09-21~ | unassigned   | `open-work/platform.md:50` |
+| Platform         | The .json().catch(() =&gt; null) write-confirmation shape, measured rat~ | MEASURED 2026-09-21 (Cody),~ | unassigned   | `open-work/platform.md:62` |
+| Platform         | Findings #276/#278 &mdash; all 84 Tier A resources filter by license_ha~ | SCOPED 2026-09-21 (Hank) &m~ | Hank (scopi~ | `open-work/platform.md:63` |
+| Platform         | &#128994; SERVER-WINS is the hydration rule, with a ONE-TIME READ-ONLY ~ | DECIDED 2026-09-21 (Michael~ | cc           | `open-work/platform.md:64` |
+| Platform         | &#9989; The deployed product has no build provenance and cannot be give~ | BUILT AND EXERCISED 2026-09~ | Fourth       | `open-work/platform.md:65` |
+| Platform         | &#9888; SD_AUTH_SECRET IS ALSO THE ENCRYPTION KEY, so rotating it today~ | INVESTIGATED 2026-09-17 (Ha~ | Michael (th~ | `open-work/platform.md:69` |
+| Platform         | Which tenants share a backend &mdash; the real map, and app_id turns ou~ | MAPPED 2026-09-17 (Hank) &m~ | Michael (fi~ | `open-work/platform.md:70` |
+| Platform         | &#9989; THE SECOND WATCHDOG IS GREEN FOR THE FIRST TIME &mdash; two sta~ | VERIFIED END TO END 2026-09~ | &mdash;      | `open-work/platform.md:71` |
+| Platform         | SAIRN_OPS_EMAIL IS LIVE &mdash; and the &ldquo;falsification&rdquo; tha~ | VERIFIED 2026-09-17 (Hank) ~ | &mdash;      | `open-work/platform.md:74` |
+| Platform         | The :00 cron collision fix was applied two days ago and NOBODY EVER CHE~ | VERIFIED 2026-09-16 (Hank) ~ | Hank (the v~ | `open-work/platform.md:76` |
+| Platform         | The no-removal-path burn-down had gone 53 &rarr; 58, and TWO of the fiv~ | RE-DERIVED AND THE TOOL COR~ | Hank (the c~ | `open-work/platform.md:77` |
+| Platform         | The multi-location/multi-brand DESIGN LANDED 2026-09-16 and the row abo~ | SCOPED 2026-10-17 (Cody) &m~ | Cody         | `open-work/platform.md:79` |
+| Platform         | Item 40 continued: does anything holding the RLS-BYPASSING key write Ti~ | MEASURED AND BUILT 2026-09-~ | Hank         | `open-work/platform.md:80` |
+| Platform         | Biometric consent and retention, built ONCE cross-app so the first feat~ | BUILT 2026-09-15 (CC) &mdas~ | CC           | `open-work/platform.md:82` |
+| Platform         | 83 stated claims across 7 artefacts shipped today have NO suite at all ~ | MEASURED 2026-09-15 (CC), i~ | CC (the mea~ | `open-work/platform.md:83` |
+| Platform         | ZERO of 22 credentials record what to do if that one leaks &mdash; ever~ | MEASURED 2026-09-15 (CC), i~ | CC (the mea~ | `open-work/platform.md:84` |
+| Platform         | AR-1 carries the only MECHANICAL trigger on the accepted-risk register,~ | FOUND 2026-09-15 (CC), item~ | CC (the fin~ | `open-work/platform.md:85` |
+| Platform         | The traceability headline improves every day while the backlog it is a ~ | MEASURED 2026-09-15 (CC), i~ | CC (the mea~ | `open-work/platform.md:86` |
+| Platform         | The traceability headline is fixed, the GAP is not: 213 test files stat~ | ROOT-CAUSED AND RESTRUCTURE~ | CC (the res~ | `open-work/platform.md:87` |
+| Platform         | Compromise procedures drafted for the five identities where neither rot~ | DRAFTED 2026-09-15 (CC) &md~ | CC (the dra~ | `open-work/platform.md:88` |
+| Platform         | &ldquo;83 unverified claims&rdquo; was wrong about five of the seven &m~ | CORRECTED AND WIRED 2026-09~ | CC; the rem~ | `open-work/platform.md:89` |
+| Platform         | Item 79: the reviewer judges BEFORE seeing the score &mdash; and the fi~ | BUILT 2026-09-15 (CC) &mdas~ | CC (the flo~ | `open-work/platform.md:91` |
+| Platform         | A third citing source for traceability &mdash; a REQUIREMENT declared i~ | BUILT 2026-09-15 (CC) &mdas~ | CC (the mec~ | `open-work/platform.md:92` |
+| Platform         | The last Tier A artefact with no suite, and three whose only check was ~ | BUILT 2026-09-15 (CC) &mdas~ | CC           | `open-work/platform.md:93` |
+| Platform         | Item 79 round two: 6 of 14 agree, and the 8 disagreements split 4 MORE ~ | MEASURED 2026-09-15 (CC) &m~ | CC (the mea~ | `open-work/platform.md:94` |
+| Platform         | &#9888; credentialStillActive() NEEDS AN INDEPENDENT LIVE DRIVE &mdash;~ | BUILT AND UNIT-PROVEN 2026-~ | Hank / Four~ | `open-work/platform.md:98` |
+| Platform         | New skill: sairn-resilience-patterns &mdash; seven hardening patterns, ~ | BUILT 2026-09-15 (Hank) &md~ | Hank         | `open-work/platform.md:99` |
+| Platform         | The AI quota was shared by every customer of an app, and the question h~ | BUILT 2026-09-15 (Hank) &md~ | Hank (built~ | `open-work/platform.md:100` |
+| Platform         | The list-drift sweep: 12 candidates, ONE real defect &mdash; and it was~ | SWEPT 2026-09-15 (CC) &mdas~ | CC           | `open-work/platform.md:101` |
+| Platform         | Item 93 widened: which TENANTS share a backend &mdash; three sharing sc~ | SCOPED 2026-09-15 (Hank), n~ | Michael (th~ | `open-work/platform.md:102` |
+| Platform         | Item 97: seven Tier A artifacts can be DESTROYED rather than hidden, an~ | MEASURED 2026-09-15 (CC), n~ | CC (the mea~ | `open-work/platform.md:106` |
+| Platform         | The upgrade audit Michael flagged weeks ago and nobody had ever run &md~ | MEASURED 2026-09-15 (Hank),~ | Michael (al~ | `open-work/platform.md:107` |
+| Platform         | Item 52: the fusion, and the two checkers whose CORRECTOR fails its own~ | BUILT 2026-09-15 (Fourth) &~ | Fourth       | `open-work/platform.md:109` |
+| Platform         | Item 59: the Gini said 0.971 and it was NOT evidence of clustering &mda~ | BUILT 2026-09-15 (Fourth) &~ | Fourth       | `open-work/platform.md:110` |
+| Platform         | Item 51: a per-entity defect baseline &mdash; measured by hand twice, a~ | BUILT 2026-09-15 (Fourth) &~ | Fourth       | `open-work/platform.md:111` |
+| Platform         | Item 81 MERGED &mdash; and fixing the scope hole turned &ldquo;zero ret~ | MERGED 2026-09-16 (Fourth) ~ | Fourth       | `open-work/platform.md:112` |
+| Platform         | Item 81 has TWO tools by two sessions, they AGREE, and the newer one ha~ | MEASURED 2026-09-16 (Fourth~ | Fourth       | `open-work/platform.md:113` |
+| Platform         | The FAI record went STALE and was RE-INSPECTED, not re-hashed &mdash; a~ | BUILT 2026-09-16 (Fourth) &~ | Fourth       | `open-work/platform.md:114` |
+| Platform         | G5: the roofing claim gate, and I withdrew one of my own findings as an~ | BUILT 2026-09-16 (Fourth) &~ | Fourth       | `open-work/platform.md:115` |
+| Platform         | G5 continued: the PHI cache suite was testing a wiring IT HAD WRITTEN I~ | BUILT 2026-09-16 (Fourth) &~ | Fourth       | `open-work/platform.md:116` |
+| Platform         | Item 84: item 65&rsquo;s band is now DERIVED from a recorded result, so~ | BUILT 2026-09-16 (Fourth) &~ | Fourth       | `open-work/platform.md:117` |
+| Platform         | Item 47: the FAI gate demanded three inspections on its own author&rsqu~ | BUILT 2026-09-16 (Fourth) &~ | Fourth       | `open-work/platform.md:118` |
+| Platform         | Item 5: the assurance case &mdash; an argument that RUNS, and today it ~ | BUILT 2026-09-15 (Fourth) &~ | Fourth       | `open-work/platform.md:119` |
+| Platform         | Item 84: items 6, 19, 35 and 65 are not four risks &mdash; they are fou~ | BUILT 2026-09-15 (Fourth) &~ | Fourth       | `open-work/platform.md:120` |
+| Platform         | DORA metrics measured from the real history &mdash; and two of the four~ | BUILT 2026-09-15 (Fourth) &~ | Fourth       | `open-work/platform.md:121` |
+| Platform         | Item 81: rebuilt on call-site STRUCTURE &mdash; and the answer is that ~ | BUILT 2026-09-15 (Fourth) &~ | Fourth       | `open-work/platform.md:122` |
+| Platform         | Item 75: Cook&rsquo;s CAPA critique &mdash; the register refuses a root~ | BUILT 2026-09-15 (Fourth) &~ | Fourth       | `open-work/platform.md:123` |
+| Platform         | 7 of 154 suites had ever been proven to catch a sabotage; now 10, and c~ | BUILT 2026-09-15 (Fourth) &~ | Fourth       | `open-work/platform.md:124` |
+| Platform         | Cluster 5b98fd27: both root causes closed at the CLASS level &mdash; th~ | BUILT 2026-09-15 (Fourth) &~ | Fourth       | `open-work/platform.md:125` |
+| Platform         | Item 47: First Article Inspection &mdash; the pre-deployment half item ~ | BUILT 2026-09-15 (Fourth) &~ | Fourth       | `open-work/platform.md:126` |
+| Platform         | The pinned-list technique on a FRESH target: object-literal resource ma~ | MEASURED 2026-09-15 (Fourth~ | Fourth       | `open-work/platform.md:131` |
+| Platform         | Item 98 ablation &mdash; 17 of 38 role gates in api/sd-data.js can be r~ | BUILT 2026-09-15 (Fourth) &~ | Fourth       | `open-work/platform.md:134` |
+| Platform         | &#128308; rt_stops.license_hash IS A SECOND COPY OF THE TENANCY KEY AND~ | OPEN &mdash; OBLIGATION AT ~ | cody (the h~ | `open-work/platform.md:135` |
+| Platform         | Competitive-gap status re-derived across all four audits &mdash; and a ~ | RE-DERIVED 2026-09-15 (Four~ | Fourth       | `open-work/platform.md:136` |
+| Platform         | The four Class A export gaps item 39c found are CLOSED &mdash; and a co~ | BUILT 2026-09-14 (Hank) &md~ | Hank         | `open-work/platform.md:138` |
+| Platform         | The route-vs-resource unit mismatch is NOT unique to /api/sd-data: 182 ~ | SWEPT AND BUILT 2026-09-14 ~ | CC (the run~ | `open-work/platform.md:139` |
+| Platform         | Item 39c: the nine UNASSESSED Class A resources, answered &mdash; and a~ | BUILT 2026-09-14 (Hank) &md~ | Hank         | `open-work/platform.md:140` |
+| Platform         | Item 39c is CLOSED: eleven of eleven Class A records can now be produce~ | BUILT 2026-09-16 (CC) &mdas~ | CC           | `open-work/platform.md:141` |
+| Platform         | Item 8's attack-generation half, deterministically: 5 metamorphic relat~ | BUILT 2026-09-14 (Cody) &md~ | Cody         | `open-work/platform.md:142` |
+| Platform         | Item 34: state meant to be temporary that silently outlives its invocat~ | BUILT 2026-09-14 (Hank) &md~ | Hank         | `open-work/platform.md:143` |
+| Platform         | Item 40: an unauthenticated POST returns a Stripe Billing Portal URL fo~ | AUDITED 2026-09-14 (Hank) &~ | Hank (audit~ | `open-work/platform.md:144` |
+| Platform         | Item 43: the one literal Copy-Exactly block no longer matches its own a~ | BUILT 2026-09-14 (Hank) &md~ | Hank (check~ | `open-work/platform.md:145` |
+| Platform         | Item 32 gets R6: the rung R4 and R5 cannot reach &mdash; is the RESOURC~ | BUILT 2026-09-14 (CC) &mdas~ | CC           | `open-work/platform.md:147` |
+| Platform         | A branch gated on a field name NOTHING SETS &mdash; THREE CONFIRMED and~ | SWEPT 2026-09-27 (Hank) &md~ | Hank         | `open-work/platform.md:150` |
+| Platform         | Item 8's deterministic half: a law app's own CRITICAL RULE forbidding c~ | BUILT 2026-09-14 (Cody), re~ | Cody (tool)~ | `open-work/platform.md:153` |
+| Platform         | Item 84: probabilistic risk assessment &mdash; the event tree, and the ~ | BUILT 2026-09-14 (CC) &mdas~ | CC           | `open-work/platform.md:154` |
+| Platform         | Item 80: reliability growth models &mdash; built, proven on synthetic c~ | BUILT 2026-09-14 (CC) &mdas~ | CC           | `open-work/platform.md:155` |
+| Platform         | Item 78 target 2: the racy count-then-insert is THE PATH RUNNING TODAY,~ | BUILT 2026-09-14 (Fourth) &~ | Michael to ~ | `open-work/platform.md:156` |
+| Platform         | Item 38: the completeness detector &mdash; a rule that is DECLARED and ~ | BUILT 2026-09-14 (CC) &mdas~ | CC (the too~ | `open-work/platform.md:157` |
+| Platform         | Item 78: the role gates are specified formally &mdash; ~~and only 19 of~ | BUILT 2026-09-14 (Fourth), ~ | unassigned   | `open-work/platform.md:158` |
+| Platform         | isDate was defined FOURTEEN times, all byte-identical, and all wrong th~ | BUILT 2026-09-14 (Fourth) &~ | unassigned   | `open-work/platform.md:159` |
+| Platform         | Item 69: can one app&rsquo;s employee session reach another app&rsquo;s~ | MEASURED 2026-09-14 (CC) &m~ | CC (the mea~ | `open-work/platform.md:160` |
+| Platform         | The free-tier recovery gap is closed in code &mdash; nightly encrypted ~ | BUILT 2026-09-14 (Fourth), ~ | Michael to ~ | `open-work/platform.md:161` |
+| Platform         | Item 61: every secret the platform reads, what it unlocks, and &mdash; ~ | BUILT 2026-09-14 (CC) &mdas~ | CC           | `open-work/platform.md:162` |
+| Platform         | &#128308; ITEMS 61, 69 AND 88 ARE ONE DECISION, NOT THREE TICKETS &mdas~ | DISPATCHED AS ONE 2026-09-2~ | Michael &md~ | `open-work/platform.md:163` |
+| Platform         | Items 88, 53 and 91: the dependency graph, the pairs that are only fata~ | BUILT 2026-09-14 (CC) &mdas~ | CC (the too~ | `open-work/platform.md:164` |
+| Platform         | There is now something to run the day a restore happens by hand &mdash;~ | BUILT 2026-09-14 (Fourth) &~ | unassigned   | `open-work/platform.md:166` |
+| Platform         | Item 65e: the ACCEPTANCE half &mdash; what a human decides when the res~ | WRITTEN 2026-09-25 (Hank) &~ | unassigned ~ | `open-work/platform.md:167` |
+| Platform         | Item 65b: the file NOTHING WROTE &mdash; restore_coherence_check.js too~ | WRITER BUILT 2026-09-25 (Ha~ | Michael &md~ | `open-work/platform.md:168` |
+| Platform         | Task #19 second half: the fire-and-forget write audit RUN and triaged &~ | RUN 2026-09-26 (Hank) &mdas~ | unassigned ~ | `open-work/platform.md:169` |
+| Platform         | 🚫 NO REAL RECOVERY PATH BEYOND 24 HOURS for sv_controlled, law_trusttx ~ | ANSWERED 2026-09-14 &mdash;~ | Michael &md~ | `open-work/platform.md:170` |
+| Platform         | There is no backup mechanism, no restore tooling and no DR document any~ | SCOPED 2026-09-14 (Fourth) ~ | Michael for~ | `open-work/platform.md:172` |
+| Platform         | The watchdog now DOES something, and the response was decided before th~ | BUILT 2026-09-14 (Fourth) &~ | &mdash;      | `open-work/platform.md:173` |
+| Platform         | Nothing watched for a scheduled job going silent &mdash; now something ~ | BUILT 2026-09-14 (Fourth), ~ | Michael to ~ | `open-work/platform.md:174` |
+| Platform         | Daily audit checkpoints are BUILT &mdash; and sql/audit_checkpoint_sche~ | BUILT 2026-09-14 (Fourth), ~ | Michael to ~ | `open-work/platform.md:175` |
+| Platform         | The audit log cannot be edited or deleted &mdash; it CAN be written      | SCOPED 2026-09-14 (Fourth),~ | unassigned   | `open-work/platform.md:176` |
+| Platform         | Web Analytics turned on &mdash; and the three public pages that carried~ | BUILT 2026-09-13 (CC) on Mi~ | Michael for~ | `open-work/platform.md:177` |
+| Platform         | CORRECTION to the 26-table triage: mech_credentials is NOT the auth gat~ | CORRECTED 2026-09-13 (CC), ~ | CC           | `open-work/platform.md:178` |
+| Platform         | The 26 never-run tables, TRIAGED: routine, not urgent &mdash; and the r~ | TRIAGED 2026-09-13 (CC), ag~ | Michael (th~ | `open-work/platform.md:180` |
+| Platform         | Item 8: nothing adversarial has ever been run against 17 AI surfaces an~ | SAIRN-OWNED HALF BUILT 2026~ | Hank         | `open-work/platform.md:181` |
+| Platform         | Item 41: the ledger already contains the prevent-by-construction patter~ | PHASES A AND B BUILT 2026-0~ | Hank (A, B)~ | `open-work/platform.md:182` |
+| Platform         | The published skill marketplace still carries the OLD entity name, and ~ | Open &mdash; NEEDS A PUSH T~ | Michael      | `open-work/platform.md:183` |
+| Platform         | A hard WITNESSING LOCK on append-only writes — verification must comple~ | SCOPED 2026-09-13 (Fourth),~ | —            | `open-work/platform.md:184` |
+| Platform         | SOUP register &mdash; every third-party component, with a real stated r~ | BUILT 2026-09-10 (Hank), an~ | Hank         | `open-work/platform.md:185` |
+| Platform         | &#9888; MICHAEL: 89 tables declared in sql/ were absent from the live d~ | Open &mdash; BLOCKED ON A R~ | Michael      | `open-work/platform.md:191` |
+| Platform         | Financial-write invariants, both halves: a three-invariant property run~ | BUILT 2026-09-13 (Hank) &md~ | Hank         | `open-work/platform.md:192` |
+| Platform         | 53 TIER A resources have no removal path (was 56) &mdash; the burn-down~ | Open &mdash; DERIVED 2026-0~ | unassigned   | `open-work/platform.md:196` |
+| Platform         | Semgrep installed and running platform-wide, and TWO of its defaults we~ | BUILT 2026-09-10 (CC) &mdas~ | CC           | `open-work/platform.md:197` |
+| Platform         | The NOT RUN label on 29 cleanup SQL files is a claim about the FILE, no~ | BUILT 2026-09-10 (CC) &mdas~ | CC           | `open-work/platform.md:199` |
+| Platform         | Criticality tiering -- the third standing discipline, and the one nothi~ | BUILT 2026-09-10 (Fourth), ~ | Fourth       | `open-work/platform.md:201` |
+| Platform         | Nothing stated what FINISHED means across all four gates, or where each~ | WRITTEN 2026-09-10 (Fourth)~ | Fourth (the~ | `open-work/platform.md:202` |
+| Platform         | Nothing enforced the per-statement confirm query CLAUDE.md has required~ | BUILT AND CLEAN 2026-09-10 ~ | Cody         | `open-work/platform.md:206` |
+| Platform         | Live write-path verification leaves rows the product cannot delete — 15~ | Open (process)               | unassigned   | `open-work/platform.md:207` |
+| Platform         | ai_memories has no unique constraint at all — append-only log, or per-l~ | Open (product decision)      | Michael      | `open-work/platform.md:211` |
+| Platform         | anon and authenticated hold TRUNCATE/REFERENCES/TRIGGER on 158 tables e~ | Open — STAGE A RUN AND VERI~ | Michael to ~ | `open-work/platform.md:213` |
+| Platform         | Load-state gates: every per-licence reference table now has a read-only~ | Open — built and proven, bu~ | unassigned   | `open-work/platform.md:217` |
+| Platform         | (x \                                                                     | \                            | 0) in a num~ | `open-work/platform.md:218` |
+| Platform         | PATTERN 13's TRIAL-EXPIRY GATE HAS NEVER FIRED ON ANY LICENCE — the col~ | Open &mdash; found 2026-09-~ | unassigned ~ | `open-work/platform.md:226` |
+| Platform         | anon CANNOT read license_keys — MEASURED, not assumed, and it closes th~ | Probed live 2026-09-05 (Cod~ | unassigned ~ | `open-work/platform.md:227` |
+| Platform         | Parts 2-4 progress: the defect REGISTER is live, and a portfolio-wide s~ | PART 4 BUILT 2026-09-10 (Co~ | Cody (parts~ | `open-work/platform.md:230` |
+| Platform         | 131 COMMITS ON origin/main WERE AUTHORED AND COMMITTED BY A TEST FIXTUR~ | LEAK STOPPED AND HELD 2026-~ | Cody         | `open-work/platform.md:235` |
+| Platform         | Item 83: the two questions a FAIL-SAFE DEFAULT is never asked &mdash; i~ | BUILT 2026-09-14 (Cody) &md~ | Cody         | `open-work/platform.md:236` |
+| Platform         | ~~FAIL-OPEN IN THE BLOCKING PUSH GATE: an unresolvable base returned an~ | REVERTED 2026-09-11 (Cody),~ | Cody         | `open-work/platform.md:237` |
+| Platform         | Part 3 -- FAULT INJECTION. Break the WORLD, not the logic: a refused wr~ | BUILT 2026-09-10 (Cody) &md~ | Cody         | `open-work/platform.md:238` |
+| Platform         | The four-part verification programme &mdash; traceability matrix, mock ~ | PART 1 BUILT 2026-09-10 (Co~ | Cody (part ~ | `open-work/platform.md:239` |
+| Platform         | THE SWEEP IS DONE: the pre-auth ordering is not two endpoints, it is th~ | Detector shipped and triage~ | Cody (sweep~ | `open-work/platform.md:244` |
+| Platform         | api/sd-data.js now makes an UNAUTHENTICATED database round trip on ever~ | ⚠ BUILT AND MEASURED INERT ~ | Michael — t~ | `open-work/platform.md:248` |
+| Platform         | ~~The SAME pre-auth verb disclosure survives in roughly twenty api/-aut~ | Split 2026-09-05 (Cody). Th~ | unassigned   | `open-work/platform.md:249` |
+| Platform         | OBSERVATION WINDOW RUNNING TO 2026-09-12: two log-only WAF rate-limit r~ | Staged and published 2026-0~ | Cody (stagi~ | `open-work/platform.md:250` |
+| Platform         | 🚫 api/claude.js IS AN OPEN ANTHROPIC PROXY. No credential of any kind, ~ | CONFIRMED LIVE 2026-09-05 (~ | Michael — t~ | `open-work/platform.md:251` |
+| Platform         | api/agent/enqueue.js: anyone knowing an agent_id can queue an arbitrary~ | CONFIRMED SAFE FOR NOW 2026~ | Fourth (que~ | `open-work/platform.md:253` |
+| Platform         | 19 bare-named tables carrying the excess grant baseline are reachable b~ | Open — found 2026-08-25, co~ | unassigned   | `open-work/platform.md:259` |
+| Platform         | ~~The 227-table grant export was truncated a second time~~               | RETRACTED 2026-08-25 — the ~ | —            | `open-work/platform.md:260` |
+| Platform         | ~~A live licence is API-unrecoverable: RF-PINNACLE-2026 has ZERO active~ | Recovered; the PATTERN row ~ | unassigned   | `open-work/platform.md:268` |
+| Platform         | &#128993; Item 94's blob migration: SIX more branches converted individ~ | SIX CONVERTED 2026-09-26 (c~ | unassigned ~ | `open-work/platform.md:272` |
+| Platform         | &#128993; The prompt-injection scanner's untrusted-field list is GENERI~ | THREE SITES FENCED 2026-09-~ | unassigned ~ | `open-work/platform.md:273` |
 | Process          | &#9888;&#65039; CC'S ROUTED TEXT FOR HANK DOES NOT EXIST &mdash; the cl~ | MEASURED 2026-10-06T13:54Z,~ | cc           | `open-work/process.md:9` |
 | Process          | &#128993; A CONTROL THAT LANDS ON AN ALREADY-RED SUITE IS INVISIBLE &md~ | NEW 2026-10-05 (CC). Second~ | unassigned   | `open-work/process.md:10` |
 | Process          | &#128993; docs/2026-09-29-register-cells-hank.md hands the next session~ | NEW 2026-10-05 (CC). Found ~ | unassigned   | `open-work/process.md:11` |
@@ -395,4 +397,4 @@ closed-ish word. Every row, open or not, is in its shard in full.
 | Tooling          | A PROBE fixture commit reached origin/main three hours after check 8 sh~ | CHECK 10 ADDED 2026-09-10 (~ | Cody         | `open-work/tooling.md:146` |
 | Tooling          | A 35-table migration is 35 chances to half-run, and a half-run one is i~ | BUILT AND RUN 2026-09-10 (C~ | CC           | `open-work/tooling.md:155` |
 
-368 open row(s) of 820 total.
+370 open row(s) of 822 total.
