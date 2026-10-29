@@ -4610,6 +4610,17 @@
       "status": "released",
       "released_at": "2026-10-29T19:33:45Z",
       "files": null
+    },
+    {
+      "id": "cody-1793304394",
+      "session": "cody",
+      "subject": "platform",
+      "task": "licence guard legacy-device sweep 12 apps and confirmed-set TTL",
+      "claimed_at": "2026-10-29T20:06:34Z",
+      "claimed_at_epoch": 1793304394.1028202,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
