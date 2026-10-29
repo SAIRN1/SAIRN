@@ -1,0 +1,16 @@
+DIGEST cc b73
+STATUS: resume batch. Dispatch said b72; b72 was already closed, so b73.
+START: fast-forwarded 54c52e57 -> fcc8bcaf; hooks 4/4 OK, regression 37/0.
+DONE: cody b64 re-entry Tier A review DISCHARGED -- PASS + 1 LOW (sairndental.html:3104 hold taken outside try).
+  Eight reentry suites exit 0; verdict in docs/2026-10-29-cc-b73-review-cody-b64-reentry.md.
+BLOCKED: hover b92 test_965 review is assigned to cc but the deny hook bars builders from the hover path -- needs reassignment to hover2.
+ROUTED: R-11 (dental hold, cody), R-12 (mech .catch, cody), R-13 (reassign test_965, Michael/hover).
+DECISION-NEEDED: Michael -- reassign test_965; ctxmeter.py path; audit credentials for C-4/C-5.
+UNVERIFIED: none new.
+CHANGED: SAIRN-handoff-cc-b73.md, docs/2026-10-29-cc-b73-review-cody-b64-reentry.md, docs/tier-a-reviews.json, report, digest.
+SQL: none.
+EVIDENCE-path: SAIRN-handoff-cc-b73.md (section 2 = resume list), SAIRN-report-cc-b73.txt
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\a046cdf7-9eaf-4291-b1ac-b9b8bb34da67.jsonl
+NEXT: builder_hook_presence.py, then --list; the 580h quotes record is the most overdue cc may --takeover.
+CONTEXT 65.8% of 200,000 -- 131,532 tokens, measured.
+END-OF-REPORT

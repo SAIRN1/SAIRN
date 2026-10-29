@@ -1,0 +1,29 @@
+REPORT cc b73 -- 2026-10-29
+DISPATCH: resume from last handoff; review obligations; hook presence; cause-tag fixes; handoff before report.
+NUMBERING: dispatch said "done b72"; b72 was already closed (54c52e57), so this is b73.
+
+START STATE (measured): HEAD 54c52e57 was 3 behind origin/main; fast-forwarded to fcc8bcaf; clean tree.
+HOOK PRESENCE: builder_hook_presence.py 4/4 OK (blob 22b205e8); install regression 37/0. No shared config touched.
+
+REVIEW OBLIGATIONS (tier_a_review_gate.py --list: 20 open, 17 overdue; 2 ASSIGNED TO cc):
+ 1. cody 2026-10-29T13:40:41Z -- re-entry guards (c654f115 + 046e3f4f). DISCHARGED: PASS + 1 LOW.
+    - All eight tests/*_save_reentry.js suites exit 0.
+    - Per-handler order of check / hold / release / await read by a brace-matching extractor:
+      every release is in finally; no first press is refused; no await sits between a check and its hold.
+    - sairncode: 24/24 scSaveBusy/scHoldWhile keys pair in-function.
+    - LOW: sairndental.html:3104 increments dntCredWriting outside the try; a sync throw from
+      rCredentials(null) would leave every later credential add refused (b64's :3044 guard makes it bite).
+      Cause tag: hold acquired outside the try/finally that releases it. Routed to cody (R-11).
+    - Out of scope, routed: mechCredAdd/mechAssetAdd have no .catch, so a rejected write is silent (R-12).
+    Verdict: docs/2026-10-29-cc-b73-review-cody-b64-reentry.md
+ 2. hover 2026-10-28T21:14:26Z -- test_965. NOT DISCHARGEABLE BY A BUILDER: builder_auditor_deny_hook
+    refused ls/git log on the hover path (correctly). Routed to Michael/hover to reassign to hover2 (R-13).
+
+FIXES MADE: none to code. Nothing to cause-tag as a fix; the one defect found is cause-tagged in the verdict.
+BACKLOG C-3/C-4/C-5: still blocked on Michael (ctxmeter.py path; audit credentials; caregiver credentials).
+
+PUSH: handoff commit 69c36d5f landed after one remote race (rebase, ledger --validate clean).
+  MEASURED after fetch: HEAD = origin/main = 69c36d5ffd4deae92fd31c92fa93136b3015dd67.
+ASSUMPTION: context window declared 200,000 (conservative; b72 measured against 1M).
+CHANGED: SAIRN-handoff-cc-b73.md, docs/2026-10-29-cc-b73-review-cody-b64-reentry.md, docs/tier-a-reviews.json,
+  SAIRN-report-cc-b73.txt, SAIRN-digest-cc-b73.txt.
