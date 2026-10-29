@@ -40168,7 +40168,7 @@
       "recurrence_open": "Other fixed 'this device only' / 'not synced' sentences in other apps are not checked against their SYNCED lists; only this panel is now rendered from confirmed state."
     },
     {
-      "commit": "880535365db4",
+      "commit": "cbd6cc10e938",
       "date": "2026-10-29",
       "subject": "fix(push_retry, hank b65): a landed fast retry's BYPASS-LOG row no longer blocks the next run's rebase",
       "files": [
