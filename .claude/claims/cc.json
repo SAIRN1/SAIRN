@@ -4879,8 +4879,8 @@
       "task": "b69 watchdog operator record, field-scope 23 reads owner assignment, CRLF write-path audit, block-log parity FILES: tools/sairn_watchdog.py tools/tooling_inventory.py tools/field_scope_rules.json tools/sairn_field_scope_check.py tools/builder_auditor_deny_hook.py",
       "claimed_at": "2026-10-29T11:10:20Z",
       "claimed_at_epoch": 1793272220.7606063,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-29T11:31:14Z",
       "files": [
         "tools/builder_auditor_deny_hook.py",
         "tools/field_scope_rules.json",
