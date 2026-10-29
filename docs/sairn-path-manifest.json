@@ -104,6 +104,7 @@
     "cody": [
       "api/sd-data.js",
       "sairnfreedom.html",
+      "sairnmechanical.html",
       "tools/defect_register.py",
       "tools/run_semgrep.py",
       "tools/assertion_label_shape_check.py",
