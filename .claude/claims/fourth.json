@@ -4979,6 +4979,20 @@
         "sairncash.html",
         "tests/sairncash_prior_tax_zero.js"
       ]
+    },
+    {
+      "id": "fourth-1793305183",
+      "session": "fourth",
+      "subject": "stonedesk",
+      "task": "presence FAIL routing SDP subxCompliancePill safetyUpdateKPIs silica tiles FILES: stonedesk.html tests/stonedesk_presence_fixes_b69.js",
+      "claimed_at": "2026-10-29T20:19:43Z",
+      "claimed_at_epoch": 1793305183.7158551,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "stonedesk.html",
+        "tests/stonedesk_presence_fixes_b69.js"
+      ]
     }
   ],
   "refusals": [
