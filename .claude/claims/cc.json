@@ -4903,6 +4903,20 @@
         "tools/field_scope_rules.json",
         "tools/push_retry.py"
       ]
+    },
+    {
+      "id": "cc-1793306316",
+      "session": "cc",
+      "subject": "api",
+      "task": "cc b76 deleted-row check must not follow caller body.app_id; FILES: api/sd-data.js sairngrounds.html tests/",
+      "claimed_at": "2026-10-29T20:38:36Z",
+      "claimed_at_epoch": 1793306316.8728576,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/sd-data.js",
+        "sairngrounds.html"
+      ]
     }
   ],
   "refusals": [
