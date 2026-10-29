@@ -919,43 +919,6 @@
    "tail_remeasured_2026_10_14": "cody b9, see the b9 note appended to `why`"
   },
   {
-   "file": "tests/sairnfreedom_auth_review_probe.js",
-   "kind": "node",
-   "tail": "  ? 15:11 (2) -- the sf-auth setup guard anchor has moved -- this arm is not reporting agreement it did not check",
-   "since": "2026-10-06",
-   "why": "DRIVEN 2026-10-14 (cody b9): EXIT 1, and the exit is BY DESIGN rather than a crash. `why` WAS BLANK; this is the first diagnosis. ANCHOR DRIFT, REPORTED IN THE CORRECT THIRD STATE: `? 15:11 (2) -- the sf-auth setup guard anchor has moved -- this arm is not reporting agreement it did not check`, summarised as `1 PRESS-ON(S) COULD NOT BE DRIVEN -- NOT a clean review:`. The suite then exits 1 at tests/sairnfreedom_auth_review_probe.js:311 on purpose. So the suite is behaving exactly as written: it refuses to report agreement it did not check. NOT A CREDENTIAL PROBLEM. The probe states separately that it holds no SAIRNfreedom credentials and handles that by judgement, not through this arm -- so this red is a stale ANCHOR in the probe against api/sf-auth, not a missing environment. EXIT CODE: tests/sairnfreedom_auth_review_probe.js:318 `process.exit(0)`, reached via :311 `process.exit(1)`. NEXT STEP: re-point the setup-guard anchor at its current site in api/sf-auth.js. The anchor lives in this tests/ file, so it is the tests owner's.",
-   "owner": "cody",
-   "diagnosed": "2026-10-14",
-   "diagnosed_by": "cody",
-   "environment": {
-    "where": "isolated-worktree",
-    "pinned": false,
-    "tool": "the suite itself, invoked directly, one process, python -u for .py",
-    "sha": "bd5239ac",
-    "basis": "DRIVEN IN cody b9, one at a time, 180s cap, cwd inside a git worktree of bd5239ac, exit code read from `echo \"EXIT=$?\"` on its own line and never inferred from the text. Worktree removed and pruned afterwards; `git worktree list` confirmed back to the live clone alone."
-   }
-  },
-  {
-   "file": "tests/sairnfreedom_segregation_of_duties.js",
-   "kind": "node",
-   "tail": "FAIL -- 25 passed, 1 failed",
-   "since": "2026-10-06",
-   "why": "ONE ARM OF 26, AND IT IS A CLAIM MADE TO THE USER. 'FAIL D4. sf_trustee_audits is NOT in SF_SYNCED -- the panel TELLS the user this record is device-only, and a claim about a limitation has to be true.' 25 arms pass. sairnfreedom.html carries 'device only' wording at three places (1616, 2042, 2048) and 'not synced' at 7621, and sf_trustee_audits appears twice in the file. So either the resource gained sync and the panel's disclaimer is now false, or the disclaimer was always about a different resource. EITHER WAY THE DIRECTION IS THE BAD ONE: a panel telling a trustee their audit record is device-only, when it is synced, is a privacy statement that is wrong rather than a feature that is missing. NOT CLEARED -- which of the two it is needs the SF_SYNCED list read against the three disclaimer sites, and that is app-owner work.  ||  RE-DRIVEN 2026-10-14 (cody b9), isolated worktree at bd5239ac: EXIT 1, 25 passed 1 failed -- REAL, AND IT IS A FALSE CLAIM LIVE IN THE UI. `D4. sf_trustee_audits is NOT in SF_SYNCED -- the panel TELLS the user this record is device-only, and a claim about a limitation has to be true` / `it IS synced now. GOOD -- but the panel still says it is device-only, and that sentence and this arm must both be rewritten.` TWO HALVES, TWO OWNERS: the panel sentence is in sairnfreedom.html (hank), the arm is in tests/ (tests owner). Exit line :405.",
-   "owner": "cody",
-   "diagnosed": "2026-10-07",
-   "diagnosed_by": "fourth",
-   "environment": {
-    "where": "live-clone",
-    "pinned": false,
-    "tool": "the suite itself, invoked directly",
-    "sha": "a7b6b58c",
-    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, tree verified clean before and after the batch; exit code read from the program's own output"
-   },
-   "exit_code": 1,
-   "cause_tag": "implementation/ui-claim/limitation-no-longer-true",
-   "tail_remeasured_2026_10_14": "cody b9, see the b9 note appended to `why`"
-  },
-  {
    "file": "tests/schema_provisioning_probe.py",
    "kind": "py",
    "tail": "3 ARM(S) FAILED",
@@ -1062,26 +1025,6 @@
    "tail_before_b28": "CONTROLS THAT DID NOT BITE: ['0. green on the unmodified file']",
    "tail_verdict_b28": "STABLE -- driven 2026-10-20, not read",
    "exit_code_observed_b28": 3
-  },
-  {
-   "file": "tests/write_readback_shape_probe.py",
-   "kind": "py",
-   "tail": "2 ARM(S) FAILED  [re-driven on a restored tree]",
-   "since": "2026-10-06",
-   "why": "TWO ARMS: arm2_writes_33_not_81 False and arm5_other_apps_unchanged False. The first pins TWO hardcoded counts in a single arm name -- 33 and 81 -- on a live write-site population, which is convention 14 and also convention 18: one arm asserting two numbers cannot say which moved. arm6_planted_write_is_caught True and arm6_source_restored True, so the detector fires and the restore holds; the tree was verified unchanged and node --check passes. THIRD SUITE IN THIS SLICE WITH A PINNED CARDINALITY, after the 35 in sairnfreedom_server_backup and the 35/41 in schema_provisioning. FIX: split the arm, then assert floors with n of N stated. NOT CLEARED -- which of 33 and 81 moved is not named, and the arm as written cannot tell you.  ||  RE-DRIVEN 2026-10-14 (cody b9), isolated worktree at bd5239ac: EXIT 1, 2 of 19 failed -- REAL, STALE COUNTS, MEASURED DIRECTLY with tools/write_without_readback_check.py: stonedesk.html 32/32, sairncare.html 10/10, sairnmechanical.html 3/3 against hardcoded 33 / 9 / 2. `arm2_writes_33_not_81 False`, `arm5_other_apps_unchanged False` / `arm5_drift sairncare.html want 9/9 got ['10','10']; sairnmechanical.html want 2/2 got ['3','3']`. INDEPENDENTLY CORROBORATES tests/run_write_path_scan_probe.py's `REGRESSION sairncare.html 0 -> 1` and `REGRESSION sairnmechanical.html 3 -> 4` -- two suites, two methods, the same two apps. Exit line :249.",
-   "owner": "cody",
-   "diagnosed": "2026-10-07",
-   "diagnosed_by": "fourth",
-   "environment": {
-    "where": "live-clone",
-    "pinned": false,
-    "tool": "the suite itself, invoked directly",
-    "sha": "51088830",
-    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, git status captured before and after each run and unchanged throughout, node --check api/sd-data.js clean afterwards; exit code read from the program's own output"
-   },
-   "exit_code": 1,
-   "cause_tag": "test-design/oracle-selection/hardcoded-cardinality",
-   "tail_remeasured_2026_10_14": "cody b9, see the b9 note appended to `why`"
   },
   {
    "file": "tests/run_selftest_independence_probe.py",
@@ -2125,6 +2068,72 @@
    "recovered_by": "fourth b66",
    "reconfirmed_b68": "2026-10-29 fourth b68: driven ALONE again in the live clone at 8441c1fce -- exit 0, \"0 failure(s)\", tree unchanged. No commit has touched tests/defect_register_capa_control.py or tools/defect_register.py's refusal path since 29da9532c, so the RECOVERED move stands. The whole-register re-drive (tools/red_suite_register_check.py) was started the same batch and had not finished at wrap; its verdict on the other 62 entries is NOT claimed here.",
    "recovered_why": "RECOVERED fourth b66, 2026-10-29: driven ALONE in the live clone, exit 0, \"0 failure(s)\", tree unchanged after. The row had been stale since cody b61 32b89a2c3 (fix(register): recurrence_open must name the residual), which edited this control in the same commit as the writer rule it exercises. The 2026-09-17 diagnosis (the 378db57e bookkeeping refusal firing on the synthetic record) no longer reproduces."
+  },
+  {
+   "file": "tests/sairnfreedom_auth_review_probe.js",
+   "kind": "node",
+   "tail": "  ? 15:11 (2) -- the sf-auth setup guard anchor has moved -- this arm is not reporting agreement it did not check",
+   "since": "2026-10-06",
+   "why": "DRIVEN 2026-10-14 (cody b9): EXIT 1, and the exit is BY DESIGN rather than a crash. `why` WAS BLANK; this is the first diagnosis. ANCHOR DRIFT, REPORTED IN THE CORRECT THIRD STATE: `? 15:11 (2) -- the sf-auth setup guard anchor has moved -- this arm is not reporting agreement it did not check`, summarised as `1 PRESS-ON(S) COULD NOT BE DRIVEN -- NOT a clean review:`. The suite then exits 1 at tests/sairnfreedom_auth_review_probe.js:311 on purpose. So the suite is behaving exactly as written: it refuses to report agreement it did not check. NOT A CREDENTIAL PROBLEM. The probe states separately that it holds no SAIRNfreedom credentials and handles that by judgement, not through this arm -- so this red is a stale ANCHOR in the probe against api/sf-auth, not a missing environment. EXIT CODE: tests/sairnfreedom_auth_review_probe.js:318 `process.exit(0)`, reached via :311 `process.exit(1)`. NEXT STEP: re-point the setup-guard anchor at its current site in api/sf-auth.js. The anchor lives in this tests/ file, so it is the tests owner's.",
+   "owner": "cody",
+   "diagnosed": "2026-10-14",
+   "diagnosed_by": "cody",
+   "environment": {
+    "where": "isolated-worktree",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process, python -u for .py",
+    "sha": "bd5239ac",
+    "basis": "DRIVEN IN cody b9, one at a time, 180s cap, cwd inside a git worktree of bd5239ac, exit code read from `echo \"EXIT=$?\"` on its own line and never inferred from the text. Worktree removed and pruned afterwards; `git worktree list` confirmed back to the live clone alone."
+   },
+   "recovered": "2026-10-29",
+   "recovered_by": "fourth b68",
+   "recovered_why": "RECOVERED fourth b68, 2026-10-29: tools/red_suite_register_check.py (whole register, isolated worktree at fcc8bcaf0) reported it RECOVERED, and it was then driven ALONE in a second disposable worktree at 92fac03fd: exit 0, \"exit 0\". Cause of the recovery not traced this batch."
+  },
+  {
+   "file": "tests/sairnfreedom_segregation_of_duties.js",
+   "kind": "node",
+   "tail": "FAIL -- 25 passed, 1 failed",
+   "since": "2026-10-06",
+   "why": "ONE ARM OF 26, AND IT IS A CLAIM MADE TO THE USER. 'FAIL D4. sf_trustee_audits is NOT in SF_SYNCED -- the panel TELLS the user this record is device-only, and a claim about a limitation has to be true.' 25 arms pass. sairnfreedom.html carries 'device only' wording at three places (1616, 2042, 2048) and 'not synced' at 7621, and sf_trustee_audits appears twice in the file. So either the resource gained sync and the panel's disclaimer is now false, or the disclaimer was always about a different resource. EITHER WAY THE DIRECTION IS THE BAD ONE: a panel telling a trustee their audit record is device-only, when it is synced, is a privacy statement that is wrong rather than a feature that is missing. NOT CLEARED -- which of the two it is needs the SF_SYNCED list read against the three disclaimer sites, and that is app-owner work.  ||  RE-DRIVEN 2026-10-14 (cody b9), isolated worktree at bd5239ac: EXIT 1, 25 passed 1 failed -- REAL, AND IT IS A FALSE CLAIM LIVE IN THE UI. `D4. sf_trustee_audits is NOT in SF_SYNCED -- the panel TELLS the user this record is device-only, and a claim about a limitation has to be true` / `it IS synced now. GOOD -- but the panel still says it is device-only, and that sentence and this arm must both be rewritten.` TWO HALVES, TWO OWNERS: the panel sentence is in sairnfreedom.html (hank), the arm is in tests/ (tests owner). Exit line :405.",
+   "owner": "cody",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly",
+    "sha": "a7b6b58c",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, tree verified clean before and after the batch; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "implementation/ui-claim/limitation-no-longer-true",
+   "tail_remeasured_2026_10_14": "cody b9, see the b9 note appended to `why`",
+   "recovered": "2026-10-29",
+   "recovered_by": "fourth b68",
+   "recovered_why": "RECOVERED fourth b68, 2026-10-29: tools/red_suite_register_check.py (whole register, isolated worktree at fcc8bcaf0) reported it RECOVERED, and it was then driven ALONE in a second disposable worktree at 92fac03fd: exit 0, \"ALL -- 28 passed, 0 failed\". Cause of the recovery not traced this batch."
+  },
+  {
+   "file": "tests/write_readback_shape_probe.py",
+   "kind": "py",
+   "tail": "2 ARM(S) FAILED  [re-driven on a restored tree]",
+   "since": "2026-10-06",
+   "why": "TWO ARMS: arm2_writes_33_not_81 False and arm5_other_apps_unchanged False. The first pins TWO hardcoded counts in a single arm name -- 33 and 81 -- on a live write-site population, which is convention 14 and also convention 18: one arm asserting two numbers cannot say which moved. arm6_planted_write_is_caught True and arm6_source_restored True, so the detector fires and the restore holds; the tree was verified unchanged and node --check passes. THIRD SUITE IN THIS SLICE WITH A PINNED CARDINALITY, after the 35 in sairnfreedom_server_backup and the 35/41 in schema_provisioning. FIX: split the arm, then assert floors with n of N stated. NOT CLEARED -- which of 33 and 81 moved is not named, and the arm as written cannot tell you.  ||  RE-DRIVEN 2026-10-14 (cody b9), isolated worktree at bd5239ac: EXIT 1, 2 of 19 failed -- REAL, STALE COUNTS, MEASURED DIRECTLY with tools/write_without_readback_check.py: stonedesk.html 32/32, sairncare.html 10/10, sairnmechanical.html 3/3 against hardcoded 33 / 9 / 2. `arm2_writes_33_not_81 False`, `arm5_other_apps_unchanged False` / `arm5_drift sairncare.html want 9/9 got ['10','10']; sairnmechanical.html want 2/2 got ['3','3']`. INDEPENDENTLY CORROBORATES tests/run_write_path_scan_probe.py's `REGRESSION sairncare.html 0 -> 1` and `REGRESSION sairnmechanical.html 3 -> 4` -- two suites, two methods, the same two apps. Exit line :249.",
+   "owner": "cody",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly",
+    "sha": "51088830",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, git status captured before and after each run and unchanged throughout, node --check api/sd-data.js clean afterwards; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "test-design/oracle-selection/hardcoded-cardinality",
+   "tail_remeasured_2026_10_14": "cody b9, see the b9 note appended to `why`",
+   "recovered": "2026-10-29",
+   "recovered_by": "fourth b68",
+   "recovered_why": "RECOVERED fourth b68, 2026-10-29: tools/red_suite_register_check.py (whole register, isolated worktree at fcc8bcaf0) reported it RECOVERED, and it was then driven ALONE in a second disposable worktree at 92fac03fd: exit 0, \"ALL ARMS PASS\". Cause of the recovery not traced this batch."
   }
  ],
  "_b5_addition_2026_10_12": "ELEVEN entries added by fourth, batch b5 item 2, and the brief asked for THIRTY. The 30 is hank's 2026-10-08 figure (\"101 red, registry records 75, 30 RED AND NOT RECORDED\") and it was re-derived rather than carried: the gap against this register at HEAD 327e9e80 is 23, not 30, because the register has absorbed some of them since and cody's later run moved others. Of those 23, driving each ALONE returned 11 RED, 7 GREEN, 2 exit-2 COULD NOT RUN, 2 exit-3 SKIPPED and 1 TIMEOUT at 180s. ONLY THE 11 ARE RED. The 7 GREEN are the finding that matters: a run log named them red and they are not, so the stale half of a census is a wrong answer in both directions. The 12 non-red are listed by name with their measured state in docs/2026-10-12-fourth-b5-routing.md -- they are NOT in this file, because an entry here is an exemption and an exemption over a suite that is green or that never ran would swallow its next real failure.",
