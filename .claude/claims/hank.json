@@ -4736,6 +4736,17 @@
       "status": "released",
       "released_at": "2026-10-28T23:59:30Z",
       "files": null
+    },
+    {
+      "id": "hank-1793270466",
+      "session": "hank",
+      "subject": "sairnlaw",
+      "task": "south dakota vermont rhode island deadline seed",
+      "claimed_at": "2026-10-29T10:41:06Z",
+      "claimed_at_epoch": 1793270466.2286506,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
