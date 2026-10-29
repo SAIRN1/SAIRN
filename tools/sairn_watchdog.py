@@ -16,7 +16,7 @@ INPUTS, all read at run time and never cached:
     with the highest N compared as a NUMBER, and the same batch's digest for
     its NEXT line.
 
-THREE FLAGS, each carrying its evidence:
+FOUR FLAGS, each carrying its evidence:
   OVERLAP      two agents hold ACTIVE claims whose declared FILES intersect,
                either the same path or one a directory prefix of the other.
                Exact and mechanical. A claim that declares no files cannot
@@ -26,6 +26,9 @@ THREE FLAGS, each carrying its evidence:
                that it holds none, but the registry still shows an ACTIVE
                claim made BEFORE that handoff landed. That is the claim/handoff
                mismatch that can be stated without judgement.
+  REGISTRY-BEHIND  the row's task names an OLDER batch than the agent's own
+               last handoff, at any state (added cc b68 after the first live run
+               read two such rows as clean).
   NEXT-DRIFT   the registry row was updated AFTER the handoff and the agent
                is working, yet its task shares no significant word with the
                handoff's stated NEXT step. Or the row was NOT updated since
@@ -60,7 +63,7 @@ import subprocess
 import sys
 import time
 
-CRITERIA_VERSION = '2026-10-28.b67.1'
+CRITERIA_VERSION = '2026-10-29.b68.1'
 EXIT_OK, EXIT_FINDING, EXIT_COULD_NOT = 0, 1, 2
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOCKS = os.path.join(os.path.expanduser('~'), 'SAIRN-SESSION-LOCKS')
@@ -198,6 +201,18 @@ def run(locks=LOCKS, repo=REPO, now=None):
                         'handoff': h['path'], 'handoff_says': 'claims released / none held',
                         'handoff_landed_utc': datetime.datetime.fromtimestamp(h['landed'], datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
                         'claim_still_active': c.get('task'), 'claimed_at': c.get('claimed_at')}})
+        # REGISTRY-BEHIND (cc b68, found on the FIRST live run): the row's task
+        # names an older batch than the agent's own last handoff. That is the
+        # registry disagreeing with the handoff at ANY state. The first draft
+        # only looked at `working` rows, so it read hank (task "b61", handoff
+        # b63) and cody (task "b59", handoff b60) as clean.
+        named = [int(x) for x in re.findall(r'\bb(\d+)\b', row.get('task') or '')]
+        hb = int(h['batch'][1:])
+        if named and max(named) < hb:
+            findings.append({'flag': 'REGISTRY-BEHIND', 'agents': [a], 'heuristic': False, 'evidence': {
+                'registry_task': row.get('task'), 'registry_state': row.get('state'),
+                'registry_updated_local': row.get('updated'), 'task_names_batch': 'b%d' % max(named),
+                'last_handoff': h['path']}})
         upd = utc_epoch(row.get('updated'))
         state = row.get('state')
         if upd is None:
@@ -295,6 +310,14 @@ def selftest():
         arm('...and a task that matches its NEXT is not flagged', ('NEXT-DRIFT', ('aa',)) not in flags and ('NEXT-DRIFT', ('bb',)) not in flags, flags)
         arm('NEXT-DRIFT (mechanical): working, but not updated since the handoff landed',
             any(x['flag'] == 'NEXT-DRIFT' and x['agents'] == ['dd'] and not x['heuristic'] for x in f), f)
+        arm('REGISTRY-BEHIND is not raised when the task names no batch, or the current one',
+            not any(x['flag'] == 'REGISTRY-BEHIND' for x in f), [x for x in f if x['flag'] == 'REGISTRY-BEHIND'])
+        row('gg', 'idle', 'b61: push_retry fast retry', T0 + 600, [])
+        handoff('gg', 63, 'Claims held: none\n', digest_next='gg -- next')
+        f2, _cn2, _n2 = run(locks, repo)
+        arm('REGISTRY-BEHIND: an IDLE row whose task names b61 while the last handoff is b63 (the live hank shape)',
+            any(x['flag'] == 'REGISTRY-BEHIND' and x['agents'] == ['gg'] for x in f2), f2)
+        os.remove(os.path.join(locks, 'status', 'gg.json'))
         arm('a claim with NO files is listed as not checkable, never silently clean',
             any('cc' in s for s in notes), notes)
         # FAIL CLOSED
