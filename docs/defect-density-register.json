@@ -38987,7 +38987,7 @@
       "recurrence_open": "Three more ok-with-null write acks remain outside sairnmechanical (sd-data.js supplier_lead_times, sd_approvals, alf_family_contacts); routed in the cody b58 handoff."
     },
     {
-      "commit": "199e3563f326",
+      "commit": "a6947c576b5e",
       "date": "2026-10-28",
       "subject": "fix(tools, cody b59): dead_function_sweep's runaway guard compares against an independent comment count, not a fixed 25%",
       "files": [
