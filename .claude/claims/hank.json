@@ -4835,6 +4835,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "hank-1793304530",
+      "session": "hank",
+      "subject": "sairnlegacy",
+      "task": "H1x raw o.id inline onclick pass",
+      "claimed_at": "2026-10-29T20:08:50Z",
+      "claimed_at_epoch": 1793304530.0064151,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
