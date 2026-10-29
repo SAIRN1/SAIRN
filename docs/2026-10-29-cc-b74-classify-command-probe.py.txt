@@ -1,0 +1,29 @@
+# cc b74 review probe for tools/deploy_verify_notify.py classify_command().
+# Run from the repo root: python docs/2026-10-29-cc-b74-classify-command-probe.py.txt
+# Exit 1 while any real push is classified not-a-push (a silent skip).
+import sys
+sys.path.insert(0, 'tools')
+from deploy_verify_notify import classify_command as c
+
+PUSH = ('push',)
+SAFE = ('not-a-push', 'unsure')   # unsure prints a notice; either is acceptable
+cases = [
+    ('git push origin main', PUSH),
+    ('cd /x && git push origin main', PUSH),
+    ('git -c http.version=HTTP/1.1 push origin main', PUSH),
+    ('echo "pushing now" && git push origin main', PUSH),
+    ('echo start; git push origin main', PUSH),
+    ('grep -n x f.txt || git push origin main', PUSH),
+    ('echo "git push origin main"', SAFE),
+    ('git log --oneline push', SAFE),
+    ('git stash push -m wip', SAFE),
+    ('python tools/push_retry.py', PUSH),
+]
+bad = 0
+for cmd, want in cases:
+    got = c(cmd)
+    ok = got in want
+    bad += not ok
+    print('%-4s want=%-20s got=%-10s %s' % ('ok' if ok else 'BAD', '|'.join(want), got, cmd))
+print('%d of %d wrong' % (bad, len(cases)))
+sys.exit(1 if bad else 0)
