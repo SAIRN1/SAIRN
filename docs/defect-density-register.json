@@ -41360,7 +41360,7 @@
       "recurrence_open": "Any other could-not-tell code added to the server later must be added to the kept list too; nothing enforces that."
     },
     {
-      "commit": "6398f7e48bb5",
+      "commit": "8138dc48d3e4",
       "date": "2026-10-29",
       "subject": "fix(stonedesk, fourth b69): three compliance displays claimed what the record does not hold (cc b56 T2a/T2b, T3a/T3b, T4a)",
       "files": [
