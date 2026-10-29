@@ -1665,13 +1665,9 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
           November 2025 after an absent president &ldquo;led to theft&rdquo;. So this app
           refuses an audit prepared by whoever holds the finance capability, and refuses
           one prepared by somebody who is not a trustee at all.</div>
-          <div class="flagbox" style="margin-top:12px"><strong>This record is held on this
-          device only.</strong> Every other collection in this app syncs to the server; this
-          one cannot yet, because registering a new synced resource needs an edit to
-          <code>api/sd-data.js</code>, which another session holds. <strong>A trustee audit
-          is evidence, and evidence in one browser is one cleared cache from gone</strong>
-          &mdash; so print or keep the packet after each audit until the server leg lands.
-          Tracked as an open-work row rather than left as a surprise.</div>
+          <!-- The backup state is RENDERED, not written here: sfTrusteeSyncHtml() says
+               how many audits the server has confirmed (cody b61). -->
+          <div id="tr-sync" style="margin-top:12px"></div>
         </div>
 
         <div class="card"><h3>Audits recorded</h3>
@@ -2058,6 +2054,8 @@ function sfData(action, resource, payload){
       // past the guard above is a write the server accepted, and the
       // server-wins carve-out needs to know which ids those are.
       if(action==='write'&&payload&&payload.id!==undefined&&payload.id!==null)sfMarkSynced(resource,payload.id);
+      if(action==='write'&&payload&&payload.id!==undefined&&payload.id!==null)sfConfirmOnServer(resource,[payload.id]);
+      if(action==='read'&&Array.isArray(d.data))sfConfirmOnServer(resource,d.data.map(function(x){ return x&&x.id; }));
       return d.data;
     });
   }).catch(function(e){
@@ -2116,6 +2114,38 @@ function sfSyncedRead(){
   }catch(e){}
   try{console.error('SAIRNfreedom: "'+SF_SYNCED_KEY+'" did not parse -- hydration will NOT overwrite anything this run. This is NOT the same as nothing having been synced.');}catch(_e){}
   return {state:'unreadable',map:{}};
+}
+// ── WHAT THE SERVER HAS CONFIRMED, KEPT APART FROM THE SYNCED MAP (cody b61) ─
+// The trustee panel said "held on this device only" for weeks after
+// sf_trustee_audits started syncing (e3446a48b). Its replacement has to say
+// what is TRUE per record, and SF_SYNCED_KEY cannot: the one-time bootstrap
+// above seeds it with every local id, pushed or not. This set gets an id only
+// when the server answered for it -- a write it accepted, or a row a read
+// returned -- so "confirmed" never means "this device assumed so".
+var SF_CONFIRMED_KEY='sf_server_confirmed';
+function sfConfirmedRead(){
+  var raw=null;
+  try{raw=localStorage.getItem(SF_CONFIRMED_KEY);}catch(e){return {state:'unreadable',map:{}};}
+  if(raw===null)return {state:'ok',map:{}};
+  try{
+    var m=JSON.parse(raw);
+    if(m&&typeof m==='object'&&!Array.isArray(m))return {state:'ok',map:m};
+  }catch(e){}
+  return {state:'unreadable',map:{}};
+}
+function sfConfirmOnServer(resource,ids){
+  var r=sfConfirmedRead();
+  if(r.state!=='ok')return;              // never overwrite a record we could not read
+  var arr=Array.isArray(r.map[resource])?r.map[resource]:[], added=false;
+  ids.forEach(function(id){
+    if(id===undefined||id===null)return;
+    if(arr.indexOf(String(id))===-1){arr.push(String(id));added=true;}
+  });
+  if(added){r.map[resource]=arr;st(SF_CONFIRMED_KEY,r.map);}
+  // The answer arrives after the panel rendered; redraw the one line it changes.
+  if(added&&resource==='sf_trustee_audits'&&typeof sfRenderTrustees==='function'){
+    try{ sfRenderTrustees(); }catch(e){ try{ console.warn('SAIRNfreedom: trustee panel redraw failed: '+((e&&e.message)||e)); }catch(_e){} }
+  }
 }
 function sfMarkSynced(resource,id){
   if(!resource||id===undefined||id===null)return;
@@ -4154,8 +4184,32 @@ function sfDeleteTrusteeAudit(id){
   sfRenderAll();
 }
 
+// The panel's backup line, from what the server has CONFIRMED (cody b61). Pure:
+// every input is passed in, so tests drive it without a browser.
+function sfTrusteeSyncHtml(audits, hasLicence, confirmed){
+  var n=audits.length;
+  if(!hasLicence) return '<div class="flagbox"><strong>Not backed up: this device has no '+
+    'licence key,</strong> so every trustee audit here is held on this device only. '+
+    '<strong>A trustee audit is evidence, and evidence in one browser is one cleared cache '+
+    'from gone</strong> &mdash; print or keep the packet after each audit.</div>';
+  if(confirmed.state!=='ok') return '<div class="flagbox"><strong>Could not tell which '+
+    'audits reached the server</strong> &mdash; the confirmation record on this device did '+
+    'not read. Treat every audit as held on this device only and keep the packets.</div>';
+  if(!n) return '<div class="note">Each audit is sent to the server when it is recorded, '+
+    'and this line counts the ones the server has confirmed.</div>';
+  var ids=Array.isArray(confirmed.map.sf_trustee_audits)?confirmed.map.sf_trustee_audits:[];
+  var ok=audits.filter(function(a){ return a&&ids.indexOf(String(a.id))!==-1; }).length;
+  if(ok===n) return '<div class="note"><span class="tag ok">on the server</span> All '+n+
+    ' audit'+(n===1?'':'s')+' confirmed by the server.</div>';
+  return '<div class="flagbox"><strong>'+(n-ok)+' of '+n+' audit'+(n===1?' is':'s are')+
+    ' NOT yet confirmed by the server</strong> and '+(n-ok===1?'is':'are')+' held on this '+
+    'device only until '+(n-ok===1?'it is':'they are')+'. Keep the printed packet for '+
+    (n-ok===1?'it':'those')+'. '+ok+' confirmed.</div>';
+}
+
 function sfRenderTrustees(){
   var p=getPost(), audits=getTrusteeAudits(), accs=getAccounts();
+  if($('tr-sync')) $('tr-sync').innerHTML=sfTrusteeSyncHtml(audits, !!ld(K_LIC,''), sfConfirmedRead());
   var qs=$('tr-quarter');
   if(qs){
     var prevq=qs.value;

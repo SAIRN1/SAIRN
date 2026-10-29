@@ -367,16 +367,58 @@ test('D3. the beer tile no longer says the purchase must be for cash, and names 
       'the rule that actually lists cash/check/card/EFT is not cited anywhere');
   });
 
-test('D4. sf_trustee_audits is NOT in SF_SYNCED -- the panel TELLS the user this '
-  + 'record is device-only, and a claim about a limitation has to be true',
+// D4 REWRITTEN (cody b61), AS ITS OWN MESSAGE ASKED. sf_trustee_audits has
+// synced since e3446a48b, and the panel kept saying "held on this device only"
+// -- a false claim about where the user's evidence is. The panel now renders
+// what the server has CONFIRMED, per record, from sf_server_confirmed (which,
+// unlike sf_synced_ids, is never seeded by the bootstrap).
+test('D4. sf_trustee_audits IS synced, and the panel no longer says device-only '
+  + 'as a fixed sentence -- it renders the server-confirmed count',
   () => {
     const m = bare.match(/var SF_SYNCED=\[([\s\S]*?)\];/);
     assert.ok(m, 'SF_SYNCED not found -- anchor moved');
-    assert.ok(!/sf_trustee_audits/.test(m[1]),
-      'it IS synced now. GOOD -- but the panel still says it is device-only, '
-      + 'and that sentence and this arm must both be rewritten.');
-    assert.ok(/held on this\s+device only/.test(bare),
-      'the panel does not disclose the limitation this arm just confirmed');
+    assert.ok(/sf_trustee_audits/.test(m[1]), 'sf_trustee_audits is no longer synced');
+    assert.ok(!/This record is held on this\s+device only/.test(bare),
+      'the fixed "This record is held on this device only" sentence is back');
+    assert.ok(/id="tr-sync"/.test(bare), 'the rendered backup line has no element');
+  });
+
+test('D4b. the backup line tells the truth in every state, driven',
+  () => {
+    const src = grab('function sfTrusteeSyncHtml(audits, hasLicence, confirmed){', END) + '\n}\n';
+    const ctx = {};
+    vm.createContext(ctx);
+    vm.runInContext(src, ctx);
+    const f = ctx.sfTrusteeSyncHtml;
+    const a = [{ id: 'tr1' }, { id: 'tr2' }];
+    assert.ok(/no\s+licence key/.test(f(a, false, { state: 'ok', map: {} })),
+      'no licence must say not backed up');
+    assert.ok(/Could not tell/.test(f(a, true, { state: 'unreadable', map: {} })),
+      'an unreadable confirmation record must be could-not-tell, not a count');
+    const none = f(a, true, { state: 'ok', map: {} });
+    assert.ok(/2 of 2 audits are NOT yet confirmed/.test(none), none);
+    const half = f(a, true, { state: 'ok', map: { sf_trustee_audits: ['tr1'] } });
+    assert.ok(/1 of 2 audits are NOT yet confirmed/.test(half) && /1 confirmed/.test(half), half);
+    const all = f(a, true, { state: 'ok', map: { sf_trustee_audits: ['tr1', 'tr2'] } });
+    assert.ok(/All 2 audits confirmed by the server/.test(all) && !/NOT/.test(all), all);
+    const other = f(a, true, { state: 'ok', map: { sf_officers: ['tr1', 'tr2'] } });
+    assert.ok(/2 of 2/.test(other), 'the ids of another resource must not confirm a trustee audit');
+  });
+
+test('D4c. "confirmed" is written only where the server answered: an accepted write '
+  + 'and the rows a read returned -- never by the bootstrap seed',
+  () => {
+    const data = grab('function sfData(action, resource, payload){', END);
+    assert.ok(/action==='write'[^\n]*sfConfirmOnServer\(resource,\[payload\.id\]\)/.test(data),
+      'an accepted write does not confirm its id');
+    assert.ok(/action==='read'&&Array\.isArray\(d\.data\)\)sfConfirmOnServer/.test(data),
+      'a read does not confirm the rows it returned');
+    const okIdx = data.indexOf("if(!r.ok || !d || !d.ok)");
+    const cIdx = data.indexOf('sfConfirmOnServer');
+    assert.ok(okIdx > 0 && cIdx > okIdx, 'confirmation is not behind the failure guard');
+    const boot = grab('function sfSyncedBootstrap(resources){', END);
+    assert.ok(!/sfConfirmOnServer|SF_CONFIRMED_KEY/.test(boot),
+      'the bootstrap seeds the confirmed set -- it would claim a backup nobody confirmed');
   });
 
 test('D5. the trustee capability carries a VFW title and is NOT invented for the '
