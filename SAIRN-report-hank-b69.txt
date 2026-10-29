@@ -1,0 +1,34 @@
+HANK b69 REPORT -- 2026-10-29
+
+1. Stop hook:
+   - Already built (cc b66) and armed in this clone through .claude/settings.local.json.
+   - The armed copy was STALE against cody's bea263709, which refuses a hand-typed done line that has no record.
+   - Re-armed with builder_hook_presence --install --only hank. Selftest 20/20.
+   - The cc and fourth clones are still stale. They were not touched.
+
+2. M5 FIXED (6cd786113, register c0adf3478):
+   - A deposit in transit older than 30 days now stops the trust reconciliation at PARTIAL, and is named in the bank leg.
+   - Tests: 37/37. 2 of the new arms go red with the status line removed. Stress probe M5 is now PASS.
+   - The 30-day threshold is my choice and is stated in the code. Michael may name a different number.
+
+3. J5 VT NOT SEEDED (1ceb2534e). Neither condition can be confirmed from the official Judiciary page:
+   - It defers current rule text to LexisNexis, and disclaims responsibility for Lexis's accuracy.
+   - Its promulgated list covers only two years. All 14 VRCP/VREF orders on it were read, and none touches 6(e) or 5(b).
+   - 2018 to 2022 cannot be confirmed from any official page.
+
+4. H1x FIXED (af2db16b3, register 0d6ca5730):
+   - 34 record values passed from inline handlers now go through JA() = H(JSON.stringify(String(v))). That is 33 ids plus idArg.
+   - api/b69-sairnlegacy-inline-handler-args.test.js: 15/15. Arm X shows both old forms run injected code.
+   - Live on sairn.vercel.app: JA() and the keepsake call site are PRESENT.
+
+5. Tier A: none open or assigned to hank. The six b68 discharges are restated with their reviewed shas inline (handoff section 5).
+
+6. Pre-existing failures, baselined and not mine:
+   - law-trust-reconcile-endpoint.test.js: 2 FAIL.
+   - sairnlegacy_reservation_lock.js: 35/36.
+
+7. Landed: 84660c4d9 == origin/main.
+   - The M5 fix is on the server and not observable live without a session. /api/sd-data answers 401 unauthenticated.
+
+CONTEXT 37.2% of 1,000,000 -- 371,787 tokens, measured.
+Evidence: SAIRN-handoff-hank-b69.md

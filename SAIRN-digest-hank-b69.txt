@@ -1,0 +1,15 @@
+HANK b69 DIGEST -- 2026-10-29 -- M5 + H1x fixed; stop hook re-armed; VT still not seedable
+CONTEXT 37.2% of 1,000,000 -- 371,787 tokens, measured.
+STATUS: work landed 84660c4d9 (== origin/main); live: sairnlegacy JA() PRESENT on sairn.vercel.app; M5 server-side, not observable unauthenticated.
+1. Stop hook: armed copy was stale vs cody bea263709; re-armed --only hank, 20/20. cc + fourth still stale.
+2. M5 (6cd786113): deposit in transit >30 days -> PARTIAL, named in bank leg. 37/37; ablation red; probe M5 PASS.
+3. H1x (af2db16b3): 34 inline-handler record values via JA(). 15/15; arm X red on both old forms.
+4. J5 VT: official page defers to Lexis and lists 2 years only; 14 orders read, no 6(e)/5(b) change; 2018-2022 unconfirmable. NOT seeded.
+5. Tier A: none assigned to hank; b68's six restated with reviewed shas inline (handoff 5).
+DECISION-NEEDED (Michael): VT -- Lexis printout of V.R.C.P. 6/12/33/34/36/59 with current-through line, or the Judiciary's answer. M5 threshold: keep 30 days or name one.
+NEXT (owners): HK1 cc/fourth re-arm hook; RL1 reservation_lock 35/36; LE1 reconcile-endpoint 2 FAIL; H1y same id shape in other apps.
+CARRIED: SDP, LGP, J6, J4, J2, A1, P1, R1, G1, S5, S7, T1.
+CHANGED: api/_lib/law-trust-reconcile.js (+test), sairnlegacy.html, api/b69-sairnlegacy-inline-handler-args.test.js, VT blocker doc, register.
+SQL-path: none new.
+EVIDENCE-path: SAIRN-handoff-hank-b69.md
+UNVERIFIED: M5 on the deployed endpoint (needs a session). The 30-day threshold is a judgment, not a rule.
