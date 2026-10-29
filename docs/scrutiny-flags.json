@@ -14914,6 +14914,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sd_data_mech_write_unconfirmed.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "if (!/resolution=(merge|ignore)-duplicates/.test(prefer)) {"
+    }
+   ],
+   "sha": "e0e732364db3743c37fb450c7574d9dbbec420c2",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/claims/run_registry_claim_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -15952,6 +15965,22 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "f4d4345f2db7cec93ebcd2c94c6f1a3e96654609",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairndental_save_reentry.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f4d8c29fab23db68668fb9b7968c52532dba2b42",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnfreedom_licence_guard_legacy.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f4d8c29fab23db68668fb9b7968c52532dba2b42",
    "criteria_version": "2026-10-06.1"
   },
   {
