@@ -4451,7 +4451,12 @@ function dcApprove(){
   $('dc-final-wrap').style.display='block';
   toast('Proposal approved by '+name);
 }
+// ONE INVOICE AT A TIME (cody b64): the report below waits on three server
+// writes and nothing this function reads is reset, so a second press during
+// that wait billed the same approved proposal twice. Held until they answer.
+var grdDcInvoicing=false;
 async function dcCreateInvoiceAndSchedule(){
+  if(grdDcInvoicing){toast('Still creating the last invoice -- one moment');return;}
   var propertyId=$('dc-property').value;
   if(!dcCurrentApproved||!dcCurrentQuoteId){toast('Approve the proposal first');return;}
   var quotes=ld('grd_quotes',[]);
@@ -4477,11 +4482,15 @@ async function dcCreateInvoiceAndSchedule(){
   // local state, never whether these three writes actually reached the
   // server). The toast now reflects real sync status, not just local
   // creation, and names which record(s) didn't make it if any fail.
-  var results=await Promise.all([
-    grdData('write','grd_invoices',irec),
-    grdData('write','grd_schedule',srec),
-    grdData('write','grd_dreamclose',dcRec)
-  ]);
+  grdDcInvoicing=true;
+  var results;
+  try{
+    results=await Promise.all([
+      grdData('write','grd_invoices',irec),
+      grdData('write','grd_schedule',srec),
+      grdData('write','grd_dreamclose',dcRec)
+    ]);
+  }finally{grdDcInvoicing=false;}
   var failedNames=['invoice','schedule entry','DreamClose record'].filter(function(_,i){return !results[i];});
   if(failedNames.length){
     toast('DreamClose complete on this device, but '+failedNames.join(', ')+' did not sync to the server -- retry with a connection.',7000);

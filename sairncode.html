@@ -6660,7 +6660,12 @@ How to answer:
             renderClaims();
             renderDashboard();
         }
+        // ONE CLAIM AT A TIME (cody b64): the form is cleared only after the
+        // server write answers, and a second press during that wait added the
+        // same claim again under a new id. Held until the write answers.
+        var scClaimSaving = false;
         async function addClaimEntry(){
+            if (scClaimSaving) { showToast('Still adding the last claim -- one moment'); return; }
             var claimId = document.getElementById('clm-add-id').value.trim();
             var patient = document.getElementById('clm-add-patient').value.trim();
             var payer = document.getElementById('clm-add-payer').value.trim();
@@ -6698,7 +6703,10 @@ How to answer:
             var saved = saveClaimEntries(list);
             // Same await+sync-check discipline as every other add-function on this
             // page (2026-08-19 audit, code-scrubber Check 4).
-            var synced = saved ? await scData('write', 'sc_claims', list[list.length - 1]) : null;
+            var synced = null;
+            scClaimSaving = true;
+            try { synced = saved ? await scData('write', 'sc_claims', list[list.length - 1]) : null; }
+            finally { scClaimSaving = false; }
             renderClaims();
             renderDashboard();
             document.getElementById('clm-add-id').value = '';

@@ -33,13 +33,16 @@ function grabLine(head) {
   if (i < 0 || html.indexOf(head, i + 1) !== -1) { console.log('COULD NOT RUN: "' + head + '"'); process.exit(2); }
   return html.slice(i, html.indexOf('\n', i));
 }
-let pass = 0, fail = 0;
+let pass = 0, fail = 0, finished = false;
 function check(name, cond, detail) {
   if (cond) { pass++; console.log('  ok   ' + name); }
   else { fail++; console.log('  FAIL ' + name + (detail ? '\n       ' + String(detail).slice(0, 300) : '')); }
 }
 
-const SRC = [grab('function sdnData(action,resource,payload,withSession,extraBody){'),
+// The staging hold's declaration is lifted if it exists, so the pre-fix file
+// (no declaration, no reference) runs unchanged and section 5 measures the fix.
+const STAGE_HOLD = (html.match(/var legCremationStaging\s*=\s*false;/) || [''])[0];
+const SRC = [STAGE_HOLD, grab('function sdnData(action,resource,payload,withSession,extraBody){'),
   grab('async function saveCremation(){'), grabLine("var LEG_CS_API="), grabLine("var LEG_CS_KEY="),
   grab('function legCs(action,payload){'), grabLine('function legCsPending(){'), grabLine('function legCsSave(v){'),
   grabLine('var LEG_CS_STAGE='), grab('function legCsRender(){'), grab('async function legCsFile(i){'),
@@ -67,7 +70,10 @@ function world(answers) {
     fetch: (url, opts) => {
       const body = JSON.parse(opts.body); calls.push({ url, headers: opts.headers, body });
       const a = answers(url, body) || { status: 200, json: { ok: true } };
-      return Promise.resolve({ ok: a.status < 300, status: a.status, json: () => Promise.resolve(a.json) });
+      const reply = (x) => ({ ok: x.status < 300, status: x.status, json: () => Promise.resolve(x.json) });
+      // An answer may be a promise: the request stays in flight until the arm settles it.
+      if (typeof a.then === 'function') return a.then(reply);
+      return Promise.resolve(reply(a));
     }
   };
   ['crcase', 'crname', 'crsched', 'crstatus', 'crauth', 'cridcheck', 'crwait', 'crwitness', 'crdisposition', 'crdispositiondetails'].forEach(el);
@@ -127,6 +133,48 @@ function world(answers) {
     check('S1. countersign is sent with the trimmed reference', !!c && c.body.action === 'countersign' && c.body.token === 'TOK-5');
     check('S2. a refusal is shown in the server\'s words', /cannot also countersign/.test(w.els['cs-result'].textContent), w.els['cs-result'].textContent);
   }
+  console.log('5. one staging at a time (cody b64 re-entry sweep)');
+  // saveCremation AWAITS the prepare BEFORE it stages and closes the modal, and
+  // the Save button stayed live for that whole wait: a second press sent a
+  // second prepare and staged the SAME cremation twice, under two references,
+  // each of which could be countersigned and filed as its own record.
+  {
+    const held = [];
+    let holding = true;
+    const w = world((url, b) => (/leg-countersign/.test(url) && b.action === 'prepare'
+      ? (holding ? new Promise((r) => held.push(r)) : { status: 200, json: { ok: true, token: 'TOK-N', expires_at: 'x' } })
+      : null));
+    const first = w.saveCremation();
+    await new Promise((r) => setImmediate(r));
+    const second = w.saveCremation();   // the double press, prepare still in flight
+    await new Promise((r) => setImmediate(r));
+    const prepares = () => w.calls.filter((c) => /leg-countersign/.test(c.url) && c.body.action === 'prepare').length;
+    check('D1. a second press while the prepare is in flight sends NO second prepare, and says so',
+      prepares() === 1 && w.toasts.some((t) => /Still staging/.test(t)),
+      JSON.stringify({ prepares: prepares(), toasts: w.toasts }));
+    // Settle EVERY held request -- an unsettled one would end the run with exit 0.
+    holding = false;
+    held.forEach((r, n) => r({ status: 200, json: { ok: true, token: 'TOK-' + n, expires_at: 'x' } }));
+    await first; await second;
+    const staged = JSON.parse(w.store.sairnlegacy_cs_pending || '[]');
+    check('D2. ...and exactly ONE record is staged', staged.length === 1, JSON.stringify(staged.map((p) => p.token)));
+    const before = prepares();
+    await w.saveCremation();
+    check('D3. once the prepare answers, the next press goes through: one more prepare, one more staged',
+      prepares() === before + 1 && JSON.parse(w.store.sairnlegacy_cs_pending).length === staged.length + 1,
+      JSON.stringify({ before, prepares: prepares() }));
+  }
+  {
+    const w = world((url) => (/leg-countersign/.test(url) ? { status: 503, json: { error: { message: 'down' } } } : null));
+    await w.saveCremation(); await w.saveCremation();
+    check('D4. after a refused prepare the hold is released: two presses, two prepares, no "Still staging"',
+      w.calls.filter((c) => /leg-countersign/.test(c.url)).length === 2 && !w.toasts.some((t) => /Still staging/.test(t)),
+      JSON.stringify(w.toasts));
+  }
+  finished = true;
   console.log('\n' + (fail ? 'FAILED' : 'ok') + '  sairnlegacy countersign UI: ' + pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);
 })().catch((e) => { console.log('COULD NOT RUN: ' + e.stack); process.exit(2); });
+// A run that ends with an arm still waiting (the IIFE unsettled) exits 0 in
+// node with nothing printed. It must read as COULD NOT RUN.
+process.on('exit', () => { if (!finished) { console.log('COULD NOT RUN: the run ended before its last arm'); process.exitCode = 2; } });

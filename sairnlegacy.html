@@ -3247,7 +3247,9 @@ function editCremation(id){
   $('crdisposition').value=c.disposition_type;$('crdispositiondetails').value=c.disposition_details||'';
   $('cremationmodal').classList.add('on');
 }
+var legCremationStaging=false;
 async function saveCremation(){
+  if(legCremationStaging){toast('Still staging the last cremation record -- one moment');return;}
   var caseId=$('crcase').value;
   if(!caseId){toast('Select a case');return;}
   var existing=ceid?cremations().find(function(x){return x.id===ceid;}):null;
@@ -3263,7 +3265,12 @@ async function saveCremation(){
   // different licensed director countersigns with it, and only then is this exact record filed.
   // Nothing goes into the local list before it is filed -- the server says "nothing was saved",
   // so the screen must not say otherwise.
-  var r=await legCs('prepare',{resource:'leg_cremations',payload:rec});
+  // ONE STAGING AT A TIME (cody b64): the modal closes only after the prepare
+  // answers, and a second press during that wait staged the same cremation
+  // twice, under two references. Held until the prepare answers, either way.
+  legCremationStaging=true;
+  var r;
+  try{r=await legCs('prepare',{resource:'leg_cremations',payload:rec});}finally{legCremationStaging=false;}
   if(!r.ok){toast(r.msg||'Could not stage this record for countersignature -- nothing was saved. Try again.',6000);return;}
   var pend=legCsPending();
   pend.push({token:r.data.token,expires_at:r.data.expires_at,rec:rec,staged_at:new Date().toISOString()});
@@ -3579,7 +3586,9 @@ function openPaymentModal(invoiceId){
   $('paymentmodal').classList.add('on');
 }
 function closePaymentModal(){$('paymentmodal').classList.remove('on');}
+var legPaymentSaving=false;
 async function confirmPayment(){
+  if(legPaymentSaving){toast('Still recording the last payment -- one moment');return;}
   var amount=Number($('pyamount').value)||0;
   if(amount<=0){$('payment-err').textContent='Enter a payment amount greater than 0';return;}
   var source=$('pysource').value;
@@ -3602,7 +3611,11 @@ async function confirmPayment(){
     if(plan){
       plan.amount_paid=(Number(plan.amount_paid)||0)+amount;
       st('leg_preneed',plans);
-      planSyncResult=await sdnData('write','leg_preneed',plan);
+      // ONE PAYMENT AT A TIME (cody b64): the modal closes only after this
+      // write answers, and a second Confirm during that wait recorded the
+      // payment -- and raised amount_paid -- twice. Held until it answers.
+      legPaymentSaving=true;
+      try{planSyncResult=await sdnData('write','leg_preneed',plan);}finally{legPaymentSaving=false;}
     }
   }
   closePaymentModal();rInvoicing();rPreneed();

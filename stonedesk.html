@@ -7726,8 +7726,14 @@ function sdCsvCell(v){var s=v==null?'':String(v);if(/^[=+\-@\t\r]/.test(s)&&!(s!
     window.posEsigClear();
   };
 
+  // ONE SALE AT A TIME (cody b64): with a slab attached the invoice is built
+  // only after the reservation answers, and a second press during that wait
+  // reserved again for the same customer and recorded a second signed sale.
+  // Held until the reservation answers, either way.
+  var posSaleSaving=false;
   window.posCompleteSale=async function(){
     var errEl=document.getElementById('pos-err');
+    if(posSaleSaving){errEl.textContent='Still completing the last sale -- one moment';return;}
     errEl.textContent='';
     var cust=document.getElementById('pos-cust').value.trim();
     var total=posUpdateTotal();
@@ -7745,7 +7751,10 @@ function sdCsvCell(v){var s=v==null?'':String(v);if(/^[=+\-@\t\r]/.test(s)&&!(s!
     // salesperson picking a different slab.
     if(posReservedSlabId && typeof sdSlabs!=='undefined'){
       var posSlab=sdSlabs.find(function(x){return x.id===posReservedSlabId;});
+      posSaleSaving=true;
+      try{
       var posRes=await sdReserveSlab(posSlab||{id:posReservedSlabId},cust);
+      }finally{posSaleSaving=false;}
       if(!posRes.ok){
         errEl.textContent=posRes.message;
         return;

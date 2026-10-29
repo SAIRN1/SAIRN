@@ -5821,7 +5821,13 @@ function complaints(){return ld('dnt_complaints_list',[]);}
 // enforcement is UI-level here (prole==='owner'), matching this app's
 // existing role-gating convention -- see design spec §0 for why that's
 // a stated, accepted limitation, not a gap.
+// ONE RESPONSE AT A TIME (cody b64): the reply box is re-rendered only after
+// the endpoint answers, and the endpoint APPENDS the text, so a second press
+// during that wait posted the same reply into the patient's thread twice.
+// Held until the request answers, either way.
+var dntComplaintResponding = false;
 async function respondToComplaint(id, action) {
+  if (dntComplaintResponding) { toast('Still sending the last response -- one moment'); return; }
   if (prole !== 'owner') { toast('Only the practice owner can respond'); return; }
   var text = '';
   if (action === 'reply') {
@@ -5831,6 +5837,7 @@ async function respondToComplaint(id, action) {
   }
   var lic = dntLicenseKey();
   if (!lic) { toast('Not logged in'); return; }
+  dntComplaintResponding = true;
   try {
     var r = await fetch(COMPLAINT_RESPOND_API, {
       method: 'POST',
@@ -5846,6 +5853,8 @@ async function respondToComplaint(id, action) {
     toast(action === 'resolve' ? 'Marked resolved' : 'Response sent');
   } catch (e) {
     toast('Could not connect -- check your connection and try again');
+  } finally {
+    dntComplaintResponding = false;
   }
 }
 
