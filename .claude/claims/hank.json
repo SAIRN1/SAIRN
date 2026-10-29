@@ -4802,6 +4802,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "hank-1793300404",
+      "session": "hank",
+      "subject": "sairnvet",
+      "task": "H1 1744 wildlife release date check",
+      "claimed_at": "2026-10-29T19:00:04Z",
+      "claimed_at_epoch": 1793300404.002532,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
