@@ -5365,6 +5365,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairnbuild_cost_forecast_writer.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "519ca798b02d9bc970dcb56b93d070bf0a95c0fd",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/claims/run_matcher_probe.py",
    "class": "test file",
    "level": "CHANGE",

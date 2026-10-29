@@ -2123,6 +2123,7 @@
    "exit_code_observed_b28": 1,
    "recovered": "2026-10-29",
    "recovered_by": "fourth b66",
+   "reconfirmed_b68": "2026-10-29 fourth b68: driven ALONE again in the live clone at 8441c1fce -- exit 0, \"0 failure(s)\", tree unchanged. No commit has touched tests/defect_register_capa_control.py or tools/defect_register.py's refusal path since 29da9532c, so the RECOVERED move stands. The whole-register re-drive (tools/red_suite_register_check.py) was started the same batch and had not finished at wrap; its verdict on the other 62 entries is NOT claimed here.",
    "recovered_why": "RECOVERED fourth b66, 2026-10-29: driven ALONE in the live clone, exit 0, \"0 failure(s)\", tree unchanged after. The row had been stale since cody b61 32b89a2c3 (fix(register): recurrence_open must name the residual), which edited this control in the same commit as the writer rule it exercises. The 2026-09-17 diagnosis (the 378db57e bookkeeping refusal firing on the synthetic record) no longer reproduces."
   }
  ],
