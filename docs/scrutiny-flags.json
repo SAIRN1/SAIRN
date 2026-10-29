@@ -8967,6 +8967,134 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/_lib/deadline-connecticut.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "935230976e02ff5b90d9e60055ed4b72ccdd3bb7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-florida-coverage.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "935230976e02ff5b90d9e60055ed4b72ccdd3bb7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-hawaii.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "935230976e02ff5b90d9e60055ed4b72ccdd3bb7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-idaho.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "935230976e02ff5b90d9e60055ed4b72ccdd3bb7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-massachusetts.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "935230976e02ff5b90d9e60055ed4b72ccdd3bb7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-minnesota.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "935230976e02ff5b90d9e60055ed4b72ccdd3bb7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-mississippi.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "935230976e02ff5b90d9e60055ed4b72ccdd3bb7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-missouri.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "935230976e02ff5b90d9e60055ed4b72ccdd3bb7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-nebraska.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "935230976e02ff5b90d9e60055ed4b72ccdd3bb7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-nevada.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "935230976e02ff5b90d9e60055ed4b72ccdd3bb7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-newhampshire.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "935230976e02ff5b90d9e60055ed4b72ccdd3bb7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-newmexico.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "935230976e02ff5b90d9e60055ed4b72ccdd3bb7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-oklahoma.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "935230976e02ff5b90d9e60055ed4b72ccdd3bb7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-oregon.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "935230976e02ff5b90d9e60055ed4b72ccdd3bb7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-southcarolina.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "935230976e02ff5b90d9e60055ed4b72ccdd3bb7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-utah.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "935230976e02ff5b90d9e60055ed4b72ccdd3bb7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/_lib/auth-roleset-seam.test.js",
    "class": "test file",
    "level": "CHANGE",
