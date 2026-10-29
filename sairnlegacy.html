@@ -1839,6 +1839,16 @@ function legLicenceGuard(k) {
   var next = legLicFingerprint(k);
   var prev = null;
   try { prev = localStorage.getItem(LEG_LIC_FP); } catch (e) { return true; }
+  // A device from before the fingerprint still has the key the gate stored
+  // under 'leg_license_key', beside the data, so it is NOT unknown whose data this is
+  // (cody b66, the sweep of the flaw b65 fixed in sairnfreedom). Only when no
+  // readable key is stored either is the adopt below a guess.
+  if (!prev) {
+    var oldKey = null;
+    try { oldKey = localStorage.getItem('leg_license_key'); } catch (e) {}
+    if (typeof oldKey === 'string' && oldKey.trim()) prev = legLicFingerprint(oldKey.trim());
+    if (prev === next) { try { localStorage.setItem(LEG_LIC_FP, next); } catch (e) {} return true; }
+  }
   if (!prev) { try { localStorage.setItem(LEG_LIC_FP, next); } catch (e) {} return true; }
   if (prev === next) return true;
 

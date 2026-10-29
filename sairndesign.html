@@ -1404,6 +1404,16 @@ function sdnLicenceGuard(k) {
   var next = sdnLicFingerprint(k);
   var prev = null;
   try { prev = localStorage.getItem(SDN_LIC_FP); } catch (e) { return true; }
+  // A device from before the fingerprint still has the key the gate stored
+  // under 'sdn_license_key', beside the data, so it is NOT unknown whose data this is
+  // (cody b66, the sweep of the flaw b65 fixed in sairnfreedom). Only when no
+  // readable key is stored either is the adopt below a guess.
+  if (!prev) {
+    var oldKey = null;
+    try { oldKey = localStorage.getItem('sdn_license_key'); } catch (e) {}
+    if (typeof oldKey === 'string' && oldKey.trim()) prev = sdnLicFingerprint(oldKey.trim());
+    if (prev === next) { try { localStorage.setItem(SDN_LIC_FP, next); } catch (e) {} return true; }
+  }
   if (!prev) { try { localStorage.setItem(SDN_LIC_FP, next); } catch (e) {} return true; }
   if (prev === next) return true;
 

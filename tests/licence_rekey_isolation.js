@@ -211,9 +211,13 @@ Object.keys(APPS).forEach(function (file) {
   const P = pfx.replace(/_$/, '').toUpperCase();
 
   test(file + ': no fingerprint yet -> adopt, delete nothing', () => {
-    // An existing install has no fingerprint and there is no way to know which
-    // licence its data belongs to. Wiping on that guess is the worse error.
-    const c = load(file, { local: { [pfx + 'patients']: '[1,2,3]', [pfx + 'license_key']: 'A' } });
+    // An existing install has no fingerprint. Wiping on a guess is the worse
+    // error, so it ADOPTS -- but since cody b66 only when the key stored beside
+    // the data is the one being entered (or no key is stored). This fixture
+    // stored 'A' and entered 'KEY-A-2026', a DIFFERENT licence, and called the
+    // adopt correct: that was the flaw, pinned as the requirement. The
+    // different-key case is tests/licence_guard_legacy_device.js L1/L2.
+    const c = load(file, { local: { [pfx + 'patients']: '[1,2,3]', [pfx + 'license_key']: 'KEY-A-2026' } });
     assert.strictEqual(c.guard('KEY-A-2026'), true);
     assert.strictEqual(c.__local[pfx + 'patients'], '[1,2,3]',
       'it wiped an existing install on a guess');
@@ -279,7 +283,9 @@ function rekeyFixture(file, confirmAnswer) {
       // this app's
       [pfx + 'patients']: '[1,2]',
       [pfx + 'settings']: '{}',
-      [pfx + 'license_key']: 'OLD-KEY',
+      // the key the device already holds IS licence A (cody b66): with a
+      // different stored key the first guard call below now asks, as it must.
+      [pfx + 'license_key']: 'KEY-A-2026',
       // OTHER APPS -- must survive
       sd_jobs: '[9]', sdn_clients: '[8]', sb_lic: 'SB-X', law_matters: '[7]',
       leg_cases: '[6]', scp_jobs: '[5]', sc_license_key: 'SC-X', grd_jobs: '[4]',

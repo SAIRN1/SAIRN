@@ -1350,6 +1350,16 @@ function rfLicenceGuard(k) {
   var next = rfLicFingerprint(k);
   var prev = null;
   try { prev = localStorage.getItem(RF_LIC_FP); } catch (e) { return true; }
+  // A device from before the fingerprint still has the key the gate stored
+  // under 'rf_license_key', beside the data, so it is NOT unknown whose data this is
+  // (cody b66, the sweep of the flaw b65 fixed in sairnfreedom). Only when no
+  // readable key is stored either is the adopt below a guess.
+  if (!prev) {
+    var oldKey = null;
+    try { oldKey = localStorage.getItem('rf_license_key'); } catch (e) {}
+    if (typeof oldKey === 'string' && oldKey.trim()) prev = rfLicFingerprint(oldKey.trim());
+    if (prev === next) { try { localStorage.setItem(RF_LIC_FP, next); } catch (e) {} return true; }
+  }
   if (!prev) { try { localStorage.setItem(RF_LIC_FP, next); } catch (e) {} return true; }
   if (prev === next) return true;
 
