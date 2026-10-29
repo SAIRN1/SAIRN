@@ -4766,8 +4766,8 @@
       "task": "vermont rhode island wyoming dc deadline seed",
       "claimed_at": "2026-10-29T11:11:43Z",
       "claimed_at_epoch": 1793272303.6553698,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-29T11:37:47Z",
       "files": null
     }
   ],
