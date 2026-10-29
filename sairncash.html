@@ -1504,12 +1504,17 @@ function calcQuarterlySetAside(ytdNetProfit, filingStatus, priorYearTaxLiability
 // deferred (spec §1).
 function calcRetirementEstimate(netProfit, seTax, vehicle) {
   const effectiveRate = 0.20;
-  const base = Math.max(0, netProfit * 0.9235 - seTax / 2) * effectiveRate;
+  // EARNED is the ceiling on what can go in at all (fourth b65): a Solo 401(k)
+  // employee deferral cannot exceed compensation, so deferral + employer share
+  // cannot exceed net SE earnings less half the SE tax. The flat 24,500 was
+  // added regardless -- $5,000 of profit showed ~$25,000 of "room".
+  const earned = Math.max(0, netProfit * 0.9235 - seTax / 2);
+  const base = earned * effectiveRate;
   if (vehicle === 'sep') {
     return { estimate: Math.min(base, TAX_YEAR_2026.sepCap), cap: TAX_YEAR_2026.sepCap };
   }
   if (vehicle === 'solo401k') {
-    const total = Math.min(TAX_YEAR_2026.solo401kDeferral + base, TAX_YEAR_2026.sepCap);
+    const total = Math.min(TAX_YEAR_2026.solo401kDeferral + base, TAX_YEAR_2026.sepCap, earned);
     return { estimate: total, cap: TAX_YEAR_2026.sepCap };
   }
   return { estimate: 0, cap: 0 };
@@ -1581,7 +1586,13 @@ async function saveProfile() {
   const filing_status = document.getElementById('profFilingStatus').value;
   const prior_year_tax_liability = Number(document.getElementById('profPriorYearTax').value) || null;
   const prior_year_agi = Number(document.getElementById('profPriorYearAgi').value) || null;
-  const prior_year_agi_over_150k = document.getElementById('profAgiOver150k').checked;
+  // THE LEGACY ANSWER IS CARRIED ONLY IF IT EXISTS (fourth b65). The hidden
+  // checkbox reads false for every user who never gave the old answer, and
+  // saving it unconditionally MANUFACTURED that answer: priorYearAgiForCalc()
+  // then returned {legacyOver150k:false} and the "AGI not recorded, 110% may
+  // apply" warning disappeared. null keeps "never answered" distinct.
+  const prior_year_agi_over_150k = (typeof profileCache.prior_year_agi_over_150k === 'boolean')
+    ? profileCache.prior_year_agi_over_150k : null;
   const retirement_vehicle = document.getElementById('profRetirementVehicle').value;
   await window._fbSetRaw(window._fbProfileRef, { filing_status, prior_year_tax_liability, prior_year_agi, prior_year_agi_over_150k, retirement_vehicle });
   showToast('Profile saved');
