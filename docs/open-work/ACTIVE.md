@@ -300,7 +300,7 @@ closed-ish word. Every row, open or not, is in its shard in full.
 | SAIRNlaw         | Georgia holiday calendar is a FROZEN 2022 federal snapshot — must not b~ | Open (standing caution on t~ | unassigned   | `open-work/sairnlaw.md:99` |
 | SAIRNlaw         | Service-extension SEQUENCING must be read per rule — two of three state~ | Open (pattern, watch on eve~ | Hank         | `open-work/sairnlaw.md:100` |
 | SAIRNlaw         | Two deadline-rule authorities rest on secondary sources, recorded rathe~ | Open (accepted, documented)  | unassigned   | `open-work/sairnlaw.md:103` |
-| SAIRNlegacy      | &#128308; TWO OF THE FUNERAL RULE&rsquo;S THREE MANDATED PRICE LISTS AR~ | NEW 2026-10-05 (CC), 88ee8f~ | unassigned   | `open-work/sairnlegacy.md:10` |
+| SAIRNlegacy      | &#128308; TWO OF THE FUNERAL RULE&rsquo;S THREE MANDATED PRICE LISTS AR~ | NEW 2026-10-05 (CC), 88ee8f~ | unassigned   | `open-work/sairnlegacy.md:11` |
 | SAIRNmechanical  | &#128993; mech_takeoffs and mech_quotes still carry the WITHDRAWN &ldqu~ | NEW 2026-10-05 (CC). FOUND ~ | unassigned   | `open-work/sairnmechanical.md:9` |
 | SAIRNmechanical  | &#128308; mech_checks is a CHEQUE REGISTER rated B/B on &ldquo;neither ~ | TWO INDEPENDENT READS, 2026~ | unassigned   | `open-work/sairnmechanical.md:10` |
 | SAIRNmechanical  | &#128308; mech_docs WRITE is reachable on a LICENCE KEY ALONE, on the o~ | VERIFIED BY DIRECT READ 202~ | UNOWNED &md~ | `open-work/sairnmechanical.md:11` |
@@ -326,24 +326,24 @@ closed-ish word. Every row, open or not, is in its shard in full.
 | SAIRNvet         | The app holding the DEA-relevant controlled-substance register is the o~ | FOUND 2026-09-13 (Fourth) w~ | —            | `open-work/sairnvet.md:17` |
 | SAIRNvet         | No employee authentication subsystem at all — this is a MISSING SUBSYST~ | Open — flagged 2026-09-03 s~ | unassigned   | `open-work/sairnvet.md:20` |
 | SAIRNveterans    | Phases 2, 4 and 5 were built FIFTEEN DAYS AGO &mdash; and a keyword pas~ | DERIVED 2026-09-16 (Hank), ~ | Hank (the d~ | `open-work/sairnveterans.md:10` |
-| StoneDesk        | &#128993; supplier_lead_times &mdash; a REAL derived computation feeds ~ | ROUTED 2026-09-29 (hank) fr~ | unassigned   | `open-work/stonedesk.md:12` |
-| StoneDesk        | &#128993; sd_inventory stores cost qty feeding a stockValue KPI and a r~ | ROUTED 2026-09-29 (hank) fr~ | unassigned   | `open-work/stonedesk.md:13` |
-| StoneDesk        | &#128993; sd_owner_pin is preserved by the demo wipe and written by NOT~ | FOUND 2026-09-29 (hank), CO~ | unassigned   | `open-work/stonedesk.md:14` |
-| StoneDesk        | The pricing backtest had NO suite at all, which is why it spent its who~ | BUILT 2026-09-18 (Fourth) &~ | Fourth       | `open-work/stonedesk.md:21` |
-| StoneDesk        | Competitive gaps re-derived against HEAD &mdash; the two remaining rows~ | RE-DERIVED 2026-09-17 (Hank~ | Michael (ro~ | `open-work/stonedesk.md:23` |
-| StoneDesk        | Carolyn&rsquo;s drawing-tool requirements &mdash; and half the premise ~ | BUILT 2026-09-15 (Hank) &md~ | Hank (the m~ | `open-work/stonedesk.md:24` |
-| StoneDesk        | The competitive-gap STATUS doc is stale in exactly the way it was writt~ | RE-VERIFIED 2026-09-14 (Cod~ | Cody         | `open-work/stonedesk.md:26` |
-| StoneDesk        | Sales-lead privacy: VERIFIED BUILT, not rebuilt &mdash; it was item 1 o~ | VERIFIED 2026-09-26 (Hank).~ | &mdash;      | `open-work/stonedesk.md:27` |
-| StoneDesk        | The three-way match is now CONSTRUCTIBLE &mdash; a real PO sequence, a ~ | BUILT 2026-09-14 (CC) &mdas~ | CC           | `open-work/stonedesk.md:28` |
-| StoneDesk        | 🚫 The entire public storefront has NO TABLES — sql/stonedesk_public_sur~ | Open — VERIFIED READY TO RU~ | Michael      | `open-work/stonedesk.md:35` |
-| StoneDesk        | StoneDesk ships customers a dead intake link while reporting success — ~ | BUILT 2026-09-03/04 (Hank),~ | Hank (built~ | `open-work/stonedesk.md:38` |
-| StoneDesk        | Stone-texture visualization — accepted cosmetic nits                     | Open (accepted)              | unassigned   | `open-work/stonedesk.md:45` |
-| StoneDesk        | Chamfer setback input does not live-refresh when a run is shrunk after ~ | Open (display only)          | unassigned   | `open-work/stonedesk.md:56` |
-| StoneDesk        | Three drawing-tool feature gaps: no 45° corner angle-snap; raised bar c~ | Open                         | unassigned   | `open-work/stonedesk.md:57` |
-| StoneDesk        | Worktree branch worktree-stonedesk-chamfered-corners is five features p~ | Open                         | unassigned   | `open-work/stonedesk.md:58` |
-| StoneDesk        | Dormant custAddNew()/custSave() form missing the rating field            | Open (quarantined)           | unassigned   | `open-work/stonedesk.md:59` |
-| StoneDesk        | Four safety render functions have no containers and no callers           | Open (accepted gap)          | unassigned   | `open-work/stonedesk.md:60` |
-| StoneDesk        | Several SDD workspaces under .superpowers/sdd/ never cleaned up          | Open                         | unassigned   | `open-work/stonedesk.md:63` |
+| StoneDesk        | &#128993; supplier_lead_times &mdash; a REAL derived computation feeds ~ | ROUTED 2026-09-29 (hank) fr~ | unassigned   | `open-work/stonedesk.md:13` |
+| StoneDesk        | &#128993; sd_inventory stores cost qty feeding a stockValue KPI and a r~ | ROUTED 2026-09-29 (hank) fr~ | unassigned   | `open-work/stonedesk.md:14` |
+| StoneDesk        | &#128993; sd_owner_pin is preserved by the demo wipe and written by NOT~ | FOUND 2026-09-29 (hank), CO~ | unassigned   | `open-work/stonedesk.md:15` |
+| StoneDesk        | The pricing backtest had NO suite at all, which is why it spent its who~ | BUILT 2026-09-18 (Fourth) &~ | Fourth       | `open-work/stonedesk.md:22` |
+| StoneDesk        | Competitive gaps re-derived against HEAD &mdash; the two remaining rows~ | RE-DERIVED 2026-09-17 (Hank~ | Michael (ro~ | `open-work/stonedesk.md:24` |
+| StoneDesk        | Carolyn&rsquo;s drawing-tool requirements &mdash; and half the premise ~ | BUILT 2026-09-15 (Hank) &md~ | Hank (the m~ | `open-work/stonedesk.md:25` |
+| StoneDesk        | The competitive-gap STATUS doc is stale in exactly the way it was writt~ | RE-VERIFIED 2026-09-14 (Cod~ | Cody         | `open-work/stonedesk.md:27` |
+| StoneDesk        | Sales-lead privacy: VERIFIED BUILT, not rebuilt &mdash; it was item 1 o~ | VERIFIED 2026-09-26 (Hank).~ | &mdash;      | `open-work/stonedesk.md:28` |
+| StoneDesk        | The three-way match is now CONSTRUCTIBLE &mdash; a real PO sequence, a ~ | BUILT 2026-09-14 (CC) &mdas~ | CC           | `open-work/stonedesk.md:29` |
+| StoneDesk        | 🚫 The entire public storefront has NO TABLES — sql/stonedesk_public_sur~ | Open — VERIFIED READY TO RU~ | Michael      | `open-work/stonedesk.md:36` |
+| StoneDesk        | StoneDesk ships customers a dead intake link while reporting success — ~ | BUILT 2026-09-03/04 (Hank),~ | Hank (built~ | `open-work/stonedesk.md:39` |
+| StoneDesk        | Stone-texture visualization — accepted cosmetic nits                     | Open (accepted)              | unassigned   | `open-work/stonedesk.md:46` |
+| StoneDesk        | Chamfer setback input does not live-refresh when a run is shrunk after ~ | Open (display only)          | unassigned   | `open-work/stonedesk.md:57` |
+| StoneDesk        | Three drawing-tool feature gaps: no 45° corner angle-snap; raised bar c~ | Open                         | unassigned   | `open-work/stonedesk.md:58` |
+| StoneDesk        | Worktree branch worktree-stonedesk-chamfered-corners is five features p~ | Open                         | unassigned   | `open-work/stonedesk.md:59` |
+| StoneDesk        | Dormant custAddNew()/custSave() form missing the rating field            | Open (quarantined)           | unassigned   | `open-work/stonedesk.md:60` |
+| StoneDesk        | Four safety render functions have no containers and no callers           | Open (accepted gap)          | unassigned   | `open-work/stonedesk.md:61` |
+| StoneDesk        | Several SDD workspaces under .superpowers/sdd/ never cleaned up          | Open                         | unassigned   | `open-work/stonedesk.md:64` |
 | Tooling          | &#128993; tooling_inventory.py REFUSES LOUDLY ON A MISSING PURPOSES ENT~ | ROUTED 2026-10-06 by hank t~ | cody         | `open-work/tooling.md:11` |
 | Tooling          | &#9989; tooling_inventory_duplicate_row is a FALSE POSITIVE &mdash; 55 ~ | ROUTED 2026-10-06 by hank f~ | &mdash;      | `open-work/tooling.md:12` |
 | Tooling          | &#128308; A RE-RUN OF dead_rule_sweep FINDS 35 DEAD RULES WHERE THE CLA~ | ROUTED 2026-10-06 by hank f~ | cody         | `open-work/tooling.md:14` |
@@ -397,4 +397,4 @@ closed-ish word. Every row, open or not, is in its shard in full.
 | Tooling          | A PROBE fixture commit reached origin/main three hours after check 8 sh~ | CHECK 10 ADDED 2026-09-10 (~ | Cody         | `open-work/tooling.md:146` |
 | Tooling          | A 35-table migration is 35 chances to half-run, and a half-run one is i~ | BUILT AND RUN 2026-09-10 (C~ | CC           | `open-work/tooling.md:155` |
 
-370 open row(s) of 824 total.
+370 open row(s) of 826 total.
