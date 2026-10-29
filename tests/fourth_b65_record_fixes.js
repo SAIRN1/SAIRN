@@ -136,6 +136,20 @@ function lift(file, decl) {
           sv.senFlagText({ code: 'FUTURE', field: 'clock_out_at', skew_ms: 300000 }) === 'FUTURE on clock_out_at (0.1 h ahead)');
   }
 
+  // ── senior senWriteFail, H1 #1754 (fourth b67) ─────────────────────────
+  {
+    let code = '';
+    const sw = { senLastErrCode: () => code, senLastErrText: () => '' };
+    vm.createContext(sw);
+    vm.runInContext(lift('sairnsenior.html', 'function senWriteFail('), sw);
+    for (const k of ['ACTIVE_CHECK_FAILED', 'ACTIVE_CHECK_UNREADABLE', 'EVV_CHECK_FAILED']) {
+      code = k;
+      check('senior: a ' + k + ' answer KEEPS the local draft (could-not-tell, not a refusal)', sw.senWriteFail('sen_claims').kept === true);
+    }
+    code = 'ROW_REFUSED';
+    check('senior: CONTROL -- a real refusal still withdraws it', sw.senWriteFail('sen_claims').kept === false);
+  }
+
   console.log('\n' + pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);
 })().catch((e) => { console.log('COULD NOT RUN: ' + e.message); process.exit(2); });

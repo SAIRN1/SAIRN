@@ -1547,7 +1547,14 @@ function senLastErrCode(resource){return senLastErr[resource]?senLastErr[resourc
 function senWriteFail(resource){
   var code=senLastErrCode(resource),msg=senLastErrText(resource);
   if(!code)return {kept:true,text:'Saved on this device only -- the server could not be reached. Try again with a connection.'};
-  if(code==='NOT_PROVISIONED'||code==='NO_LICENSE'||/^HTTP_5/.test(code)||code==='UPSTREAM')
+  // COULD-NOT-TELL IS KEPT, NOT WITHDRAWN (fourth b67, H1 #1754). The server
+  // answers a credential-active check it could not complete with 502
+  // ACTIVE_CHECK_FAILED / ACTIVE_CHECK_UNREADABLE (api/_lib/auth.js), and the
+  // EVV billing gate answers an unreadable visit with 503 EVV_CHECK_FAILED.
+  // None is a refusal of the record, so none may make senSweepLocalDrafts()
+  // withdraw a claim draft during a transient outage.
+  if(code==='NOT_PROVISIONED'||code==='NO_LICENSE'||/^HTTP_5/.test(code)||code==='UPSTREAM'||
+     code==='ACTIVE_CHECK_FAILED'||code==='ACTIVE_CHECK_UNREADABLE'||code==='EVV_CHECK_FAILED')
     return {kept:true,text:'Saved on this device only -- '+(msg||('the server could not store it ('+code+').'))+' Other devices will not see it.'};
   return {kept:false,text:'Not saved -- the server refused it: '+(msg||code)};
 }
