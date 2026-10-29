@@ -98,6 +98,8 @@
     ],
     "cody": [
       "api/sd-data.js",
+      "sairnfreedom.html",
+      "tools/defect_register.py",
       "tools/assertion_label_shape_check.py",
       "tools/clone_health_check.py",
       "tools/control_char_check.py",
