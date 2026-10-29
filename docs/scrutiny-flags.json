@@ -5964,6 +5964,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/sen-evv-billing-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "5f5d1ee0193c90f053a81e06b348bbe315417eae",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/report_only_checks.py",
    "class": "push-gate logic",
    "level": "WEAKENING",
