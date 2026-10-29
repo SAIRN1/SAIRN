@@ -1,0 +1,14 @@
+HANK b65 REPORT -- 2026-10-29
+
+1. VT: NOT seeded. vtcourts.gov/media/595 is the 2014 Advisory Committee annual report, not the rules. Recorded.
+2. RI: seeded and LIVE. 8 rows on the recorded early-side reading of § 25-1-1 (Michael's direction).
+   - 6(d) is +1 day, mail or electronic.
+   - Live dates match the hand derivation: 2026-11-04, 2026-11-04, 2026-08-11.
+3. WY: gated, seeded and LIVE. 6 rows. Live 2026-06-22 and 2026-07-03 match.
+   - The motion-response limb is not seeded (earlier-of).
+4. RI + WY together: drift 0; 29/0 suite; all deadline suites green; 3 mutants red.
+5. DC and S2: NOT STARTED (context budget).
+6. push_retry: a landed fast retry's BYPASS-LOG row blocked the next rebase. Fixed (fold it as bookkeeping).
+   Selftest 63/0.
+   - BYPASS-LOG rebase conflicts recur (twice; union-resolved, both sides kept). merge=union is recommended.
+Evidence: SAIRN-handoff-hank-b65.md

@@ -1,0 +1,17 @@
+HANK b65 DIGEST -- 2026-10-29 -- RI + WY seeded live; VT wrong source; DC/S2 not started
+CONTEXT 67.3% of 1,000,000 -- 673,264 tokens, measured.
+STATUS: pushed via push_retry --loop; claim sairnlaw is released after landing.
+1. RI: seeded and LIVE (8 rows; early-side § 25-1-1 reading; 6(d) +1 day, mail/electronic).
+2. WY: gated, seeded and LIVE (6 rows; Sunday-only shift; local-official days omitted).
+3. RI + WY: live dates match the hand derivation. Drift 0 (479/176). 29/0; mutants red.
+4. VT: not seeded. vtcourts.gov/media/595 is the 2014 annual report, not the V.R.C.P.
+5. DC and S2: NOT STARTED (context budget).
+6. push_retry: the landed-skip row is now folded before the rebase. Selftest 63/0.
+   - BYPASS-LOG conflicts recur; merge=union recommended.
+DECISION-NEEDED (Michael): J5 VT URL; C1b BYPASS-LOG merge=union; J4 lawyer's questions.
+NEXT: J6 DC, S2 detector (hank).
+CHANGED: api/_lib/deadline-engine.js, api/legal-deadlines.js, tools/push_retry.py,
+  RI/WY seeds, calendars and test, 16 key-set suites, WY gate doc, RI/VT blocker docs, manifest, register, b65 docs.
+SQL-path: none new.
+EVIDENCE-path: SAIRN-handoff-hank-b65.md
+UNVERIFIED: none new.
