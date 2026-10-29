@@ -4946,8 +4946,8 @@
       "task": "b67 H1-1779 refused sv_controlled write is shown on screen FILES: sairnvet.html",
       "claimed_at": "2026-10-29T12:59:29Z",
       "claimed_at_epoch": 1793278769.3313963,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-29T13:15:42Z",
       "files": [
         "sairnvet.html"
       ]
