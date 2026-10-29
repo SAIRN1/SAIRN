@@ -38987,6 +38987,49 @@
       "recurrence_open": "Three more ok-with-null write acks remain outside sairnmechanical (sd-data.js supplier_lead_times, sd_approvals, alf_family_contacts); routed in the cody b58 handoff."
     },
     {
+      "commit": "199e3563f326",
+      "date": "2026-10-28",
+      "subject": "fix(tools, cody b59): dead_function_sweep's runaway guard compares against an independent comment count, not a fixed 25%",
+      "files": [
+        "tests/run_sairn_dead_function_sweep_probe.py",
+        "tools/sairn_dead_function_sweep.py"
+      ],
+      "lines_added": 77,
+      "lines_removed": 14,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "sairn_dead_function_sweep refused three correct comment strips (sairnbiz 31.0%, sairncash 30.0%, sairnsenior 25.5% blanked) as runaway delimiters because its guard was a fixed 25% resting on a stale 'single-digit density' assumption; an independent comment-line count agreed within 0.5 points. Since M20 the default run exited 2. Guard now compares against comment_estimate() + 5 points; all 22 apps swept, exit 0.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The 25% constant predates 2026-09-04; the b58 M20 change made it binding."
+      },
+      "citation_note": "PR 1.11 in reverse: a could-not-run verdict that was not true -- the third state has to be earned as much as a pass.",
+      "contributing_factors": [
+        {
+          "factor": "The guard's threshold encoded a density assumption (single-digit percent) that was true when written and was never re-measured as the apps' comments grew past it.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Threshold replaced by a comparison against an independent comment count; probe arm for a comment-heavy file."
+        },
+        {
+          "factor": "M20 (b58) made the guard's verdict binding without re-checking whether the files it now refused were real runaways.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "b59 measured all 22 apps against the independent count before changing the rule."
+        }
+      ],
+      "recurrence_open": "Other tools copied the same size-guard idea (sairn_seam_check, sairn_stale_snapshot_scan, sairn_strict_args_check cite this tool's landmine); their thresholds were not re-measured."
+    },
+    {
       "commit": "19a9a84b8f66",
       "date": "2026-10-28",
       "subject": "fix(tools, cody b55): three of my own tools read a run that did not happen as a clean one",
