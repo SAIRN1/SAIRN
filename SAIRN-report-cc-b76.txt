@@ -1,0 +1,54 @@
+REPORT cc b76 -- 2026-10-29
+ITEM 1: re-read SAIRN-handoff-cc-b75.md.
+ITEM 2: deleted-row check fixed -- db0bc67a (api/sd-data.js preRegistryApp = preSession.app for shared/routes; sairngrounds grdData sends app_id).
+  RED before: 13 arms exit 1. Ablation (revert fix line): FAILED -- 30 passed, 13 failed. After, literal:
+$ node api/b76-shared-deleted-row-session-app.test.js
+PASSED -- 43 passed, 0 failed
+EXIT=0
+$ node api/b38-deleted-row-platform.test.js
+PASSED -- 1196 passed, 0 failed
+EXIT=0
+$ node api/sd-data-session-gate.test.js
+ALL 22 SESSION-GATE ASSERTIONS PASS
+EXIT=0
+$ node api/sd-data-active-credential.test.js
+13 passed
+EXIT=0
+  Pre-existing red at HEAD (also red without this change): law-trusttx-clearance, leg-bookings-toctou, sv-session-gate, law-trust-reconcile-endpoint, sairnlaw_clearance_refusal_review_probe, sairnlegacy_reservation_lock, sd_data_write_attribution_three_apps.
+  LIVE: UNVERIFIED -- needs a deleted-employee session token against the deployed endpoint; not driven.
+ITEM 3: both cody b65 obligations discharged, literal:
+$ python tools/tier_a_review_gate.py --discharge cody 2026-10-29T19:12:48Z --body-file docs/2026-10-29-cc-b76-review-cody-b65-191248.md
+DISCHARGED -- cc reviewed the obligation cody opened 2026-10-29T19:12:48Z, on dnt_credentials, mech_credentials, mech_insurance_policies, mech_site_assets
+EXIT=0
+$ python tools/tier_a_review_gate.py --discharge cody 2026-10-29T19:34:54Z --body-file docs/2026-10-29-cc-b76-review-cody-b65-193454.md
+DISCHARGED -- cc reviewed the obligation cody opened 2026-10-29T19:34:54Z, on grd_cart_orders, invoices, sd_invoices
+EXIT=0
+ITEM 4: obligation list after discharging -- 3 open (not 17). Literal:
+$ python tools/tier_a_review_gate.py --list
+3 open Tier A review obligation(s):
+  hover    2026-10-28T21:14:26Z  sen_caregivers
+           ASSIGNED TO cc  (held 24h)
+           hover b92: a data-only test script for finding H1-965 (the sen_caregivers read branch of api/sd-data.js still 
+  cody     2026-10-29T20:17:23Z  sf_trustee_audits
+           ASSIGNED TO fourth  (held 1h)
+           ** COULD-NOT-TELL ** the recorded sha 0f8c36e107da does not resolve in this clone -- rebased away without a reseat, or never fetched. NOT fresh.
+           cody b66: (1) 12 licence guards. Each of sairndental, sairnsenior, sairncare, sairnbuild, sairndesign, sairnla
+  cc       2026-10-29T20:51:13Z  employees, rt_routes
+           ASSIGNED TO cody  (held 0h)
+           ** STALE **      moved since 5606a156aad4: api/b76-shared-deleted-row-session-app.test.js
+           cc b76: api/sd-data.js pre-gate, shared/routes resources (employees, render_usage, rt_routes, rt_stops, shared
+
+1 of them are STALE BY CODE: a file the obligation is about has
+changed since the commit it was opened at, so the diff a reviewer
+would read is no longer the diff that was recorded. That is a
+separate question from the 24h clock and can be true within the
+hour. Relative to THIS clone's HEAD -- fetch before trusting a FRESH.
+
+1 could not be compared at all (UNSTAMPED or COULD-NOT-TELL).
+That is NOT a clean bill: it is the absence of an answer, and
+every record opened before the sha stamp existed is in it.
+EXIT=1
+ITEM 5: precedents cited -- 25aff5d0 (recurring-bug-classes-2), 1b8ac96f + 58d3f578 (test override), 93eb5353 (sairngrounds); see handoff section 4.
+  Own error: over-broad sed touched 22 other manifest notes in 106ae3e2; reverted in 5160452b; net manifest diff 3 lines.
+PUSH (measured after fetch): HEAD = origin/main = 42076ae1e2c70ba807a58baeacee0a2f889329cc
+CHANGED: api/sd-data.js, sairngrounds.html, api/b76-shared-deleted-row-session-app.test.js, api/b38-deleted-row-platform.test.js, docs/recurring-bug-classes-2.md, docs/tier-a-reviews.json, docs/defect-density-register.json, docs/sairn-path-manifest.json, docs/MASTER-PLAN.md, docs/traceability-matrix.md, docs/scrutiny-flags.json, two verdict docs, handoff.

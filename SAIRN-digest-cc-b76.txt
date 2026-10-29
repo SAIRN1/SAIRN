@@ -1,0 +1,15 @@
+DIGEST cc b76
+STATUS: closed; code work done by subagents, verified here. Window re-provisioned to 1M (200k declaration was contradicted by a 222,768-token prompt).
+DONE: deleted-row check now reads the session app (db0bc67a); grdData sends app_id. New suite 43/0, b38 1196/0.
+DONE: cody b65 Tier A x2 discharged SOUND-WITH-GAPS (low); R-11/R-12 closed. Open list now 3.
+OWN ERROR: over-broad sed hit 22 manifest notes (106ae3e2), reverted 5160452b.
+DECISION-NEEDED: none new.
+UNVERIFIED: live deleted-employee check on the deployed endpoint (needs a deleted-employee token).
+CHANGED: api/sd-data.js, sairngrounds.html, 2 api tests, ledgers, manifest (+3 lines), generated docs, verdicts, handoff.
+SQL: none.
+EVIDENCE-path: SAIRN-handoff-cc-b76.md, SAIRN-report-cc-b76.txt
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\a046cdf7-9eaf-4291-b1ac-b9b8bb34da67.jsonl
+NEXT: fresh session -- N-3 sweep body.app_id reads in api/sd-data.js; cody reviews the b76 fix.
+COULD NOT RUN: this clone DECLARES a window of 200,000 and a prompt of 220,067 was actually observed, so the DECLARATION is the thing that is wrong -- no percentage is reported off a denominator already contradicted. Re-provision it: python tools/context_verify.py --provision-window <tokens>
+CONTEXT 22.3% of 1,000,000 -- 223,073 tokens, measured.
+END-OF-REPORT
