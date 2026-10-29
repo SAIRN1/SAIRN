@@ -40428,6 +40428,50 @@
         }
       ],
       "recurrence_open": "No SQL rule exists, so the 313 tracked .sql files remain unscanned by Semgrep; only the disclosure is new. H2's tools-hover2 semgrep_risk_pack has the same .html gap and is H2's."
+    },
+    {
+      "commit": "1beab0796779",
+      "date": "2026-10-29",
+      "subject": "fix(sairnsenior, fourth b67): the EVV Clock Flags card says '240 h late', not '-240 h'",
+      "files": [
+        "sairnsenior.html",
+        "tests/fourth_b65_record_fixes.js"
+      ],
+      "lines_added": 16,
+      "lines_removed": 1,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "live-verification",
+      "summary": "sairnsenior EVV Clock Flags card printed LATE_REPLAY skew as negative hours (-240 h); found in the b66 live browser drive. Now '240 h late' / 'ahead'.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "1e2934ed1123",
+        "date": "2026-10-29",
+        "subject": "feat(sairnsenior, fourth b65): EVV billing gate -- no claim moves to submitted or paid over an unreviewed clock flag; flags are shown and reviewed",
+        "lag_days": 0
+      },
+      "citation_note": "No standing rule names this shape.",
+      "contributing_factors": [
+        {
+          "factor": "senFlagText printed skew_ms hours with its raw sign, so a late replay read -240 h",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "size plus late/ahead direction"
+        },
+        {
+          "factor": "the b65 tests drove the gate, not the card text; the b66 browser drive showed it",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "two wording arms in tests/fourth_b65_record_fixes.js"
+        }
+      ],
+      "recurrence_open": "Other surfaces that print skew_ms (none found by grep in sairnsenior.html) would need the same treatment."
     }
   ],
   "started": "2026-09-09",
