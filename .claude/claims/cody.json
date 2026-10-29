@@ -4585,8 +4585,8 @@
       "task": "credential hold outside try cc b73 low",
       "claimed_at": "2026-10-29T19:12:19Z",
       "claimed_at_epoch": 1793301139.161168,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-29T19:29:38Z",
       "files": null
     },
     {
