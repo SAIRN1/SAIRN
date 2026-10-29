@@ -4777,8 +4777,8 @@
       "task": "vermont dc deadline seed bypass log union s2",
       "claimed_at": "2026-10-29T11:59:03Z",
       "claimed_at_epoch": 1793275143.1047232,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-29T12:12:52Z",
       "files": null
     }
   ],
