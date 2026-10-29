@@ -1425,8 +1425,8 @@
       "task": "hover_backup_mirror record-anchor mail evidence",
       "claimed_at": "2026-10-29T20:02:34Z",
       "claimed_at_epoch": 1793304154.554432,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-29T20:05:11Z",
       "files": null
     }
   ],
