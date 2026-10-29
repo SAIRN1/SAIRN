@@ -1,0 +1,26 @@
+SAIRN report -- cc b71 -- 2026-10-29
+
+Landed 04db9347, plus this handoff. No override, no skip, no --force.
+
+4 PRE-CHECK: presence 4/4 (blob 22b205e8); install regression 37/37.
+
+1 WATCHDOG LIVE
+  - Windows Task Scheduler task SAIRN-watchdog runs every 15 minutes through
+    ~/SAIRN-SESSION-LOCKS/watchdog-run.cmd, reading the Drive handoffs.
+  - It writes watchdog-findings.json only and never touches an agent.
+  - First scheduled run at 12:54:26Z: hank REGISTRY-BEHIND (b65 vs b66).
+  - The task's Last Result 1 means findings, not failure.
+
+2 CTXMETER: no ctxmeter.py exists anywhere searched. Michael chose to skip
+  it this batch.
+
+3 STRAY .GIT: these were three agent-worktree links in Documents/SAIRN.
+  Two clean ones were removed with git worktree remove; their branches are
+  kept. agent-ad8f80cc is kept because it holds an uncommitted
+  api/claude.js change.
+
+5 TAGS: recurring-bug-classes-2 C5, "a check with no operator, or a
+  workspace with no reaper", with the batch tag table.
+
+OPEN: Michael to name the ctxmeter path and decide the kept worktree's
+uncommitted edit; hank to refresh its registry row.

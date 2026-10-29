@@ -1,0 +1,19 @@
+DIGEST cc b71
+STATUS: 5 of 6 closed; item 2 (ctxmeter.py) not found, skipped on Michael's answer. Landed 04db9347 (+ this handoff). No override/skip/--force.
+ITEM 4: pre-check -- hook presence 4/4 (blob 22b205e8), install regression 37/37, before touching shared config.
+ITEM 1: watchdog LIVE -- Task Scheduler "SAIRN-watchdog" every 15 min via ~/SAIRN-SESSION-LOCKS/watchdog-run.cmd, reading the Drive
+  handoffs; findings file only, never touches an agent. First run 12:54:26Z: hank REGISTRY-BEHIND (b65 vs b66). Last Result 1 = findings.
+ITEM 2: no ctxmeter.py in the four clones, Documents/SAIRN, ~/.claude, scratchpads, Drive status or a 4-deep home search -> skipped (Michael).
+ITEM 3: stray .git = 3 agent-worktree links in Documents/SAIRN; removed the 2 clean ones (branches kept); kept agent-ad8f80cc (uncommitted api/claude.js).
+ITEM 5: recurring-bug-classes-2 C5 "a check with no operator / a workspace with no reaper" (operations -> scheduling / hygiene), tag table.
+DECISION-NEEDED: Michael -- the ctxmeter.py path; and keep/commit/discard agent-ad8f80cc's uncommitted api/claude.js edit.
+UNVERIFIED: the scheduled task across a logoff/reboot (it needs a logged-on session for the Drive mount).
+CHANGED: tools/sairn_watchdog.py (header), tools/tooling_inventory.py, docs/{TOOLING-INVENTORY.md,recurring-bug-classes-2.md};
+  outside git: ~/SAIRN-SESSION-LOCKS/watchdog-run.cmd, task SAIRN-watchdog, 2 worktrees removed in Documents/SAIRN.
+SQL: none.
+EVIDENCE-path: SAIRN-handoff-cc-b71.md, SAIRN-report-cc-b71.txt, ~/SAIRN-SESSION-LOCKS/watchdog-findings.json
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\52164776-0b08-422d-94e1-7a56daf3eaaa.jsonl
+OPEN: hank -- registry row behind handoff; b70 items (cody O7 + test gaps; live-block credentials) unchanged.
+NEXT: Michael names ctxmeter.py and decides the kept worktree; the watchdog keeps flagging every 15 min.
+CONTEXT 73.8% of 1,000,000 -- 737,681 tokens, measured.
+END-OF-REPORT
