@@ -39955,7 +39955,7 @@
       "recurrence_open": "A skipped push does not re-run whole-tree checks against the combined base; only gate duration or a merge queue closes that."
     },
     {
-      "commit": "6cbf84660780",
+      "commit": "3cd5e18d4585",
       "date": "2026-10-29",
       "subject": "fix(stale-snapshot-scan, hank b64): .js files are scanned, unread files are named, zero scanned exits 2",
       "files": [
@@ -39999,7 +39999,7 @@
       "recurrence_open": "The stale-snapshot arm still targets the client store shape, so its zero on server code is not evidence (a planted server-side read-await-write was not detected)."
     },
     {
-      "commit": "a15568f21661",
+      "commit": "ad6900267f8c",
       "date": "2026-10-29",
       "subject": "fix(sd-sub-data, hank b64): COI / licence expiry compared against the LOCAL day, not the UTC day",
       "files": [
