@@ -2882,7 +2882,7 @@ function mechData(action, resource, payload) {
     };
     mechCredSaving = true;
     new Promise(function (done) { done(mechData('write', 'mech_credentials', payload)); }).then(function (res) {
-      if (res.body && res.body.ok) {
+      if (res && res.body && res.body.ok) {
         ['mc-tech', 'mc-number', 'mc-issuer', 'mc-issued', 'mc-expires', 'mc-jurisdiction'].forEach(function (id) {
           var el = document.getElementById(id); if (el) el.value = '';
         });
@@ -2891,8 +2891,15 @@ function mechData(action, resource, payload) {
       }
       // The SERVER's message, not a generic one -- it names which rule was
       // broken, and those messages exist precisely to be shown.
-      var msg = (res.body && res.body.error && res.body.error.message) || ('Could not save (HTTP ' + res.status + ').');
+      var msg = (res && res.body && res.body.error && res.body.error.message) ||
+        (res ? 'Could not save (HTTP ' + res.status + ').' : 'Not saved -- no answer from the server.');
       if (err) err.textContent = msg;
+    }, function (e) {
+      // A REJECTED write was silent here (cc b73 R-12): the hold was released
+      // and the form said nothing. The rejection handler sits on the write
+      // alone, so a throw from the refresh after a SAVED write is not
+      // misreported as "not saved".
+      if (err) err.textContent = 'Not saved -- ' + ((e && e.message) || 'the request failed') + '. Nothing was recorded; try again.';
     }).finally(function () { mechCredSaving = false; });
   };
 
@@ -3168,7 +3175,7 @@ function mechData(action, resource, payload) {
     };
     mechAssetSaving = true;
     new Promise(function (done) { done(mechData('write', 'mech_site_assets', payload)); }).then(function (res) {
-      if (res.body && res.body.ok) {
+      if (res && res.body && res.body.ok) {
         // ma-state is DELIBERATELY NOT CLEARED. The next asset entered is
         // overwhelmingly at the same site, and clearing it would put
         // `unknown_jurisdiction` on every second row of the board -- the state
@@ -3179,8 +3186,12 @@ function mechData(action, resource, payload) {
         mechAssetRefresh();
         return;
       }
-      var msg = (res.body && res.body.error && res.body.error.message) || ('Could not save (HTTP ' + res.status + ').');
+      var msg = (res && res.body && res.body.error && res.body.error.message) ||
+        (res ? 'Could not save (HTTP ' + res.status + ').' : 'Not saved -- no answer from the server.');
       if (err) err.textContent = msg;
+    }, function (e) {
+      // See mechCredAdd: a rejected write is reported, not swallowed (R-12).
+      if (err) err.textContent = 'Not saved -- ' + ((e && e.message) || 'the request failed') + '. Nothing was recorded; try again.';
     }).finally(function () { mechAssetSaving = false; });
   };
 

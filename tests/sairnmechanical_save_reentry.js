@@ -60,6 +60,24 @@ const SPECS = [
     console.log(s.name);
     await H.drive({ check, id: s.id, name: s.name, mk: H.mkFor(s), ok: OK, refused: REFUSED });
   }
+  // 4. A FAILED WRITE IS SHOWN, NOT SWALLOWED (cc b73 R-12, 69c36d5ff). The
+  // .then chain had no .catch: a mechData that rejected, or answered with no
+  // response object, released the hold and told the user nothing, leaving an
+  // unhandled rejection. The form's own error line must say it was not saved.
+  console.log('a write that fails is reported');
+  for (const s of SPECS) {
+    for (const [label, push] of [
+      ['REJECTS', () => Promise.reject(new Error('offline'))],
+      ['answers with NO response', () => Promise.resolve(undefined)]
+    ]) {
+      const before = H.unhandled.length;
+      const w = H.mkFor(s)(push);
+      w.refill(); await Promise.resolve().then(() => w.press()).catch(() => {}); await H.settle();
+      check(s.id + '4 ' + s.name + ': a write that ' + label + ' says it was not saved, and leaves no unhandled rejection',
+        w.toasts().some((t) => /not saved/i.test(t)) && H.unhandled.length === before,
+        JSON.stringify({ said: w.toasts(), unhandled: H.unhandled.length - before }));
+    }
+  }
   finished = true;
   console.log('\n' + (fail ? 'FAILED' : 'ok') + '  sairnmechanical save re-entry: ' + pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);
