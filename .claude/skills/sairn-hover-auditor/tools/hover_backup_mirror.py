@@ -681,6 +681,11 @@ def cmd_restore_remote():
     ok, detail = drill_compare(a_seq if a_seq in restored_at else None,
                                restored_at.get(a_seq), a_seq,
                                anchor and anchor.get('tip_hash'))
+    tip_ok, tip_detail = tip_compare(restored_at, _live_tip())
+    cov = drill_coverage(a_seq if a_seq in restored_at else None, max(restored_at) if restored_at else None,
+                         (anchor or {}).get('recorded_at', '')[:10])
+    ok = ok and tip_ok
+    detail = '%s; %s; %s' % (detail, tip_detail, cov)
     record_drill('remote', ok, detail, anchor)
     print('%s: %s' % ('DRILL PASSED' if ok else
                       'DRILL FAILED -- ROTATION STOPS UNTIL REPORTED', detail))
@@ -794,6 +799,47 @@ def drill_compare(restored_seq, restored_hash, anchor_seq, anchor_hash):
                        'anchor %s... -- TAMPERING OR CORRUPTION DETECTED'
                 % (anchor_seq, (restored_hash or '')[:12], anchor_hash[:12]))
     return (True, 'restored entry #%s matches the recorded anchor' % anchor_seq)
+
+
+def tip_compare(restored_at, live_tip):
+    """b108 (answers cody b62's 'DRILL PASSED overstates'): the restored log must END where the live log ends.
+    drill_compare proves the anchored entry survived; it says nothing about a mirror that is STALE or TRUNCATED
+    after the anchor. restored_at: {seq: hash} of the restored log; live_tip: (seq, hash) of the live log, or None.
+    -> (ok, detail). A mirror BEHIND the live log fails (push first); a different hash at the live tip's seq fails."""
+    if not live_tip or live_tip[0] is None:
+        return (False, 'live log tip unreadable -- COULD NOT COMPARE THE MIRROR TIP, which is not a pass')
+    seq, h = live_tip
+    if seq not in restored_at:
+        behind = seq - (max(restored_at) if restored_at else 0)
+        return (False, 'the mirror ends at #%s but the live log ends at #%s: the mirror is BEHIND by %d entries '
+                       '(push first)' % (max(restored_at) if restored_at else 0, seq, behind))
+    if restored_at[seq] != h:
+        return (False, 'live tip #%s hash differs from the restored copy -- DIVERGED' % seq)
+    return (True, 'restored tip #%s equals the live tip' % seq)
+
+
+def drill_coverage(anchor_seq, last_seq, anchored_on=''):
+    """b108: SAY how much of the chain the independent anchor actually covers, so PASSED is not read as more."""
+    if not anchor_seq or not last_seq:
+        return 'ANCHOR COVERAGE: none'
+    pct = 100.0 * anchor_seq / last_seq
+    return ('ANCHOR COVERAGE: entries 1..%s of %s (%.1f%%) are checked against an independent mailed anchor%s; '
+            'entries %s..%s are verified for internal consistency only' % (
+                anchor_seq, last_seq, pct, (' (mailed %s)' % anchored_on) if anchored_on else '',
+                anchor_seq + 1, last_seq))
+
+
+def _live_tip():
+    try:
+        last = None
+        with open(os.path.join(HERE, LOG_NAME), encoding='utf-8') as f:
+            for line in f:
+                if line.strip():
+                    last = line
+        e = json.loads(last)
+        return (e.get('seq'), e.get('hash'))
+    except (OSError, ValueError, TypeError):
+        return None
 
 
 def record_drill(source, passed, detail, anchor):
@@ -1125,6 +1171,18 @@ def run_fixtures():
        drill_compare(None, None, 616, 'a' * 64)[0] is False)
     ck('no anchor on record = COULD NOT VERIFY, never a pass',
        drill_compare(616, 'a' * 64, None, None)[0] is False)
+    # --- b108: the mirror TIP leg and the coverage statement (cody b62) ---
+    ck('tip_compare PASSES when the restored log ends at the live tip with the same hash',
+       tip_compare({1: 'a', 2: 'b'}, (2, 'b'))[0] is True)
+    ck('tip_compare FAILS a STALE mirror (behind the live log) and says by how many',
+       (lambda r: r[0] is False and 'BEHIND by 3' in r[1])(tip_compare({1: 'a', 2: 'b'}, (5, 'e'))))
+    ck('tip_compare FAILS a DIVERGED tip (same seq, different hash)',
+       (lambda r: r[0] is False and 'DIVERGED' in r[1])(tip_compare({1: 'a', 2: 'x'}, (2, 'b'))))
+    ck('tip_compare: an unreadable live tip is COULD NOT COMPARE, never a pass',
+       tip_compare({1: 'a'}, None)[0] is False)
+    ck('drill_coverage states the covered fraction and that the rest is internal consistency only',
+       (lambda s: '1..691 of 1778' in s and '38.9%' in s and '692..1778' in s and 'internal consistency only' in s)(
+           drill_coverage(691, 1778, '2026-09-29')))
     ck('drill_due fires when there is no passing drill on record '
        '(fresh state = due, not silently fine)',
        drill_due()[0] in (True, False))  # smoke: callable against real state
