@@ -40979,7 +40979,7 @@
       "recurrence_open": "Any other could-not-tell code added to the server later must be added to the kept list too; nothing enforces that."
     },
     {
-      "commit": "33ada04649a6",
+      "commit": "e42aef95e1d0",
       "date": "2026-10-29",
       "subject": "fix(hank b68 S4): api/agent/poll.js delivers a command by compare-and-set; two concurrent polls no longer both deliver it",
       "files": [
@@ -41016,7 +41016,7 @@
       "single_factor_note": "one mechanism; the ignored PATCH result is the same read-then-write gap seen from the other side"
     },
     {
-      "commit": "761670ffd42b",
+      "commit": "f407c903b017",
       "date": "2026-10-29",
       "subject": "fix(hank b68): H1 #1734/#1740/#1744/#1747 cleared; Tier A leg_cremations review discharged",
       "files": [
@@ -41056,7 +41056,7 @@
       "single_factor_note": "one cell; the app-wide raw-id interpolation is recorded as open item H1x, not as a factor of this one"
     },
     {
-      "commit": "761670ffd42b",
+      "commit": "f407c903b017",
       "date": "2026-10-29",
       "subject": "fix(hank b68): H1 #1734/#1740/#1744/#1747 cleared; Tier A leg_cremations review discharged",
       "files": [
@@ -41096,7 +41096,7 @@
       "single_factor_note": "one missing validation"
     },
     {
-      "commit": "761670ffd42b",
+      "commit": "f407c903b017",
       "date": "2026-10-29",
       "subject": "fix(hank b68): H1 #1734/#1740/#1744/#1747 cleared; Tier A leg_cremations review discharged",
       "files": [
@@ -41139,7 +41139,7 @@
       "single_factor_note": "one design gap in one tool, three shapes"
     },
     {
-      "commit": "bf6ce0837da4",
+      "commit": "b2ecd3f13c92",
       "date": "2026-10-29",
       "subject": "fix(hank b68 S6): push_retry fold returns 'nothing to fold' when nothing is staged, not an empty commit failure",
       "files": [
