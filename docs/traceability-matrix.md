@@ -701,6 +701,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#128993; PRESENCE STRESS (cc b56, routed by hank b68 as SDP): T2/T3/T4 FIXED; E1-E4, I1-I3, M1-M3 and X1-X3 STILL FAIL &mdash; StoneDesk shows Approved, Paid, a margin, a tax YTD and a 1099 count the record does not support** <!-- SDP-PRESENCE-FOURTH-B69 --> | **PARTLY FIXED 2026-10-29 (fourth b69), `8138dc48d`**. COMPLIANT now requires COI, licence and W-9. The safety score is computed from the evidence present (an empty record shows `--`; a blank expiry i | `tests/stonedesk_presence_fixes_b69.js` |
 | **&#128993; THREE LIVE `api/bridge` CALL SITES ASK FOR ACTIONS THAT DO NOT EXIST, and one of them writes a row of three nulls &mdash; the unknown-action fall-through is CLOSED, the callers are not** <!-- BRIDGE-DEAD-CALL-SITES-HANK-2026-10-19 --> | **OPEN 2026-10-19 (hank, b21). The ENDPOINT half is fixed and pushed; the CALLER half is `stonedesk.html`, which fourth holds under a live b34 claim (BLOCKED by name: `same app: stonedesk`), so it is  | `api/b21-bridge-unknown-action.test.js` |
 | **&#9989; A TEST ARM THAT FAILED GREEN &mdash; a fixed 200-byte window over a 96-byte function body, with a POSITIVE assertion, so the suppression could be removed and the suite would still report 23/23** <!-- FOURTH-ROUTED-F1-APPLIED-HANK-2026-10-06 --> | **FIXED 2026-10-06 (hank), applying fourth's routed finding 1 in full and reproducing its premise first.** `tests/stonedesk_server_backup.js` **EXIT=0, 23 passed 0 failed**; `tests/run_fn_span_control | `tests/run_fn_span_control.js`, `tests/stonedesk_server_backup.js` |
 | **&#9888; [0072]&rsquo;s material-risk DENOMINATOR counts work that was never fabricated &mdash; and it flips a RED verdict to OK** | **REVIEWED 2026-09-22 (Fourth)** &mdash; `tests/material_risk_denominator_review_probe.js`, report-only, exit 0, 19 checks. **1 finding, NOT fixed by me** &mdash; the population is cc&rsquo;s design d | `tests/material_risk_denominator_review_probe.js` |
@@ -747,9 +748,9 @@ An untraced test is not a bad test. It means no source in this repo states what 
 
 | source | citations |
 |---|---|
-| `declared` | 361 |
+| `declared` | 360 |
 | `index` | 327 |
-| `declared+index` | 70 |
+| `declared+index` | 71 |
 | `GUARD_TESTS` | 18 |
 | `GUARD_TESTS+declared` | 12 |
 | `GUARD_TESTS+index` | 6 |
@@ -1087,7 +1088,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                1096   tests/**, api/** (both walked)
-  open-work rows citing a test       395   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       396   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 37   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                78   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     82   report_only_checks.NOT_PROMOTED
