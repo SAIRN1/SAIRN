@@ -39955,6 +39955,61 @@
       "recurrence_open": "A skipped push does not re-run whole-tree checks against the combined base; only gate duration or a merge queue closes that."
     },
     {
+      "commit": "046e3f4f71a2",
+      "date": "2026-10-29",
+      "subject": "fix(apps, cody b64): the other 41 re-entrant saves are guarded -- all 47 found by the sweep are now fixed, each fixture-first",
+      "files": [
+        "sairncare.html",
+        "sairncode.html",
+        "sairndental.html",
+        "sairngrounds.html",
+        "sairnlaw.html",
+        "sairnmechanical.html",
+        "stonedesk.html",
+        "tests/lib/save_reentry_harness.js",
+        "tests/sairncare_save_reentry.js",
+        "tests/sairncode_save_reentry.js",
+        "tests/sairndental_coverage_edit.js",
+        "tests/sairndental_save_reentry.js",
+        "tests/sairngrounds_save_reentry.js",
+        "tests/sairnlaw_save_reentry.js",
+        "tests/sairnmechanical_save_reentry.js",
+        "tests/stonedesk_save_reentry.js"
+      ],
+      "lines_added": 837,
+      "lines_removed": 40,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "The other 41 re-entrant save handlers from the b64 sweep (24 in sairncode on one template, plus sairncare, sairndental, sairnlaw, sairngrounds, sairnmechanical, stonedesk) awaited a server write before their visible step with the trigger live, so a second press created a duplicate record. Each guarded with a hold released in finally; every arm red first on the unfixed code.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Introduced handler by handler as resources were wired to the server; not traced per handler."
+      },
+      "citation_note": "C5 class in docs/recurring-bug-classes-2.md; no PR rule id.",
+      "contributing_factors": [
+        {
+          "factor": "Save handlers across the apps await a server write before their visible completion step and leave the trigger live during the wait; no shared helper or convention makes a pending save refuse a second press.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Six highest-impact handlers guarded with a hold released in finally; arms drive the real handlers."
+        },
+        {
+          "factor": "No check in the repo looks for the await-before-completion re-entry shape, so it was only found by the b63 review of one handler and then a manual sweep.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "Turn the b64 sweep scanner into a standing checker once all 47 are fixed."
+        }
+      ],
+      "recurrence_open": "Out-of-shape re-entry remains open: grounds GPS waits (gcdPlaceOrder, gcdMarkShotEnd), stonedesk's 2.5 s no-slab POS reset window, and handlers that never reset their inputs; no standing checker for the shape yet."
+    },
+    {
       "commit": "1d2aea0e2b32",
       "date": "2026-10-29",
       "subject": "fix(sairnsenior, fourth b67): the EVV Clock Flags card says '240 h late', not '-240 h'",
@@ -40128,6 +40183,50 @@
       "recurrence_open": "The award is still gated client-side only; nothing server-side checks eligibility."
     },
     {
+      "commit": "5368dca7abb4",
+      "date": "2026-10-29",
+      "subject": "fix(sairnmechanical, cody b64): every server call settles in every engine -- the saveDoc guard can no longer be held open by a fetch that never answers",
+      "files": [
+        "sairnmechanical.html",
+        "tests/mech_fetch_timeout_fallback.js"
+      ],
+      "lines_added": 138,
+      "lines_removed": 5,
+      "app": "sairnmechanical",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "In an engine without AbortSignal.timeout, sairnmechanical's mechData() fetch had no timeout, so since the b63 saveDoc re-entry guard a request that never settled held the Save button refused until the browser gave up. Now an AbortController timer fallback and a racing backstop make every call settle; tests/mech_fetch_timeout_fallback.js was red first (4 HUNG) and is 6/6.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "e94ebe4241cb",
+        "date": "2026-10-29",
+        "subject": "fix(sairnmechanical, cody b63): close cc's four b67 Tier A gaps on the backup path, and the redaction probe b58 broke",
+        "lag_days": 0
+      },
+      "citation_note": "A fallback that was harmless until a later change made a guard depend on settlement; no PR rule id.",
+      "contributing_factors": [
+        {
+          "factor": "The timeout was feature-detected with a fallback to NO timeout, documented as harmless 'previous unbounded behaviour', and that judgement was not revisited when b63 made a UI guard depend on the call settling.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "AbortController timer fallback plus a racing backstop; fixture drives three engines."
+        },
+        {
+          "factor": "The b63 fix named this hang as 'known uncovered' instead of closing it in the same change.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Closed in b64, fixture first."
+        }
+      ],
+      "recurrence_open": "The other 14 apps' transport timeouts share the feature-detect-or-unbounded shape; only sairnmechanical has a guard that depends on settlement today, so they were not changed."
+    },
+    {
       "commit": "66acd0501fb2",
       "date": "2026-10-29",
       "subject": "fix(sairncash, fourth b65): the hidden AGI checkbox no longer manufactures a \"no\"; Solo 401(k) room is capped at earnings",
@@ -40257,59 +40356,54 @@
       "recurrence_open": "Other saves that now await a server answer before re-enabling (sairnmechanical saveQuote/saveCheck and other apps' push-then-toast paths) were not swept for the same re-entry window."
     },
     {
-      "commit": "046e3f4f71a2",
+      "commit": "a4de92258b3d",
       "date": "2026-10-29",
-      "subject": "fix(apps, cody b64): the other 41 re-entrant saves are guarded -- all 47 found by the sweep are now fixed, each fixture-first",
+      "subject": "fix(tests, fourth b68): the bld session-flag arm accepted a negated flag and checked one call site of three",
       "files": [
-        "sairncare.html",
-        "sairncode.html",
-        "sairndental.html",
-        "sairngrounds.html",
-        "sairnlaw.html",
-        "sairnmechanical.html",
-        "stonedesk.html",
-        "tests/lib/save_reentry_harness.js",
-        "tests/sairncare_save_reentry.js",
-        "tests/sairncode_save_reentry.js",
-        "tests/sairndental_coverage_edit.js",
-        "tests/sairndental_save_reentry.js",
-        "tests/sairngrounds_save_reentry.js",
-        "tests/sairnlaw_save_reentry.js",
-        "tests/sairnmechanical_save_reentry.js",
-        "tests/stonedesk_save_reentry.js"
+        "tests/run_sairnbuild_server_wins_sabotage_probe.py",
+        "tests/sairnbuild_server_wins.js"
       ],
-      "lines_added": 837,
-      "lines_removed": 40,
-      "app": "PLATFORM",
-      "layer": "product",
+      "lines_added": 61,
+      "lines_removed": 12,
+      "app": "sairnbuild",
+      "layer": "test",
       "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "The other 41 re-entrant save handlers from the b64 sweep (24 in sairncode on one template, plus sairncare, sairndental, sairnlaw, sairngrounds, sairnmechanical, stonedesk) awaited a server write before their visible step with the trigger live, so a second press created a duplicate record. Each guarded with a hold released in finally; every arm red first on the unfixed code.",
+      "detection_method": "independent-review",
+      "summary": "tests/sairnbuild_server_wins.js accepted a falsy bld session flag: the retry arm regex [^)]*BLD_SESSION_REQUIRED[key] admitted !BLD_SESSION_REQUIRED[key] and false&&BLD_SESSION_REQUIRED[key] (26/0 each), and the call-site loop named bldHydrateOne, which does not exist; a catch turned the miss into return, so dropping or negating the flag at bldSyncCollection or bldHydrateAll was accepted by this suite and sairnbuild_backup_pending.js. SESSION_FLAG_ARG now requires the whole fourth argument; the loop requires all three real functions; probe arms 16-19.",
       "rules": [],
       "citation_confidence": "not-citable",
       "injection_phase": "coding",
-      "phase_confidence": "inferred",
+      "phase_confidence": "stated",
       "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "unknown_reason": "Introduced handler by handler as resources were wired to the server; not traced per handler."
+        "commit": "0ef5447b2631",
+        "date": "2026-10-16",
+        "subject": "fix(b27 resume): the repair that closed five mutations opened a sixth, and the 26 UNRESOLVED were never inter-procedural",
+        "lag_days": 13
       },
-      "citation_note": "C5 class in docs/recurring-bug-classes-2.md; no PR rule id.",
+      "citation_note": "No standing rule says an assertion must constrain the whole argument rather than its mention of a name; class C2 covers the second cause only.",
       "contributing_factors": [
         {
-          "factor": "Save handlers across the apps await a server write before their visible completion step and leave the trigger live during the wait; no shared helper or convention makes a pending save refuse a second press.",
+          "factor": "The assertion checked that the argument MENTIONED the map, a proxy for the property that the flag IS the map value.",
           "kind": "technical",
           "action_status": "done",
-          "action": "Six highest-impact handlers guarded with a hold released in finally; arms drive the real handlers."
+          "action": "SESSION_FLAG_ARG requires (!!)BLD_SESSION_REQUIRED[key] followed by the closing paren."
         },
         {
-          "factor": "No check in the repo looks for the await-before-completion re-entry shape, so it was only found by the b63 review of one handler and then a manual sweep.",
+          "factor": "A loop over named functions caught fn() throwing and returned, so a non-existent name passed (class C2, not-run read as pass), and the write path was never named.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Names are required to exist; bldSyncCollection, bldRetryPending and bldHydrateAll are listed."
+        },
+        {
+          "factor": "The b27/b28 ablations planted deletions and literals but no operator on the map read, so the gap survived two rounds of mutation testing.",
           "kind": "process",
-          "action_status": "planned",
-          "action": "Turn the b64 sweep scanner into a standing checker once all 47 are fixed."
+          "action_status": "done",
+          "action": "Probe arms 16-19 plant negation, short-circuit and the two other call sites."
         }
       ],
-      "recurrence_open": "Out-of-shape re-entry remains open: grounds GPS waits (gcdPlaceOrder, gcdMarkShotEnd), stonedesk's 2.5 s no-slab POS reset window, and handlers that never reset their inputs; no standing checker for the shape yet."
+      "recurrence_open": "Other suites that check a call argument by regex with [^)]* before a name were not swept."
     },
     {
       "commit": "c21eb4ebe653",
@@ -40350,6 +40444,56 @@
         }
       ],
       "recurrence_open": "Quotes created before this fix carry no client and cannot be backfilled."
+    },
+    {
+      "commit": "c654f1152ffb",
+      "date": "2026-10-29",
+      "subject": "fix(apps, cody b64): the six highest-impact push-then-toast saves can no longer be re-entered while their server write is pending",
+      "files": [
+        "sairncode.html",
+        "sairndental.html",
+        "sairngrounds.html",
+        "sairnlegacy.html",
+        "stonedesk.html",
+        "tests/sairncode_save_reentry.js",
+        "tests/sairndental_save_reentry.js",
+        "tests/sairngrounds_save_reentry.js",
+        "tests/sairnlegacy_countersign_ui.js",
+        "tests/sairnlegacy_save_reentry.js",
+        "tests/stonedesk_save_reentry.js"
+      ],
+      "lines_added": 769,
+      "lines_removed": 11,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "47 user-triggered save handlers across the apps await a server write before their visible step while the trigger stays live, so a second press during the wait creates a duplicate record. The six highest-impact are fixed fixture-first: sairnlegacy confirmPayment (pre-need amount_paid applied twice) and saveCremation, stonedesk posCompleteSale (slab re-reserve, duplicate invoice), sairngrounds dcCreateInvoiceAndSchedule, sairncode addClaimEntry, sairndental respondToComplaint (duplicate reply in a patient's thread).",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Each handler gained its await when its resource was wired to the server, across many sessions from 2026-09 on; not traced per handler."
+      },
+      "citation_note": "C5 class in docs/recurring-bug-classes-2.md (re-entrant push-then-toast saves); no PR rule id.",
+      "contributing_factors": [
+        {
+          "factor": "Save handlers across the apps await a server write before their visible completion step and leave the trigger live during the wait; no shared helper or convention makes a pending save refuse a second press.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Six highest-impact handlers guarded with a hold released in finally; arms drive the real handlers."
+        },
+        {
+          "factor": "No check in the repo looks for the await-before-completion re-entry shape, so it was only found by the b63 review of one handler and then a manual sweep.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "Turn the b64 sweep scanner into a standing checker once all 47 are fixed."
+        }
+      ],
+      "recurrence_open": "41 further real instances are being fixed in the same batch; any handler added later can reintroduce the shape until the sweep scanner becomes a standing check."
     },
     {
       "commit": "ca1cf0fcaab1",
@@ -40571,100 +40715,6 @@
         }
       ],
       "recurrence_open": "Any other could-not-tell code added to the server later must be added to the kept list too; nothing enforces that."
-    },
-    {
-      "commit": "5368dca7abb4",
-      "date": "2026-10-29",
-      "subject": "fix(sairnmechanical, cody b64): every server call settles in every engine -- the saveDoc guard can no longer be held open by a fetch that never answers",
-      "files": [
-        "sairnmechanical.html",
-        "tests/mech_fetch_timeout_fallback.js"
-      ],
-      "lines_added": 138,
-      "lines_removed": 5,
-      "app": "sairnmechanical",
-      "layer": "product",
-      "severity": "low",
-      "detection_method": "code-review",
-      "summary": "In an engine without AbortSignal.timeout, sairnmechanical's mechData() fetch had no timeout, so since the b63 saveDoc re-entry guard a request that never settled held the Save button refused until the browser gave up. Now an AbortController timer fallback and a racing backstop make every call settle; tests/mech_fetch_timeout_fallback.js was red first (4 HUNG) and is 6/6.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "e94ebe4241cb",
-        "date": "2026-10-29",
-        "subject": "fix(sairnmechanical, cody b63): close cc's four b67 Tier A gaps on the backup path, and the redaction probe b58 broke",
-        "lag_days": 0
-      },
-      "citation_note": "A fallback that was harmless until a later change made a guard depend on settlement; no PR rule id.",
-      "contributing_factors": [
-        {
-          "factor": "The timeout was feature-detected with a fallback to NO timeout, documented as harmless 'previous unbounded behaviour', and that judgement was not revisited when b63 made a UI guard depend on the call settling.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "AbortController timer fallback plus a racing backstop; fixture drives three engines."
-        },
-        {
-          "factor": "The b63 fix named this hang as 'known uncovered' instead of closing it in the same change.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Closed in b64, fixture first."
-        }
-      ],
-      "recurrence_open": "The other 14 apps' transport timeouts share the feature-detect-or-unbounded shape; only sairnmechanical has a guard that depends on settlement today, so they were not changed."
-    },
-    {
-      "commit": "c654f1152ffb",
-      "date": "2026-10-29",
-      "subject": "fix(apps, cody b64): the six highest-impact push-then-toast saves can no longer be re-entered while their server write is pending",
-      "files": [
-        "sairncode.html",
-        "sairndental.html",
-        "sairngrounds.html",
-        "sairnlegacy.html",
-        "stonedesk.html",
-        "tests/sairncode_save_reentry.js",
-        "tests/sairndental_save_reentry.js",
-        "tests/sairngrounds_save_reentry.js",
-        "tests/sairnlegacy_countersign_ui.js",
-        "tests/sairnlegacy_save_reentry.js",
-        "tests/stonedesk_save_reentry.js"
-      ],
-      "lines_added": 769,
-      "lines_removed": 11,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "47 user-triggered save handlers across the apps await a server write before their visible step while the trigger stays live, so a second press during the wait creates a duplicate record. The six highest-impact are fixed fixture-first: sairnlegacy confirmPayment (pre-need amount_paid applied twice) and saveCremation, stonedesk posCompleteSale (slab re-reserve, duplicate invoice), sairngrounds dcCreateInvoiceAndSchedule, sairncode addClaimEntry, sairndental respondToComplaint (duplicate reply in a patient's thread).",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "Each handler gained its await when its resource was wired to the server, across many sessions from 2026-09 on; not traced per handler."
-      },
-      "citation_note": "C5 class in docs/recurring-bug-classes-2.md (re-entrant push-then-toast saves); no PR rule id.",
-      "contributing_factors": [
-        {
-          "factor": "Save handlers across the apps await a server write before their visible completion step and leave the trigger live during the wait; no shared helper or convention makes a pending save refuse a second press.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Six highest-impact handlers guarded with a hold released in finally; arms drive the real handlers."
-        },
-        {
-          "factor": "No check in the repo looks for the await-before-completion re-entry shape, so it was only found by the b63 review of one handler and then a manual sweep.",
-          "kind": "process",
-          "action_status": "planned",
-          "action": "Turn the b64 sweep scanner into a standing checker once all 47 are fixed."
-        }
-      ],
-      "recurrence_open": "41 further real instances are being fixed in the same batch; any handler added later can reintroduce the shape until the sweep scanner becomes a standing check."
     }
   ],
   "started": "2026-09-09",
