@@ -1,0 +1,21 @@
+SAIRN DIGEST -- fourth b69 -- 2026-10-29
+CONTEXT 51.7% of 1,000,000 -- 517,415 tokens, measured.
+STATUS: all four items landed or resolved. Each commit's ancestor check is in handoff section 1 (all exit 0).
+DECISION-NEEDED: confirm my reading of "recorded as authorizing": the supervisor is named in the signed record AND must be the countersigner.
+READ: SAIRN-handoff-fourth-b69.md (whole state). Detail: SAIRN-report-fourth-b69.txt.
+SQL: none.
+CHANGED:
+  a02ed68cf  leg F3: an apprentice prepares a cremation only with F3 clearance plus a named licensed supervisor who signs; empty F3 = deny (api only)
+  c7d7e74d8  deploy_verify_notify classifies per shell segment; cc probe 3/10 -> 0/10
+  8138dc48d  StoneDesk: COMPLIANT pill, safety score, silica tiles (cc b56 T2/T3/T4 -> PASS)
+  0d4588f5c  SDP E/I/M/X and LGP L1/L2/L3 routed as open-work rows
+1 done-line hook: cody b66 had already built it (bea263709); re-armed here, selftest 20/0
+2 sairnlegacy.html was NOT touched (hank's claim); the supervisor picker is open item 1
+3 cc's armed done-line hook copy is stale (open item 3)
+NEXT, in order:
+  a. fourth: supervisor picker in sairnlegacy.html once hank releases the claim
+  b. fourth: live-drive the F3 refusals on the audit licence
+  c. fourth: StoneDesk M3 crash, then the E/I/X FAILs
+UNVERIFIED: the F3 refusals against the deployed endpoint (no apprentice credential driven).
+EVIDENCE-path: api/b69-leg-f3-supervisor.test.js; tests/stonedesk_presence_fixes_b69.js; tests/run_deploy_verify_entry_probe.py.
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\83c60d05-1589-4389-a5cf-cd99265bab76.jsonl

@@ -1,0 +1,65 @@
+SAIRN REPORT -- fourth b69 -- 2026-10-29
+
+Each commit is checked by its own literal
+`git merge-base --is-ancestor <sha> origin/main`, after `git fetch`, against
+origin/main b024198ae3e6. The command and exit code for every commit are in
+handoff section 1; every one is exit 0. The handoff itself landed as
+8d323d9b002e.
+
+1 DONE-LINE STOP HOOK
+  cody b66 already landed this exact fix (bea263709): a done-shaped final
+  message with no record from this turn is refused. My duplicate patch was
+  dropped, not pushed.
+  Armed in this clone:
+    - builder_hook_presence --install --only fourth: OK;
+    - the armed copy is byte-identical to tools/;
+    - selftest 20/0.
+  cc's armed copy is STALE (open item 3).
+
+2 leg_cremations F3 -- a02ed68cf (api only, on Michael's in-session answer;
+  hank holds sairnlegacy)
+  An apprentice prepares a cremation only when:
+    - the home's F3 clears it. Empty, no row or no table = DENY; forbidden
+      wins; an unreadable read = 502.
+    - AND payload.authorized_by_supervisor names an active licensed director
+      other than the preparer, who must then be the countersigner.
+  Checked at prepare and again at filing. SAIRNlaw is unchanged.
+  ASSUMPTION: "recorded as authorising" = named in the signed record AND is
+  the signer.
+  Tests:
+    - api/b69-leg-f3-supervisor.test.js: 12/17 RED before, 17/0 after.
+    - All 4 guards were ablated, and each turns its arms red.
+    - b48 and b51 payloads gained the supervisor field (8/0, 5/0).
+    - 9 more countersign and role suites: exit 0.
+  NOT DONE: the sairnlegacy.html supervisor picker (hank's claim). NOT
+  live-driven.
+
+3 deploy_verify_notify -- c7d7e74d8
+  The classifier now judges each shell segment (split outside quotes, with
+  # comments dropped). cc's probe: 3/10 wrong -> 0/10. The entry probe is
+  27/0; 4 of its new rows were red before the fix.
+
+4 SDP / LGP
+  StoneDesk, fourth's rows -- 8138dc48d:
+    - COMPLIANT needs COI + licence + W-9;
+    - the safety score is computed from evidence;
+    - the silica tiles say Not tracked.
+  Stress results: T2a/T2b/T3a/T3b/T4a FAIL -> PASS. The new suite is 8/0
+  (5/8 red before). The live page is byte-identical to origin.
+  ROUTED as open-work rows (0d4588f5c): StoneDesk E1-E4/I1-I3/M1-M3/X1-X3
+  (fourth); SAIRNlegacy L1/L2 (hank) and L3 (fourth, after hank's claim).
+
+5 METHODOLOGY
+  Handoff section 1 gives one literal ancestor check per commit.
+
+CLAIMS
+  - Items 1 and 3 were briefly blocked by cody's `platform` claim. I parked
+    them and they cleared within the batch.
+  - Item 2 was blocked by hank's `sairnlegacy` claim; I asked Michael.
+  - Both of my claims are released (ebd227c3d, b024198ae).
+
+PUSH NOTES
+  - Two ledger rebase conflicts. Both were resolved by
+    tools/sairn_rebase_resolve.py as a union merge, then validated.
+  - One Tier A gate refusal on the classifier, answered with --open.
+  - No skip, override or force was used.

@@ -2370,3 +2370,14 @@ Full account: `SAIRN-handoff-fourth-b67.md`.
 - Mech re-entrancy guards: blocked by cody's claim.
 
 Full account: `SAIRN-handoff-fourth-b68.md`.
+
+## batch b69 -- 2026-10-29, CLOSED
+
+- Item 1, done-line hook: built by cody b66; armed here.
+- Item 2, leg F3 supervisor rule: `a02ed68cf`, api only, on Michael's in-session answer.
+- Item 3, classifier: `c7d7e74d8`.
+- Item 4, StoneDesk presence fixes: `8138dc48d`. E/I/M/X and LGP routed (`0d4588f5c`).
+- Every commit's ancestor check is in handoff section 1.
+- Open: sairnlegacy.html supervisor picker, after hank's claim.
+
+Full account: `SAIRN-handoff-fourth-b69.md`.
