@@ -4574,8 +4574,8 @@
       "task": "licence guard legacy device cc b70 gap",
       "claimed_at": "2026-10-29T19:12:07Z",
       "claimed_at_epoch": 1793301127.731055,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-29T19:29:41Z",
       "files": null
     },
     {
