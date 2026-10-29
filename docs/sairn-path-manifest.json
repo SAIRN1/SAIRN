@@ -80,7 +80,8 @@
       "docs/sairnlaw-southdakota-deadline-seed-gate.md",
       "docs/sairnlaw-vermont-deadline-seed-blockers.md",
       "tools/sairn_stale_snapshot_scan.py",
-      "docs/sairnlaw-wyoming-deadline-seed-gate.md"
+      "docs/sairnlaw-wyoming-deadline-seed-gate.md",
+      "tools/server_stale_snapshot_scan.py"
     ],
     "cc": [
       "api/sd-data.js",

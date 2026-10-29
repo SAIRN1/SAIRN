@@ -2667,6 +2667,7 @@ PURPOSES = {
     'sairn_dead_function_sweep.py': ('CHECKER', 'a function with no caller anywhere'),
     'sairn_reachability_probe.py': ('CHECKER', 'the rendered-DOM half of reachability, from a browser snapshot'),
     'sairn_stale_snapshot_scan.py': ('CHECKER', 'a panel rendering from a snapshot nothing refreshes'),
+    'server_stale_snapshot_scan.py': ('CHECKER', 'a server read-await-write with no concurrency guard -- a lost update when two requests write the same row'),
     'sairnlaw_citation_audit.py': ('LIVE', 'a legal citation whose source no longer says what the rule claims'),
     'schema_provisioning_check.py': ('LIVE', 'a resource the app writes to whose table was never created'),
     'va_rule_currency.py': ('LIVE', 'a Virginia rule whose published source has moved on'),
