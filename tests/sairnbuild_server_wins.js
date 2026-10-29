@@ -122,6 +122,11 @@ function struct(s) {
     .replace(/"(?:[^"\\\n]|\\.)*"/g, '""');
 }
 
+// The session flag as a WHOLE fourth argument: the map read, optionally `!!`,
+// then the call's closing `)`. Nothing may precede it (`!`, `false&&`) and
+// nothing may follow it inside the argument. fourth b68.
+const SESSION_FLAG_ARG = '\\s*(?:!!\\s*)?BLD_SESSION_REQUIRED\\s*\\[\\s*key\\s*\\]\\s*\\)';
+
 // The window between two NAMED, UNIQUE declarations. FAILS CLOSED: if either
 // anchor is absent, occurs more than once, or they have swapped order, this
 // throws rather than returning a slice that would make the arms vacuous.
@@ -617,6 +622,12 @@ test('the retry covers bld_bids too, with the session its branch demands', () =>
   //       is about cannot be deleted out from under the call site (M4).
   // Which expression computes the flag is still allowed to change -- `!!`, a
   // helper call, a different coercion -- as long as it reads the map.
+  //   ^ NARROWED 2026-10-29, fourth b68, discharging this obligation. "As long
+  //   as it reads the map" admitted `!BLD_SESSION_REQUIRED[key]` and
+  //   `false&&BLD_SESSION_REQUIRED[key]`: both READ the map and both send a
+  //   FALSY flag for bld_bids. Measured, 26 passed 0 failed for each. The
+  //   fourth argument must now be the map read and nothing else, optionally
+  //   `!!`-coerced, closed by the call's `)` -- SESSION_FLAG_ARG below.
   //
   // ── AND THAT REPAIR OPENED ONE OF ITS OWN. 2026-10-16, fourth b27 resume,
   //    MEASURED BY A SECOND ABLATION OF THE REPAIR ITSELF ─────────────────
@@ -648,14 +659,14 @@ test('the retry covers bld_bids too, with the session its branch demands', () =>
   const noComments = code(body);
   const retryCode = struct(body);
   // (A) structural: it is executable code, not text.
-  assert.ok(/bldData\(\s*''\s*,\s*key\s*,\s*rec\s*,[^)]*BLD_SESSION_REQUIRED\s*\[\s*key\s*\]/
+  assert.ok(new RegExp("bldData\\(\\s*''\\s*,\\s*key\\s*,\\s*rec\\s*," + SESSION_FLAG_ARG)
     .test(retryCode),
     'the retry must pass the session flag READ FROM BLD_SESSION_REQUIRED. A '
     + 'fourth argument that merely exists is not enough: a falsy literal sends '
     + 'bld_bids without a session, which its branch refuses, and that is the '
     + 'defect this arm is named for');
   // (B) the verb: it is the WRITE that is being retried, not a read.
-  assert.ok(/bldData\(\s*'write'\s*,\s*key\s*,\s*rec\s*,[^)]*BLD_SESSION_REQUIRED\s*\[\s*key\s*\]/
+  assert.ok(new RegExp("bldData\\(\\s*'write'\\s*,\\s*key\\s*,\\s*rec\\s*," + SESSION_FLAG_ARG)
     .test(noComments),
     "the retried call must be the 'write' -- assertion (A) collapses every "
     + 'string literal to \'\' and therefore cannot tell \'write\' from '
@@ -729,16 +740,24 @@ test('bld_draws carries its session requirement too -- the arm the map gained a 
   // what makes iterating it meaningful: an arm over the set is worthless if
   // some site still hardcodes one member. struct() so a comment or string
   // mentioning the map cannot stand in for a read.
-  ['bldRetryPending', 'bldHydrateOne'].forEach((name) => {
-    let body;
-    try { body = fn(name); } catch (e) { body = null; }
-    if (body === null) return;   // named optimistically; absence is not a pass
-    const s = struct(body);
-    if (s.indexOf('BLD_SESSION_REQUIRED') === -1) return;
-    assert.ok(/BLD_SESSION_REQUIRED\s*\[\s*key\s*\]/.test(s),
-      name + '() mentions BLD_SESSION_REQUIRED but does not index it by key, '
-      + 'so it is deciding the session requirement some other way and the '
-      + 'arm above over the whole map does not cover it');
+  //
+  // ── 2026-10-29, fourth b68: THIS LOOP CHECKED ONE FUNCTION OF THREE ─────
+  // It named bldRetryPending and bldHydrateOne. bldHydrateOne does not exist
+  // in sairnbuild.html (0 occurrences), fn() threw, the catch turned that into
+  // `return` -- under a comment saying absence is not a pass -- and a function
+  // that stopped mentioning the map at all also returned. The real call sites
+  // are bldSyncCollection (the write), bldRetryPending and bldHydrateAll (the
+  // read). Measured before this change: dropping or negating the flag at the
+  // write or the read left this suite AND sairnbuild_backup_pending.js green.
+  // Every name is now REQUIRED to exist, and each must make a bldData call
+  // whose fourth argument is SESSION_FLAG_ARG.
+  ['bldSyncCollection', 'bldRetryPending', 'bldHydrateAll'].forEach((name) => {
+    const s = struct(fn(name));
+    assert.ok(new RegExp("bldData\\(\\s*''\\s*,\\s*key\\s*,\\s*\\w+\\s*," + SESSION_FLAG_ARG).test(s),
+      name + '() must call bldData with the session flag read from '
+      + 'BLD_SESSION_REQUIRED[key] as its whole fourth argument. A dropped, '
+      + 'negated or short-circuited flag sends bld_bids and bld_draws without '
+      + 'the employee session their api/sd-data.js branches demand');
   });
 });
 

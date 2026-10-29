@@ -204,6 +204,36 @@ MUTATIONS = [
      ".then(function(saved){",
      "      jobs.push(bldData('read',key,rec,!!BLD_SESSION_REQUIRED[key])"
      ".then(function(saved){"),
+
+    # ── 16-19 ADDED 2026-10-29 BY fourth b68, discharging cody's b17 Tier A
+    #    obligation on bld_bids. Each was planted against the suite BEFORE the
+    #    repair and ACCEPTED (26 passed, 0 failed): the retry arm allowed any
+    #    expression that READ the map, and the call-site loop named a function
+    #    that does not exist, so the write and the read were never checked.
+    ("16. [BLOCKER C, THE NEGATION] THE RETRY NEGATES THE FLAG -- "
+     "`!BLD_SESSION_REQUIRED[key]` still reads the map and sends false for "
+     "bld_bids, which its branch refuses",
+     APP,
+     "jobs.push(bldData('write',key,rec,!!BLD_SESSION_REQUIRED[key]).then(function(saved){",
+     "jobs.push(bldData('write',key,rec,!BLD_SESSION_REQUIRED[key]).then(function(saved){"),
+
+    ("17. [BLOCKER C, THE SHORT-CIRCUIT] THE RETRY SENDS "
+     "`false&&BLD_SESSION_REQUIRED[key]` -- reads the map, always false",
+     APP,
+     "jobs.push(bldData('write',key,rec,!!BLD_SESSION_REQUIRED[key]).then(function(saved){",
+     "jobs.push(bldData('write',key,rec,false&&BLD_SESSION_REQUIRED[key]).then(function(saved){"),
+
+    ("18. [THE WRITE PATH] bldSyncCollection DROPS THE SESSION FLAG -- every "
+     "live bid and draw save is refused by its branch and lands in pending",
+     APP,
+     "bldData('write', key, r, !!BLD_SESSION_REQUIRED[key]).then(function (saved) {",
+     "bldData('write', key, r).then(function (saved) {"),
+
+    ("19. [THE READ PATH] bldHydrateAll DROPS THE SESSION FLAG -- bids and "
+     "draws never hydrate from the server",
+     APP,
+     "return bldData('read', key, null, !!BLD_SESSION_REQUIRED[key]).then(function (rows) {",
+     "return bldData('read', key, null).then(function (rows) {"),
 ]
 
 sys.exit(run_probe(
