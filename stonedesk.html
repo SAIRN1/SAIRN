@@ -10827,12 +10827,10 @@ window.sdRMExport=function(){
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px">
   <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px">
     <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:12px">Silica Exposure Monitoring (OSHA 1926.1153)</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div style="background:#f0fdf4;border-radius:8px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--brand2)">12</div><div style="font-size:11px;color:var(--muted)">Wet Cut Days MTD</div></div>
-      <div style="background:#f0fdf4;border-radius:8px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--brand2)">0</div><div style="font-size:11px;color:var(--muted)">Dry Cut Violations</div></div>
-      <div style="background:#f0fdf4;border-radius:8px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--brand2)">8</div><div style="font-size:11px;color:var(--muted)">Air Samples YTD</div></div>
-      <div style="background:#f0fdf4;border-radius:8px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--brand2)">AL</div><div style="font-size:11px;color:var(--muted)">Max Level (Action)</div></div>
-    </div>
+    <!-- NOT TRACKED, deliberately (fourth b69, cc b56 T4a). These were four hardcoded tiles, "12 Wet Cut Days MTD",
+         "0 Dry Cut Violations", "8 Air Samples YTD", "AL", that no code ever set: fabricated compliance data on an
+         OSHA panel. StoneDesk has no exposure log, so the honest display is that it does not track this yet. -->
+    <div style="background:#f3f4f6;border-radius:8px;padding:12px;font-size:12px;color:#626875">Not tracked in StoneDesk. There is no exposure log here yet, so no wet-cut days, dry-cut violations, air samples or exposure level are shown. Keep these in your written exposure control plan and your air-monitoring records.</div>
   </div>
   <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px">
     <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:12px">PPE Checklist — Daily</div>
@@ -28059,10 +28057,12 @@ function safetySetTab(tab, btn) {
 
 function safetyUpdateKPIs() {
   var now = new Date();
+  // A BLANK EXPIRY IS NOT CURRENT (fourth b69, cc b56 T3b): it used to count
+  // as trained, so 2019 silica training with no expiry scored 100%.
   var trained = sdSafetyData.training.filter(function(t){
-    if(!t.expiry) return true;
-    return new Date(t.expiry+'T00:00:00') > now;
+    return t.expiry && new Date(t.expiry+'T00:00:00') > now;
   });
+  var noExpiry = sdSafetyData.training.filter(function(t){ return !t.expiry; });
   var overdue = sdSafetyData.training.filter(function(t){
     return t.expiry && new Date(t.expiry+'T00:00:00') < now;
   });
@@ -28072,20 +28072,29 @@ function safetyUpdateKPIs() {
     if(!i.nextDue) return false;
     return new Date(i.nextDue) <= now;
   }).length;
-  // Compliance score
-  var score = 100;
-  if(overdue.length) score -= Math.min(30, overdue.length*10);
-  if(incidents > 2) score -= 15;
-  if(!sdSafetyData.ecp.owner) score -= 20;
-  if(inspDue) score -= Math.min(15, inspDue*5);
-  score = Math.max(0, Math.min(100, score));
-  var scoreColor = score>=80?'#15803d':score>=60?'#a16207':'#b91c1c';
+  // Compliance score -- FROM EVIDENCE PRESENT (fourth b69, cc b56 T3a). It
+  // started at 100 and only subtracted, so a shop with nothing on file scored
+  // 80% green. Nothing on file is now "--", and no CURRENT training is a
+  // deduction in its own right rather than the absence of one.
+  var ecpOwner = sdSafetyData.ecp && sdSafetyData.ecp.owner;
+  var nothingOnFile = !sdSafetyData.training.length && !sdSafetyData.inspections.length && !ecpOwner;
+  var score = null, scoreColor = '#626875';
+  if(!nothingOnFile){
+    score = 100;
+    if(overdue.length || noExpiry.length) score -= Math.min(30, (overdue.length+noExpiry.length)*10);
+    if(!trained.length) score -= 30;
+    if(incidents > 2) score -= 15;
+    if(!ecpOwner) score -= 20;
+    if(inspDue) score -= Math.min(15, inspDue*5);
+    score = Math.max(0, Math.min(100, score));
+    scoreColor = score>=80?'#15803d':score>=60?'#a16207':'#b91c1c';
+  }
   function s(id,v,color){var el=document.getElementById(id);if(el){el.textContent=v;if(color)el.style.color=color;}}
   s('safe-kpi-trained',trained.length);
   s('safe-kpi-overdue',overdue.length,'#dc2626');
   s('safe-kpi-incidents',incidents);
   s('safe-kpi-inspections',inspDue,'#ca8a04');
-  s('safe-kpi-score',score+'%',scoreColor);
+  s('safe-kpi-score',score===null?'--':score+'%',scoreColor);
   // Also populate the pre-existing safe-kpi1..5 tiles (the only ones
   // actually present in markup -- safe-kpi-trained/-overdue/etc above
   // don't exist as elements, confirmed before writing this, so those
@@ -28097,7 +28106,7 @@ function safetyUpdateKPIs() {
   s('safe-kpi1',daysSince);
   s('safe-kpi2',incidents);
   s('safe-kpi3','--');
-  s('safe-kpi4',score+'%',scoreColor);
+  s('safe-kpi4',score===null?'--':score+'%',scoreColor);
   s('safe-kpi5','--');
 }
 
@@ -36675,6 +36684,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     if (c.coi === 'untracked' && c.licence === 'untracked') {
       return '<span style="background:#f3f4f6;color:#626875;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700">NOT TRACKED</span>';
+    }
+    // COMPLIANT MEANS EVERY REQUIRED DOCUMENT IS ON FILE (fourth b69, cc b56
+    // T2a/T2b). This used to fall through to COMPLIANT unless BOTH dates were
+    // missing, so a sub with no certificate of insurance, or no licence and no
+    // W-9, showed a green pill. A missing document is named, never assumed.
+    var missing = [];
+    if (c.coi !== 'valid') missing.push('COI');
+    if (c.licence !== 'valid') missing.push('licence');
+    if (!c.w9) missing.push('W-9');
+    if (missing.length) {
+      return '<span title="Not on file: '+escHtml(missing.join(', '))+'" style="background:#fef3c7;color:#92400e;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700">INCOMPLETE: '+escHtml(missing.join(' + ').toUpperCase())+'</span>';
     }
     return '<span style="background:#dcfce7;color:#166534;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700">COMPLIANT</span>';
   }
