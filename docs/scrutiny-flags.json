@@ -7332,6 +7332,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/stonedesk_presence_fixes_b69.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "7110f8f7973c8e936e03d0a6f105b2ed686b50fe",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_audit_event_type_probe.py",
    "class": "test file",
    "level": "WEAKENING",
