@@ -109,11 +109,28 @@ module.exports = async (req, res) => {
       const cmds = await cmdRes.json();
       if (Array.isArray(cmds) && cmds.length > 0) {
         const cmd = cmds[0];
-        await fetch(SUPABASE_URL + '/rest/v1/sairn_agent_commands?id=eq.' + encodeURIComponent(cmd.id), {
-          method: 'PATCH',
-          headers: { ...headers, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-          body: JSON.stringify({ status: 'delivered', delivered_at: new Date().toISOString() })
-        });
+        // Compare-and-set: only the poll whose PATCH still finds the row
+        // pending delivers it. Two concurrent polls both read it as pending,
+        // and without `status=eq.pending` both delivered, so the agent ran
+        // one command twice (hank b67 S3/S4).
+        const claimRes = await fetch(
+          SUPABASE_URL + '/rest/v1/sairn_agent_commands?id=eq.' + encodeURIComponent(cmd.id) + '&status=eq.pending',
+          {
+            method: 'PATCH',
+            headers: { ...headers, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+            body: JSON.stringify({ status: 'delivered', delivered_at: new Date().toISOString() })
+          }
+        );
+        const claimed = claimRes.ok ? await claimRes.json() : null;
+        if (!claimRes.ok) {
+          // The row stays pending and is offered again on the next poll.
+          console.error('api/agent/poll deliver PATCH failed:', claimRes.status);
+          res.status(502).json({ error: { message: 'Upstream connection error — try again' } });
+          return;
+        }
+        if (!Array.isArray(claimed) || claimed.length === 0) {
+          continue; // another poll delivered it first
+        }
         res.status(200).json({
           command: { id: cmd.id, operation: cmd.operation, params: cmd.params }
         });
