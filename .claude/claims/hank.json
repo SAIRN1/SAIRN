@@ -4747,6 +4747,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "hank-1793270558",
+      "session": "hank",
+      "subject": "tools",
+      "task": "push_retry separate fold commit stale snapshot scan js coverage",
+      "claimed_at": "2026-10-29T10:42:38Z",
+      "claimed_at_epoch": 1793270558.858793,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
