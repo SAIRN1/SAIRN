@@ -4544,6 +4544,17 @@
       "status": "released",
       "released_at": "2026-10-29T12:22:07Z",
       "files": null
+    },
+    {
+      "id": "cody-1793277940",
+      "session": "cody",
+      "subject": "sairnmechanical",
+      "task": "cody b64 mechData timeout fallback saveDoc guard push-then-toast reentry sweep",
+      "claimed_at": "2026-10-29T12:45:40Z",
+      "claimed_at_epoch": 1793277940.1504886,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
