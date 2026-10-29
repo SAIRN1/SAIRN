@@ -106,7 +106,7 @@ import shlex
 import subprocess
 import sys
 
-CRITERIA_VERSION = '2026-10-28.b67.1'
+CRITERIA_VERSION = '2026-10-29.b69.1'
 
 WRITE_TOOLS = ('Edit', 'Write', 'MultiEdit', 'NotebookEdit')
 COMMAND_TOOLS = ('Bash', 'PowerShell', 'Monitor')
@@ -702,7 +702,13 @@ def block_line(payload, hits, reason, now=None):
     ts = (now or datetime.datetime.now(datetime.timezone.utc)).strftime('%Y-%m-%dT%H:%M:%SZ')
     # Each field capped at 400 characters, as the auditor's block_log() caps
     # its own -- read off its source, not assumed.
-    return '\t'.join(re.sub(r'[\t\r\n]+', ' ', f)[:400] for f in (ts, agent, path, tool, why))
+    # ONE SPACE PER tab/CR/LF CHARACTER, not one per run (cc b69). That is the
+    # auditor's own formula, s.replace('\t',' ').replace('\r',' ').replace('\n',' '),
+    # read from its block_log(). This side collapsed runs with re.sub('[\t\r\n]+'),
+    # so H1 b103 measured 2 of 6 sample rows differing by one byte (a field
+    # holding "\r\n" became one space here and two there).
+    return '\t'.join(f.replace('\t', ' ').replace('\r', ' ').replace('\n', ' ')[:400]
+                     for f in (ts, agent, path, tool, why))
 
 
 def log_block(payload, hits, reason):
@@ -1013,6 +1019,15 @@ def selftest():
             (len(raw), mirror and len(mirror)))
         arm('the seeded auditor row is untouched and the builder rows end LF',
             raw.startswith(b'2026-10-28T22:06:28Z\thover') and raw.count(b'\r\n') == 1, raw[:120])
+        def auditor_formula(fields):        # H1's block_log() join, verbatim in shape
+            return '\t'.join(s.replace('\t', ' ').replace('\r', ' ').replace('\n', ' ')[:400] for s in fields)
+        nasty = 'a\r\nb\t\tc\nd' + 'x' * 500
+        mine = block_line({'tool_name': 'Bash', 'cwd': clone}, [('Bash', nasty)], '',
+                          now=datetime.datetime(2026, 10, 29, 1, 2, 3, tzinfo=datetime.timezone.utc))
+        parts = mine.split('\t')
+        theirs = auditor_formula([parts[0], parts[1], os.path.normcase(os.path.normpath(nasty)), 'Bash', parts[4]])
+        arm('PARITY: a field holding runs of CR/LF/tab sanitises byte-identically to the auditor formula',
+            mine == theirs and '\r' not in mine, (mine[:80], theirs[:80]))
         arm('every field is capped at 400 characters, as the auditor caps its own',
             all(len(f) <= 400 for f in block_line({'tool_name': 'Edit'}, [('Edit', 'c:/' + 'x' * 900)], '').split('\t')))
         line = block_line({'tool_name': 'Edit', 'cwd': clone}, [('Edit', os.path.join(skill, 'SKILL.md'))], '',

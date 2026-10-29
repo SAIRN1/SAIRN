@@ -4,8 +4,13 @@
 It FLAGS and writes a findings file. It fixes nothing and decides nothing.
 
 Built by cc in b67 on Michael's instruction: "You build it, you don't operate
-it." It is not wired into any hook, gate or schedule; whoever operates it
-decides where it runs and how often.
+it." It is not wired into any hook, gate or schedule.
+
+OPERATOR: hank (Michael's decision, 2026-10-29, cc b69 item 1). hank runs
+`python tools/sairn_watchdog.py` at the START of each of its own batches,
+before touching shared config. Findings land in the same file every time,
+~/SAIRN-SESSION-LOCKS/watchdog-findings.json. cc OWNS the tool and fixes it;
+hank OPERATES it and acts on or routes what it flags.
 
 INPUTS, all read at run time and never cached:
   * the shared status registry, ~/SAIRN-SESSION-LOCKS/status/<agent>.json:

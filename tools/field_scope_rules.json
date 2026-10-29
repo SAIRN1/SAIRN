@@ -14,7 +14,7 @@
     "refused: true -- that role must get 401/403 and no marker at all. flags: top-level body",
     "values that role must see.",
     "",
-    "ADDING A RULE (cc b63, written for hank's 23 routed reads -- alf_mar first):",
+    "ADDING A RULE (cc b63; owners per read since cc b69 in docs/2026-10-29-cc-b69-field-scope-routing.md):",
     "  1. Write it from the DESIGN (the write site, the decision that set the scope), never off the read branch.",
     "  2. Required keys: id, app, anchor (one exact line of api/sd-data.js), request {action, resource[, payload]},",
     "     declared_from, tables, roles. Optional: caller (default emp-self), sets, live.",
@@ -652,6 +652,176 @@
             "ALF_OFFICE_MANAGER_EMP",
             "ALF_OFFICE_MANAGER_PIN"
           ]
+        }
+      }
+    },
+    {
+      "id": "sd_crm.read",
+      "app": "stonedesk",
+      "anchor": "if (resource === 'sd_crm' && action === 'read') {",
+      "request": {
+        "action": "read",
+        "resource": "sd_crm"
+      },
+      "declared_from": "a4f0a1a0 (2026-08-19, StoneDesk CRM server sync + per-lead salesperson privacy gate): management (CRM_MANAGEMENT_ROLES owner/admin, the same set the sd_crm WRITE branch gates reassignment on) sees every lead; any other role sees only leads assigned to it; an UNASSIGNED lead is management-only, the one judgment call that commit flags for Michael. Unassigned is seeded as '' because a null seed becomes a marker; the branch compares with ===, so '' and null are both not-mine.",
+      "caller": "emp-self",
+      "tables": {
+        "sd_crm": [
+          {
+            "tag": "self",
+            "lead_id": null,
+            "assigned_employee_id": "emp-self",
+            "data": {
+              "name": null,
+              "phone": null,
+              "value": null,
+              "stage": null
+            }
+          },
+          {
+            "tag": "peer",
+            "lead_id": null,
+            "assigned_employee_id": "emp-peer",
+            "data": {
+              "name": null,
+              "phone": null,
+              "value": null,
+              "stage": null
+            }
+          },
+          {
+            "tag": "unas",
+            "lead_id": null,
+            "assigned_employee_id": "",
+            "data": {
+              "name": null,
+              "phone": null,
+              "value": null,
+              "stage": null
+            }
+          }
+        ]
+      },
+      "roles": {
+        "owner": {
+          "see": [
+            "self.*",
+            "peer.*",
+            "unas.*"
+          ]
+        },
+        "admin": {
+          "see": [
+            "self.*",
+            "peer.*",
+            "unas.*"
+          ]
+        },
+        "sales": {
+          "see": [
+            "self.*"
+          ]
+        },
+        "install": {
+          "see": [
+            "self.*"
+          ]
+        }
+      }
+    },
+    {
+      "id": "dnt_rollup.read",
+      "app": "sairndental",
+      "anchor": "if (resource === 'dnt_rollup' && action === 'read') {",
+      "request": {
+        "action": "read",
+        "resource": "dnt_rollup"
+      },
+      "declared_from": "af5aeddf (2026-09-15, SAIRNdental B2 cross-location roll-up): practice management only (DNT_MANAGEMENT_ROLES owner), and NO ROW-LEVEL DATA LEAVES THE BRANCH -- counts and sums only, so a roll-up can never be a patient export wearing a report's name. So owner must see NO row marker at all; frontdesk and provider are refused. Charge amounts are literal numbers so the sum is computable; they are not markers and not accounted. location_id is seeded as a literal office id: the roll-up's output is keyed BY location, so an office id appearing is the design, not a leak (the first handler run, with it as a marker, reported exactly that).",
+      "caller": "emp-self",
+      "tables": {
+        "dnt_patients": [
+          {
+            "tag": "pat",
+            "id": null,
+            "data": {
+              "name": null,
+              "dob": null,
+              "phone": null,
+              "location_id": "loc-a"
+            }
+          }
+        ],
+        "dnt_charges": [
+          {
+            "tag": "chg",
+            "id": null,
+            "data": {
+              "patient_id": null,
+              "code": null,
+              "amount": 100,
+              "location_id": "loc-a"
+            }
+          }
+        ],
+        "dnt_appointments": [
+          {
+            "tag": "apt",
+            "id": null,
+            "data": {
+              "patient_id": null,
+              "provider": null,
+              "location_id": "loc-a"
+            }
+          }
+        ],
+        "dnt_settings": [
+          {
+            "tag": "set",
+            "data": {
+              "practice_name": null
+            }
+          }
+        ]
+      },
+      "roles": {
+        "owner": {
+          "see": []
+        },
+        "frontdesk": {
+          "refused": true
+        },
+        "provider": {
+          "refused": true
+        }
+      }
+    },
+    {
+      "id": "exec_context.read",
+      "app": "stonedesk",
+      "anchor": "if (resource === 'exec_context' && action === 'read') {",
+      "request": {
+        "action": "read",
+        "resource": "exec_context",
+        "payload": {
+          "role": "cfo"
+        }
+      },
+      "declared_from": "562d1ded (2026-09-02, the Executive Suite's internal data leaves the HTML): the advisor context carries SAIRN's chart of accounts, price book and patent dates, so it is OWNER/ADMIN only and enforced server-side; sales and install are refused. No table: the module is the store, so the rule holds the ROLE gate and that no seeded row ever appears.",
+      "caller": "emp-self",
+      "tables": {},
+      "roles": {
+        "owner": {
+          "see": []
+        },
+        "admin": {
+          "see": []
+        },
+        "sales": {
+          "refused": true
+        },
+        "install": {
+          "refused": true
         }
       }
     }

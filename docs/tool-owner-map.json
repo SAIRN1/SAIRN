@@ -8,11 +8,11 @@
   "UNRECORDED": "no OWNER line and no claim, but the file HAS git history -- so ownership is UNRECORDED rather than absent, and `first_commit` -- the commit that INTRODUCED it, which is the routing target -- says where to start. ROUTABLE."
  },
  "_meta": {
-  "claim_commits_read": 3231,
+  "claim_commits_read": 3243,
   "claim_commits_with_files": 436,
   "criteria": "2026-10-07.1",
   "owner_line": 134,
-  "tools": 1106
+  "tools": 1107
  },
  "_regenerate": "python tools/tool_owner_map.py",
  "_what_this_is": "Who owns each tool, derived from the claim-commit history rather than guessed.",
@@ -505,6 +505,12 @@
    "also_claimed_by": [],
    "basis": "UNRECORDED",
    "first_commit": "21a2e87b9d23",
+   "owner": null
+  },
+  "tests/fourth_b65_record_fixes.js": {
+   "also_claimed_by": [],
+   "basis": "UNRECORDED",
+   "first_commit": "2c776fcbd474",
    "owner": null
   },
   "tests/functional_core_is_pure.js": {

@@ -78,11 +78,28 @@ def tree(root):
     return out
 
 
+def append_line(log, obj):
+    """One JSON line, LF-terminated on every platform. Both writers used to
+    open the log in TEXT mode, so on Windows every row ended CRLF -- the class
+    H1 fixed in its own block_log() (5c572340), found here by cc b69's audit of
+    cc-owned write paths. newline='\\n' turns the translation off."""
+    with open(log, 'a', encoding='utf-8', newline='\n') as fh:
+        fh.write(json.dumps(obj) + '\n')
+
+
 def run_fixtures():
     cases = [(shell_op('>'), '>'), (shell_op('>tools/x.py'), '>'), (shell_op('2>&1'), '2>'),
              (shell_op('|'), '|'), (shell_op('&&'), '&&'), (shell_op('git'), None),
              (shell_op('a>b'), None), (shell_op('-m'), None)]
-    return ['shell_op got %r, wanted %r' % (g, w) for g, w in cases if g != w], len(cases)
+    bad = ['shell_op got %r, wanted %r' % (g, w) for g, w in cases if g != w]
+    import tempfile
+    lp = os.path.join(tempfile.mkdtemp(prefix='logged-exec-'), 'log.jsonl')
+    append_line(lp, {'a': 1})
+    append_line(lp, {'b': 2})
+    raw = open(lp, 'rb').read()
+    if b'\r' in raw or raw.count(b'\n') != 2:
+        bad.append('append_line wrote %r -- not two LF-only rows' % raw)
+    return bad, len(cases) + 1
 
 
 def main(argv):
@@ -110,8 +127,7 @@ def main(argv):
            'session': os.environ.get('SAIRN_SESSION') or '', 'cwd': os.getcwd(), 'argv': cmd,
            'shell_operators': [a for a, _ in ops], 'refused': bool(ops)}
     try:
-        with open(log, 'a', encoding='utf-8') as fh:
-            fh.write(json.dumps(rec) + '\n')
+        append_line(log, rec)
     except OSError as e:
         print('REFUSED: the exec log could not be written (%s), so the command is not run.' % e)
         return 2
@@ -127,9 +143,8 @@ def main(argv):
     changed = [g for g in GATES if before[g] != after[g]]
     delta = sorted('%s %s %s bytes' % (st, p, sz) for p, (st, sz) in tree1.items()
                    if tree0.get(p) != (st, sz))
-    with open(log, 'a', encoding='utf-8') as fh:
-        fh.write(json.dumps({'at': rec['at'], 'argv': cmd, 'rc': rc, 'gates_changed': changed,
-                             'tree_delta': delta}) + '\n')
+    append_line(log, {'at': rec['at'], 'argv': cmd, 'rc': rc, 'gates_changed': changed,
+                      'tree_delta': delta})
     for d in delta:
         print('TREE CHANGED: %s' % d)
     if changed:
