@@ -4577,6 +4577,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "cody-1793301139",
+      "session": "cody",
+      "subject": "sairndental",
+      "task": "credential hold outside try cc b73 low",
+      "claimed_at": "2026-10-29T19:12:19Z",
+      "claimed_at_epoch": 1793301139.161168,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
