@@ -173,3 +173,14 @@ docs/sources/** -text
 # line-ending problem.
 scripts/*.sh text eol=lf
 .githooks/*  text eol=lf
+
+# docs/BYPASS-LOG.jsonl is an APPEND-ONLY ledger every population writes to
+# (hank b66, Michael adopted C1b). Concurrent appends at the end of the file
+# conflicted on every rebase under C1 traffic -- twice in hank b65 alone, each
+# resolved by hand by keeping both sides. `merge=union` keeps both sides
+# automatically. Proven before adoption with `git merge-file --union` on two
+# appended rows: plain merge 1 conflict marker, union 0 markers and 3 rows.
+# Union is safe ONLY for an append-only file: an EDIT to an existing row
+# would be kept twice, not merged -- tools/push_retry.py append_only() is the
+# guard on this clone's own writes.
+docs/BYPASS-LOG.jsonl text eol=lf merge=union
