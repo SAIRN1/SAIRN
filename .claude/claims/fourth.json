@@ -4965,6 +4965,20 @@
         "tests/run_sairnbuild_server_wins_sabotage_probe.py",
         "tests/sairnbuild_server_wins.js"
       ]
+    },
+    {
+      "id": "fourth-1793300983",
+      "session": "fourth",
+      "subject": "sairncash",
+      "task": "prior year tax zero reads as not provided FILES: sairncash.html tests/sairncash_prior_tax_zero.js",
+      "claimed_at": "2026-10-29T19:09:43Z",
+      "claimed_at_epoch": 1793300983.580528,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "sairncash.html",
+        "tests/sairncash_prior_tax_zero.js"
+      ]
     }
   ],
   "refusals": [
