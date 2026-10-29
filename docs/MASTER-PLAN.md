@@ -31,30 +31,30 @@ Every column names the tool that produced it. `res` = resources owned in `api/_r
 |---|---|---|---|---|---|---|
 | `sairnbiz` | 13 | ✅ | 22 | 17 | 5 | — |
 | `sairnbuild` | 32 | ✅ | 11 | 10 | 3 | — |
-| `sairncare` | 14 | ✅ | 34 | 31 | 6 | — |
+| `sairncare` | 14 | ✅ | 35 | 31 | 6 | — |
 | `sairncash` | 0 | ✅ | 14 | 14 | 2 | — |
-| `sairncode` | 28 | ✅ | 9 | 7 | 2 | — |
-| `sairndental` | 25 | ✅ | 43 | 35 | 6 | — |
+| `sairncode` | 28 | ✅ | 10 | 8 | 2 | — |
+| `sairndental` | 25 | ✅ | 44 | 36 | 6 | — |
 | `sairndental-book` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 | `sairndental-complaint` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 | `sairndesign` | 18 | ✅ | 3 | 2 | 1 | — |
 | `sairnfreedom` | 36 | ✅ | 9 | 6 | 2 | — |
-| `sairngrounds` | 30 | ✅ | 2 | 2 | 2 | — |
-| `sairnlaw` | 20 | ✅ | 36 | 27 | 7 | — |
-| `sairnlegacy` | 37 | ⚠ | 10 | 6 | 2 | **tier: NO TIER      sairnlegacy/leg_settings is registered and has no row.** |
-| `sairnmechanical` | 7 | ✅ | 10 | 7 | 1 | — |
+| `sairngrounds` | 30 | ✅ | 3 | 2 | 2 | — |
+| `sairnlaw` | 20 | ✅ | 37 | 28 | 7 | — |
+| `sairnlegacy` | 37 | ⚠ | 11 | 6 | 2 | **tier: NO TIER      sairnlegacy/leg_settings is registered and has no row.** |
+| `sairnmechanical` | 7 | ✅ | 12 | 8 | 1 | — |
 | `sairnroofing` | 27 | ✅ | 33 | 30 | 2 | — |
 | `sairnscape` | 12 | ✅ | 5 | 5 | 1 | — |
 | `sairnsenior` | 16 | ⚠ | 19 | 16 | 3 | **tier: NO TIER      sairnsenior/sen_period_closings is registered and has no row.** |
 | `sairnvet` | 42 | ✅ | 22 | 20 | 8 | — |
-| `stonedesk` | 36 | ✅ | 31 | 23 | 10 | — |
+| `stonedesk` | 36 | ✅ | 32 | 23 | 10 | — |
 | `stonedesk-catalog` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 | `stonedesk-hr` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 | `stonedesk-intake` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 
-**Platform totals: 393 resources owned by an app, 313 test files attributed to one, 258 of those traced, 63 fault probes.**
+**Platform totals: 393 resources owned by an app, 322 test files attributed to one, 262 of those traced, 63 fault probes.**
 
-**And the denominators that are NOT the same thing**, stated because conflating them is what went wrong: there are **1076** test files on disk in total and **785** of them are traced — most are not attributed to any single app, so the per-app `traced` column above sums to less. A rate over the subset you looked at is not a rate.
+**And the denominators that are NOT the same thing**, stated because conflating them is what went wrong: there are **1086** test files on disk in total and **789** of them are traced — most are not attributed to any single app, so the per-app `traced` column above sums to less. A rate over the subset you looked at is not a rate.
 
 **THIS DOCUMENT USED TO PRINT TWO DIFFERENT VALUES FOR THAT SECOND NUMBER, IN ONE RUN.** The prose above counted citations to files that are on disk; the closing-error leg at the bottom counted citations outright, and on 2026-09-18 they read **512** and **518**. Four of the six were real test files under `api/` subdirectories that `all_tests()` listed two hardcoded directories instead of walking, and two were citations to files that are not there. Both halves are fixed at the source: `all_tests()` now walks `api/` the same way it always walked `tests/`, and `traced()` drops a citation naming a file that does not exist. The two figures are now one population and cannot diverge again without a code change.
 
@@ -76,12 +76,12 @@ The table above names every contributor, which is necessary and is not enough: a
 
 | Contributor | Could be understating by | Direction | What that figure counts |
 |---|---|---|---|
-| `suites` | 763 | UNDER-counts | test files on disk attributed to no single app by path |
-| `traced` | 291 | UNDER-counts | test files no source ties to a stated requirement |
+| `suites` | 764 | UNDER-counts | test files on disk attributed to no single app by path |
+| `traced` | 297 | UNDER-counts | test files no source ties to a stated requirement |
 | `fault` | 47 | UNDER-counts | test files that write to a tracked app file and declare neither a MUTATIONS block nor a *_fault_probe.py name |
 | `tiered` | 0 | no contribution | binary and complete -- criticality_tier_check either raised something for an app or did not |
 
-**WORST CASE: 1101.** RSS for context: 818.
+**WORST CASE: 1108.** RSS for context: 821.
 
 **All three contributors err in the SAME direction — they UNDER-count — so this document understates coverage and cannot overstate it.** A budget on a status page that flattered the platform would be worth very little; this one can only ever say "at least this good".
 
@@ -128,8 +128,8 @@ The table above names every contributor, which is necessary and is not enough: a
 ```
   app files                         22   git ls-files '*.html'
   apps owning a resource            18   api/_resources/index.js OWNER_BY_RESOURCE
-  test files on disk              1076   tests/**, api/** (both walked)
-  tests traced to a requirement    785   traceability_matrix.traced(), citations to files ON DISK only
+  test files on disk              1086   tests/**, api/** (both walked)
+  tests traced to a requirement    789   traceability_matrix.traced(), citations to files ON DISK only
   declared fault probes            113   MUTATIONS blocks + *_fault_probe.py + *_mutation_control.js + tests/faults/*.js
   attested migrations                5   hand-recorded, Michael, directly, 2026-09-10
 ```

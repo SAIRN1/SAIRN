@@ -40257,6 +40257,61 @@
       "recurrence_open": "Other saves that now await a server answer before re-enabling (sairnmechanical saveQuote/saveCheck and other apps' push-then-toast paths) were not swept for the same re-entry window."
     },
     {
+      "commit": "a746b20e4a21",
+      "date": "2026-10-29",
+      "subject": "fix(apps, cody b64): the other 41 re-entrant saves are guarded -- all 47 found by the sweep are now fixed, each fixture-first",
+      "files": [
+        "sairncare.html",
+        "sairncode.html",
+        "sairndental.html",
+        "sairngrounds.html",
+        "sairnlaw.html",
+        "sairnmechanical.html",
+        "stonedesk.html",
+        "tests/lib/save_reentry_harness.js",
+        "tests/sairncare_save_reentry.js",
+        "tests/sairncode_save_reentry.js",
+        "tests/sairndental_coverage_edit.js",
+        "tests/sairndental_save_reentry.js",
+        "tests/sairngrounds_save_reentry.js",
+        "tests/sairnlaw_save_reentry.js",
+        "tests/sairnmechanical_save_reentry.js",
+        "tests/stonedesk_save_reentry.js"
+      ],
+      "lines_added": 837,
+      "lines_removed": 40,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "The other 41 re-entrant save handlers from the b64 sweep (24 in sairncode on one template, plus sairncare, sairndental, sairnlaw, sairngrounds, sairnmechanical, stonedesk) awaited a server write before their visible step with the trigger live, so a second press created a duplicate record. Each guarded with a hold released in finally; every arm red first on the unfixed code.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Introduced handler by handler as resources were wired to the server; not traced per handler."
+      },
+      "citation_note": "C5 class in docs/recurring-bug-classes-2.md; no PR rule id.",
+      "contributing_factors": [
+        {
+          "factor": "Save handlers across the apps await a server write before their visible completion step and leave the trigger live during the wait; no shared helper or convention makes a pending save refuse a second press.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Six highest-impact handlers guarded with a hold released in finally; arms drive the real handlers."
+        },
+        {
+          "factor": "No check in the repo looks for the await-before-completion re-entry shape, so it was only found by the b63 review of one handler and then a manual sweep.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "Turn the b64 sweep scanner into a standing checker once all 47 are fixed."
+        }
+      ],
+      "recurrence_open": "Out-of-shape re-entry remains open: grounds GPS waits (gcdPlaceOrder, gcdMarkShotEnd), stonedesk's 2.5 s no-slab POS reset window, and handlers that never reset their inputs; no standing checker for the shape yet."
+    },
+    {
       "commit": "c21eb4ebe653",
       "date": "2026-10-29",
       "subject": "fix(sairnmechanical, fourth b65): saveQuote stores the client the quote was generated for",
