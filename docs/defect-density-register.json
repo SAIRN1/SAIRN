@@ -39955,7 +39955,7 @@
       "recurrence_open": "A skipped push does not re-run whole-tree checks against the combined base; only gate duration or a merge queue closes that."
     },
     {
-      "commit": "0dfb66fc2444",
+      "commit": "1d2aea0e2b32",
       "date": "2026-10-29",
       "subject": "fix(sairnsenior, fourth b67): the EVV Clock Flags card says '240 h late', not '-240 h'",
       "files": [
