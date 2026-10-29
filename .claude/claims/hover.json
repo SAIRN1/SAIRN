@@ -1384,6 +1384,17 @@
       "status": "released",
       "released_at": "2026-10-29T10:09:16Z",
       "files": null
+    },
+    {
+      "id": "hover-1793271919",
+      "session": "hover",
+      "subject": "hover",
+      "task": "hover-tools b106 planted bug recall with-vendor refuses",
+      "claimed_at": "2026-10-29T11:05:19Z",
+      "claimed_at_epoch": 1793271919.291362,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
