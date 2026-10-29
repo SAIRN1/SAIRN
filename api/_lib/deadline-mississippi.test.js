@@ -222,7 +222,7 @@ check('and it names the one shape that could compute LATE, and says it is closed
 // ── Nothing else moved ───────────────────────────────────────────────────
 check('the coverage table holds ms alongside the others',
   Object.keys(engine.JURISDICTION_COVERAGE).sort(),
-  ['ak', 'al', 'ar', 'de', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'me', 'mn', 'mo', 'ms', 'mt', 'nd', 'ne', 'nh', 'nm', 'nv', 'pa', 'ri', 'sd', 'ut', 'va', 'wi']);
+  ['ak', 'al', 'ar', 'de', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'me', 'mn', 'mo', 'ms', 'mt', 'nd', 'ne', 'nh', 'nm', 'nv', 'pa', 'ri', 'sd', 'ut', 'va', 'wi', 'wy']);
 check('Mississippi adds no service-completion standard',
   Object.keys(engine.SERVICE_COMPLETION_STANDARDS), ['mo_rule_43_01_d']);
 // A pre-existing jurisdiction with the SAME seven-day threshold must be

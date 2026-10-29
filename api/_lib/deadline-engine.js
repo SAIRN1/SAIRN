@@ -1492,6 +1492,16 @@ var COMPUTATION_STANDARDS = {
   ri_rcp_6a: { label: 'R.I. Super. R. Civ. P. 6(a)', impl: 'frcp_6a',
     base_period_suffix: '', months_years_suffix: '',
     rollover_suffix_forward: '', rollover_suffix_backward: '' },
+  // ── WYOMING (hank b65): THE FEDERAL COUNT; "legal holiday" IS OPEN-ENDED ──
+  // W.R.C.P. 6(a): "'legal holiday' includes any day officially recognized as
+  // a legal holiday in this state by designation of the legislature,
+  // appointment as a holiday by the governor or the chief justice of the
+  // Wyoming Supreme Court, or any day designated as such by local officials."
+  // Only the legislature's list (W.S. 8-4-101) is derivable. No short-period
+  // exclusion. docs/sairnlaw-wyoming-deadline-seed-gate.md.
+  wy_rcp_6a: { label: 'W.R.C.P. 6(a)', impl: 'frcp_6a',
+    base_period_suffix: '', months_years_suffix: '',
+    rollover_suffix_forward: '', rollover_suffix_backward: '' },
   sd_rcp_6a: { label: 'SDCL 15-6-6(a)', impl: 'ohio_civ_r_6a',
     short_period_exclusion_days: 11,
     base_period_suffix: '', months_years_suffix: '',
@@ -2517,6 +2527,12 @@ var JURISDICTION_COVERAGE = {
     summary: 'Three Alaska days that may be legal holidays for time computation are NOT encoded -- MLK Day, the Friday before a Saturday holiday, and proclamation days -- and no row adds Rule 6(c) mail days to a deadline running from the clerk\'s certificate of distribution. This date may be EARLIER than the true deadline, never later.',
     detail: 'The calendar encodes Saturdays, Sundays and the AS 44.12.010 legal holidays, with the AS 44.12.020 Monday after a Sunday holiday. Each omission below can only make a date EARLIER: (1) MARTIN LUTHER KING, JR. DAY. AS 44.12.010(a)(2) lists it "as provided in (b)", and (b) makes it a legal holiday "for employment purposes" for state employees on collective-bargaining terms, so whether it is a legal holiday for a court deadline is a question of law; a deadline landing on it is shown on that Monday. (2) THE FRIDAY BEFORE A SATURDAY HOLIDAY. AS 44.12.025 makes it a legal holiday "for officers and employees of the state" only -- for example Friday 3 July 2026. (3) PROCLAMATION DAYS under AS 44.12.010(a)(14), which cannot be derived in advance. (4) MAIL DAYS ON DISTRIBUTION-TRIGGERED ROWS. Civil Rule 6(c) and Appellate Rule 502(c) add three days after a document is "distributed by" mail, which may reach a mailed judgment, but Civil Rule 6(b) forbids enlarging Rule 59(b) and a late notice of appeal is lost, so the Rule 59(b) and Appellate Rule 204(a)(1) rows add none. A court closure is NOT a legal holiday: the closed-court sentence printed beside Civil Rule 6 is the text of rescinded SCO 1875. If a computed date falls on MLK Day, the Friday before a Saturday holiday, or runs from a mailed judgment, confirm before relying on it.'
   },
+  wy: {
+    complete: false,
+    direction: 'early',
+    summary: 'Wyoming legal holidays outside the legislature\'s list -- days appointed by the governor or the chief justice, and days designated by LOCAL officials -- are NOT modelled, nor is an inaccessible clerk\'s office, and no mail days are added to the answer or new-trial rows. This date may be EARLIER than the true deadline, never later.',
+    detail: 'The calendar encodes Saturdays, Sundays and the W.S. 8-4-101 legal holidays (no Juneteenth, no Columbus Day), with the 8-4-101(b) Sunday-to-Monday shift for New Year\'s Day, Independence Day, Christmas Day and Veterans Day; there is NO Saturday shift. W.R.C.P. 6(a) defines "legal holiday" to INCLUDE days appointed by the governor or the chief justice and "any day designated as such by local officials" -- none derivable in advance, and the last varies by locality. Each omission can only make a date EARLIER: (1) those appointed and local days; (2) the 6(a) clerk-inaccessible rollover; (3) no 6(d) days on the answer to a complaint (process) or the Rule 59(b) motion, which runs from entry; (4) the Rule 6(c)(2) motion-response limb is NOT seeded because it ends at the EARLIER of 20 days or three days before the hearing, and a 20-day date alone could be LATE. Confirm any date that may fall on a locally designated holiday.'
+  },
   ri: {
     complete: false,
     direction: 'early',
@@ -3507,6 +3523,17 @@ var SERVICE_EXTENSION_STANDARDS = {
   // electronically or by mail, one (1) day shall be added to the prescribed
   // period." ONE day, not three, and electronic service qualifies -- the
   // opposite of AK/ND/SD. Added to the period, one rollover at the end.
+  // ── WYOMING: MAIL OR DELIVERY TO THE CLERK, ADDED TO THE PERIOD (hank b65)
+  // W.R.C.P. 6(d): "served upon the party by mail or by delivery to the clerk
+  // for service, three days shall be added to the prescribed period, provided
+  // however, this rule shall not apply to service of process by registered or
+  // certified mail under Rule 4(r)."
+  wy_rcp_6d: {
+    label: 'W.R.C.P. 6(d)',
+    sequence: 'add_to_period_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) { return method === 'mail' || method === 'left_with_clerk'; }
+  },
   ri_rcp_6d: {
     label: 'R.I. Super. R. Civ. P. 6(d)',
     sequence: 'add_to_period_then_roll',

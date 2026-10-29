@@ -93,7 +93,7 @@ check('no Florida row is under the 7-day threshold at 2.514(a)(2)',
 // ── Nothing else moved ───────────────────────────────────────────────────
 check('the coverage table gained fl and nothing else',
   Object.keys(engine.JURISDICTION_COVERAGE).sort(),
-  ['ak', 'al', 'ar', 'de', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'me', 'mn', 'mo', 'ms', 'mt', 'nd', 'ne', 'nh', 'nm', 'nv', 'pa', 'ri', 'sd', 'ut', 'va', 'wi']);
+  ['ak', 'al', 'ar', 'de', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'me', 'mn', 'mo', 'ms', 'mt', 'nd', 'ne', 'nh', 'nm', 'nv', 'pa', 'ri', 'sd', 'ut', 'va', 'wi', 'wy']);
 // The standard itself is untouched -- this change is a disclosure, not a
 // computation change, and the arithmetic must be identical.
 const std = engine.COMPUTATION_STANDARDS.fl_rgpja_2514;

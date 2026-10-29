@@ -244,14 +244,14 @@ check('wv_rcp_6e is still the only contested standard',
 // failure. Add a jurisdiction to this list only when its gap was actually
 // reasoned about, never to make the test pass.
 check('exactly Alaska, Alabama, Arkansas, Delaware, Florida, Hawaii, Idaho, Kansas, Maine, Maryland, Wisconsin, Massachusetts, Minnesota, Mississippi, Missouri, Montana, North Dakota, Nebraska, Nevada, New Hampshire, New Mexico, Pennsylvania, Rhode Island, South Dakota, Utah and Virginia declare a coverage gap',
-  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['ak', 'al', 'ar', 'de', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'me', 'mn', 'mo', 'ms', 'mt', 'nd', 'ne', 'nh', 'nm', 'nv', 'pa', 'ri', 'sd', 'ut', 'va', 'wi']);
+  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['ak', 'al', 'ar', 'de', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'me', 'mn', 'mo', 'ms', 'mt', 'nd', 'ne', 'nh', 'nm', 'nv', 'pa', 'ri', 'sd', 'ut', 'va', 'wi', 'wy']);
 // Each entry must be its OWN text, not another state's copied across -- the
 // failure mode this pins down is a disclosure that names the wrong state.
 check('each coverage summary names its own jurisdiction',
-  ['ak', 'al', 'ar', 'de', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'me', 'mn', 'mo', 'ms', 'mt', 'nd', 'ne', 'nh', 'nm', 'nv', 'pa', 'ri', 'sd', 'ut', 'va', 'wi'].filter(k => {
+  ['ak', 'al', 'ar', 'de', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'me', 'mn', 'mo', 'ms', 'mt', 'nd', 'ne', 'nh', 'nm', 'nv', 'pa', 'ri', 'sd', 'ut', 'va', 'wi', 'wy'].filter(k => {
     const s = engine.JURISDICTION_COVERAGE[k].summary;
-    return { ak: /Alaska/, nd: /North Dakota/, sd: /South Dakota/, ri: /Rhode Island/, al: /Alabama/, ar: /Arkansas/, fl: /Florida/, hi: /Hawai/, id: /Idaho/, ks: /Kansas/, ma: /Massachusetts|Suffolk/, md: /Maryland/, me: /Maine|MAINE/, mn: /Minnesota|Indigenous/, mo: /Missouri/, ms: /Mississippi/, mt: /Montana|Justice and City Court/, ne: /Nebraska/, nh: /New Hampshire/, de: /Delaware|Chancery|Prothonotary/, nm: /New Mexico/, nv: /Nevada/, pa: /Pennsylvania/, ut: /Utah/, va: /Virginia/, wi: /Wisconsin/ }[k].test(s);
-  }), ['ak', 'al', 'ar', 'de', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'me', 'mn', 'mo', 'ms', 'mt', 'nd', 'ne', 'nh', 'nm', 'nv', 'pa', 'ri', 'sd', 'ut', 'va', 'wi']);
+    return { ak: /Alaska/, nd: /North Dakota/, sd: /South Dakota/, ri: /Rhode Island/, wy: /Wyoming/, al: /Alabama/, ar: /Arkansas/, fl: /Florida/, hi: /Hawai/, id: /Idaho/, ks: /Kansas/, ma: /Massachusetts|Suffolk/, md: /Maryland/, me: /Maine|MAINE/, mn: /Minnesota|Indigenous/, mo: /Missouri/, ms: /Mississippi/, mt: /Montana|Justice and City Court/, ne: /Nebraska/, nh: /New Hampshire/, de: /Delaware|Chancery|Prothonotary/, nm: /New Mexico/, nv: /Nevada/, pa: /Pennsylvania/, ut: /Utah/, va: /Virginia/, wi: /Wisconsin/ }[k].test(s);
+  }), ['ak', 'al', 'ar', 'de', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'me', 'mn', 'mo', 'ms', 'mt', 'nd', 'ne', 'nh', 'nm', 'nv', 'pa', 'ri', 'sd', 'ut', 'va', 'wi', 'wy']);
 // A pre-existing jurisdiction still computes what it computed, through the
 // same standards table the two new entries were added to.
 {
