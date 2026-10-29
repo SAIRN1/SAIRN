@@ -4909,8 +4909,8 @@
       "task": "b65 sv_controlled witness token live drive FILES: docs/live-residue/",
       "claimed_at": "2026-10-29T10:58:57Z",
       "claimed_at_epoch": 1793271537.694708,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-29T11:26:22Z",
       "files": null
     }
   ],
