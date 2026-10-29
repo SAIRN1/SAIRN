@@ -184,3 +184,21 @@ test probes.
   class.
 - The standing remedy is to push through the tracked tool, not a private
   copy of its logic.
+---
+
+## C5. CAUSE TAGS FOR EVERY FIX IN cody b63 (Michael's b63 instruction)
+
+**Each fix landed in b63 is tagged phase -> sub-phase -> cause, in the vocabulary of `tools/defect_register.py` (phases: requirement, design, coding, config, unknown).** The tags are listed here because the instruction named this file. The two that are a recurring CLASS rather than a one-off say so, with their earlier occurrences.
+
+| fix (commit subject) | phase -> sub-phase -> **due to** cause | one-off or class |
+|---|---|---|
+| `saveDoc` could save a duplicate (sairnmechanical, gap d) | coding -> async UI state / re-entrancy -> **due to** a toast made to WAIT on an async server push (b57) while its trigger stayed live, so a second click re-entered the save | **class** -- any push-then-toast save path. Recurrence is open in the register record: saveQuote, saveCheck and other apps' await-then-toast paths were not swept |
+| local-write-before-push untested (gap a) | coding -> test assertions / ordering -> **due to** tests that asserted the OUTCOME (a row exists) and never the ORDER (stored before the push was called), so moving the write into the `.then` stayed green | one-off |
+| mechPushOne "truthy on success" untested (gap b) | coding -> test assertions / return contract -> **due to** a comment stating a return contract (b57) with no arm holding it, so the pre-b57 return passed | one-off |
+| unprovisioned fixture had the wrong shape (gap c) | coding -> test fixtures -> **due to** a fixture written from the ASSUMED response shape (`ok:false`) rather than read from the server branch (`ok:true, data:[], provisioned:false`), so the arm never reached the branch the server drives | **class** -- C2's sibling: a fixture that cannot reach the code it claims to test is a check that "passes" for work it never did |
+| redaction wiring probe exit 2 since b58 | coding -> anchor selection -> **due to** a probe anchored on a LITERAL fallback line (`rows[0].data : mPayload`) that a later, correct fix (b58 `10e914b1`) deleted, which turned a structural property into a text match | **class** -- the same shape as `docs/recurring-bug-classes.md` "anchor selection" and the b58 sabotage-probe anchor block on `refuseUnconfirmedWrite` |
+| sd-data.js:2301 semgrep hit suppressed (not a defect) | design -> checker exception handling -> **due to** a rule with no way to mark one verified-intended call, so a known-good line kept `run_semgrep` red on every run and a real hit would have read as the usual one | one-off (the finding itself is "intended, verified") |
+
+**Not tagged, because they are not fixes:**
+- the H1/H2 routed index rows (item 4);
+- the #909 rule-name list (item 3).
