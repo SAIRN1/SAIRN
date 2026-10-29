@@ -92,6 +92,18 @@
 // and the check reports a discrepancy whose cause is the check.
 const UNATTRIBUTED = '__unattributed__';
 
+// A deposit in transit normally clears within days. One still uncleared more
+// than this many days before the statement date is not a timing difference:
+// carried as "in transit", a $40 shortfall balanced the bank leg and read
+// Reconciled (cc b55 stress M5, hank b68 review). Such a deposit stops the
+// status at PARTIAL and is named in the bank leg's `why`. 30 = one monthly
+// statement cycle; hank b69's choice, stated, not a bar rule.
+const STALE_DEPOSIT_IN_TRANSIT_DAYS = 30;
+
+function daysBefore(earlier, later) {
+  return Math.round((Date.parse(later + 'T00:00:00Z') - Date.parse(earlier + 'T00:00:00Z')) / 86400000);
+}
+
 /** Money to integer cents, or null when the value is not money at all.
  *  null is NOT 0 -- a row whose amount cannot be read is a row that cannot be
  *  reconciled, and calling it zero is the silent-omission shape this whole
@@ -223,6 +235,7 @@ function reconcileTrustLedger(input) {
   let outstandingDeposits = 0;
   let outstandingDisbursements = 0;
   let clearanceStated = 0;       // rows that say ANYTHING about clearing
+  const staleDeposits = [];      // deposits in transit older than STALE_DEPOSIT_IN_TRANSIT_DAYS
   if (latest) {
     asOfCents = 0;
     afterStatementCents = 0;
@@ -250,6 +263,10 @@ function reconcileTrustLedger(input) {
         if (!clearedByStatement && saysCleared) {
           outstandingCents += signed;
           if (signed >= 0) outstandingDeposits += 1; else outstandingDisbursements += 1;
+          const age = daysBefore(d, latest.date);
+          if (signed > 0 && age > STALE_DEPOSIT_IN_TRANSIT_DAYS) {
+            staleDeposits.push({ id: row.id, date: d, cents: signed, days: age });
+          }
         }
       } else {
         afterStatementCents += signed;
@@ -372,7 +389,18 @@ function reconcileTrustLedger(input) {
             + 'disagrees, check the outstanding items before treating it as an '
             + 'error. Record `cleared_on` (or `cleared: false`) on trust '
             + 'transactions and this leg adjusts for them.'
-          : ''),
+          : (staleDeposits.length
+            ? 'NOT RECONCILED ON THIS LEG ALONE. ' + staleDeposits.length + ' deposit(s) '
+              + 'totalling ' + staleDeposits.reduce((s2, x) => s2 + x.cents, 0) + ' cents are '
+              + 'carried as "in transit" though dated more than '
+              + STALE_DEPOSIT_IN_TRANSIT_DAYS + ' days before the statement (oldest '
+              + Math.max.apply(null, staleDeposits.map((x) => x.days)) + ' days). A '
+              + 'deposit that has not reached the bank in that time is more likely '
+              + 'money that never arrived than money on its way -- confirm each one '
+              + 'with the bank before treating this account as reconciled.'
+            : '')),
+      stale_deposits_in_transit: staleDeposits,
+      stale_after_days: STALE_DEPOSIT_IN_TRANSIT_DAYS,
       movement_after_statement_cents: afterStatementCents,
       undated_rows: undatedRows,
       undated_cents: undatedCents,
@@ -482,6 +510,7 @@ function reconcileTrustLedger(input) {
   // over-claim; a labelled one is not.
   else if (moneyConservation.holds === false) status = 'PARTIAL';
   else if (compared.length < 2) status = 'PARTIAL';
+  else if (staleDeposits.length) status = 'PARTIAL';
   else status = 'AGREES';
 
   return {

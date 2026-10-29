@@ -471,5 +471,49 @@ t('AN IMPOSSIBLE DATE IS NOT A DATE -- found by the arm above, fixed in dayOf', 
     'Feb 29 in a non-leap year was accepted');
 });
 
+// ── hank b69 (cc b55 stress M5): a STALE deposit in transit is not a timing
+// difference. Books: A 1000 cleared, B 500 cleared, plus a deposit for B that
+// never cleared. The bank holds 1500, so the bank leg balances only by
+// carrying the extra deposit as "in transit".
+const staleCase = (depDate, extra) => reconcile({
+  rows: [D('T1', 'CL-A', 1000, '2026-09-01', { cleared_on: '2026-09-02' }),
+         D('T2', 'CL-B', 500, '2026-09-03', { cleared_on: '2026-09-04' }),
+         D('T9', 'CL-B', 40, depDate, Object.assign({ cleared: false }, extra || {}))],
+  statements: [{ statement_date: '2026-09-30', bank_balance: 1500 }],
+  clientTotalCents: 154000,
+});
+
+t('M5: a deposit in transit 91 days before the statement does NOT read AGREES', () => {
+  const r = staleCase('2026-07-01');
+  assert.strictEqual(r.legs.bank_vs_ledger.agrees, true, 'the arithmetic itself still balances');
+  assert.strictEqual(r.status, 'PARTIAL');
+  assert.deepStrictEqual(r.legs.bank_vs_ledger.stale_deposits_in_transit.map((x) => [x.id, x.cents, x.days]),
+    [['T9', 4000, 91]]);
+  assert.ok(/NOT RECONCILED ON THIS LEG ALONE/.test(r.legs.bank_vs_ledger.why), r.legs.bank_vs_ledger.why);
+});
+
+t('M5 boundary: 30 days old is still a normal deposit in transit (AGREES); 31 is stale', () => {
+  assert.strictEqual(staleCase('2026-08-31').status, 'AGREES');
+  assert.strictEqual(staleCase('2026-08-30').status, 'PARTIAL');
+});
+
+t('M5 control: a fresh deposit in transit reconciles, and its why stays empty', () => {
+  const r = staleCase('2026-09-28');
+  assert.strictEqual(r.status, 'AGREES');
+  assert.strictEqual(r.legs.bank_vs_ledger.why, '');
+  assert.deepStrictEqual(r.legs.bank_vs_ledger.stale_deposits_in_transit, []);
+});
+
+t('M5 scope: an OLD uncleared cheque is not a stale deposit (a stale cheque is a different question)', () => {
+  const r = reconcile({
+    rows: [D('T1', 'CL-A', 1000, '2026-09-01', { cleared_on: '2026-09-02' }),
+           W('T3', 'CL-A', 200, '2026-06-01', { cleared: false })],
+    statements: [{ statement_date: '2026-09-30', bank_balance: 1000 }],
+    clientTotalCents: 80000,
+  });
+  assert.strictEqual(r.status, 'AGREES');
+  assert.deepStrictEqual(r.legs.bank_vs_ledger.stale_deposits_in_transit, []);
+});
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

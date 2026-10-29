@@ -94,3 +94,9 @@ Every routed finding below names its source inline: session, commit and, for an 
 | 4 | sairnmechanical `mechCredAdd` / `mechAssetAdd` swallowed a rejected write (cc b73 R-12, `69c36d5ff`) | coding | error handling | **due to** a `.then().finally()` chain with no rejection handler; the `finally` made the hold correct, which hid that the failure was silent | `824bab9dd` |
 
 **Rows 2 and 4 are the same shape at two scales:** a check that held for the case its author drove (one app; a hold released) and said nothing about the case next to it (twelve apps; the user told). Row 2's arm pinned the wrong answer as the right one, which is the second time this batch pair has found that (b65 row 5, stonedesk S4).
+
+## 2026-10-29 — batch 69 (hank)
+
+| # | Defect | Phase | Sub-phase | Cause | Commit |
+|---|---|---|---|---|---|
+| 1 | `api/_lib/law-trust-reconcile.js` counted any uncleared deposit as "in transit" with no age limit, so a trust shortfall carried as a 91-day-old deposit balanced the bank leg and read Reconciled (cc b55 stress M5) | design | domain model | **due to** the outstanding-items model (2026-09-18) encoding the timing difference without the property that makes it a timing difference: that it resolves within days | this batch |
