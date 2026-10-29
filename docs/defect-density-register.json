@@ -40010,50 +40010,6 @@
       "recurrence_open": "Out-of-shape re-entry remains open: grounds GPS waits (gcdPlaceOrder, gcdMarkShotEnd), stonedesk's 2.5 s no-slab POS reset window, and handlers that never reset their inputs; no standing checker for the shape yet."
     },
     {
-      "commit": "bdfe0609adeb",
-      "date": "2026-10-29",
-      "subject": "fix(sairnfreedom, cody b66): a server confirmation expires after 90 days and is re-verified",
-      "files": [
-        "sairnfreedom.html",
-        "tests/sairnfreedom_confirmed_ttl.js"
-      ],
-      "lines_added": 165,
-      "lines_removed": 14,
-      "app": "sairnfreedom",
-      "layer": "product",
-      "severity": "low",
-      "detection_method": "independent-review",
-      "summary": "sairnfreedom's sf_server_confirmed entries never expired, so a row deleted out-of-band read as server-confirmed forever (cc b70 gap a). Each id now carries the server's last answer time and reads as confirmed for 90 days; untimed legacy entries are re-verified.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "7ae231b4721b",
-        "date": "2026-10-29",
-        "subject": "fix(sairnfreedom, cody b61): the trustee-audit panel shows what the server has confirmed, not a fixed \"held on this device only\"",
-        "lag_days": 0
-      },
-      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b66 row 3.",
-      "contributing_factors": [
-        {
-          "factor": "The confirmed set recorded THAT the server answered, never WHEN, so nothing could age it.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "sf_server_confirmed_at stamps each id; sfConfirmedRead filters to 90 days."
-        },
-        {
-          "factor": "No test executed sfConfirmOnServer; the existing arm was a regex over its shape.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "tests/sairnfreedom_confirmed_ttl.js runs the real functions under a fixed clock."
-        }
-      ],
-      "recurrence_open": "Any future confirmed-set or cache of server answers in another app needs the same expiry; none exists today."
-    },
-    {
       "commit": "1d2aea0e2b32",
       "date": "2026-10-29",
       "subject": "fix(sairnsenior, fourth b67): the EVV Clock Flags card says '240 h late', not '-240 h'",
@@ -40096,50 +40052,6 @@
         }
       ],
       "recurrence_open": "Other surfaces that print skew_ms (none found by grep in sairnsenior.html) would need the same treatment."
-    },
-    {
-      "commit": "bea263709094",
-      "date": "2026-10-29",
-      "subject": "fix(done-line, cody b66): a hand-typed done line with no record this turn is refused",
-      "files": [
-        "docs/sairn-path-manifest.json",
-        "tools/sairn_done_line.py"
-      ],
-      "lines_added": 61,
-      "lines_removed": 5,
-      "app": "PLATFORM",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "tools/sairn_done_line.py's Stop hook checked the final message only when it had recorded a done line this turn, so a hand-typed 'done b<n> <id>' with no record -- an id from memory or copied from an earlier batch -- ended the session unchecked. Now refused, capped against looping.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "a367bd0c2521",
-        "date": "2026-10-28",
-        "subject": "feat(cc b66): done-line wrapper + Stop hook; deny hook logs to the shared deny-blocks.log; untracked-only script scan",
-        "lag_days": 1
-      },
-      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b66 row 1.",
-      "contributing_factors": [
-        {
-          "factor": "The hook keyed its whole check on its own state file; the absent-record case was treated as not-a-final-step rather than as an unverified claim.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "A done-shaped final message with no record this turn is refused and names the command."
-        },
-        {
-          "factor": "The selftest had a no-record arm asserting allow, with no done-shaped text in it.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Three red-first arms: no record, earlier-turn record, and the loop cap."
-        }
-      ],
-      "recurrence_open": "Any other final-message contract that keys on a tool's own state file has the same blind spot when the tool was never run."
     },
     {
       "commit": "29cfd28072fd",
@@ -40219,6 +40131,62 @@
         }
       ],
       "recurrence_open": "A window still cannot cross midnight, and the server write does not validate the hours."
+    },
+    {
+      "commit": "45bf57f0c2cf",
+      "date": "2026-10-29",
+      "subject": "fix(platform, cody b66): 12 more licence guards no longer adopt a different licence on a legacy device",
+      "files": [
+        "sairnbiz.html",
+        "sairnbuild.html",
+        "sairncare.html",
+        "sairncode.html",
+        "sairndental.html",
+        "sairndesign.html",
+        "sairngrounds.html",
+        "sairnlaw.html",
+        "sairnlegacy.html",
+        "sairnroofing.html",
+        "sairnscape.html",
+        "sairnsenior.html",
+        "tests/licence_guard_legacy_device.js",
+        "tests/licence_rekey_isolation.js"
+      ],
+      "lines_added": 255,
+      "lines_removed": 4,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "Twelve apps' licence guards (dental, senior, care, build, design, law, legacy, roofing, code, biz, grounds, scape) adopted any new licence key on a device with no fingerprint although the previous key sat beside the data, so licence B opened licence A's local records. Each now fingerprints the stored key and asks.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "343c5a3275b1",
+        "date": "2026-09-03",
+        "subject": "feat(platform): a licence change no longer hands the next customer the previous one's records",
+        "lag_days": 56
+      },
+      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b66 row 2 (same cause as b65 row 2).",
+      "contributing_factors": [
+        {
+          "factor": "One shared design premise -- nothing says whose data is on a legacy device -- was copied into thirteen guards from one commit; the premise was false in all of them.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Each guard fingerprints the stored key when no fingerprint exists."
+        },
+        {
+          "factor": "licence_rekey_isolation pinned the flaw as the requirement: its first-run arm stored one key and entered a different one and asserted adopt.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Fixture corrected; tests/licence_guard_legacy_device.js covers all 13 apps."
+        }
+      ],
+      "recurrence_open": "A new app scaffolded from the old guard text reintroduces it; sairn-app-scaffold does not yet carry the corrected guard."
     },
     {
       "commit": "48a3e5d79374",
@@ -40475,6 +40443,46 @@
       "recurrence_open": "A typed 0 prior-year tax is still read as not provided, in both the save and the calculation."
     },
     {
+      "commit": "6cd786113de1",
+      "date": "2026-10-29",
+      "subject": "fix(sairnlaw, hank b69 M5): a deposit in transit older than 30 days stops the trust reconciliation at PARTIAL and is named in the bank leg",
+      "files": [
+        "api/_lib/law-trust-reconcile.js",
+        "api/_lib/law-trust-reconcile.test.js",
+        "docs/recurring-bug-classes.md"
+      ],
+      "lines_added": 80,
+      "lines_removed": 1,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "fault-injection",
+      "summary": "api/_lib/law-trust-reconcile.js treated any uncleared deposit as in transit with no age limit, so a $40 trust shortfall carried as a deposit dated 91 days before the statement balanced the bank leg and the reconciliation read AGREES / Reconciled (cc b55 stress M5). A deposit in transit older than 30 days now stops the status at PARTIAL and is listed in bank_vs_ledger.stale_deposits_in_transit with a why the Trust Accounting panel shows. Stress probe M5 now PASS; 4 new arms, 2 red with the status line removed.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/sairnlaw_iolta_reconcile_stress.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "5e0b531f2776",
+        "date": "2026-09-18",
+        "subject": "fix(sairnlaw): the IOLTA reconciliation stops agreeing over money it never compared, and learns what an uncleared cheque is",
+        "lag_days": 41
+      },
+      "citation_note": "No standing rule names an age limit on reconciling items; proposed: an outstanding item is a timing difference only while it is young enough to be one.",
+      "contributing_factors": [
+        {
+          "factor": "The outstanding-items model encoded a timing difference without the property that makes it one: that it resolves within days",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "stale deposits in transit (> 30 days) stop the status at PARTIAL and are named"
+        }
+      ],
+      "recurrence_open": "Stale UNCLEARED CHEQUES are not flagged (a different question: escheat and stale-dated cheques); the 30-day threshold is hank's choice, not a bar rule, and M6 (misallocation with totals unchanged) remains a limit of reconciliation.",
+      "single_factor_note": "one model gap"
+    },
+    {
       "commit": "7ae231b4721b",
       "date": "2026-10-29",
       "subject": "fix(sairnfreedom, cody b61): the trustee-audit panel shows what the server has confirmed, not a fixed \"held on this device only\"",
@@ -40519,101 +40527,52 @@
       "recurrence_open": "Other fixed 'this device only' / 'not synced' sentences in other apps are not checked against their SYNCED lists; only this panel is now rendered from confirmed state."
     },
     {
-      "commit": "de354736590f",
+      "commit": "8138dc48d3e4",
       "date": "2026-10-29",
-      "subject": "fix(sairnmechanical, cody b66): a failed credential or asset write is reported, not swallowed (cc b73 R-12)",
+      "subject": "fix(stonedesk, fourth b69): three compliance displays claimed what the record does not hold (cc b56 T2a/T2b, T3a/T3b, T4a)",
       "files": [
-        "sairnmechanical.html",
-        "tests/sairnmechanical_save_reentry.js"
+        "docs/sairn-path-manifest.json",
+        "stonedesk.html",
+        "tests/stonedesk_presence_fixes_b69.js"
       ],
-      "lines_added": 33,
-      "lines_removed": 4,
-      "app": "sairnmechanical",
+      "lines_added": 147,
+      "lines_removed": 19,
+      "app": "stonedesk",
       "layer": "product",
-      "severity": "low",
-      "detection_method": "independent-review",
-      "summary": "sairnmechanical mechCredAdd and mechAssetAdd had no rejection handler: a rejected write, or one answering with no response, released the hold and showed nothing, leaving an unhandled rejection (cc b73 R-12). Both now report 'Not saved' in the form's error line.",
+      "severity": "high",
+      "detection_method": "probe-control",
+      "summary": "StoneDesk compliance displays claimed more than the record holds (cc b56 presence stress): subxCompliancePill showed COMPLIANT for a sub with no COI, or with no licence and no W-9; safetyUpdateKPIs scored an empty safety record 80% green and a blank-expiry 2019 silica course as current (100%); the OSHA 1926.1153 silica panel showed four hardcoded literal tiles (12 wet-cut days, 0 dry-cut violations, 8 air samples, AL) no code set.",
       "rules": [],
       "citation_confidence": "not-citable",
       "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/stonedesk_presence_stress.py",
       "found_by_session": null,
       "injection": {
-        "unknown_reason": "The .then chain without a rejection handler predates b64 (cc b73 says so); the introducing commit was not traced."
+        "unknown_reason": "subxCompliancePill (2026-09-01), safetyUpdateKPIs and the silica tiles predate this batch; the originating commits were not traced."
       },
-      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b66 row 4.",
+      "citation_note": "No standing rule says a compliance display must be derived from evidence present rather than from a passing default.",
       "contributing_factors": [
         {
-          "factor": "A promise chain with a then and a finally and no rejection handler; the finally made the hold correct, which hid that the failure was silent.",
+          "factor": "Scores and statuses computed by subtracting from a passing default, so absent evidence read as compliance.",
           "kind": "technical",
           "action_status": "done",
-          "action": "Rejection handler as the second argument of then, on the write alone."
+          "action": "COMPLIANT needs every document; the score is from evidence present; a blank expiry is not current."
         },
         {
-          "factor": "The re-entry harness asserts the hold is released after a rejected write, not that the user was told.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Arms MC4/MA4 require the message and no unhandled rejection."
-        }
-      ],
-      "recurrence_open": "Other b64-guarded .then handlers may share the shape; only these two were checked."
-    },
-    {
-      "commit": "45bf57f0c2cf",
-      "date": "2026-10-29",
-      "subject": "fix(platform, cody b66): 12 more licence guards no longer adopt a different licence on a legacy device",
-      "files": [
-        "sairnbiz.html",
-        "sairnbuild.html",
-        "sairncare.html",
-        "sairncode.html",
-        "sairndental.html",
-        "sairndesign.html",
-        "sairngrounds.html",
-        "sairnlaw.html",
-        "sairnlegacy.html",
-        "sairnroofing.html",
-        "sairnscape.html",
-        "sairnsenior.html",
-        "tests/licence_guard_legacy_device.js",
-        "tests/licence_rekey_isolation.js"
-      ],
-      "lines_added": 255,
-      "lines_removed": 4,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "Twelve apps' licence guards (dental, senior, care, build, design, law, legacy, roofing, code, biz, grounds, scape) adopted any new licence key on a device with no fingerprint although the previous key sat beside the data, so licence B opened licence A's local records. Each now fingerprints the stored key and asks.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "343c5a3275b1",
-        "date": "2026-09-03",
-        "subject": "feat(platform): a licence change no longer hands the next customer the previous one's records",
-        "lag_days": 56
-      },
-      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b66 row 2 (same cause as b65 row 2).",
-      "contributing_factors": [
-        {
-          "factor": "One shared design premise -- nothing says whose data is on a legacy device -- was copied into thirteen guards from one commit; the premise was false in all of them.",
+          "factor": "Mock tiles from the original layout shipped as if they were data.",
           "kind": "technical",
           "action_status": "done",
-          "action": "Each guard fingerprints the stored key when no fingerprint exists."
+          "action": "The panel says Not tracked."
         },
         {
-          "factor": "licence_rekey_isolation pinned the flaw as the requirement: its first-run arm stored one key and entered a different one and asserted adopt.",
+          "factor": "No test drove these displays with empty or partial records.",
           "kind": "process",
           "action_status": "done",
-          "action": "Fixture corrected; tests/licence_guard_legacy_device.js covers all 13 apps."
+          "action": "tests/stonedesk_presence_fixes_b69.js, with controls."
         }
       ],
-      "recurrence_open": "A new app scaffolded from the old guard text reintroduces it; sairn-app-scaffold does not yet carry the corrected guard."
+      "recurrence_open": "cc b56's E/I/M/X StoneDesk scenarios (esigApprove, invoice Paid, margin, tax) still FAIL and are routed, not fixed."
     },
     {
       "commit": "9b77ae455ec2",
@@ -40752,6 +40711,43 @@
       "recurrence_open": "Every handler that resets on a timer rather than at once has the same window; only posCompleteSale was checked."
     },
     {
+      "commit": "af2db16b3c87",
+      "date": "2026-10-29",
+      "subject": "fix(sairnlegacy, hank b69 H1x): every stored id passed from an inline handler goes through JA() -- a JSON string literal, HTML-escaped",
+      "files": [
+        "docs/recurring-bug-classes.md",
+        "sairnlegacy.html",
+        "tests/sairnlegacy_inline_handler_args.js"
+      ],
+      "lines_added": 120,
+      "lines_removed": 30,
+      "app": "sairnlegacy",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "sairnlegacy.html interpolated 33 stored record ids raw between \\' quotes inside inline onclick/onchange handlers, and built the employee-id argument as &#39;+H(id)+&#39;. The browser HTML-decodes the attribute before the JS runs and the server accepts any id format, so an id holding a quote closed the string and ran in whoever opened the page (H1 #1734 disclosed it as app-wide). All 34 now go through JA() = H(JSON.stringify(String(v))). tests/sairnlegacy_inline_handler_args.js 15/15; arm X proves both old forms run injected code.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "app-wide pattern present across many commits; not traced to one"
+      },
+      "citation_note": "No standing rule names inline-handler arguments as a separate encoding context; proposed: a value passed from an inline handler is a JS string literal, then HTML-escaped.",
+      "contributing_factors": [
+        {
+          "factor": "Inline handlers are an HTML-then-JS context, and the app escaped for neither (raw) or for HTML only (H)",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "JA() for every record value passed from an inline handler"
+        }
+      ],
+      "recurrence_open": "Other apps (stonedesk, sairnlaw, sairnvet and more) use the same raw inline-handler id shape and were not swept; there is still no server-side format check on leg payload ids.",
+      "single_factor_note": "one encoding-context gap across 34 sites"
+    },
+    {
       "commit": "b9e85ee5777a",
       "date": "2026-10-29",
       "subject": "fix(hank b68): H1 #1734/#1740/#1744/#1747 cleared; Tier A leg_cremations review discharged",
@@ -40873,6 +40869,94 @@
       ],
       "recurrence_open": "Other hand-written SQL lexers in tools/ (if any) were not swept for the same quoting gaps; dollar-quote tags inside E-strings are untested.",
       "single_factor_note": "one design gap in one tool, three shapes"
+    },
+    {
+      "commit": "bdfe0609adeb",
+      "date": "2026-10-29",
+      "subject": "fix(sairnfreedom, cody b66): a server confirmation expires after 90 days and is re-verified",
+      "files": [
+        "sairnfreedom.html",
+        "tests/sairnfreedom_confirmed_ttl.js"
+      ],
+      "lines_added": 165,
+      "lines_removed": 14,
+      "app": "sairnfreedom",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "independent-review",
+      "summary": "sairnfreedom's sf_server_confirmed entries never expired, so a row deleted out-of-band read as server-confirmed forever (cc b70 gap a). Each id now carries the server's last answer time and reads as confirmed for 90 days; untimed legacy entries are re-verified.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "7ae231b4721b",
+        "date": "2026-10-29",
+        "subject": "fix(sairnfreedom, cody b61): the trustee-audit panel shows what the server has confirmed, not a fixed \"held on this device only\"",
+        "lag_days": 0
+      },
+      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b66 row 3.",
+      "contributing_factors": [
+        {
+          "factor": "The confirmed set recorded THAT the server answered, never WHEN, so nothing could age it.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "sf_server_confirmed_at stamps each id; sfConfirmedRead filters to 90 days."
+        },
+        {
+          "factor": "No test executed sfConfirmOnServer; the existing arm was a regex over its shape.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "tests/sairnfreedom_confirmed_ttl.js runs the real functions under a fixed clock."
+        }
+      ],
+      "recurrence_open": "Any future confirmed-set or cache of server answers in another app needs the same expiry; none exists today."
+    },
+    {
+      "commit": "bea263709094",
+      "date": "2026-10-29",
+      "subject": "fix(done-line, cody b66): a hand-typed done line with no record this turn is refused",
+      "files": [
+        "docs/sairn-path-manifest.json",
+        "tools/sairn_done_line.py"
+      ],
+      "lines_added": 61,
+      "lines_removed": 5,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/sairn_done_line.py's Stop hook checked the final message only when it had recorded a done line this turn, so a hand-typed 'done b<n> <id>' with no record -- an id from memory or copied from an earlier batch -- ended the session unchecked. Now refused, capped against looping.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "a367bd0c2521",
+        "date": "2026-10-28",
+        "subject": "feat(cc b66): done-line wrapper + Stop hook; deny hook logs to the shared deny-blocks.log; untracked-only script scan",
+        "lag_days": 1
+      },
+      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b66 row 1.",
+      "contributing_factors": [
+        {
+          "factor": "The hook keyed its whole check on its own state file; the absent-record case was treated as not-a-final-step rather than as an unverified claim.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A done-shaped final message with no record this turn is refused and names the command."
+        },
+        {
+          "factor": "The selftest had a no-record arm asserting allow, with no done-shaped text in it.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Three red-first arms: no record, earlier-turn record, and the loop cap."
+        }
+      ],
+      "recurrence_open": "Any other final-message contract that keys on a tool's own state file has the same blind spot when the tool was never run."
     },
     {
       "commit": "c21eb4ebe653",
@@ -41134,6 +41218,102 @@
       "recurrence_open": "No SQL rule exists, so the 313 tracked .sql files remain unscanned by Semgrep; only the disclosure is new. H2's tools-hover2 semgrep_risk_pack has the same .html gap and is H2's."
     },
     {
+      "commit": "db0bc67a680c",
+      "date": "2026-10-29",
+      "subject": "fix(api, cc b76): deleted-row check reads the session app, not caller body.app_id; grdData sends app_id",
+      "files": [
+        "api/b38-deleted-row-platform.test.js",
+        "api/b76-shared-deleted-row-session-app.test.js",
+        "api/sd-data.js",
+        "docs/recurring-bug-classes-2.md",
+        "docs/tier-a-reviews.json",
+        "sairngrounds.html"
+      ],
+      "lines_added": 253,
+      "lines_removed": 6,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "user-report",
+      "summary": "api/sd-data.js shared/routes deleted-row pre-gate keyed on caller-supplied body.app_id (default stonedesk), so a deleted employee got 200 on employees, render_usage, rt_routes by sending another or no app_id; sairngrounds grdData sent no app_id",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "1b8ac96fac7b",
+        "date": "2026-10-21",
+        "subject": "fix(cc b38): a deleted employee row is refused on every registered resource, not only sd_customers",
+        "lag_days": 8
+      },
+      "citation_note": "No PROCESS-RULES section names it; the class is recurring-bug-classes-2 C7: an authorization check keyed on a caller-supplied identifier.",
+      "phase_note": "b38 chose memApp (body.app_id) as the scope for shared/routes owners; a design choice, not a typo",
+      "contributing_factors": [
+        {
+          "factor": "pre-gate scope for shared/routes taken from caller body.app_id",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "db0bc67a uses preSession.app"
+        },
+        {
+          "factor": "b38 test arm S2 asserted the unscoped 200 as correct",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "S2 now expects 403; new b76 suite with ablation"
+        },
+        {
+          "factor": "sairngrounds grdData omitted app_id",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "grdData sends app_id"
+        }
+      ],
+      "recurrence_open": "memory pre-gate still uses memApp (branch gate refuses a mismatch); other body.app_id reads in api/sd-data.js not yet swept"
+    },
+    {
+      "commit": "de354736590f",
+      "date": "2026-10-29",
+      "subject": "fix(sairnmechanical, cody b66): a failed credential or asset write is reported, not swallowed (cc b73 R-12)",
+      "files": [
+        "sairnmechanical.html",
+        "tests/sairnmechanical_save_reentry.js"
+      ],
+      "lines_added": 33,
+      "lines_removed": 4,
+      "app": "sairnmechanical",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "independent-review",
+      "summary": "sairnmechanical mechCredAdd and mechAssetAdd had no rejection handler: a rejected write, or one answering with no response, released the hold and showed nothing, leaving an unhandled rejection (cc b73 R-12). Both now report 'Not saved' in the form's error line.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The .then chain without a rejection handler predates b64 (cc b73 says so); the introducing commit was not traced."
+      },
+      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b66 row 4.",
+      "contributing_factors": [
+        {
+          "factor": "A promise chain with a then and a finally and no rejection handler; the finally made the hold correct, which hid that the failure was silent.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Rejection handler as the second argument of then, on the write alone."
+        },
+        {
+          "factor": "The re-entry harness asserts the hold is released after a rejected write, not that the user was told.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Arms MC4/MA4 require the message and no unhandled rejection."
+        }
+      ],
+      "recurrence_open": "Other b64-guarded .then handlers may share the shape; only these two were checked."
+    },
+    {
       "commit": "e0d873e80c9b",
       "date": "2026-10-29",
       "subject": "fix(sairngrounds, cody b65): the caddie GPS handlers hold while the fix is pending",
@@ -41176,43 +41356,6 @@
         }
       ],
       "recurrence_open": "Any handler awaiting a device API (camera, GPS, file picker) is outside the b64 sweep's server-write shape; only these two were checked."
-    },
-    {
-      "commit": "af2db16b3c87",
-      "date": "2026-10-29",
-      "subject": "fix(sairnlegacy, hank b69 H1x): every stored id passed from an inline handler goes through JA() -- a JSON string literal, HTML-escaped",
-      "files": [
-        "docs/recurring-bug-classes.md",
-        "sairnlegacy.html",
-        "tests/sairnlegacy_inline_handler_args.js"
-      ],
-      "lines_added": 120,
-      "lines_removed": 30,
-      "app": "sairnlegacy",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "hover-audit",
-      "summary": "sairnlegacy.html interpolated 33 stored record ids raw between \\' quotes inside inline onclick/onchange handlers, and built the employee-id argument as &#39;+H(id)+&#39;. The browser HTML-decodes the attribute before the JS runs and the server accepts any id format, so an id holding a quote closed the string and ran in whoever opened the page (H1 #1734 disclosed it as app-wide). All 34 now go through JA() = H(JSON.stringify(String(v))). tests/sairnlegacy_inline_handler_args.js 15/15; arm X proves both old forms run injected code.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover",
-      "injection": {
-        "unknown_reason": "app-wide pattern present across many commits; not traced to one"
-      },
-      "citation_note": "No standing rule names inline-handler arguments as a separate encoding context; proposed: a value passed from an inline handler is a JS string literal, then HTML-escaped.",
-      "contributing_factors": [
-        {
-          "factor": "Inline handlers are an HTML-then-JS context, and the app escaped for neither (raw) or for HTML only (H)",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "JA() for every record value passed from an inline handler"
-        }
-      ],
-      "recurrence_open": "Other apps (stonedesk, sairnlaw, sairnvet and more) use the same raw inline-handler id shape and were not swept; there is still no server-side format check on leg payload ids.",
-      "single_factor_note": "one encoding-context gap across 34 sites"
     },
     {
       "commit": "f0afc23b39dd",
@@ -41395,94 +41538,6 @@
         }
       ],
       "recurrence_open": "Any other could-not-tell code added to the server later must be added to the kept list too; nothing enforces that."
-    },
-    {
-      "commit": "8138dc48d3e4",
-      "date": "2026-10-29",
-      "subject": "fix(stonedesk, fourth b69): three compliance displays claimed what the record does not hold (cc b56 T2a/T2b, T3a/T3b, T4a)",
-      "files": [
-        "docs/sairn-path-manifest.json",
-        "stonedesk.html",
-        "tests/stonedesk_presence_fixes_b69.js"
-      ],
-      "lines_added": 147,
-      "lines_removed": 19,
-      "app": "stonedesk",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "probe-control",
-      "summary": "StoneDesk compliance displays claimed more than the record holds (cc b56 presence stress): subxCompliancePill showed COMPLIANT for a sub with no COI, or with no licence and no W-9; safetyUpdateKPIs scored an empty safety record 80% green and a blank-expiry 2019 silica course as current (100%); the OSHA 1926.1153 silica panel showed four hardcoded literal tiles (12 wet-cut days, 0 dry-cut violations, 8 air samples, AL) no code set.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": "tools/stonedesk_presence_stress.py",
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "subxCompliancePill (2026-09-01), safetyUpdateKPIs and the silica tiles predate this batch; the originating commits were not traced."
-      },
-      "citation_note": "No standing rule says a compliance display must be derived from evidence present rather than from a passing default.",
-      "contributing_factors": [
-        {
-          "factor": "Scores and statuses computed by subtracting from a passing default, so absent evidence read as compliance.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "COMPLIANT needs every document; the score is from evidence present; a blank expiry is not current."
-        },
-        {
-          "factor": "Mock tiles from the original layout shipped as if they were data.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The panel says Not tracked."
-        },
-        {
-          "factor": "No test drove these displays with empty or partial records.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "tests/stonedesk_presence_fixes_b69.js, with controls."
-        }
-      ],
-      "recurrence_open": "cc b56's E/I/M/X StoneDesk scenarios (esigApprove, invoice Paid, margin, tax) still FAIL and are routed, not fixed."
-    },
-    {
-      "commit": "6cd786113de1",
-      "date": "2026-10-29",
-      "subject": "fix(sairnlaw, hank b69 M5): a deposit in transit older than 30 days stops the trust reconciliation at PARTIAL and is named in the bank leg",
-      "files": [
-        "api/_lib/law-trust-reconcile.js",
-        "api/_lib/law-trust-reconcile.test.js",
-        "docs/recurring-bug-classes.md"
-      ],
-      "lines_added": 80,
-      "lines_removed": 1,
-      "app": "sairnlaw",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "fault-injection",
-      "summary": "api/_lib/law-trust-reconcile.js treated any uncleared deposit as in transit with no age limit, so a $40 trust shortfall carried as a deposit dated 91 days before the statement balanced the bank leg and the reconciliation read AGREES / Reconciled (cc b55 stress M5). A deposit in transit older than 30 days now stops the status at PARTIAL and is listed in bank_vs_ledger.stale_deposits_in_transit with a why the Trust Accounting panel shows. Stress probe M5 now PASS; 4 new arms, 2 red with the status line removed.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": "tools/sairnlaw_iolta_reconcile_stress.py",
-      "found_by_session": null,
-      "injection": {
-        "commit": "5e0b531f2776",
-        "date": "2026-09-18",
-        "subject": "fix(sairnlaw): the IOLTA reconciliation stops agreeing over money it never compared, and learns what an uncleared cheque is",
-        "lag_days": 41
-      },
-      "citation_note": "No standing rule names an age limit on reconciling items; proposed: an outstanding item is a timing difference only while it is young enough to be one.",
-      "contributing_factors": [
-        {
-          "factor": "The outstanding-items model encoded a timing difference without the property that makes it one: that it resolves within days",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "stale deposits in transit (> 30 days) stop the status at PARTIAL and are named"
-        }
-      ],
-      "recurrence_open": "Stale UNCLEARED CHEQUES are not flagged (a different question: escheat and stale-dated cheques); the 30-day threshold is hank's choice, not a bar rule, and M6 (misallocation with totals unchanged) remains a limit of reconciliation.",
-      "single_factor_note": "one model gap"
     }
   ],
   "started": "2026-09-09",
