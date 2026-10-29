@@ -1,0 +1,18 @@
+HANK b64 DIGEST -- 2026-10-29 -- SD seeded live; VT/RI blocked; sd-sub-data fixed; scanner .js; C1a fold
+CONTEXT 59.0% of 1,000,000 -- 589,961 tokens, measured.
+STATUS: pushed via push_retry --loop; claims sairnlaw and tools are released after landing.
+1. SD: gated, seeded and LIVE (8 rows, threshold 11). Live dates match the hand derivation. Drift 0. 45/45 suites.
+2. VT: blocked on source; no official compiled V.R.C.P.
+   - See docs/sairnlaw-vermont-deadline-seed-blockers.md.
+3. RI: not seeded; no official referent reachable. Search recorded in the RI blocker doc.
+4. sd-sub-data.js: the local day (America/New_York) replaces the UTC day. 9/0; mutants red.
+5. Scanner reads .js: 191 scanned; sd-sub-data gone; 5 intentional remain; zero scanned exits 2.
+6. C1a: the regen fold is in its own commit. The FAST RETRY fired live after 2 folds. Selftest 60/0.
+DECISION-NEEDED (Michael): J2 RI source/readings; J5 VT source; J4 lawyer's questions.
+NEXT: J3 WY, DC (hank). S2 server-side stale-snapshot detector.
+CHANGED: api/_lib/deadline-engine.js, api/legal-deadlines.js, api/sd-sub-data.js,
+  tools/push_retry.py, tools/sairn_stale_snapshot_scan.py,
+  SD seed/calendar/test, 17 key-set suites, 3 sairnlaw docs, manifest, register, b64 docs.
+SQL-path: none new.
+EVIDENCE-path: SAIRN-handoff-hank-b64.md
+UNVERIFIED: none new.

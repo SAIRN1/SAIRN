@@ -1,0 +1,15 @@
+HANK b64 REPORT -- 2026-10-29
+
+1. SD: gated, seeded and LIVE (the ND pattern). 8 rows; the text supports 8, not 12.
+   - Short-period threshold is ELEVEN. Mail is added to the period. No under-11 row carries mail.
+   - Live: NOT_PROVISIONED before; after, 2026-10-15, 2026-06-22, 2026-06-22, all equal to the hand derivation.
+   - Drift 0. 45/45 suites.
+2. VT: blocked on source. No official compiled current V.R.C.P. is reachable on vtcourts.gov (Kentucky shape).
+3. RI: still not seeded. No official holiday or closure referent was found (404s; admin.ri.gov 403). The search is
+   recorded in the blocker doc.
+4. sd-sub-data.js:71: fixed. The local day (America/New_York) replaces the UTC day at all 3 sites. 9/0; mutants red.
+5. Scanner: .js is now read. 191 api files scanned. sd-sub-data is gone; 5 intentional UTC uses remain. Zero scanned
+   now exits 2.
+6. C1a: regenerated docs go in their own commit, excluded from the patch-ids. Selftest 60/0.
+   - LIVE: the b64 push took the FAST RETRY on attempt 3 after two regenerate folds, then landed.
+Evidence: SAIRN-handoff-hank-b64.md
