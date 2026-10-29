@@ -56,10 +56,14 @@
   "_b34_added_audit_event_type_check_for_hank": "hank b34, 2026-10-20. tools/audit_event_type_check.py carries `# OWNER: hank` and the b33 handoff routed its blind spot back to its owner: it read the CHECK from the SQL file only, so it passed while production refused every pay-period close. EXACT FILENAME, not tools/.",
   "_b45_added_sairnlegacy_reservation_lock_for_hank": "hank b45, 2026-10-21. Registering leg_settings (the owner F2/F3 settings row, its own branch in api/sd-data.js) made api/_resources/sairnlegacy.js carry 37 names, and this suite treated every registered name as a generic LEG_RESOURCES data resource. Its loops are scoped to the 36 data resources, with an arm asserting leg_settings is the ONLY name excluded. EXACT FILENAME, not tests/.",
   "_b35_added_audit_licence_for_hank": "hank b35, 2026-10-20. tools/audit_licence.py -- one tuple entry, SEN-AUDIT-2026, with its dated measurement: the hygiene item the b27-b34 handoffs carried. No active claim held the file (sairn_claim check: CLEAR). EXACT FILENAME, not tools/.",
+  "_b68_added_three_files_for_hank": "hank b68, 2026-10-29, assigned by Michael in chat (b68): H1 #1734 and #1744 were routed to hank by the hover auditor, and item 5 asked for every fix to be cause-tagged. sairnlegacy.html (keepsake quantity escape), sairnvet.html (wildlife closing-status date), docs/recurring-bug-classes.md (cause tags). EXACT FILENAMES, no prefix. Both .html files are fourth's by the *.html split; docs/ is fourth's.",
   "_b60_added_four_files_for_hank": "hank b60, 2026-10-28, on Michael's b60 items 1 and 2. sairncode.html (S2: checkTrialGate exempts plan demo only, decided by api/sc-auth.js), and L1 (Michael: \"unowned, yours now\"): tools/sql_placeholder_check.py, push-gate CHECK 4d in tools/sairn_push_gate_hook.py, and its probe tests/sql_placeholder_check_probe.py. EXACT FILENAMES, no prefix. sairncode.html is fourth's by the *.html split; tools/ is cc's; tests/ is cody's.",
   "_b61_added_push_timeout_guard_for_fourth": "fourth b61, 2026-10-28. ASSIGNED by Michael (b61 item 4 and the continue message): build a real check that no push runs under a timeout. tools/push_timeout_guard.py and its probe are NEW; tools/push_retry.py:1060 is the timed push its first scan found; tools/tooling_inventory.py carries the new tool's description; .githooks/pre-push gets ONE call plus the self-integrity entry, landed only after cody's platform claim showed released (53b22ae49) and claims were re-checked immediately before the commit.",
   "assigned_overrides": {
     "hank": [
+      "sairnlegacy.html",
+      "sairnvet.html",
+      "docs/recurring-bug-classes.md",
       "tools/law_trust_lock_live_probe.py",
       "tools/tooling_inventory.py",
       "tools/law_attest_live_probe.py",
