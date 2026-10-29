@@ -1,0 +1,26 @@
+SAIRN REPORT -- fourth b67 -- 2026-10-29
+
+Every landing below is a commit SHA, checked with
+`git merge-base --is-ancestor <sha> origin/main` after `git fetch`.
+origin/main = 0aa5b559a848.
+  1d2aea0e2b32  card wording: "240 h late"                yes
+  fac708f14ba0  H1 #1754 senWriteFail keeps drafts       yes
+  f0afc23b39dd  H1 #1779 refused vet write shown         yes
+  f2b5c5d2200c  register records for #1754 / #1779       yes
+  0aa5b559a848  b66 screenshots in docs/live-residue     yes (tip)
+  c9fa25f2c     mechanical job/invoice/inspection        NO -- local branch b67-mech
+Live pages sairnsenior.html and sairnvet.html: markers present, byte-identical.
+
+1 MECHANICAL RECORDS -- built and tested (16/16, incl. 3 server arms), NOT
+  landed. cody re-claimed sairnmechanical (cody-1793277940). My claim-state
+  recheck refused the push, and the permission classifier denied the
+  SAIRN_CLAIM_GOAHEAD waiver as a CI bypass. Held on b67-mech; cherry-pick
+  c9fa25f2c once the claim releases or permission is given. The SQL
+  (sql/sairnmechanical_jobs_invoices_inspections_schema.sql) is in that
+  commit.
+2 CARD WORDING -- done.
+3 FINDINGS:
+  #1713 was already fixed (43812bdbb, 21ad938e1, b61 live).
+  #1754 and #1779 are fixed.
+  The scrutiny ledger check is CLEAN (950 rows uncheckable, stated).
+4 SCREENSHOTS -- committed.

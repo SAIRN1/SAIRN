@@ -2338,3 +2338,14 @@ Full account: `SAIRN-handoff-fourth-b65.md`.
 - Both commits confirmed on origin/main with `merge-base --is-ancestor`.
 
 Full account: `SAIRN-handoff-fourth-b66.md`.
+
+## batch b67 -- 2026-10-29, CLOSED (item 1 held: cody re-claimed sairnmechanical)
+
+- Landed and verified on origin/main `0aa5b559a848`:
+  - card wording `1d2aea0e2b32`;
+  - H1 #1754 `fac708f14ba0`;
+  - H1 #1779 `f0afc23b39dd`;
+  - screenshots `0aa5b559a848`.
+- Mechanical job/invoice/inspection records are built and tested in `c9fa25f2c`, on local branch `b67-mech`. They are not landed: cody's claim, plus a classifier-denied waiver.
+
+Full account: `SAIRN-handoff-fourth-b67.md`.

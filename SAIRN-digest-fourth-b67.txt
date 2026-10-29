@@ -1,0 +1,22 @@
+SAIRN DIGEST -- fourth b67 -- 2026-10-29
+CONTEXT 70.9% of 1,000,000 -- 708,856 tokens, measured.
+STATUS: items 2-5 landed (origin/main 0aa5b559a848, each SHA checked with merge-base --is-ancestor); item 1 built and tested but NOT landed.
+DECISION-NEEDED: mechanical records (c9fa25f2c, local branch b67-mech) -- cody re-claimed sairnmechanical, and the go-ahead waiver push was classifier-denied. Release, or permit, then cherry-pick.
+READ: SAIRN-handoff-fourth-b67.md (whole state). Detail: SAIRN-report-fourth-b67.txt.
+SQL: sql/sairnmechanical_jobs_invoices_inspections_schema.sql (in c9fa25f2c; NOT on main yet).
+CHANGED:
+  1d2aea0e2b32 sairnsenior: the card says "240 h late" / "ahead"
+  fac708f14ba0 sairnsenior: H1 #1754 -- ACTIVE_CHECK_* and EVV_CHECK_FAILED keep the draft
+  f0afc23b39dd sairnvet: H1 #1779 -- a refused controlled write is toasted with the server code
+  0aa5b559a848 docs/live-residue: the four b66 senior-UI screenshots
+1 mechanical job/invoice/inspection: 16/16 incl. real-handler arms; sequential invoice numbers
+2 #1713 was already fixed in b59/b60/b61 -- no change; the closure entry is the auditor's
+3 the scrutiny ledger check is CLEAN at HEAD; no scrutiny entry in my findings
+4 senior + vet pages live and byte-identical after deploy
+5 my b62 claim recheck refused the mech push -- the check doing its job
+NEXT, in order:
+  a land c9fa25f2c after cody's release or permission; Michael runs the SQL; live write on MECH-AUDIT-2026
+  b carried: PIN files (Michael); SV-AUDIT-2026 key (cc); matcher self-match (cc); deny-hook sh -n (cc)
+UNVERIFIED: the mechanical forms in a live browser (not deployed).
+EVIDENCE-path: tests/sairnmechanical_records_b67.js (on b67-mech); tests/fourth_b65_record_fixes.js; tests/sairnvet_witness_token_client.js.
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\b6e28c25-eaee-4611-aeb3-d94f0198d47f.jsonl
