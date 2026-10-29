@@ -4888,6 +4888,19 @@
         "api/sd-data.js",
         "sairnsenior.html"
       ]
+    },
+    {
+      "id": "fourth-1793271508",
+      "session": "fourth",
+      "subject": "sairngrounds",
+      "task": "b65 sale hours cleared day opens all day fix FILES: sairngrounds.html",
+      "claimed_at": "2026-10-29T10:58:28Z",
+      "claimed_at_epoch": 1793271508.5898936,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "sairngrounds.html"
+      ]
     }
   ],
   "refusals": [
