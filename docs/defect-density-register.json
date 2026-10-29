@@ -40428,6 +40428,94 @@
         }
       ],
       "recurrence_open": "No SQL rule exists, so the 313 tracked .sql files remain unscanned by Semgrep; only the disclosure is new. H2's tools-hover2 semgrep_risk_pack has the same .html gap and is H2's."
+    },
+    {
+      "commit": "f0afc23b39dd",
+      "date": "2026-10-29",
+      "subject": "fix(sairnvet, fourth b67): H1 #1779 -- a refused controlled-substance WRITE is shown on screen, naming the server code",
+      "files": [
+        "sairnvet.html",
+        "tests/sairnvet_witness_token_client.js"
+      ],
+      "lines_added": 22,
+      "lines_removed": 3,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "sairnvet svPushOne showed nothing on screen when a witness token was granted but the sv_controlled write was then refused (e.g. COUNTERSIGN_REQUIRED). Hover H1 #1779.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "4222258b9b49",
+        "date": "2026-10-28",
+        "subject": "fix(sairnvet, fourth b64): the SOAP record stores the note; the controlled-drug push asks for the witness token the server requires",
+        "lag_days": 1
+      },
+      "citation_note": "No standing rule names this shape.",
+      "contributing_factors": [
+        {
+          "factor": "the on-screen message sat only in the token-refused branch; a refused write after a granted token only logged",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "svLastWriteErr captured; toast on the refused-write branch for sv_controlled"
+        },
+        {
+          "factor": "the b64 client test drove a refused token, not a refused write",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "COUNTERSIGN_REQUIRED arm"
+        }
+      ],
+      "recurrence_open": "The app still has no countersign call, so a two-person licence cannot complete a controlled entry at all; that is a feature, not this fix."
+    },
+    {
+      "commit": "fac708f14ba0",
+      "date": "2026-10-29",
+      "subject": "fix(sairnsenior, fourth b67): H1 #1754 -- a could-not-tell answer keeps the claim draft instead of withdrawing it",
+      "files": [
+        "sairnsenior.html",
+        "tests/fourth_b65_record_fixes.js"
+      ],
+      "lines_added": 22,
+      "lines_removed": 1,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "sairnsenior senWriteFail treated 502 ACTIVE_CHECK_FAILED/UNREADABLE (and the b65 503 EVV_CHECK_FAILED) as refusals, so senSweepLocalDrafts withdrew local claim drafts with a false toast during a transient outage. Hover H1 #1754.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "21ad938e1c6f",
+        "date": "2026-10-28",
+        "subject": "fix(sairnsenior b60): sweep local-only claim drafts the server refused before b59",
+        "lag_days": 1
+      },
+      "citation_note": "No standing rule names this shape.",
+      "contributing_factors": [
+        {
+          "factor": "the kept list in senWriteFail named transport failures but not the server could-not-tell codes",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "ACTIVE_CHECK_FAILED, ACTIVE_CHECK_UNREADABLE, EVV_CHECK_FAILED kept"
+        },
+        {
+          "factor": "S1-S8 drove only ROW_REFUSED and the no-code case",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "one arm per code plus a control"
+        }
+      ],
+      "recurrence_open": "Any other could-not-tell code added to the server later must be added to the kept list too; nothing enforces that."
     }
   ],
   "started": "2026-09-09",
