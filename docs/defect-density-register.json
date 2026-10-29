@@ -40977,6 +40977,202 @@
         }
       ],
       "recurrence_open": "Any other could-not-tell code added to the server later must be added to the kept list too; nothing enforces that."
+    },
+    {
+      "commit": "33ada04649a6",
+      "date": "2026-10-29",
+      "subject": "fix(hank b68 S4): api/agent/poll.js delivers a command by compare-and-set; two concurrent polls no longer both deliver it",
+      "files": [
+        "api/agent/poll.js",
+        "api/b68-agent-poll-cas.test.js",
+        "docs/recurring-bug-classes.md"
+      ],
+      "lines_added": 131,
+      "lines_removed": 5,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "api/agent/poll.js PATCHed a command to delivered by id alone after reading it with status=eq.pending, so two concurrent polls of one agent could both deliver (and the agent run) one command, and the PATCH result was ignored. Fixed by compare-and-set (&status=eq.pending, return=representation, deliver only the returned row; a failed PATCH delivers nothing, 502). api/b68-agent-poll-cas.test.js 4/4, arm X red on the pre-fix file.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the delivery PATCH predates the b67 S2 scan; its introducing commit was not traced this batch"
+      },
+      "citation_note": "No standing rule requires a read-then-write on a status column to compare-and-set; proposed: a status-transition PATCH carries the status it expects as a filter.",
+      "contributing_factors": [
+        {
+          "factor": "The read filtered status=eq.pending but the write did not, so two readers of the same pending row both won",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "PATCH filters status=eq.pending and delivers only the returned row"
+        }
+      ],
+      "recurrence_open": "Other read-then-PATCH status transitions in api/ are not all guarded; b67 S3 triaged 41 sites and left 35 classified mechanically, not read one by one.",
+      "single_factor_note": "one mechanism; the ignored PATCH result is the same read-then-write gap seen from the other side"
+    },
+    {
+      "commit": "761670ffd42b",
+      "date": "2026-10-29",
+      "subject": "fix(hank b68): H1 #1734/#1740/#1744/#1747 cleared; Tier A leg_cremations review discharged",
+      "files": [
+        "docs/CRITICALITY-TIERS.md",
+        "docs/recurring-bug-classes.md",
+        "docs/tier-a-reviews.json",
+        "sairnlegacy.html",
+        "sairnvet.html",
+        "tools/sql_placeholder_check.py"
+      ],
+      "lines_added": 79,
+      "lines_removed": 15,
+      "app": "sairnlegacy",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "H1 #1734: sairnlegacy.html keepsake order table (now :4836) wrote o.quantity into innerHTML with no H() while the case, item and status cells beside it were escaped; the server leg write branch checks no type of quantity, so a caller with a write grant could store markup that runs in the owner's browser. Fixed with H(String(...)). The raw o.id in inline onclick (38 sites app-wide) is a separate, pre-existing pattern and is NOT fixed here.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "the keepsake order render was not traced to its introducing commit this batch"
+      },
+      "citation_note": "No standing rule names stored numeric fields as needing H() in innerHTML; the app escapes text cells by habit and skipped the numeric one.",
+      "contributing_factors": [
+        {
+          "factor": "The client coerces quantity with Number(..)||1, so the value was assumed numeric at render; the server accepts any type",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "escape the cell like its neighbours"
+        }
+      ],
+      "recurrence_open": "The raw o.id interpolation into inline onclick handlers remains at about 38 sites in sairnlegacy.html (H1 count); server-side type checks on leg payloads are still absent.",
+      "single_factor_note": "one cell; the app-wide raw-id interpolation is recorded as open item H1x, not as a factor of this one"
+    },
+    {
+      "commit": "761670ffd42b",
+      "date": "2026-10-29",
+      "subject": "fix(hank b68): H1 #1734/#1740/#1744/#1747 cleared; Tier A leg_cremations review discharged",
+      "files": [
+        "docs/CRITICALITY-TIERS.md",
+        "docs/recurring-bug-classes.md",
+        "docs/tier-a-reviews.json",
+        "sairnlegacy.html",
+        "sairnvet.html",
+        "tools/sql_placeholder_check.py"
+      ],
+      "lines_added": 79,
+      "lines_removed": 15,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": "H1 #1744: sairnvet.html saveWildlifeEdit() stored a closing status (Released/Deceased/Euthanized/Transferred) with a blank release/outcome date, so the case left Active Cases but never reached Released YTD or Release Rate, and its days in care ran on to today. Now refused with a toast. Transferred remains outside Release Rate by design and the register cell says so.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "the wildlife edit form was not traced to its introducing commit this batch"
+      },
+      "citation_note": "No standing rule requires a status that closes a record to carry its closing date; the pairing was stated only in help text.",
+      "contributing_factors": [
+        {
+          "factor": "The closing-status-needs-a-date pairing lived only in the help text under the form",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "enforce it in saveWildlifeEdit"
+        }
+      ],
+      "recurrence_open": "addWildlifeCase and any import path were not checked for the same pairing; the Release Rate label still does not say Transferred is excluded.",
+      "single_factor_note": "one missing validation"
+    },
+    {
+      "commit": "761670ffd42b",
+      "date": "2026-10-29",
+      "subject": "fix(hank b68): H1 #1734/#1740/#1744/#1747 cleared; Tier A leg_cremations review discharged",
+      "files": [
+        "docs/CRITICALITY-TIERS.md",
+        "docs/recurring-bug-classes.md",
+        "docs/tier-a-reviews.json",
+        "sairnlegacy.html",
+        "sairnvet.html",
+        "tools/sql_placeholder_check.py"
+      ],
+      "lines_added": 79,
+      "lines_removed": 15,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": "H1 #1747: tools/sql_placeholder_check.py (push CHECK 4d) ignored E-string backslash escapes (a false negative that read a placeholder as a comment), opened a string on an apostrophe inside a double-quoted identifier (false COULD NOT RUN), and matched operator-input declarations by substring and on raw lines including inside string literals. Fixed; criteria 2026-10-29.1, 6 new fixtures (5 red on 2026-10-28.1), --all clean over 312 files. Latent: 0 of 310 real files had any of the shapes.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "995e53c9aac9",
+        "date": "2026-10-28",
+        "subject": "feat(tools, hank b60): push-time SQL placeholder check (L1) -- blocks undeclared placeholders, fails closed",
+        "lag_days": 1
+      },
+      "citation_note": "No standing rule says a hand-written lexer must model every quoting form of its grammar.",
+      "contributing_factors": [
+        {
+          "factor": "The lexer modelled fewer quoting forms than Postgres has, and the exemption was matched more loosely than the sentence granting it",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "model E-strings and quoted identifiers; exact-token declarations on whole comment lines"
+        }
+      ],
+      "recurrence_open": "Other hand-written SQL lexers in tools/ (if any) were not swept for the same quoting gaps; dollar-quote tags inside E-strings are untested.",
+      "single_factor_note": "one design gap in one tool, three shapes"
+    },
+    {
+      "commit": "bf6ce0837da4",
+      "date": "2026-10-29",
+      "subject": "fix(hank b68 S6): push_retry fold returns 'nothing to fold' when nothing is staged, not an empty commit failure",
+      "files": [
+        "docs/recurring-bug-classes.md",
+        "tools/push_retry.py"
+      ],
+      "lines_added": 30,
+      "lines_removed": 0,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "tools/push_retry.py _regenerate_and_fold() treated a non-empty git status --porcelain (which counts untracked files) as something to commit; with nothing staged, git commit refused on stdout and the tool logged \"derived-docs commit failed:\" with an empty error. Now returns \"nothing to fold\" when git diff --cached --quiet succeeds. Selftest arm S6 red before, green after.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the fold commit path was reshaped in hank b64 (C1a); the exact introducing commit was not traced"
+      },
+      "citation_note": "No standing rule says a fold step must test the index rather than the working tree before committing.",
+      "contributing_factors": [
+        {
+          "factor": "A dirty-tree test stood in for a staged-changes test, and only stderr was reported",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "check the index with git diff --cached --quiet before committing"
+        }
+      ],
+      "recurrence_open": "Other helpers in tools/ that commit after a porcelain check were not swept; the same proxy may sit in them.",
+      "single_factor_note": "one mechanism with two visible symptoms: the false failure and its empty message"
     }
   ],
   "started": "2026-09-09",
