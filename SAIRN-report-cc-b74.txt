@@ -1,0 +1,78 @@
+REPORT cc b74 -- 2026-10-29
+ITEM 1: docs/licensing-product-plan.md, 413 lines, 8 sections (see SAIRN-handoff-cc-b74.md section 1).
+  Push gate refused it as FOREIGN (fourth's docs/). The b75 dispatch authorised one assigned_overrides entry; added following cc b70 precedent 25aff5d0.
+ITEM 2: hook presence + install regression, literal output:
+$ python tools/builder_hook_presence.py
+BUILDER HOOK PRESENCE -- 4 of 4 builder clone(s) carry the deny hook unmodified (reference: origin/main in cc, hook blob 22b205e8ee6c)
+  cc      OK
+  cody    OK
+  fourth  OK
+  hank    OK
+  not on this machine: cloud
+EXIT=0
+
+$ python tests/run_builder_hook_install_regression.py
+BUILDER HOOK INSTALL REGRESSION -- 4 clone(s), reference origin/main in cc
+  ok   R1 cc builder_auditor_deny_hook.py == origin/main byte for byte
+  ok   R1 cc builder_hook_presence.py == origin/main byte for byte
+  ok   R1 cc sairn_done_line.py == origin/main byte for byte
+  ok   R2 cc installed hook reads THIS clone's path manifest
+  ok   R2 cc auditor dirs match the live path manifest
+  ok   R2 cc auditor-tracked list matches the live hover-scope manifest
+  ok   R2 cc read the live hover-scope manifest (not the floor alone)
+  ok   R3 cc installed decide() == tracked decide() on 6 payloads
+  ok   R3 cc ...and the verdicts are the intended ones (3 refused, 3 allowed)
+  ok   R1 cody builder_auditor_deny_hook.py == origin/main byte for byte
+  ok   R1 cody builder_hook_presence.py == origin/main byte for byte
+  ok   R1 cody sairn_done_line.py == origin/main byte for byte
+  ok   R2 cody installed hook reads THIS clone's path manifest
+  ok   R2 cody auditor dirs match the live path manifest
+  ok   R2 cody auditor-tracked list matches the live hover-scope manifest
+  ok   R2 cody read the live hover-scope manifest (not the floor alone)
+  ok   R3 cody installed decide() == tracked decide() on 6 payloads
+  ok   R3 cody ...and the verdicts are the intended ones (3 refused, 3 allowed)
+  ok   R1 fourth builder_auditor_deny_hook.py == origin/main byte for byte
+  ok   R1 fourth builder_hook_presence.py == origin/main byte for byte
+  ok   R1 fourth sairn_done_line.py == origin/main byte for byte
+  ok   R2 fourth installed hook reads THIS clone's path manifest
+  ok   R2 fourth auditor dirs match the live path manifest
+  ok   R2 fourth auditor-tracked list matches the live hover-scope manifest
+  ok   R2 fourth read the live hover-scope manifest (not the floor alone)
+  ok   R3 fourth installed decide() == tracked decide() on 6 payloads
+  ok   R3 fourth ...and the verdicts are the intended ones (3 refused, 3 allowed)
+  ok   R1 hank builder_auditor_deny_hook.py == origin/main byte for byte
+  ok   R1 hank builder_hook_presence.py == origin/main byte for byte
+  ok   R1 hank sairn_done_line.py == origin/main byte for byte
+  ok   R2 hank installed hook reads THIS clone's path manifest
+  ok   R2 hank auditor dirs match the live path manifest
+  ok   R2 hank auditor-tracked list matches the live hover-scope manifest
+  ok   R2 hank read the live hover-scope manifest (not the floor alone)
+  ok   R3 hank installed decide() == tracked decide() on 6 payloads
+  ok   R3 hank ...and the verdicts are the intended ones (3 refused, 3 allowed)
+  ok   C1 a one-byte change is NOT equal (the R1 comparison can fail)
+
+37 passed, 0 failed
+EXIT=0
+
+ITEM 3: 580h quotes record. Takeover lost the race to cody's discharge (2026-10-29T18:56:37Z, SOUND-WITH-GAPS). Ledger keeps cody's.
+  cc second review: FAIL (MEDIUM) -- docs/2026-10-29-cc-b74-review-fourth-deploy-verify-classify.md. Literal discharge output:
+$ python tools/tier_a_review_gate.py --discharge fourth 2026-10-05T15:02:28Z --takeover --body-file docs/2026-10-29-cc-b74-review-fourth-deploy-verify-classify.md
+DISCHARGED -- cc reviewed the obligation fourth opened 2026-10-05T15:02:28Z, on quotes
+TAKEOVER RECORDED -- was assigned to cody, held 580.3h
+EXIT=0
+  Literal probe output:
+ok   want=push                 got=push       git push origin main
+ok   want=push                 got=push       cd /x && git push origin main
+ok   want=push                 got=push       git -c http.version=HTTP/1.1 push origin main
+BAD  want=push                 got=not-a-push echo "pushing now" && git push origin main
+BAD  want=push                 got=not-a-push echo start; git push origin main
+BAD  want=push                 got=not-a-push grep -n x f.txt || git push origin main
+ok   want=not-a-push|unsure    got=unsure     echo "git push origin main"
+ok   want=not-a-push|unsure    got=unsure     git log --oneline push
+ok   want=not-a-push|unsure    got=unsure     git stash push -m wip
+ok   want=push                 got=push       python tools/push_retry.py
+3 of 10 wrong
+EXIT=1
+ITEM 4: hover b92 test_965 dropped from cc queue; not touched.
+PUSH (measured after fetch): HEAD = origin/main = 58d3f578a29ffb548bd5053eab65e86b9c0eb746
+CHANGED: SAIRN-handoff-cc-b74.md, docs/licensing-product-plan.md, docs/2026-10-29-cc-b74-review-fourth-deploy-verify-classify.md, docs/2026-10-29-cc-b74-classify-command-probe.py.txt, docs/sairn-path-manifest.json
