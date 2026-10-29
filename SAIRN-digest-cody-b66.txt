@@ -1,0 +1,15 @@
+DIGEST -- cody b66, 2026-10-29. All 6 items DONE.
+STATUS: 14 APPS (13 licence guards + mech), 1 TOOL (done-line hook), SNAPSHOT, TESTS, DOCS. NO SQL. Read-only live DB SELECTs only.
+CHANGED: 13 app .html; tools/sairn_done_line.py (+armed copy); db/schema_snapshot.json; 4 test files (3 new); manifest; register; classes; tier-a.
+LANDED: full gate; handoff at 7bf01a080 == origin/main. 14 live pages byte-identical to HEAD.
+ITEM 1 -- hook already existed (cc b66 a367bd0c2, armed here); its no-record gap closed in 23421fd51, selftest 20/0.
+ITEM 2 -- first-run-adopt flaw fixed in 12 more apps (862ed3591), 52/52; 90-day TTL on sairnfreedom's confirmed set (0f8c36e10), 10/10.
+ITEM 3 -- snapshot re-captured from live (d475bb091): 70/70 column groups, 45/45 CHECK groups match.
+ITEM 4 -- Tier A: sdn_projects SOUND-WITH-GAPS (b58 shape -> hank), sen_settings SOUND; R-12 fixed (824bab9dd), 14/0.
+ITEM 5 -- every routed finding cites session + SHA (+ seq) inline.
+ITEM 6 -- handoff before report; pushed and confirmed landed.
+DECISION-NEEDED: none.
+UNVERIFIED: done-line hook end-to-end against this clone's live state (cleanup denied; selftest is the evidence).
+NEXT: fourth reviews b66 obligation; cc the two b65 ones; hank the SDN write-unconfirmed gap. Handoff table, 10 rows.
+EVIDENCE-path: SAIRN-handoff-cody-b66.md, SAIRN-report-cody-b66.txt
+CONTEXT 40.6% of 1,000,000 -- 406,324 tokens, measured.

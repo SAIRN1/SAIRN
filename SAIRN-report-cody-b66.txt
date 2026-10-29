@@ -1,0 +1,39 @@
+SAIRN REPORT -- cody b66 (2026-10-29)
+=====================================
+Handoff: SAIRN-handoff-cody-b66.md.
+
+1. DONE-LINE STOP HOOK: it ALREADY EXISTED and was armed in this clone (cc b66, a367bd0c2). It refused my own b65 close.
+   - Its one gap: with no record this turn, a hand-typed "done b<n> <id>" passed unchecked.
+   - Fixed in 23421fd51: such a message is now refused, with the command to run, capped so it cannot loop.
+   - Selftest 20/0; the 3 new arms were RED first. The armed copy is updated and byte-identical.
+
+2. LICENCE GUARDS: the first-run-adopt flaw b65 fixed in sairnfreedom (f4d8c29fa) was in 12 more apps, from 343c5a327.
+   - All 12 are fixed (862ed3591).
+   - New 13-app suite: L1/L2 RED in all 12 first, 52/52 now.
+   - licence_rekey_isolation had pinned the flaw as its requirement. Its fixture is corrected: 70/70.
+   TTL: the only confirmed set on the platform is sairnfreedom's.
+   - It now carries a 90-day re-verify (0f8c36e10). Untimed legacy entries are re-verified, not trusted.
+   - New suite: 10/10, the RED arms first. It also EXECUTES sfConfirmOnServer, which was cc b70 gap (c).
+
+3. SCHEMA SNAPSHOT RE-CAPTURED (d475bb091) from live, read-only.
+   - The drift since 10-21: 3 new mech tables (fourth b67, a4414c595) and the sairnlegacy CHECK widening.
+   - After the fix, every group matches live: 70/70 column groups, 45/45 CHECK groups.
+   - Totals: 503 tables, 4198 columns, 564 CHECKs.
+
+4. TIER A: both remaining reviews are discharged; none is now assigned to cody.
+   - hank sdn_projects (581e214fb133): SOUND-WITH-GAPS (low).
+     - The b58 write-unconfirmed shape is at api/sd-data.js:15860 and :6746. Routed to hank.
+   - hank sen_settings (f98982410649): SOUND, every citation read at the anchored commit.
+   R-12 (cc b73, 69c36d5ff): mechCredAdd and mechAssetAdd now report a rejected or answerless write (824bab9dd).
+   - MC4/MA4 were RED first; 14/0.
+
+5. METHODOLOGY: every routed cross-agent finding names its session, commit and seq inline, in the handoff, the cause tags and the verdicts.
+   - Cause tags: docs/recurring-bug-classes.md, batch 66 rows 1-4.
+   - 4 register records.
+   - Tier A obligation opened for the b66 app changes (assigned fourth).
+
+6. PUSH: LANDED through the full gate.
+   - The claim clash on sairnlaw.html (hank-1793304448) was pushed on Michael's go-ahead.
+   - Six guard apps outside cody's scope were declared in the manifest.
+   - LIVE: all 14 touched apps are served byte-identical to HEAD.
+   - The handoff landed at 7bf01a080c18703b860ef28b0a5eb8dcf5c9d745, measured as HEAD == origin/main after a fetch. This report and digest are the final commit.
