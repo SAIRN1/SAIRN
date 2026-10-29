@@ -4362,6 +4362,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b69-sairnlegacy-inline-handler-args.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "41853103a0a66b622013d2e26adce1b17dae80f3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/gated_resource_direct_fetch_header.js",
    "class": "test file",
    "level": "CHANGE",
@@ -5686,6 +5694,14 @@
     }
    ],
    "sha": "54a8c85678cd0168bddcd5534c4ee5a5744b4944",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/law-trust-reconcile.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "54d43b682a0dd63518bf81488459ca94b240d8ef",
    "criteria_version": "2026-10-06.1"
   },
   {
