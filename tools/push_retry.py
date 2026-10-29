@@ -867,6 +867,10 @@ def selftest():
         arm('C1 decision -- %s -> %s' % (name, 'skip' if want else 'full gate'),
             got == want, 'got %s' % got)
 
+    arm('b65 -- append_only accepts appended rows (CRLF-insensitive)',
+        append_only('a\nb\n', 'a\r\nb\r\nc\n'), 'refused an append')
+    arm('b65 -- append_only REFUSES an edited or removed row',
+        not append_only('a\nb\n', 'a\nX\n') and not append_only('a\nb\n', 'a\n'), 'accepted an edit')
     # ── C1a (hank b64): regenerated docs live in their OWN commit, excluded
     # from the patch-id set, so a pure base move can still take the fast path.
     log = ['a1\tfeat(x): the author\'s change',
@@ -1142,6 +1146,41 @@ def fast_retry_decision(gated, now, incoming):
                   'incoming file(s), none of ours' % (len(now[0]), len(incoming)))
 
 
+BYPASS_FILE = 'docs/BYPASS-LOG.jsonl'
+
+
+def append_only(head_text, work_text):
+    """True when work_text only APPENDS lines to head_text. Pure (hank b65)."""
+    h = (head_text or '').replace('\r\n', '\n')
+    w = (work_text or '').replace('\r\n', '\n')
+    return w.startswith(h) and len(w) >= len(h)
+
+
+def _fold_bypass_rows():
+    """Commit appended BYPASS-LOG rows as gate bookkeeping before a rebase.
+
+    A LANDED fast retry writes its row after the push (b63), so the tree is
+    dirty when the loop next starts and `git rebase` refused -- exit 3 on the
+    b65 WY push. The row is real and must be committed, not discarded; a
+    change that is not append-only is left alone and the rebase stops as
+    before. Excluded from the patch-id set by its BOOKKEEPING_PREFIX subject."""
+    rc, porc, _ = git('status', '--porcelain', '--', BYPASS_FILE)
+    if rc != 0 or not porc.strip():
+        return False, 'nothing'
+    hrc, head_text, _ = git('show', 'HEAD:' + BYPASS_FILE)
+    try:
+        work = io.open(os.path.join(REPO, BYPASS_FILE), encoding='utf-8').read()
+    except Exception as exc:                                    # noqa: BLE001
+        return False, 'could not read %s: %s' % (BYPASS_FILE, exc)
+    if hrc != 0 or not append_only(head_text, work):
+        return False, '%s change is not append-only -- left for a human' % BYPASS_FILE
+    _rc, tip, _ = git('rev-parse', '--short', 'HEAD')
+    crc, _, cerr = git('commit', '-m', "%s%s): BYPASS-LOG row for a landed fast retry"
+                       % (BOOKKEEPING_PREFIX, tip), '-m',
+                       'Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>', '--', BYPASS_FILE)
+    return (crc == 0), ('committed the BYPASS-LOG row' if crc == 0 else 'commit failed: %s' % (cerr or '')[:120])
+
+
 def _log_fast_retry(gated, now, why, prc):
     try:
         sys.path.insert(0, os.path.join(REPO, 'tools'))
@@ -1171,6 +1210,9 @@ def cmd_loop(attempts):
         # The gate's write-back from the PREVIOUS attempt is a dirty tree that
         # would also block the rebase below; fold it into the one bookkeeping
         # commit before anything else (see fold_scrutiny).
+        _bf, _bw = _fold_bypass_rows()
+        if _bw != 'nothing':
+            print('  bypass rows: %s' % _bw)
         _sf, _sw = fold_scrutiny()
         if _sf:
             print('  scrutiny rows: %s' % _sw)
