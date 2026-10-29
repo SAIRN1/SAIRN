@@ -4596,8 +4596,8 @@
       "task": "caddie GPS wait re-entry gcdPlaceOrder gcdMarkShotEnd",
       "claimed_at": "2026-10-29T19:28:53Z",
       "claimed_at_epoch": 1793302133.3227947,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-29T19:30:56Z",
       "files": null
     }
   ],
