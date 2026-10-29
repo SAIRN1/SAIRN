@@ -1,0 +1,206 @@
+{
+ "when": "2026-10-29T11:20:25.000Z",
+ "licence": "SEN-AUDIT-2026",
+ "clock_UNREV": {
+  "status": 200,
+  "flags": [
+   {
+    "field": "clock_in_at",
+    "code": "LATE_REPLAY",
+    "skew_ms": -864000852
+   },
+   {
+    "field": "clock_out_at",
+    "code": "LATE_REPLAY",
+    "skew_ms": -856800852
+   }
+  ],
+  "error": null
+ },
+ "clock_REV": {
+  "status": 200,
+  "flags": [
+   {
+    "field": "clock_in_at",
+    "code": "LATE_REPLAY",
+    "skew_ms": -864002681
+   },
+   {
+    "field": "clock_out_at",
+    "code": "LATE_REPLAY",
+    "skew_ms": -856802681
+   }
+  ],
+  "error": null
+ },
+ "review": {
+  "status": 200,
+  "review": {
+   "flags": [
+    {
+     "code": "LATE_REPLAY",
+     "field": "clock_in_at",
+     "skew_ms": -864002681
+    },
+    {
+     "code": "LATE_REPLAY",
+     "field": "clock_out_at",
+     "skew_ms": -856802681
+    }
+   ],
+   "reviewed_by": "audit-owner",
+   "reviewed_role": "owner",
+   "reviewed_at": "2026-10-29T11:20:28.624Z",
+   "note": "b65 live gate test: late replay is the test itself"
+  },
+  "error": null
+ },
+ "pay_UNREV": {
+  "status": 409,
+  "error": "EVV_UNREVIEWED"
+ },
+ "pay_REV": {
+  "status": 200,
+  "error": null
+ },
+ "db_claim_status_after": {
+  "CLM-B65-UNREV": "draft",
+  "CLM-B65-REV": "paid"
+ },
+ "verdict": {
+  "flags_written_by_server": true,
+  "unreviewed_refused_409": true,
+  "unreviewed_still_draft_in_db": true,
+  "reviewed_paid_200": true,
+  "reviewed_paid_in_db": true
+ },
+ "calls": [
+  {
+   "ep": "sen-auth",
+   "action": "login",
+   "resource": null,
+   "id": "audit-owner",
+   "status": 200,
+   "error": null
+  },
+  {
+   "ep": "sen-auth",
+   "action": "roster",
+   "resource": null,
+   "id": null,
+   "status": 200,
+   "error": null
+  },
+  {
+   "ep": "sen-auth",
+   "action": "setup",
+   "resource": null,
+   "id": "audit-cg-b65",
+   "status": 200,
+   "error": null
+  },
+  {
+   "ep": "sen-auth",
+   "action": "login",
+   "resource": null,
+   "id": "audit-cg-b65",
+   "status": 200,
+   "error": null
+  },
+  {
+   "ep": "sd-data",
+   "action": "write",
+   "resource": "sen_visits",
+   "id": "VIS-B65-UNREV",
+   "status": 200,
+   "error": null
+  },
+  {
+   "ep": "sd-data",
+   "action": "write",
+   "resource": "sen_visits",
+   "id": "VIS-B65-UNREV",
+   "status": 200,
+   "error": null
+  },
+  {
+   "ep": "sd-data",
+   "action": "write",
+   "resource": "sen_claims",
+   "id": "CLM-B65-UNREV",
+   "status": 200,
+   "error": null
+  },
+  {
+   "ep": "sd-data",
+   "action": "write",
+   "resource": "sen_visits",
+   "id": "VIS-B65-REV",
+   "status": 200,
+   "error": null
+  },
+  {
+   "ep": "sd-data",
+   "action": "write",
+   "resource": "sen_visits",
+   "id": "VIS-B65-REV",
+   "status": 200,
+   "error": null
+  },
+  {
+   "ep": "sd-data",
+   "action": "write",
+   "resource": "sen_claims",
+   "id": "CLM-B65-REV",
+   "status": 200,
+   "error": null
+  },
+  {
+   "ep": "sd-data",
+   "action": "review_clock_flags",
+   "resource": "sen_visits",
+   "id": "VIS-B65-REV",
+   "status": 200,
+   "error": null
+  },
+  {
+   "ep": "sd-data",
+   "action": "write",
+   "resource": "sen_claims",
+   "id": "CLM-B65-UNREV",
+   "status": 409,
+   "error": {
+    "code": "EVV_UNREVIEWED",
+    "message": "This visit carries 2 EVV clock flag(s) (LATE_REPLAY on clock_in_at, LATE_REPLAY on clock_out_at) that nobody has reviewed. Review them on the EVV Clock Flags panel before moving this claim to paid.",
+    "flags": [
+     {
+      "code": "LATE_REPLAY",
+      "field": "clock_in_at",
+      "skew_ms": -864000852
+     },
+     {
+      "code": "LATE_REPLAY",
+      "field": "clock_out_at",
+      "skew_ms": -856800852
+     }
+    ]
+   }
+  },
+  {
+   "ep": "sd-data",
+   "action": "write",
+   "resource": "sen_claims",
+   "id": "CLM-B65-REV",
+   "status": 200,
+   "error": null
+  },
+  {
+   "ep": "sd-data",
+   "action": "read",
+   "resource": "sen_claims",
+   "id": null,
+   "status": 200,
+   "error": null
+  }
+ ]
+}

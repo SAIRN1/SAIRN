@@ -1,0 +1,97 @@
+{
+ "check_license": 200,
+ "bootstrap": 200,
+ "A_no_token": {
+  "status": 403,
+  "code": "WITNESS_REQUIRED"
+ },
+ "B_token_request": {
+  "status": 200,
+  "got_token": true,
+  "witness_employee_id": "audit-owner",
+  "require_two_person": false,
+  "error": null
+ },
+ "B_write_with_token": {
+  "status": 200,
+  "error": null
+ },
+ "C_replay": {
+  "status": 409,
+  "code": "WITNESS_ALREADY_SPENT"
+ },
+ "db_row_after": [
+  {
+   "id": "ZZ-B65-LIVE-TEST",
+   "drug": "ZZ-B65-LIVE-TEST",
+   "unit": "mL",
+   "onHand": 9.5,
+   "witness": "",
+   "schedule": "IV",
+   "lastTransaction": "2026-10-29 \u2014 0.5mL used (b65 live witness test)"
+  }
+ ],
+ "verdict": {
+  "A_refused_403_WITNESS_REQUIRED": true,
+  "B_token_issued_to_audit_owner": true,
+  "B_write_with_token_200": true,
+  "C_replay_refused_409_SPENT": true,
+  "row_readable_after": true
+ },
+ "calls": [
+  {
+   "ep": "sv-auth",
+   "action": "check_license",
+   "status": 200,
+   "error": null
+  },
+  {
+   "ep": "sv-auth",
+   "action": "bootstrap",
+   "status": 200,
+   "error": null
+  },
+  {
+   "ep": "sv-auth",
+   "action": "login",
+   "status": 200,
+   "error": null
+  },
+  {
+   "ep": "sd-data",
+   "action": "write",
+   "status": 403,
+   "error": {
+    "code": "WITNESS_REQUIRED",
+    "message": "This is the controlled-substance register. Confirm the record first \u2014 the write cannot proceed without it."
+   }
+  },
+  {
+   "ep": "sv-witness",
+   "action": "request",
+   "status": 200,
+   "error": null
+  },
+  {
+   "ep": "sd-data",
+   "action": "write",
+   "status": 200,
+   "error": null
+  },
+  {
+   "ep": "sd-data",
+   "action": "write",
+   "status": 409,
+   "error": {
+    "code": "WITNESS_ALREADY_SPENT",
+    "message": "That confirmation has already been used. Each confirmation covers exactly one write."
+   }
+  },
+  {
+   "ep": "sd-data",
+   "action": "read",
+   "status": 200,
+   "error": null
+  }
+ ]
+}
