@@ -40,7 +40,7 @@ function fn(decl) {
 }
 
 // ── 1. THE WITNESS TOKEN ────────────────────────────────────────────────────
-function pushHarness(witnessAnswer) {
+function pushHarness(witnessAnswer, writeAnswer) {
   const calls = [], toasts = [];
   const ctx = {
     calls, toasts, console: { warn() {} },
@@ -56,6 +56,7 @@ function pushHarness(witnessAnswer) {
         return Promise.resolve({ ok: witnessAnswer.ok, status: witnessAnswer.status,
                                  json: () => Promise.resolve(witnessAnswer.body) });
       }
+      if (writeAnswer) return Promise.resolve({ ok: false, status: writeAnswer.status, json: () => Promise.resolve(writeAnswer.body) });
       return Promise.resolve({ ok: true, status: 200,
                                json: () => Promise.resolve({ ok: true, data: body.payload }) });
     },
@@ -64,7 +65,7 @@ function pushHarness(witnessAnswer) {
   vm.runInContext([
     'var SV_PUSH_TIMEOUT={svPushTimeout:true};', 'var SV_PUSH_REJECTED={svPushRejected:true};',
     'var SV_PUSH_TIMEOUT_MS=15000;', "var SV_DATA_API='https://sairn.vercel.app/api/sd-data';",
-    "var SV_WITNESS_API='https://sairn.vercel.app/api/sv-witness';",
+    "var SV_WITNESS_API='https://sairn.vercel.app/api/sv-witness';", 'var svLastWriteErr={};',
     fn('function svWitnessRequest('), fn('function svData('), fn('function svPushOne('),
   ].join('\n'), ctx);
   return ctx;
@@ -95,6 +96,13 @@ function pushHarness(witnessAnswer) {
   check('...resolves null, so nothing reads it as backed up', r === null);
   check('...and SAYS so on screen, naming the refusal', c.toasts.some((t) => /device only/.test(t) && /NOT_A_PRESCRIBER/.test(t)),
         JSON.stringify(c.toasts));
+
+  // H1 #1779 (fourth b67): token granted, WRITE refused -- said on screen, naming the code
+  c = pushHarness({ ok: true, status: 200, body: { ok: true, token: 'TOK-9' } },
+                  { status: 403, body: { error: { code: 'COUNTERSIGN_REQUIRED' } } });
+  r = await c.svPushOne('sv_controlled', rec, 'Hydromorphone');
+  check('a token granted but a WRITE refused is shown on screen, naming the server code (H1 #1779)',
+        r === null && c.toasts.some((t) => /device only/.test(t) && /COUNTERSIGN_REQUIRED/.test(t)), JSON.stringify(c.toasts));
 
   c = pushHarness({ ok: true, status: 200, body: { ok: true, token: 'X' } });
   const p = c.svPushOne('sv_patients', { id: 'p1', name: 'Bella' }, 'p1');

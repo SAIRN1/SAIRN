@@ -2457,6 +2457,15 @@ function svPushOne(key,rec,label){
       try{ showToast('Controlled-substance entry for '+label+' is saved on this device only -- the server would not confirm it ('+witnessWhy+').','error',8000); }catch(e){}
       return refused('the witness confirmation was refused: '+witnessWhy);
     }
+    // H1 #1779 (fourth b67): the token can be granted and the WRITE still be
+    // refused -- COUNTERSIGN_REQUIRED on a two-person licence, or any other
+    // server refusal. On the DEA-relevant register that is said ON SCREEN too,
+    // naming the code, exactly like a refused token.
+    if(r===null && key==='sv_controlled'){
+      var code=(typeof svLastWriteErr!=='undefined'&&svLastWriteErr[key])||'no code returned';
+      try{ showToast('Controlled-substance entry for '+label+' is saved on this device only -- the server refused it ('+code+').','error',8000); }catch(e){}
+      return refused('the server refused it: '+code);
+    }
     if(r===null)             return refused('the server refused it');
     return r;
   });
@@ -10764,6 +10773,8 @@ function svFetchTimeoutSignal(){
 // signed-in veterinarian has confirmed that record in logControlledUse().
 // Resolves {token} or {code}; never rejects.
 var SV_WITNESS_API = 'https://sairn.vercel.app/api/sv-witness';
+// The last server refusal per resource, so a caller can NAME it (fourth b67, H1 #1779).
+var svLastWriteErr = {};
 function svWitnessRequest(resource, payload) {
   var lic = svLoad('license', '');
   if (!lic) return Promise.resolve({ code: 'NO_LICENSE' });
@@ -10806,7 +10817,7 @@ function svData(action, resource, payload, wantEnvelope, extraHeaders) {
     body: JSON.stringify({ action: action, resource: resource, app_id: 'sairnvet', payload: payload || {} })
   }).then(function(r) {
     return r.json().then(function(d) {
-      if (!r.ok || !d || !d.ok) { console.warn('svData ' + resource + ' failed (' + r.status + '):', (d && d.error && (d.error.code || d.error.message)) || 'unknown'); return null; }
+      if (!r.ok || !d || !d.ok) { svLastWriteErr[resource] = (d && d.error && (d.error.code || d.error.message)) || ('HTTP ' + r.status); console.warn('svData ' + resource + ' failed (' + r.status + '):', svLastWriteErr[resource]); return null; }
       // `provisioned` is only FALSE when the server said so. An absent flag is
       // UNKNOWN, not false -- several branches in api/sd-data.js do not set it,
       // and reading silence as "not provisioned" would invent a refusal.
