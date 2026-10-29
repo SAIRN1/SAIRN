@@ -39955,6 +39955,50 @@
       "recurrence_open": "A skipped push does not re-run whole-tree checks against the combined base; only gate duration or a merge queue closes that."
     },
     {
+      "commit": "1e892a1a6788",
+      "date": "2026-10-29",
+      "subject": "fix(server-stale-snapshot, hank b67): conditional writes are compare-and-set guards (S3 triage)",
+      "files": [
+        "docs/sairnlaw-vermont-deadline-seed-blockers.md",
+        "tools/server_stale_snapshot_scan.py"
+      ],
+      "lines_added": 23,
+      "lines_removed": 2,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "live-verification",
+      "summary": "tools/server_stale_snapshot_scan.py (S2, b66) reported compare-and-set writes (spent_at=is.null, status=neq.revoked, renewal_count=eq.<read>) as unguarded read-await-write sites; 6-7 of 41 api/ hits were false positives found by S3 triage. Fixed with a conditional-filter guard.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "cf29ca94d3a1",
+        "date": "2026-10-29",
+        "subject": "feat(tools, hank b66): S2 -- server-side read-await-write (lost-update) detector, with its own selftest",
+        "lag_days": 0
+      },
+      "citation_note": "No rule defines what counts as a concurrency guard for the S2 shape; the selftest now does.",
+      "contributing_factors": [
+        {
+          "factor": "The guard list named specific columns and missed generic conditional filters",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "CAS regex: any non-id filter in the write URL"
+        },
+        {
+          "factor": "The b66 selftest had no compare-and-set fixture",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "FIX_CAS negative and id-only positive arms"
+        }
+      ],
+      "recurrence_open": "Guards expressed through a variable URL (e.g. rest(mine)) are invisible to a window regex; those sites stay as questions."
+    },
+    {
       "commit": "2c776fcbd474",
       "date": "2026-10-29",
       "subject": "fix(sairngrounds, fourth b65): clearing a day's alcohol sale hours CLOSES it -- it saved the day open 00:00-23:59",
@@ -40168,6 +40212,51 @@
       "recurrence_open": "Other fixed 'this device only' / 'not synced' sentences in other apps are not checked against their SYNCED lists; only this panel is now rendered from confirmed state."
     },
     {
+      "commit": "9b77ae455ec2",
+      "date": "2026-10-29",
+      "subject": "fix(sairnmechanical, cody b63): close cc's four b67 Tier A gaps on the backup path, and the redaction probe b58 broke",
+      "files": [
+        "sairnmechanical.html",
+        "tests/mech_backup_not_silent.js",
+        "tests/mech_docs_redaction_wiring_probe.py"
+      ],
+      "lines_added": 201,
+      "lines_removed": 7,
+      "app": "sairnmechanical",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "SAIRNmechanical saveDoc could save a duplicate document: after b57 it waited up to 15 s for the server backup before toasting while the save button stayed live, so a second click re-ran the save. Re-entry guard added; plus three test gaps cc found by ablation (local-write ordering, truthy-on-success, the unprovisioned fixture's wrong shape) closed, and the redaction wiring probe b58 broke repaired.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "8259a6dd25fe",
+        "date": "2026-10-28",
+        "subject": "fix(sairnmechanical, cody b57): a backup that never ran, and a restore that never read, both said nothing",
+        "lag_days": 1
+      },
+      "citation_note": "A re-entrancy defect introduced by making a toast wait on an async push; no PR rule id names it.",
+      "contributing_factors": [
+        {
+          "factor": "saveDoc waited on the async push before toasting but left its trigger live, so the save could be re-entered while the first push was pending.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Re-entry guard released on resolve and reject; arms D1-D3."
+        },
+        {
+          "factor": "The b57 tests asserted outcomes but not ordering or the server's real response shapes, so three ablations of the new code stayed green until an independent reviewer ran them.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Arms L, P1/P4 and the real-shape fixture added, each red under the named ablation."
+        }
+      ],
+      "recurrence_open": "Other saves that now await a server answer before re-enabling (sairnmechanical saveQuote/saveCheck and other apps' push-then-toast paths) were not swept for the same re-entry window."
+    },
+    {
       "commit": "c21eb4ebe653",
       "date": "2026-10-29",
       "subject": "fix(sairnmechanical, fourth b65): saveQuote stores the client the quote was generated for",
@@ -40339,51 +40428,6 @@
         }
       ],
       "recurrence_open": "No SQL rule exists, so the 313 tracked .sql files remain unscanned by Semgrep; only the disclosure is new. H2's tools-hover2 semgrep_risk_pack has the same .html gap and is H2's."
-    },
-    {
-      "commit": "9b77ae455ec2",
-      "date": "2026-10-29",
-      "subject": "fix(sairnmechanical, cody b63): close cc's four b67 Tier A gaps on the backup path, and the redaction probe b58 broke",
-      "files": [
-        "sairnmechanical.html",
-        "tests/mech_backup_not_silent.js",
-        "tests/mech_docs_redaction_wiring_probe.py"
-      ],
-      "lines_added": 201,
-      "lines_removed": 7,
-      "app": "sairnmechanical",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "independent-review",
-      "summary": "SAIRNmechanical saveDoc could save a duplicate document: after b57 it waited up to 15 s for the server backup before toasting while the save button stayed live, so a second click re-ran the save. Re-entry guard added; plus three test gaps cc found by ablation (local-write ordering, truthy-on-success, the unprovisioned fixture's wrong shape) closed, and the redaction wiring probe b58 broke repaired.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "8259a6dd25fe",
-        "date": "2026-10-28",
-        "subject": "fix(sairnmechanical, cody b57): a backup that never ran, and a restore that never read, both said nothing",
-        "lag_days": 1
-      },
-      "citation_note": "A re-entrancy defect introduced by making a toast wait on an async push; no PR rule id names it.",
-      "contributing_factors": [
-        {
-          "factor": "saveDoc waited on the async push before toasting but left its trigger live, so the save could be re-entered while the first push was pending.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Re-entry guard released on resolve and reject; arms D1-D3."
-        },
-        {
-          "factor": "The b57 tests asserted outcomes but not ordering or the server's real response shapes, so three ablations of the new code stayed green until an independent reviewer ran them.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Arms L, P1/P4 and the real-shape fixture added, each red under the named ablation."
-        }
-      ],
-      "recurrence_open": "Other saves that now await a server answer before re-enabling (sairnmechanical saveQuote/saveCheck and other apps' push-then-toast paths) were not swept for the same re-entry window."
     }
   ],
   "started": "2026-09-09",
