@@ -1381,8 +1381,8 @@
       "task": "hover-tools b104 seq review log states windows sent",
       "claimed_at": "2026-10-29T10:06:56Z",
       "claimed_at_epoch": 1793268416.1593084,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-29T10:09:16Z",
       "files": null
     }
   ],
