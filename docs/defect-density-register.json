@@ -39955,7 +39955,7 @@
       "recurrence_open": "A skipped push does not re-run whole-tree checks against the combined base; only gate duration or a merge queue closes that."
     },
     {
-      "commit": "01a24fad6340",
+      "commit": "7ae231b4721b",
       "date": "2026-10-29",
       "subject": "fix(sairnfreedom, cody b61): the trustee-audit panel shows what the server has confirmed, not a fixed \"held on this device only\"",
       "files": [
