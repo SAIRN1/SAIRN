@@ -830,6 +830,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/sairndental/send-reminder.test.js`
 - `api/sd-agent-budget.test.js`
 - `api/sd-data-scp-licence-only.test.js`
+- `api/sen-evv-billing-gate.test.js`
 - `api/t16-clock-correction-record.test.js`
 - `api/t18-positions-vocabulary.test.js`
 - `tests/approval_persistence_probe.py`
