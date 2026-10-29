@@ -4744,8 +4744,8 @@
       "task": "south dakota vermont rhode island deadline seed",
       "claimed_at": "2026-10-29T10:41:06Z",
       "claimed_at_epoch": 1793270466.2286506,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-29T11:04:59Z",
       "files": null
     },
     {
