@@ -1,0 +1,27 @@
+SAIRN REPORT -- fourth b66 -- 2026-10-29
+
+Landings are stated as SHA + an explicit origin/main check (item 5):
+  29da9532c3a5  known-red capa row RECOVERED   on origin/main: yes (merge-base --is-ancestor)
+  fd4d872e3e0e  senior UI live evidence         on origin/main: yes (it was the tip)
+  The deliverables commit's SHA and check are in SAIRN-ACTIVE-WORK-fourth.md
+  and the digest after landing.
+
+1 MECHANICAL RECORDS -- NOT STARTED. cody holds an active sairnmechanical
+  claim (b63: sd-data pre-gate, mechBackup); sairn_claim check said
+  BLOCKED. Flagged back. Shape for next batch: mech_jobs first (generic
+  MECH_RECORDS upsert + SQL + panel), then invoice, then inspection.
+
+2 SENIOR UI LIVE (real Chromium clicks, live page, SEN-AUDIT-2026):
+  card lists the flagged visits; Submit on the unreviewed claim is refused
+  and the row stays Draft; note + Mark reviewed clears the row; Submit
+  then Mark Paid succeed and the DB reads paid; the badge shows on a
+  completed flagged visit. 0 page errors.
+  Seen, not changed: LATE_REPLAY skew shows as negative hours; ~10 older
+  probe visits on the audit licence now show as unreviewed.
+
+3 KNOWN-RED: tests/defect_register_capa_control.py driven alone, exit 0.
+  Moved to recovered: green since cody b61 32b89a2c3.
+
+4 G1 (this clone): 361 fx commits created here, 2026-10-06 -> 2026-10-28
+  (319 on origin/main). 0 of the 97 commits created since the b61 fix.
+  History not rewritten.

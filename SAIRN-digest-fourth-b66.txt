@@ -1,0 +1,21 @@
+SAIRN DIGEST -- fourth b66 -- 2026-10-29
+CONTEXT 62.7% of 1,000,000 -- 627,001 tokens, measured.
+STATUS: items 2-5 done and landed (29da9532c3a5, fd4d872e3e0e on origin/main); item 1 NOT started -- cody holds sairnmechanical.
+DECISION-NEEDED: item 1 (mechanical job/invoice/inspection) -- go-ahead naming cody's claim, or after cody b63 releases.
+READ: SAIRN-handoff-fourth-b66.md (whole state). Detail: SAIRN-report-fourth-b66.txt.
+SQL: none.
+CHANGED:
+  29da9532c3a5 docs/known-red-suites.json: capa control -> recovered (green since cody b61 32b89a2c3)
+  fd4d872e3e0e docs/live-residue: senior card and badge clicked in a real browser on the live page
+1 senior UI live: unreviewed Submit refused, row stays Draft; review clears; Submit + Paid succeed; badge shown
+2 G1: 361 fx commits created in this clone (319 on main); 0 of 97 since the fix; history not rewritten
+3 card shows LATE_REPLAY skew as negative hours -- wording fix, not done
+4 ~10 old b49 probe visits on SEN-AUDIT-2026 now read unreviewed -- the gate working
+5 landings stated as SHA + merge-base --is-ancestor origin/main
+NEXT, in order:
+  a mechanical job record, then invoice, then inspection (after cody's claim)
+  b card wording: "240 h late", not "-240 h"
+  c carried: PIN files (Michael); SV-AUDIT-2026 -> KNOWN_AUDIT_KEYS (cc); matcher "files fix" (cc)
+UNVERIFIED: none new; the screenshots are in the scratchpad only (not committed).
+EVIDENCE-path: docs/live-residue/2026-10-29-fourth-b66-sen-ui-live.json; scratchpad live66-*.png, fx_fourth_commits.txt.
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\b6e28c25-eaee-4611-aeb3-d94f0198d47f.jsonl

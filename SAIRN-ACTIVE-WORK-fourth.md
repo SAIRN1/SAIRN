@@ -2329,3 +2329,12 @@ Full account: `SAIRN-handoff-fourth-b64.md`.
 - Not built: the mechanical job, invoice and inspection records (a product build).
 
 Full account: `SAIRN-handoff-fourth-b65.md`.
+
+## batch b66 -- 2026-10-29, CLOSED (item 1 flagged: cody holds sairnmechanical)
+
+- Senior card and badge clicked live in a real browser: 6/6 plus the badge arm (`fd4d872e3e0e`).
+- known-red capa control moved to recovered (`29da9532c3a5`).
+- G1: 361 fx commits created in this clone; 0 since the fix.
+- Both commits confirmed on origin/main with `merge-base --is-ancestor`.
+
+Full account: `SAIRN-handoff-fourth-b66.md`.
