@@ -102,3 +102,13 @@ Status-board notes FOR HANK and FOR CC carry the two main findings.
 ## 5. CLAIMS
 
 `fourth` held `sairnbuild` and `sairncash` this batch. **Both are released** (`fb35ee324`, `cd3c28c59`).
+
+## 6. ADDENDUM, after close: the known-red re-drive finished
+
+`tools/red_suite_register_check.py` finished after the batch closed.
+
+- **4 RECOVERED.** Each was then driven alone in a disposable worktree.
+  - `tests/sairnfreedom_auth_review_probe.js`, `tests/sairnfreedom_segregation_of_duties.js` and `tests/write_readback_shape_probe.py` all exit 0. **They are moved to `recovered`** in commit "chore(known-red fourth b68): 3 entries RECOVERED".
+  - `tests/run_selftest_independence_probe.py` exit 1 when driven alone. Its arm needs sibling clones next to the worktree, so that result is an environment artefact. **It stays registered.** Next step: drive it from a worktree beside the clones.
+- **2 COULD NOT RUN** (timed out at 420s): `tests/install_git_hooks_check_probe.py` and `tests/push_gate/check9_probe.py`. Not a pass.
+- Open item 21 is CLOSED apart from those three.
