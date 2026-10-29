@@ -4599,6 +4599,17 @@
       "status": "released",
       "released_at": "2026-10-29T19:30:56Z",
       "files": null
+    },
+    {
+      "id": "cody-1793302265",
+      "session": "cody",
+      "subject": "stonedesk",
+      "task": "posCompleteSale no-slab reset window re-entry",
+      "claimed_at": "2026-10-29T19:31:05Z",
+      "claimed_at_epoch": 1793302265.3578053,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
