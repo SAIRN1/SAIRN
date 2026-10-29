@@ -40758,7 +40758,7 @@
       "recurrence_open": "Any other could-not-tell code added to the server later must be added to the kept list too; nothing enforces that."
     },
     {
-      "commit": "a9764b923766",
+      "commit": "f4d8c29fab23",
       "date": "2026-10-29",
       "subject": "fix(sairnfreedom, sairndental, cody b65): two routed review gaps, each fixture-first",
       "files": [
@@ -40805,7 +40805,7 @@
       "recurrence_open": "The same first-run adopt shape is in the other apps' licence guards that licence_rekey_isolation lifts; only sairnfreedom's was checked for a stored key in b65."
     },
     {
-      "commit": "a9764b923766",
+      "commit": "f4d8c29fab23",
       "date": "2026-10-29",
       "subject": "fix(sairnfreedom, sairndental, cody b65): two routed review gaps, each fixture-first",
       "files": [
