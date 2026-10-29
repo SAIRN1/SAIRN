@@ -39,7 +39,6 @@ closed-ish word. Every row, open or not, is in its shard in full.
 | Platform         | &#128308; tools/gh_token.py is the platform&rsquo;s ONE credential look~ | FOUND 2026-10-04 (hank) by ~ | unassigned   | `open-work/platform.md:22` |
 | Platform         | &#128993; HOVER2&rsquo;s AUDIT LOG CARRIES NO ROUTABLE KEY ON 376 OF IT~ | MEASURED 2026-09-29 (hank) ~ | hover2 &mda~ | `open-work/platform.md:23` |
 | Platform         | &#128993; H2 seq813 says the emailed mirror anchor was RETIRED in b19; ~ | ROUTED 2026-10-29 (cody b63~ | hover2 &mda~ | `open-work/platform.md:24` |
-| Platform         | &#128993; H1 &ldquo;DRILL PASSED&rdquo; (seq1704, 1715, 1721) overstate~ | ROUTED 2026-10-29 (cody b63~ | hover1 &mda~ | `open-work/platform.md:25` |
 | Platform         | &#128993; H1 #909: the 28 real-run-dead rules, BY NAME &mdash; the list~ | ANSWERED 2026-10-29 (cody b~ | hover1 &mda~ | `open-work/platform.md:26` |
 | Platform         | &#128993; 50 UNROUTED AUDITOR FINDINGS reachable only by PROSE FALLBACK~ | MEASURED 2026-09-29 (hank).~ | unassigned   | `open-work/platform.md:27` |
 | Platform         | &#128993; Three MORE structured routable findings went unrouted while t~ | MEASURED 2026-09-29 (hank) ~ | unassigned   | `open-work/platform.md:28` |
@@ -398,4 +397,4 @@ closed-ish word. Every row, open or not, is in its shard in full.
 | Tooling          | A PROBE fixture commit reached origin/main three hours after check 8 sh~ | CHECK 10 ADDED 2026-09-10 (~ | Cody         | `open-work/tooling.md:146` |
 | Tooling          | A 35-table migration is 35 chances to half-run, and a half-run one is i~ | BUILT AND RUN 2026-09-10 (C~ | CC           | `open-work/tooling.md:155` |
 
-371 open row(s) of 823 total.
+370 open row(s) of 823 total.
