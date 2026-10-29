@@ -7799,7 +7799,11 @@ function sdCsvCell(v){var s=v==null?'':String(v);if(/^[=+\-@\t\r]/.test(s)&&!(s!
     document.getElementById('pos-confirm').style.display='block';
     document.getElementById('pos-confirm').innerHTML='✅ Sale recorded as <strong>'+inv.num+'</strong> — $'+total.toFixed(2)+' ('+inv.status+')';
     if(typeof showToast==='function') showToast('Sale '+inv.num+' recorded');
-    setTimeout(window.posResetForm,2500);
+    // THE FORM STAYS FILLED FOR 2.5 s, so the sale holds until it is cleared
+    // (cody b65): without a slab nothing above is awaited, and a second press
+    // in that window recorded the same sale again under a new invoice number.
+    posSaleSaving=true;
+    setTimeout(function(){try{window.posResetForm();}finally{posSaleSaving=false;}},2500);
   };
 
   posRenderItems();

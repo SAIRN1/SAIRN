@@ -20,8 +20,12 @@
 //   S2  once the reservation answers, the hold is gone (the next press is
 //       not held).
 //   S3  after a REFUSED reservation and one that THROWS, it is released.
-//   S4  CONTROL: a sale with no slab attached never waits and records one
-//       invoice per press, exactly as before.
+//   S4  a sale with no slab attached awaits nothing, but the form stays
+//       filled until the 2.5 s reset (cody b65, b64 handoff item 3): a second
+//       press inside that window records ONE invoice and is told why, and
+//       once the reset has run the next sale goes through. This arm said
+//       "one invoice per press, exactly as before" until b65 -- it pinned the
+//       duplicate as the CONTROL.
 //
 // The function is lifted from the shipped file by brace matching and run in a
 // vm with stubs; no browser, no network. An extraction that fails exits 2.
@@ -69,7 +73,7 @@ function world(reserve, slabId) {
   const ctx = {
     toasts: [], reserves: 0,
     JSON, Object, Array, Math, Number, String, Promise, Date, parseFloat,
-    window: {},
+    window: { posResetForm: () => { ctx.resets++; } }, timers: [], resets: 0,
     document: { getElementById: el },
     posItems: [{ desc: 'Kitchen counter', amt: 3200 }],
     posReservedSlabId: slabId,
@@ -79,10 +83,12 @@ function world(reserve, slabId) {
     invGenNum: () => 'INV-' + (++n), sd_invoices: [], invSaveStore() {},
     sdLocalToday: () => '2026-10-29',
     showToast: (m) => ctx.toasts.push(String(m)),
-    setTimeout: () => 0
+    setTimeout: (fn) => { ctx.timers.push(fn); return ctx.timers.length; }
   };
   vm.createContext(ctx); vm.runInContext(SRC, ctx);
-  return { ctx, sale: () => ctx.window.posCompleteSale(), err: () => els['pos-err'] ? els['pos-err'].textContent : '' };
+  // Runs every reset the handler scheduled, as if the 2.5 s had passed.
+  const elapse = () => { const t = ctx.timers.splice(0); t.forEach((fn) => fn()); };
+  return { ctx, elapse, sale: () => ctx.window.posCompleteSale(), err: () => els['pos-err'] ? els['pos-err'].textContent : '' };
 }
 
 (async () => {
@@ -106,6 +112,7 @@ function world(reserve, slabId) {
     check('S1b ...and exactly ONE invoice is recorded', w.ctx.sd_invoices.length === 1,
       JSON.stringify(w.ctx.sd_invoices.map((i) => i.num)));
     const before = w.ctx.sd_invoices.length;
+    w.elapse();
     await w.sale();
     check('S2 once the reservation answers, the next press is not held',
       w.ctx.sd_invoices.length === before + 1 && !/Still completing/.test(w.err()),
@@ -124,12 +131,17 @@ function world(reserve, slabId) {
       w.ctx.reserves === 2 && w.ctx.sd_invoices.length === 0 && !/Still completing/.test(w.err()),
       JSON.stringify({ threw, reserves: w.ctx.reserves, err: w.err() }));
   }
-  console.log('3. control');
+  console.log('3. no slab attached: the reset window');
   {
     const w = world(() => Promise.resolve({ ok: true }), null);
     await w.sale(); await w.sale();
-    check('S4 CONTROL: with no slab attached nothing is awaited and each press records its invoice, as before',
-      w.ctx.reserves === 0 && w.ctx.sd_invoices.length === 2, JSON.stringify({ reserves: w.ctx.reserves, invoices: w.ctx.sd_invoices.length }));
+    check('S4 no slab: a second press before the form resets records NO second invoice, and says so',
+      w.ctx.reserves === 0 && w.ctx.sd_invoices.length === 1 && /Still completing|already recorded/.test(w.err()),
+      JSON.stringify({ reserves: w.ctx.reserves, invoices: w.ctx.sd_invoices.length, err: w.err() }));
+    w.elapse();
+    await w.sale();
+    check('S4b ...and once the reset has run, the next sale is recorded',
+      w.ctx.resets === 1 && w.ctx.sd_invoices.length === 2, JSON.stringify({ resets: w.ctx.resets, invoices: w.ctx.sd_invoices.length, err: w.err() }));
   }
   // 4. TWO MORE (cody b65). saveQuote with a slab attached AWAITS the slab
   // reservation before it files the quote, with the slab still attached and
