@@ -1,0 +1,20 @@
+DIGEST cc b68
+STATUS: all six items closed; landed through c0213b1d (+ this handoff). No override/skip/--force.
+ITEM 1: cody's deny hook refreshed (--install); presence 4/4 OK at hook blob b7d0f20b; settings files untouched.
+ITEM 2: watchdog OPERATED live. Run 1: 0 findings (correct -- only cc held a claim). Inputs showed registry rows behind their own handoffs:
+  cody "b59" vs b60, hank "b61" vs b63 -> added REGISTRY-BEHIND (16 arms). Run 2: those 2. Run 3 (10:35Z): hank's open, cody's cleared.
+ITEM 3: full replay 6,041 real calls (b67 rule; corpus grew from 5,874): both b67 FP shapes present, refused 0. 14 write-only refusals, all real writes.
+ITEM 4: tests/run_builder_hook_install_regression.py -- installed copies == origin/main bytes (R1), installed scope == live manifests (R2),
+  decide() parity (R3), control (C1). Live 37/37 across 4 clones; ablations bite.
+ITEM 5: owner map regenerated; all 6 touched files OWNER_LINE cc (tooling_inventory.py was CONTESTED, now authoritative). None ownerless.
+DECISION-NEEDED: Michael -- who operates the watchdog and at what cadence (built and run by cc, wired into nothing).
+UNVERIFIED: none new this batch (b67's #1756 authenticated device run still open).
+CHANGED: tools/sairn_watchdog.py, tools/tooling_inventory.py, tests/run_builder_hook_install_regression.py,
+  docs/{tool-owner-map.json,sairn-path-manifest.json,TOOLING-INVENTORY.md,MASTER-PLAN.md,traceability-matrix.md}.
+SQL: none.
+EVIDENCE-path: SAIRN-handoff-cc-b68.md, SAIRN-report-cc-b68.txt, ~/SAIRN-SESSION-LOCKS/watchdog-findings.json
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\52164776-0b08-422d-94e1-7a56daf3eaaa.jsonl
+OPEN: hank -- refresh registry row (b61 vs b63); H1 -- O_BINARY; cody -- mechBackup test gaps.
+NEXT: Michael names the watchdog operator; hank updates its status row.
+CONTEXT 57.9% of 1,000,000 -- 579,067 tokens, measured.
+END-OF-REPORT

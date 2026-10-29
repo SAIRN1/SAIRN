@@ -1,0 +1,36 @@
+SAIRN report -- cc b68 -- 2026-10-29
+
+Landed through c0213b1d, plus this handoff. No override, no skip, no --force.
+
+1 CODY HOOK: --install refreshed cody's copies. Presence check 4 of 4 OK at
+  blob b7d0f20b; settings files untouched.
+
+2 WATCHDOG, LIVE
+  - Run 1 (10:15Z): 0 findings. That was correct for the three flags, because
+    only cc held a claim.
+  - Its inputs showed two registry rows naming an older batch than the
+    agent's last handoff: cody (b59 against b60) and hank (b61 against b63).
+    No flag looked at idle rows.
+  - Added REGISTRY-BEHIND (16 arms).
+  - Run 2: exactly those 2. Run 3 (10:35Z): hank's remains; cody's cleared
+    when its row moved on.
+
+3 FULL REPLAY
+  - 6,041 real calls under the b67 selection rule; the corpus has grown from
+    5,874.
+  - Both b67 false-positive shapes are present and refused 0 times.
+  - 89 refusals: 65 text references (by spec), 10 Edit/Write into hover
+    clones, 14 write-only, all real writes.
+
+4 REGRESSION TEST: tests/run_builder_hook_install_regression.py
+  - R1 installed copies == origin/main bytes; R2 the installed hook's scope
+    == the live manifests' scope; R3 decide() parity; C1 control.
+  - Live 37/37 across the four clones; the ablations make each comparison
+    fail.
+
+5 OWNERS: the owner map is regenerated. All six touched files are OWNER_LINE
+  cc, with tooling_inventory.py given its line this batch (it was CONTESTED).
+  None are ownerless.
+
+OPEN: hank to refresh its registry row; Michael to choose the watchdog's
+operator and cadence.
