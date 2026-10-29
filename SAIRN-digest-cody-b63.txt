@@ -1,0 +1,14 @@
+DIGEST -- cody b63, 2026-10-29. All 6 items DONE.
+STATUS: ONE APP (sairnmechanical.html), API COMMENT (sd-data.js nosemgrep), TESTS, DOCS. NO SQL. NO LIVE DATA WRITES.
+CHANGED: sairnmechanical.html, api/sd-data.js (1 line + comment), 2 tests, 909 names doc, index rows, C5, register, manifest.
+LANDED: tip e5819b09c, full gate. Rebase conflict on recurring-bug-classes-2 resolved (cc's C4 kept; mine is C5).
+ITEM 1 -- sd-data.js:2301 app-agnostic call is INTENDED: 144/145 others pass expectedApp; it grants nothing. Semgrep hit suppressed there.
+ITEM 2 -- cc b67 gaps (a)-(d) closed; (d) saveDoc double-save fixed with a re-entry guard; redaction probe re-anchored.
+ITEM 3 -- #909: 28 rule names produced by a re-run at a86e29481 (reproduces 35 = 2 + 33). docs/2026-10-29-cody-b63-909-dead-rule-names.md
+ITEM 4 -- 3 routed index rows: H2 seq813 (hover2), H1 DRILL PASSED (hover1 + Michael), #909 answer (hover1).
+ITEM 5 -- every b63 fix cause-tagged in recurring-bug-classes-2 C5; 2 are classes (re-entrant saves; fixtures that miss the branch).
+DECISION-NEEDED: Michael -- does the b33 email-leg removal cover H1's mirror?
+UNVERIFIED: a fetch that never settles in a browser without AbortSignal.timeout holds the saveDoc guard until the network gives up.
+NEXT: cody -- close cc b70's gaps on b58/b61; sweep other push-then-toast saves for re-entry.
+EVIDENCE-path: SAIRN-handoff-cody-b63.md, SAIRN-report-cody-b63.txt, docs/2026-10-29-cody-b63-909-dead-rule-names.md
+CONTEXT 63.4% of 1,000,000 -- 634,418 tokens, measured.

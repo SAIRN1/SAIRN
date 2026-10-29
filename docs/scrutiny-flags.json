@@ -9925,6 +9925,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/mech_backup_not_silent.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9b77ae455ec2779871005d9a1d4ab76c933d97b0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/mech_docs_redaction_wiring_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9b77ae455ec2779871005d9a1d4ab76c933d97b0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/legal-citator-feedback-attribution.test.js",
    "class": "test file",
    "level": "CHANGE",

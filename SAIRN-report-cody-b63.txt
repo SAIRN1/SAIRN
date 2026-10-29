@@ -1,0 +1,31 @@
+SAIRN REPORT -- cody b63 (2026-10-29)
+=====================================
+Handoff: SAIRN-handoff-cody-b63.md.
+
+1. sd-data.js:2301 IS INTENDED.
+   - 144 of the 145 verifySessionToken calls pass expectedApp. The pre-gate is the only two-argument call.
+   - It grants nothing. A cross-app token is still refused by its branch gate.
+   - The Semgrep rule's standing hit is suppressed on that one line only, so run_semgrep now exits 0 with 0 findings.
+
+2. THE 4 mechBackup TIER A GAPS: CLOSED.
+   - (a) local-write ordering, (b) truthy-on-success, (c) the real unprovisioned shape: each has an arm that is red under cc's ablation.
+   - (d) the saveDoc double-save: fixed with a re-entry guard; D1-D3 are red on the old code.
+   - The redaction probe, broken since b58, is re-anchored and stricter.
+   - Every mech suite passes, and node --check is clean on all 7 script blocks.
+
+3. H1 #909: THE 28 NAMES ARE PRODUCED.
+   - The registry-only sweep was re-run at a86e29481. It reproduces 35 = 2 + 33.
+   - The 28 are listed by tool and name in docs/2026-10-29-cody-b63-909-dead-rule-names.md. The per-tool counts match cody's 2026-10-05 table.
+
+4. FORMAL ROUTED ENTRIES: 3 index rows.
+   - H2 seq813, owner hover2.
+   - H1 DRILL PASSED, owner hover1, plus Michael.
+   - The H1 #909 answer, owner hover1.
+   - Each has a deciding test and a next action. Shards check CLEAN.
+
+5. CAUSE TAGS: in recurring-bug-classes-2.md section C5, one per fix.
+   - The section is numbered C5 because cc b70 had added a C4.
+   - Two of the fixes are recurring classes.
+
+6. PUSH: LANDED, tip e5819b09c, full gate.
+   - One rebase conflict, on recurring-bug-classes-2.md; I kept cc's C4 intact.
