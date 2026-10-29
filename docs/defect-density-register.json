@@ -40043,7 +40043,7 @@
       "recurrence_open": "Other server files with calendar-day logic and no per-licence time zone; America/New_York is a platform-wide assumption, not a per-customer one."
     },
     {
-      "commit": "0d6e6a473e70",
+      "commit": "ad49e3020ecb",
       "date": "2026-10-29",
       "subject": "fix(sairnbuild, fourth b65): awardSubBid awards again -- 66cf7b930's honest-toast hunk deleted the one line that marked a bid awarded",
       "files": [
@@ -40086,7 +40086,7 @@
       "recurrence_open": "The award is still gated client-side only; nothing server-side checks eligibility."
     },
     {
-      "commit": "25df11ed8d15",
+      "commit": "aa8cc328b078",
       "date": "2026-10-29",
       "subject": "fix(sairnmechanical, fourth b65): saveQuote stores the client the quote was generated for",
       "files": [
@@ -40126,7 +40126,7 @@
       "recurrence_open": "Quotes created before this fix carry no client and cannot be backfilled."
     },
     {
-      "commit": "7b744bb14d27",
+      "commit": "c0111d9e20ad",
       "date": "2026-10-29",
       "subject": "fix(sairncash, fourth b65): the hidden AGI checkbox no longer manufactures a \"no\"; Solo 401(k) room is capped at earnings",
       "files": [
@@ -40166,7 +40166,7 @@
       "recurrence_open": "A typed 0 prior-year tax is still read as not provided, in both the save and the calculation."
     },
     {
-      "commit": "c741681e20e0",
+      "commit": "6a99e86d95f0",
       "date": "2026-10-29",
       "subject": "fix(sairngrounds, fourth b65): clearing a day's alcohol sale hours CLOSES it -- it saved the day open 00:00-23:59",
       "files": [
