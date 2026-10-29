@@ -3612,6 +3612,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_deploy_verify_entry_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "36ebcb80f6dae19929e981da00883ce822056dd0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_gate_skip_probe.py",
    "class": "test file",
    "level": "WEAKENING",
