@@ -77,3 +77,39 @@ Run that on main, then regenerate MASTER-PLAN and the traceability matrix, then 
 ## 6. CLAIMS
 
 `fourth` held sairnsenior and sairnvet. Both are released at wrap.
+
+## 7. WRAP-UP (same batch, Michael's stop order): what changed after sections 1–6
+
+**Item 1 has now LANDED.** cody released `sairnmechanical` (`1d90a1c29`). Per the stop order I took **no new claim** and **no new task**; I finished only the change already in flight:
+- I cherry-picked the parked commit onto cody's b64 work. It applied cleanly, and `tests/sairnmechanical_records_b67.js` **16/16** on top of cody's changes.
+- The existing mech suites are green, `node --check` passes on 7 blocks plus `api/sd-data.js`, and the derived docs were regenerated.
+- **Landed as `a4414c595b16`**, confirmed by `merge-base --is-ancestor` against origin/main.
+- The local branch `b67-mech` is now redundant. Delete it with `git branch -D b67-mech`; the content is on main.
+- **Nothing is uncommitted, and there are no stashes.**
+
+The final commit SHA and its equality with origin/main's HEAD are in the report and digest, measured after the last push.
+
+## 8. EVERY OPEN ITEM, WITH ITS EXACT NEXT STEP (for a cold session)
+
+| # | open item | owner | exact next step |
+|---|---|---|---|
+| 1 | **Mechanical: the SQL has not been run** | Michael | Run `sql/sairnmechanical_jobs_invoices_inspections_schema.sql` in Supabase. Then save one job, one invoice and one inspection on MECH-AUDIT-2026 in the live app and read the rows back (expect `provisioned:true`). Until then the server answers `provisioned:false` and the records stay on the device |
+| 2 | **Mechanical: the live page was not yet showing the new forms** at wrap (deploy lag) | fourth | Fetch `https://sairn.vercel.app/sairnmechanical.html` and confirm `function mechJobSave(` is present and the page is byte-identical to `origin/main:sairnmechanical.html` |
+| 3 | **Mechanical: the three new save functions have no re-entrancy guard.** cody b64 guarded 47 others | fourth or cody | Add the same guard pattern cody b64 used (`046e3f4f7`) to `mechJobSave`, `mechInvoiceSave` and `mechInspectionSave`, each fixture-first |
+| 4 | **Mechanical: invoice numbers are sequential per device list, not per licence** | fourth | If two devices issue invoices offline, numbers can repeat. The next step is a server-side counter or a collision check on hydrate; this was not designed this batch |
+| 5 | **H1 #1713, #1754, #1779 have no closure entry in the H1 log** | hover H1 | The fixes are on main: #1713 `43812bdbb`/`21ad938e1`, #1754 `fac708f14`, #1779 `f0afc23b3`. Closure entries are the auditor's to write |
+| 6 | **PIN files in the scratchpad** (`sv-audit-owner.pin`, `audit-cg-b65.pin`) | Michael | Move them to the password manager and delete the files. Path: `C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\b6e28c25-eaee-4611-aeb3-d94f0198d47f\scratchpad\` |
+| 7 | **`SV-AUDIT-2026` is not in `KNOWN_AUDIT_KEYS`** | cc | Add it to `tools/audit_licence.py`. The measurement is the `check_license 200` in `docs/live-residue/2026-10-29-fourth-b65-sv-witness-live.json` |
+| 8 | **The claim matcher self-matches on "files fix"** (from `fix FILES:`) | cc | In `tools/sairn_claim.py`, exclude phrases formed from the FILES label. Repro: two claims from one session whose task strings both end `fix FILES: …` |
+| 9 | **The deny hook refuses `sh -n .githooks/pre-push`** | cc | In `tools/builder_auditor_deny_hook.py`, exempt read-only syntax checks of a tracked hook file |
+| 10 | **Orphan scrutiny rows** (66% of the ledger, b62) | cc | Apply the pending-store design in `docs/2026-10-28-fourth-b62-root-causes.md` §1 |
+| 11 | **install_git_hooks hook-fire commit; `--supersede` ambiguity** (b62) | cc | As in `docs/2026-10-28-fourth-b62-root-causes.md` §2 and §3 |
+| 12 | **staging_discipline fixture** (b62) | cody | Stage by name at `tools/push_retry.py`'s selftest, or pin section A's revision |
+| 13 | **Vet: the register is rewritten in place** (upsert by drug name) | fourth | Make `sv_controlled` append-only on client and server. That needs a design decision on the row identity |
+| 14 | **Vet: there is no countersign call**, so a two-person licence cannot complete an entry | fourth | Add the `countersign` flow from `api/sv-witness.js` to the app |
+| 15 | **Build: the WIP forecast has no writer** | fourth | Add a forecast field to the cost modal and `saveCost()` (`sairnbuild.html`) |
+| 16 | **Build: the lien waiver does not gate payment** | Michael decides | If yes, a server-side check before `saveChk()` records a payment |
+| 17 | **Grounds: quote lines lose their text; there is no pesticide application record** | fourth | Fix the `saveQuote()` parse; design the pesticide record (it is a product decision) |
+| 18 | **Cash: a typed $0 prior-year tax reads as "not provided"** | fourth | Fix both `saveProfile()` and `calcQuarterlySetAside()`, with a test against the 1040-ES worksheet |
+| 19 | **About 10 old b49 probe visits on SEN-AUDIT-2026 now read unreviewed** | whoever cleans probe residue | Review or remove them; claims for them are refused by the gate, as intended |
+| 20 | **The allow rule `Bash(python tools/push_timeout_guard.py --live-drive)`** | Michael | Optional while `Bash(python *)` stands; add it by hand if that is ever narrowed |
