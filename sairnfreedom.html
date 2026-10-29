@@ -2123,27 +2123,59 @@ function sfSyncedRead(){
 // when the server answered for it -- a write it accepted, or a row a read
 // returned -- so "confirmed" never means "this device assumed so".
 var SF_CONFIRMED_KEY='sf_server_confirmed';
-function sfConfirmedRead(){
-  var raw=null;
-  try{raw=localStorage.getItem(SF_CONFIRMED_KEY);}catch(e){return {state:'unreadable',map:{}};}
-  if(raw===null)return {state:'ok',map:{}};
+// A CONFIRMATION EXPIRES (cody b66, Michael's b66 decision on cc b70 gap (a)).
+// A row deleted out-of-band read as confirmed forever. Each id now carries the
+// time the server last answered for it, in SF_CONFIRMED_AT_KEY, and reads as
+// confirmed for SF_CONFIRM_TTL_DAYS from then. Past that -- or with no time at
+// all, which is every entry written before this -- it reads as NOT confirmed
+// until a write the server accepts or a read that returns it confirms it again.
+// The id list itself is kept, so nothing is lost; it is only not trusted.
+var SF_CONFIRMED_AT_KEY='sf_server_confirmed_at';
+var SF_CONFIRM_TTL_DAYS=90;
+function sfConfirmedRaw(){
+  var raw=null,rawAt=null;
+  try{raw=localStorage.getItem(SF_CONFIRMED_KEY);rawAt=localStorage.getItem(SF_CONFIRMED_AT_KEY);}catch(e){return null;}
+  var m={},at={};
   try{
-    var m=JSON.parse(raw);
-    if(m&&typeof m==='object'&&!Array.isArray(m))return {state:'ok',map:m};
-  }catch(e){}
-  return {state:'unreadable',map:{}};
+    if(raw!==null){m=JSON.parse(raw);if(!m||typeof m!=='object'||Array.isArray(m))return null;}
+    if(rawAt!==null){at=JSON.parse(rawAt);if(!at||typeof at!=='object'||Array.isArray(at))return null;}
+  }catch(e){return null;}
+  return {map:m,at:at};
+}
+function sfConfirmedRead(){
+  var r=sfConfirmedRaw();
+  if(!r)return {state:'unreadable',map:{}};
+  var cutoff=Date.now()-SF_CONFIRM_TTL_DAYS*86400000, live={};
+  Object.keys(r.map).forEach(function(res){
+    if(!Array.isArray(r.map[res]))return;
+    var stamps=(r.at[res]&&typeof r.at[res]==='object')?r.at[res]:{};
+    live[res]=r.map[res].filter(function(id){
+      var t=Date.parse(stamps[id]);
+      return !isNaN(t)&&t>=cutoff;
+    });
+  });
+  return {state:'ok',map:live};
 }
 function sfConfirmOnServer(resource,ids){
-  var r=sfConfirmedRead();
-  if(r.state!=='ok')return;              // never overwrite a record we could not read
-  var arr=Array.isArray(r.map[resource])?r.map[resource]:[], added=false;
+  var r=sfConfirmedRaw();
+  if(!r)return;                          // never overwrite a record we could not read
+  var arr=Array.isArray(r.map[resource])?r.map[resource]:[];
+  var stamps=(r.at[resource]&&typeof r.at[resource]==='object')?r.at[resource]:{};
+  var cutoff=Date.now()-SF_CONFIRM_TTL_DAYS*86400000, nowIso=new Date().toISOString();
+  var changed=false, touched=false;
   ids.forEach(function(id){
     if(id===undefined||id===null)return;
-    if(arr.indexOf(String(id))===-1){arr.push(String(id));added=true;}
+    var k=String(id), t=Date.parse(stamps[k]);
+    if(arr.indexOf(k)===-1){arr.push(k);changed=true;}
+    else if(isNaN(t)||t<cutoff)changed=true;      // an expired or untimed entry comes back
+    stamps[k]=nowIso;touched=true;
   });
-  if(added){r.map[resource]=arr;st(SF_CONFIRMED_KEY,r.map);}
+  if(touched){
+    r.map[resource]=arr;r.at[resource]=stamps;
+    st(SF_CONFIRMED_KEY,r.map);st(SF_CONFIRMED_AT_KEY,r.at);
+  }
   // The answer arrives after the panel rendered; redraw the one line it changes.
-  if(added&&resource==='sf_trustee_audits'&&typeof sfRenderTrustees==='function'){
+  if(changed&&resource==='sf_trustee_audits'&&typeof sfRenderTrustees==='function'){
     try{ sfRenderTrustees(); }catch(e){ try{ console.warn('SAIRNfreedom: trustee panel redraw failed: '+((e&&e.message)||e)); }catch(_e){} }
   }
 }
