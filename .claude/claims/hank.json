@@ -4824,6 +4824,17 @@
       "status": "released",
       "released_at": "2026-10-29T19:47:54Z",
       "files": null
+    },
+    {
+      "id": "hank-1793304448",
+      "session": "hank",
+      "subject": "sairnlaw",
+      "task": "M5 law-trust-reconcile aged deposit in transit; J5 Vermont deadline seed",
+      "claimed_at": "2026-10-29T20:07:28Z",
+      "claimed_at_epoch": 1793304448.4962199,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
