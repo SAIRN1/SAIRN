@@ -40295,7 +40295,7 @@
       "recurrence_open": "Other server files with calendar-day logic and no per-licence time zone; America/New_York is a platform-wide assumption, not a per-customer one."
     },
     {
-      "commit": "cf49bdc15ced",
+      "commit": "55d2cab85ada",
       "date": "2026-10-29",
       "subject": "fix(tools, cody b62): run_semgrep scans the apps' inline JavaScript and states what it does not cover",
       "files": [
