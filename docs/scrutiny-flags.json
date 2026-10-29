@@ -11118,6 +11118,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b64-sub-compliance-local-day.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ad6900267f8ca1037298bff45d5c30a737724cc4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/b21-bridge-unknown-action.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -15160,6 +15168,23 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "f638d38726504a9f02340add5ec377dfb78e9e34",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-southdakota.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "check('sd_rcp_6a: Ohio mechanism, threshold ELEVEN',"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "check('new trial: 10 days is UNDER ELEVEN -- weekends and Juneteenth skipped, Mo"
+    }
+   ],
+   "sha": "f6417d30ac53f5d33d2a356733a8c941f6b3ce79",
    "criteria_version": "2026-10-06.1"
   },
   {
