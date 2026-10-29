@@ -2931,7 +2931,7 @@
             "sairndesign_audit_log_event_type_check": "CHECK ((event_type = ANY (ARRAY['pin_bootstrap'::text, 'pin_setup'::text, 'credential_deactivated'::text, 'credential_reactivated'::text, 'credential_change_refused'::text])))"
         },
         "sairnlegacy_audit_log": {
-            "sairnlegacy_audit_log_event_type_check": "CHECK ((event_type = ANY (ARRAY['pin_bootstrap'::text, 'pin_setup'::text, 'credential_deactivated'::text, 'credential_reactivated'::text, 'credential_change_refused'::text])))"
+            "sairnlegacy_audit_log_event_type_check": "CHECK ((event_type = ANY (ARRAY['pin_bootstrap'::text, 'pin_setup'::text, 'credential_deactivated'::text, 'credential_reactivated'::text, 'credential_change_refused'::text, 'settings_changed'::text])))"
         },
         "sairnsenior_audit_log": {
             "sairnsenior_audit_log_event_type_check": "CHECK ((event_type = ANY (ARRAY['pin_bootstrap'::text, 'pin_setup'::text, 'credential_deactivated'::text, 'credential_reactivated'::text, 'credential_change_refused'::text, 'pay_period_closed'::text, 'pay_period_reopened'::text])))"
@@ -3059,6 +3059,15 @@
         "sairnlegacy_countersign_tokens": {
             "sairnlegacy_countersign_complete": "CHECK ((((countersign_employee_id IS NULL) AND (countersign_role IS NULL) AND (countersigned_at IS NULL)) OR ((countersign_employee_id IS NOT NULL) AND (countersign_role IS NOT NULL) AND (countersigned_at IS NOT NULL))))",
             "sairnlegacy_countersign_not_self": "CHECK (((countersign_employee_id IS NULL) OR (countersign_employee_id <> prepared_by)))"
+        },
+        "mech_inspections": {
+            "mech_inspections_data_size": "CHECK ((octet_length((data)::text) <= 65536))"
+        },
+        "mech_invoices": {
+            "mech_invoices_data_size": "CHECK ((octet_length((data)::text) <= 65536))"
+        },
+        "mech_jobs": {
+            "mech_jobs_data_size": "CHECK ((octet_length((data)::text) <= 65536))"
         }
     },
     "alf_facility": [
@@ -3624,7 +3633,7 @@
         "created_at",
         "updated_at"
     ],
-    "_generated_at": "2026-10-21 10:44:19.213937+00",
+    "_generated_at": "2026-10-29 20:11:46.132767+00",
     "alf_incidents": [
         "id",
         "license_hash",
@@ -6629,5 +6638,32 @@
         "obj_name",
         "grantee",
         "privilege_type"
+    ],
+    "mech_inspections": [
+        "id",
+        "license_hash",
+        "app_id",
+        "inspection_id",
+        "data",
+        "created_at",
+        "updated_at"
+    ],
+    "mech_invoices": [
+        "id",
+        "license_hash",
+        "app_id",
+        "invoice_id",
+        "data",
+        "created_at",
+        "updated_at"
+    ],
+    "mech_jobs": [
+        "id",
+        "license_hash",
+        "app_id",
+        "job_id",
+        "data",
+        "created_at",
+        "updated_at"
     ]
 }
