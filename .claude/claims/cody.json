@@ -4563,8 +4563,8 @@
       "task": "cc b70 gaps write-unconfirmed test request shape and ablate gitignore",
       "claimed_at": "2026-10-29T19:01:51Z",
       "claimed_at_epoch": 1793300511.1292276,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-29T19:29:45Z",
       "files": null
     },
     {
