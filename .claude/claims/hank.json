@@ -4788,8 +4788,8 @@
       "task": "vermont dc s3 triage",
       "claimed_at": "2026-10-29T12:52:07Z",
       "claimed_at_epoch": 1793278327.1015837,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-29T13:00:35Z",
       "files": null
     }
   ],
