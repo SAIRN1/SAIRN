@@ -1464,7 +1464,7 @@ function mechBackup(resource,rec){
   try{console.warn('SAIRNmechanical backup: the backup module did not load, so this "'+resource+'" record was NOT backed up. It is saved on this device only.');}catch(e){}
   return null;
 }
-function saveQuote(){var q=[];try{q=JSON.parse(localStorage.getItem(APP_ID+'_quotes')||'[]');}catch(e){q=[];}q.unshift({id:Date.now(),date:new Date().toLocaleDateString(),trade:fqTrade,text:fqQuoteTxt});var ok=mechSt(APP_ID+'_quotes',q);
+function saveQuote(){var q=[];try{q=JSON.parse(localStorage.getItem(APP_ID+'_quotes')||'[]');}catch(e){q=[];}q.unshift({id:Date.now(),date:new Date().toLocaleDateString(),trade:fqTrade,client:((document.getElementById('fq-client')||{}).value||'').trim(),text:fqQuoteTxt});/* client stored (fourth b65): the quote was generated FOR this client and the record could not say who */var ok=mechSt(APP_ID+'_quotes',q);
   // ONE RECORD, NOT THE WHOLE ARRAY, and only after the local write succeeded.
   // window.* because mechPushRecord lives in the controller IIFE further down
   // the file; mechBackup() says so if that block never ran.
