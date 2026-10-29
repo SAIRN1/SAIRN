@@ -4912,6 +4912,19 @@
       "status": "released",
       "released_at": "2026-10-29T11:26:22Z",
       "files": null
+    },
+    {
+      "id": "fourth-1793275326",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "b66 known-red capa row recovered, G1 identity scan of this clone, senior card browser drive evidence FILES: docs/known-red-suites.json docs/live-residue/",
+      "claimed_at": "2026-10-29T12:02:06Z",
+      "claimed_at_epoch": 1793275326.1629667,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/known-red-suites.json"
+      ]
     }
   ],
   "refusals": [
