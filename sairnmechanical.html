@@ -2139,18 +2139,39 @@ function mechCsvCell(v){var s=v==null?'':String(v);if(/^[=+\-@\t\r]/.test(s)&&!(
 // AbortError landing in the catch below arrives as the failure they are already
 // written for. Nothing to route through and no call site that can be missed.
 //
-// Feature-detected: an engine without AbortSignal.timeout keeps the previous
-// unbounded behaviour rather than throwing and breaking every call in the app.
-// 15s is the platform number, matching svPushOne and dntPushOne.
+// Feature-detected. 15s is the platform number, matching svPushOne and dntPushOne.
+//
+// ── "KEEPS THE PREVIOUS UNBOUNDED BEHAVIOUR" STOPPED BEING HARMLESS (cody b64) ─
+// This returned `undefined` where AbortSignal.timeout is missing, so the fetch
+// had no timeout there. Since b63 saveDoc holds a re-entry guard until the
+// backup answers, so an unbounded fetch held the Save button refused until the
+// browser gave up. Now: AbortSignal.timeout where it exists; an AbortController
+// with a timer where only that exists; and mechData() races a timer for an
+// engine with neither. tests/mech_fetch_timeout_fallback.js drives all three.
 var MECH_FETCH_TIMEOUT_MS = 15000;
 function mechFetchTimeoutSignal(){
   try{ if(typeof AbortSignal!=='undefined'&&AbortSignal.timeout)
     return AbortSignal.timeout(MECH_FETCH_TIMEOUT_MS); }catch(e){}
+  try{ if(typeof AbortController!=='undefined'){
+    var c=new AbortController();
+    setTimeout(function(){ try{ var e=new Error('timeout'); e.name='TimeoutError'; c.abort(e); }catch(_e){ c.abort(); } }, MECH_FETCH_TIMEOUT_MS);
+    return c.signal; } }catch(e){}
   return undefined;
 }
 function mechData(action, resource, payload) {
     if (!mechLic()) return Promise.resolve({ status: 0, body: null });
-    return fetch(MECH_DATA_API, {
+    // The last resort, for an engine with no way to abort: the caller gets its
+    // {status:0} answer a second after the timeout even if the request itself
+    // never settles. Where the signal works it answers first and this is moot.
+    var answered = false;
+    var backstop = new Promise(function (resolve) {
+      setTimeout(function () {
+        if (answered) return;
+        try { console.warn('SAIRNmechanical: ' + action + ' "' + resource + '" did NOT reach the server (no answer in ' + (MECH_FETCH_TIMEOUT_MS / 1000) + 's).'); } catch (_e) {}
+        resolve({ status: 0, body: null });
+      }, MECH_FETCH_TIMEOUT_MS + 1000);
+    });
+    return Promise.race([backstop, fetch(MECH_DATA_API, {
     signal: mechFetchTimeoutSignal(),
       method: 'POST',
       headers: mechHeaders(true),
@@ -2172,7 +2193,7 @@ function mechData(action, resource, payload) {
               : (e && e.message) || e) + ').');
       } catch (_e) {}
       return { status: 0, body: null };
-    });
+    }).then(function (out) { answered = true; return out; })]);
   }
 
 
