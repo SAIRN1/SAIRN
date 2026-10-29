@@ -1395,6 +1395,17 @@
       "status": "released",
       "released_at": "2026-10-29T11:08:43Z",
       "files": null
+    },
+    {
+      "id": "hover-1793275480",
+      "session": "hover",
+      "subject": "hover",
+      "task": "hover-tools b107 done line wrapper and gate test",
+      "claimed_at": "2026-10-29T12:04:40Z",
+      "claimed_at_epoch": 1793275480.185194,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
