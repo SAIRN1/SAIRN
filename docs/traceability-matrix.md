@@ -981,6 +981,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_scope_gate_unfetched_base_probe.py`
 - `tests/run_scrutiny_flag_probe.py`
 - `tests/run_seam_cannot_tell_watch_probe.py`
+- `tests/run_semgrep_inline_probe.py`
 - `tests/run_session_recheck_coverage_probe.py`
 - `tests/run_shape_search_probe.py`
 - `tests/run_slab_hold_expiry_sabotage_probe.py`

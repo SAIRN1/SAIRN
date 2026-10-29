@@ -3166,6 +3166,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/defect_register_capa_control.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "32b89a2c3213f55947889fd985a26ab74067111e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_capa_fields_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "32b89a2c3213f55947889fd985a26ab74067111e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/run_all_tests.py",
    "class": "push-gate logic",
    "level": "WEAKENING",
@@ -5530,6 +5546,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_semgrep_inline_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "sections A and B still run; only the live arm C is skipped, and says so)."
+    }
+   ],
+   "sha": "55d2cab85ada6d94876c5be7a44f3b0c7fe0defe",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/sairn_push_gate_hook.py",
    "class": "push-gate logic",
    "level": "WEAKENING",
@@ -7559,6 +7588,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairnfreedom_segregation_of_duties.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "7ae231b4721b32eb7db9c7fa907d200be1a76f07",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/claims/run_registry_claim_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -7991,6 +8028,19 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "7ec4a8ede35ca034466ab62e7baeca7dcee35f91",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_comment_strip_agreement_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "'independent count can see -- a delimiter has run away, or the count drifted')"
+    }
+   ],
+   "sha": "7f516ea1f6f832b1781c0d79ac5f6081691b7ce5",
    "criteria_version": "2026-10-06.1"
   },
   {
