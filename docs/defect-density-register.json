@@ -41358,6 +41358,54 @@
         }
       ],
       "recurrence_open": "Any other could-not-tell code added to the server later must be added to the kept list too; nothing enforces that."
+    },
+    {
+      "commit": "7110f8f7973c",
+      "date": "2026-10-29",
+      "subject": "fix(stonedesk, fourth b69): three compliance displays claimed what the record does not hold (cc b56 T2a/T2b, T3a/T3b, T4a)",
+      "files": [
+        "docs/sairn-path-manifest.json",
+        "stonedesk.html",
+        "tests/stonedesk_presence_fixes_b69.js"
+      ],
+      "lines_added": 147,
+      "lines_removed": 19,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "probe-control",
+      "summary": "StoneDesk compliance displays claimed more than the record holds (cc b56 presence stress): subxCompliancePill showed COMPLIANT for a sub with no COI, or with no licence and no W-9; safetyUpdateKPIs scored an empty safety record 80% green and a blank-expiry 2019 silica course as current (100%); the OSHA 1926.1153 silica panel showed four hardcoded literal tiles (12 wet-cut days, 0 dry-cut violations, 8 air samples, AL) no code set.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/stonedesk_presence_stress.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "subxCompliancePill (2026-09-01), safetyUpdateKPIs and the silica tiles predate this batch; the originating commits were not traced."
+      },
+      "citation_note": "No standing rule says a compliance display must be derived from evidence present rather than from a passing default.",
+      "contributing_factors": [
+        {
+          "factor": "Scores and statuses computed by subtracting from a passing default, so absent evidence read as compliance.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "COMPLIANT needs every document; the score is from evidence present; a blank expiry is not current."
+        },
+        {
+          "factor": "Mock tiles from the original layout shipped as if they were data.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The panel says Not tracked."
+        },
+        {
+          "factor": "No test drove these displays with empty or partial records.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "tests/stonedesk_presence_fixes_b69.js, with controls."
+        }
+      ],
+      "recurrence_open": "cc b56's E/I/M/X StoneDesk scenarios (esigApprove, invoice Paid, margin, tax) still FAIL and are routed, not fixed."
     }
   ],
   "started": "2026-09-09",
