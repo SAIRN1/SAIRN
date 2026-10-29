@@ -1,0 +1,38 @@
+SAIRN REPORT -- cody b60 (2026-10-29)
+=====================================
+Handoff: SAIRN-handoff-cody-b60.md.
+
+1. FOREIGN COMMIT DROPPED.
+   - The commit was dcc4af020 (tools/hover_separation_audit.py, which the manifest gives to cc). Its parent is 14f6a1b1f.
+   - Michael ran `git reset --hard 14f6a1b1f`; auto mode had denied it to me.
+   - Checked afterwards:
+     - dcc4af020 is not an ancestor of HEAD;
+     - no hover file is in the outgoing diff;
+     - path scope rc 0.
+   - The reset also removed the JS extractor and triage commits. Both were cherry-picked back, and the guard's register record was re-added on its own.
+   - The M1 fix survives only on the local, unpushed branches cody-b59-hover-hold and cody-b59-full.
+
+2. CLAIM.
+   - `sairn_claim.py own` showed HELD by pid lock but 11.5 h old.
+   - `claim` re-took PLATFORM at 2026-10-29T10:05Z before the push.
+
+3. PUSH: LANDED CLEAN.
+   - Tip 335dd33df. Full gate, try 1, 0 REFUSED lines.
+   - It carries b59 items 1 (red triage), 2 (the 25% guard), 4 (WRITE_RE verbs) and 5 (JS extractor). The foreign file is not in it.
+
+4. NEW FINDING (not fixed): sairnfreedom says "held on this device only" for a record already syncing to the server.
+   - sf_trustee_audits has reached the server since e3446a48b.
+   - The flagbox at sairnfreedom.html:1668 still tells the user the record is on this device only.
+   - Evidence: tests/sairnfreedom_segregation_of_duties.js arm D4.
+
+5. NEW FINDINGS (not fixed):
+   a. install_git_hooks.py --check has not been able to confirm git fires the hook since 2026-09-28.
+      - Since 2e1ad2775, prepare-commit-msg refuses when tools/staged_*_check.py is absent.
+      - --check's scratch-repo fire test therefore cannot commit, and exits 2.
+      - Evidence: tests/install_git_hooks_check_probe.py.
+   b. 7 register records carry recurrence_open "yes", which states no residual.
+      - They come from fe8e6cb7c and 065d11350.
+      - defect_register --check does not refuse the value.
+      - Evidence: tests/run_capa_fields_probe.py.
+
+6. DELIVERABLES: the handoff is committed before this report. Landing and the Drive upload are verified by tools/sairn_done_line.py.

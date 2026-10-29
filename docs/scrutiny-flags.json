@@ -10549,6 +10549,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_sairn_dead_function_sweep_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a6947c576b5eb9504c52eeda5f752fed6a242da3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sf_role_matrix_driven.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -14717,6 +14725,19 @@
     }
    ],
    "sha": "f17973ab22d30af9f759fbc4166c82ca90d7eae9",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_assertion_label_shape_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold CHANGED",
+     "detail": "was: check('E5b. ...and the measured cost of the limit has not gr  now: 'exits 0 because the cap keeps it out of CONFIRMED, and its "
+    }
+   ],
+   "sha": "f17cc7f5a2c77d68027472427763f074efc4e27f",
    "criteria_version": "2026-10-06.1"
   },
   {

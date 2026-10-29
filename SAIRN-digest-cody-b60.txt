@@ -1,0 +1,15 @@
+DIGEST -- cody b60, 2026-10-29. b59 items 1,2,4,5 LANDED; the M1 (hover_separation) commit DROPPED as directed.
+STATUS: TOOLS, TESTS, DOCS. NO SQL. NO APP CHANGE. NO LIVE DATA WRITES.
+CHANGED: tools/sairn_dead_function_sweep.py, tools/write_without_readback_check.py, tools/assertion_label_shape_check.py, 2 probes, triage doc, register.
+LANDED: tip 335dd33df, full gate, 0 REFUSED. dcc4af020 not on HEAD; M1 kept only on local branches cody-b59-hover-hold / cody-b59-full.
+ITEM 1 -- reset to 14f6a1b1f (run by Michael; denied to me). Lost commits re-picked: JS extractor, triage doc, guard register record.
+ITEM 2 -- claim own showed HELD but 11.5 h old; re-claimed PLATFORM before the push.
+ITEM 3 -- 33 reds: all real, 0 clone artefacts (24 stale / 5 product-data / 4 test-bug). Guard: real comments, now an independent-count check.
+  WRITE_RE: 5 mutating verbs, 0 new findings. JS extractor: limit 35 -> 27, capped ADVISORY at precision 0/4.
+ITEM 4 -- NEW, NOT FIXED: sairnfreedom.html:1668 says "held on this device only" for a record already syncing (since e3446a48b).
+ITEM 5 -- NEW, NOT FIXED: install_git_hooks --check blind since 2026-09-28 (2e1ad2775); 7 register records recurrence_open "yes".
+DECISION-NEEDED: cc -- take or decline the M1 fix (local branches); F2 hook check. sairnfreedom owner -- F1 copy.
+UNVERIFIED: nothing claimed as live; no app or API changed this batch.
+NEXT: route F1-F3; owners update the 24 stale tests; cody -- Python _ops_in() bare-branch inconsistency.
+EVIDENCE-path: SAIRN-handoff-cody-b60.md, SAIRN-report-cody-b60.txt, docs/2026-10-28-cody-b59-red-triage.md
+CONTEXT 43.5% of 1,000,000 -- 435,391 tokens, measured.
