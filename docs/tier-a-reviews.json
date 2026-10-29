@@ -8619,12 +8619,12 @@
         "tests/stonedesk_a11y_pass.js"
       ],
       "what": "fourth b57 (a7a8bb27a): StoneDesk accessibility names only -- SD_A11Y_NAMES gains 14 modal/sub-view control names (incl. slabs-location-filter) and the slab-bind select template gets an aria-label. No data path, query, write or role logic changed; reviewer to confirm only aria-label attributes moved.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "hank",
       "owner_assigned_at": "2026-10-22T21:18:41Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "hank",
+      "reviewed_at": "2026-10-29T19:08:12Z",
+      "verdict": "hank b68 REVIEW of fourth b57. The recorded sha a7a8bb27a does not resolve; the landed commit is 09e810819 (same subject, same two files). CRITERIA: only aria-label/name attributes moved; no data path, query, write or role logic touched; the slabs resource reached only by name. VERDICT: SOUND. The stonedesk.html diff is 9 lines: (1) the sd-slab-bind-target <select> template gains aria-label='Slab to bind this code to', and with that attribute removed the -/+ lines are byte-identical (measured, 1 unique line); (2) 14 new id->name entries in SD_A11Y_NAMES (incl. slabs-location-filter). The applier (stonedesk.html:41139-41143) sets aria-label only when the element exists and has NO aria-label, aria-labelledby or <label>, so it cannot override an existing name or touch values, handlers or ids. tests/stonedesk_a11y_pass.js 49/49 at HEAD. Not checked: rendered names in a screen reader (fourth's b55 NVDA pass is the method for that)."
     },
     {
       "author_session": "cc",
@@ -8641,12 +8641,12 @@
         "tools/sairnlaw_iolta_reconcile_stress.py"
       ],
       "what": "cc b55: tools/sairnlaw_iolta_reconcile_stress.py (new, TEST/PROBE only -- reads law_trust_reconcile through the real reconcileTrustLedger(); no product code changed). Review asks: are its 9 forced-discrepancy scenarios and PASS rule a fair statement of 'never silently reconcile a real discrepancy away', and are M5 (stale deposit in transit) and M6 (client misallocation, totals unchanged) real IOLTA failures rather than artefacts of the scenarios.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "hank",
       "owner_assigned_at": "2026-10-23T16:49:24Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "hank",
+      "reviewed_at": "2026-10-29T19:08:58Z",
+      "verdict": "hank b68 REVIEW of cc b55 tools/sairnlaw_iolta_reconcile_stress.py. Run at HEAD: 10 scenarios, 7 PASS, 2 FAIL (M5, M6), control C0 AGREES, exit 1; --fixtures 6/6. VERDICT: SOUND-WITH-GAPS (low, on the classification of M6 only). PASS RULE: fair. 'Anything but AGREES, or AGREES with a NEGATIVE client the dashboard alarms on' is the right line for 'never silently reconcile away'; PARTIAL (M9) is correctly not a pass-as-reconciled; the control guards against a harness that cannot say AGREES; the reconciler and label table are the real ones, not stubs. M5 IS A REAL IOLTA FAILURE, NOT AN ARTEFACT: a deposit in transit 91 days before the statement date is the textbook concealment shape (a shortfall carried as an outstanding item), and reconcileTrustLedger counts any uncleared deposit into outstanding with no age limit (law-trust-reconcile.js ~:216-252), so bank 1300 vs ledger 1340 reads AGREES. Fix belongs in the reconciler: surface in-transit items older than a stated threshold as their own status rather than letting them balance the bank leg. M6 IS A REAL IOLTA FAILURE BUT NOT A RECONCILIATION FAILURE: misposting between two clients with every total unchanged leaves bank = trust ledger = sum of client ledgers, which is exactly what a three-way reconciliation compares, so NO reconciler can surface it from these inputs. Counting it as a FAIL of 'silently reconciled away' overstates the reconciler's gap; it should be reported as a LIMIT of reconciliation (needs per-disbursement matter/payee linkage or a client statement review), and the 'Reconciled' label should not imply per-client correctness. Recommended to cc: reclassify M6 as kind 'limit' with its own verdict so exit 1 means a reconciler defect only."
     },
     {
       "author_session": "cody",
@@ -8685,12 +8685,12 @@
         "tools/stonedesk_presence_stress.py"
       ],
       "what": "cc b56: tools/stonedesk_presence_stress.py (new PROBE, read-only) drives the real api/sd-data.js sd_approvals write and the real subcontractor compliance / safety functions; no product code changed. Review asks: are the 12 scenarios and their FAIL MEANS fair statements of a false Signed / paid / COMPLIANT / green, and are T1a/T1b/T1d, T2a/T2b, T3a/T3b and T4a real defects rather than harness artefacts.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "hank",
       "owner_assigned_at": "2026-10-27T14:26:58Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "hank",
+      "reviewed_at": "2026-10-29T19:09:51Z",
+      "verdict": "hank b68 REVIEW of cc b56 tools/stonedesk_presence_stress.py. Run at HEAD: the probe now carries 29 scenarios (E/I/M/X added since b56), exit 1, every control CONTROL-OK. This review covers the 12 the obligation names. VERDICT: SOUND -- the FAIL MEANS are fair and all eight named FAILs are real at HEAD, not harness artefacts; three were confirmed at the SOURCE, not only through the probe. T1a/T1b/T1d: api/sd-data.js sd_approvals branch (~:3845-3900) refuses no approval_id, no client and no total (NO_TOTAL, which is why T1z PASSES), but stores signature_png as String(p.signature_png) or null with no presence or decodability check, and deposit_status as any client-sent string -- so a 'Signed' row with no image, an undecodable image, or 'paid' with no payment is stored 200. T2a/T2b: stonedesk.html:36672 shows NOT TRACKED only when BOTH coi and licence are untracked; one untracked plus one valid falls through to the green COMPLIANT at :36675, and the pill never reads w9. T4a: stonedesk.html:10828-10829 are literal markup tiles ('0' Dry Cut Violations, '8' Air Samples) with no id and no code that sets them -- a fabricated KPI on an OSHA 1926.1153 panel. T3a/T3b: taken from the probe driving the real safety function (an empty record scores 80% green; 2019 training with no expiry scores 100%); not re-read at source. These are product defects with owners, not review gaps; they belong in the open-work index under StoneDesk."
     },
     {
       "author_session": "cc",
@@ -8708,12 +8708,12 @@
         "tools/sairnlegacy_presence_stress.py"
       ],
       "what": "cc b58: tools/sairnlegacy_presence_stress.py (new PROBE, read-only) drives the real api/sd-data.js leg_cremations / leg_invoices writes with the real countersignature lock, and the real legComposeStatement(); no product code changed. Review asks: are L1a/L1b/L2a/L3a/L3b real defects and the FAIL MEANS fair.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "hank",
       "owner_assigned_at": "2026-10-27T14:59:52Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "hank",
+      "reviewed_at": "2026-10-29T19:10:24Z",
+      "verdict": "hank b68 REVIEW of cc b58 tools/sairnlegacy_presence_stress.py. Run at HEAD: 9 scenarios, 1 PASS (L3e), 5 FAIL, all three controls CONTROL-OK, exit 1. VERDICT: SOUND -- the five named FAILs are real at HEAD and the FAIL MEANS are fair. L1a/L1b: grep of api/sd-data.js and api/_lib/leg*.js for authorization_on_file / waiting_period_observed returns NOTHING, so the leg_cremations countersignature lock binds a second signer to the token and never reads the record's own authorisation fields; a 'Completed' cremation with every check false, or with none present, files 200 with its countersignature. That is a fair FAIL: the countersignature is what makes 'filed' read as authorised. L3a/L3b: legComposeStatement (sairnlegacy.html:3828) refuses on unknown line, non-declinable not on list, multiple non-declinable, PRICE_NOT_ON_FILE (null only) and a declined non-declinable; nothing refuses a price of 0 or a negative line, so printable is true at total 0 (:3898). L2a taken from the probe driving the real leg_invoices write (status Paid stored with payments []); not re-read at source. Not verified: L3a's premise that saveGplServicePrice stores 0 for a blank input. These are product defects for sairnlegacy's owner, not review gaps."
     },
     {
       "author_session": "cody",
@@ -8880,12 +8880,12 @@
         "tools/field_scope_rules.json"
       ],
       "what": "cc b69: tools/field_scope_rules.json declares three role-scope rules held by the blocking field-scope gate (check 4c): sd_crm.read (management sees every lead, others their assigned leads, unassigned management-only; a4f0a1a0), dnt_rollup.read (owner only, no row-level data -- counts and sums keyed by office; af5aeddf) and exec_context.read (owner/admin only; 562d1ded). No handler code changed. Review: is each declaration the DESIGN its commit states rather than a copy of the branch, and is the dnt_rollup location_id-as-literal seed (the roll-up is keyed by office) right rather than hiding a leak? Handler mode 38/38; four wrong declarations were each caught.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "hank",
       "owner_assigned_at": "2026-10-29T11:22:16Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "hank",
+      "reviewed_at": "2026-10-29T19:11:13Z",
+      "verdict": "hank b68 REVIEW of cc b69 tools/field_scope_rules.json (sd_crm.read, dnt_rollup.read, exec_context.read). CRITERIA: each declaration states the DESIGN its source commit states, not a copy of the branch; the dnt_rollup location_id literal does not hide a leak. VERDICT: SOUND. sd_crm.read: a4f0a1a0's message says management (Owner/Manager) sees all, others their assigned leads, null management-only and flagged for Michael; its diff defines CRM_MANAGEMENT_ROLES {owner, admin} with the comment that 'admin' is StoneDesk's Manager role -- so the declaration's owner/admin matches the commit's words, not merely the branch (sd-data.js:381 still says the same). dnt_rollup.read: af5aeddf's message says owner only via DNT_MANAGEMENT_ROLES and NO ROW-LEVEL DATA LEAVES THE BRANCH, counts and sums; sd-data.js:18010 is roleSet({owner:true}). The location_id literal is right: the roll-up's output is keyed BY office, an office id is not patient data, and every patient/charge row field that is not the key or a summed amount stays a marker, so a row leaking out would still be caught. exec_context.read: 562d1ded says owner or admin only, enforced server-side, the same check showPanel() made; the declaration refuses sales and install and holds no table, which matches 'the module is the store'. python tools/sairn_field_scope_check.py at HEAD: 8 rules, 38 role arms, 38 clean, 0 findings, 0 could not run."
     },
     {
       "author_session": "cody",
