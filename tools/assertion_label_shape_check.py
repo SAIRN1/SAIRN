@@ -162,7 +162,7 @@ from checker_kit import (EXIT_COULD_NOT_RUN, finish,               # noqa: E402
                          strip_comments, tracked)
 
 CONTROLLED_BY = ['tests/run_assertion_label_shape_probe.py']
-CRITERIA_VERSION = '2026-10-28.1'
+CRITERIA_VERSION = '2026-10-29.1'
 
 # ── THE CRITERIA ─────────────────────────────────────────────────────────────
 # An EXHAUSTIVE claim: the label says the arm covers a whole population.
@@ -392,7 +392,7 @@ def _is_quantifier(node):
             and node.func.id in ('min', 'max'))
 
 
-def _ops_in(node):
+def _ops_in(node, exempt=None):
     """Every comparison operator inside one expression, in source order.
 
     TWO SHAPES ARE SKIPPED, both because the universal is already expressed and
@@ -404,20 +404,30 @@ def _ops_in(node):
         existential, and a universal label over an existential check is exactly
         this defect.
       * a comparison between two SETS -- see _is_setish.
+
+    `exempt`, when a list, collects the line of every skip. A skip and "no
+    operator at all" both leave `out` empty, and until 2026-10-29 the assert
+    path could not tell them apart: an exempted `assert all(...), 'every x'`
+    fell into classify()'s bare-truthiness branch and came back FINDING_BARE --
+    the opposite of what this exemption is for.
     """
     out = []
     if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) \
             and node.func.id == 'all':
+        if exempt is not None:
+            exempt.append(node.lineno)
         return out
     if isinstance(node, ast.Compare):
         operands = [node.left] + list(node.comparators)
         if not any(_is_setish(o) or _is_quantifier(o) for o in operands):
             out.extend(node.ops)
+        elif exempt is not None:
+            exempt.append(node.lineno)
         for o in operands:
-            out.extend(_ops_in(o))
+            out.extend(_ops_in(o, exempt))
         return out
     for sub in ast.iter_child_nodes(node):
-        out.extend(_ops_in(sub))
+        out.extend(_ops_in(sub, exempt))
     return out
 
 
@@ -426,8 +436,9 @@ def arms(src, skipped=None):
 
     `skipped`, when a list, collects the line of every ASSERTION site that
     yields NO arm -- a labelled assertion-named call (see _assertion_name) with
-    no comparison in the condition slot, i.e. `check(LABEL, got, want)`, or an
-    `assert` whose message is not a literal. Those are NOT JUDGED, and dropping
+    no comparison in the condition slot, i.e. `check(LABEL, got, want)`, an
+    `assert` whose message is not a literal, or an `assert` whose only
+    comparison is one _ops_in exempts. Those are NOT JUDGED, and dropping
     them uncounted made that figure structurally 0. A labelled call that is
     not an assertion (`print('x', n)`) is not an arm and is not counted.
 
@@ -442,8 +453,17 @@ def arms(src, skipped=None):
     for node in ast.walk(tree):
         if isinstance(node, ast.Assert):
             label = _str_of(node.msg) if node.msg is not None else None
-            if label is not None:
-                out.append((node.lineno, label, _ops_in(node.test), 'assert'))
+            _ex = []
+            ops = _ops_in(node.test, _ex) if label is not None else []
+            if label is not None and (ops or not _ex):
+                out.append((node.lineno, label, ops, 'assert'))
+            elif label is not None:
+                # EXEMPTED, NOT BARE: the only comparison here is one _ops_in
+                # skips on purpose (all(), set vs set, min()/max()). It gets
+                # the exemption's own locked verdict -- NOT JUDGED, the same as
+                # the call path and JS `.every` -- never FINDING_BARE.
+                if skipped is not None:
+                    skipped.append(node.lineno)
             elif node.msg is not None and skipped is not None:
                 skipped.append(node.lineno)
             continue
@@ -770,10 +790,10 @@ def _js_bare_condition(name, args, label_i, body_b):
 
     A plain reference cannot be a function or a call, so `.every(...)` -- the
     JS spelling of Python's `all()`, locked NOT JUDGED in JS_FIXTURES since
-    2026-09-29 -- stays NOT JUDGED. (The Python assert path does NOT honour its
-    own `all()` exemption: `assert all(...), 'every x'` reaches classify() with
-    no ops and comes back FINDING_BARE. That inconsistency is the Python half's
-    and is not copied here.)
+    2026-09-29 -- stays NOT JUDGED. (Until 2026-10-29 the Python assert path did
+    NOT honour its own `all()` exemption: `assert all(...), 'every x'` reached
+    classify() with no ops and came back FINDING_BARE. Fixed in arms(); it is
+    NOT JUDGED now, matching this.)
     """
     if name not in JS_TRUTHY_CALLS or label_i != 1 or len(args) != 2:
         return False
@@ -1285,6 +1305,22 @@ FIXTURES = (
      FINDING,
      '...and the detail rule must not go so far as to stop reading the real '
      'condition when a detail argument follows it'),
+    # ── 2026-10-29: THE ASSERT PATH HONOURS ITS OWN EXEMPTIONS ──────────────
+    #    _ops_in() returns [] for a skip AND for "no operator", and the assert
+    #    path read every [] as bare truthiness -- so the three exemptions above
+    #    held on check() and came back FINDING_BARE on `assert`. Each arm here
+    #    is RED on the pre-fix tool; the fourth is the control that keeps the
+    #    fix from swallowing a genuinely bare assert.
+    ("assert all(len(w) > 30 for w in ws), 'every entry carries a reason'",
+     None, '`all()` on the ASSERT path: the same exemption the check() form '
+     'has, NOT JUDGED -- it came back FINDING_BARE'),
+    ("assert set(a) <= set(b), 'every table is in the queried set'", None,
+     'SET SUBSET on the assert path: NOT JUDGED, never FINDING_BARE'),
+    ("assert min(r) >= 1, 'every page has a ratio'", None,
+     '`min(xs) >= k` on the assert path: NOT JUDGED, never FINDING_BARE'),
+    ("assert rows, 'every row present'", FINDING_BARE,
+     'THE CONTROL: no operator AND no exemption is still bare truthiness -- '
+     'the fix must separate "exempted" from "nothing there", not widen'),
 )
 
 # ── THE TIER FIXTURES, locked the same way ──────────────────────────────────
