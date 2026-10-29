@@ -1,0 +1,17 @@
+DIGEST cc b72
+STATUS: STOP + close-out. Nothing in flight (clean tree, no stash, 0 ahead, no cc claim). Dispatch said b71; b71 was already closed, so b72.
+ITEM 1-2: no in-flight change existed; nothing uncommitted left; no new task or claim taken.
+ITEM 3-4: handoff pushed; MEASURED after fetch: HEAD = origin/main = ae0d442dd3a017b585c138797312f24d2a6d95eb (landed after 5 lost races).
+  This report+digest land on top; sairn_done_line refuses the done line unless all three are byte-identical on origin/main.
+ITEM 5: every open item with its exact next step in SAIRN-handoff-cc-b72.md section 2 -- cc: C-1 hover b92 review (blocked), C-2 cody b64
+  re-entry guards review (new), C-3 ctxmeter.py path, C-4 live-block credentials, C-5 #1756 device run; routed R-1..R-10.
+DECISION-NEEDED: Michael -- ctxmeter.py path; live-block credentials (SD-AUDIT-2026 roles, a dental audit licence); agent-ad8f80cc worktree edit.
+UNVERIFIED: none new.
+CHANGED: SAIRN-handoff-cc-b72.md, SAIRN-report-cc-b72.txt, SAIRN-digest-cc-b72.txt only.
+SQL: none.
+EVIDENCE-path: SAIRN-handoff-cc-b72.md (section 2 = the resume list), SAIRN-report-cc-b72.txt
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\52164776-0b08-422d-94e1-7a56daf3eaaa.jsonl
+OPEN: see the handoff section 2; live infra: SAIRN-watchdog task (15 min), deny hook 4/4, done-line Stop hook.
+NEXT: a cold session starts with builder_hook_presence.py, then C-2 (cody b64 Tier A review).
+CONTEXT 74.8% of 1,000,000 -- 748,374 tokens, measured.
+END-OF-REPORT

@@ -1,0 +1,27 @@
+SAIRN report -- cc b72 -- 2026-10-29 -- STOP AND CLOSE OUT
+
+The dispatch's closing line said b71, but b71 was already closed (ef064e78),
+so this is b72.
+
+1 STOPPED. Nothing was in flight: git status clean, no stash, 0 commits ahead,
+  no active cc claim. No new task or claim was taken.
+
+2 COMMITTED. The only new file is SAIRN-handoff-cc-b72.md; this report and
+  the digest follow it.
+
+3-4 PUSHED, SHA MEASURED, NOT GUESSED. After a fetch:
+      git rev-parse HEAD        = ae0d442dd3a017b585c138797312f24d2a6d95eb
+      git rev-parse origin/main = ae0d442dd3a017b585c138797312f24d2a6d95eb
+  They are equal. That is the handoff commit, which landed after 5 lost
+  races. This report and digest land in one more commit on top of it.
+  tools/sairn_done_line.py then refuses to print the done line unless all
+  three files are on origin/main byte for byte.
+
+5 OPEN ITEMS: every one is in the handoff, section 2, with its exact next
+  step.
+  - cc's own: C-1 hover b92 review (blocked on hover landing test_965);
+    C-2 cody b64 re-entry-guard review (new); C-3 ctxmeter.py (path
+    unknown); C-4 live-block credentials; C-5 the #1756 device run.
+  - Routed: R-1 to R-10 (hank, cody, fourth, H1, Michael).
+  - Live infrastructure: the SAIRN-watchdog task, the deny hook and presence
+    check, and the done-line Stop hook.
