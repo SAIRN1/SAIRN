@@ -4522,6 +4522,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "cody-1793272048",
+      "session": "cody",
+      "subject": "sairnfreedom",
+      "task": "cody b62 push b61 sd agent error leak test fx identity scan calibration semgrep coverage",
+      "claimed_at": "2026-10-29T11:07:28Z",
+      "claimed_at_epoch": 1793272048.4364872,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
