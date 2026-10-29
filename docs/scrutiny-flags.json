@@ -11383,6 +11383,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairndental_save_reentry.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a9764b923766fe5ab999b7ad5eb8feda6a0fc029",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnfreedom_licence_guard_legacy.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a9764b923766fe5ab999b7ad5eb8feda6a0fc029",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sairnsenior_caregiver_scope_purge.js",
    "class": "test file",
    "level": "CHANGE",
