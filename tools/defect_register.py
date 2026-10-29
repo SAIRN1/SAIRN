@@ -427,6 +427,19 @@ def factor_problems(rec, where_id):
                    'corrective action is evidence about one contributor and '
                    'never about recurrence; without this the record reads as '
                    'closed.' % where_id)
+    # ...AND IT HAS TO NAME SOMETHING (2026-10-29, Michael's ruling). Seven
+    # records carried the bare value "yes" -- present, so the check above
+    # passed, and stating nothing. The floor mirrors --external-note's: a
+    # field that exists to name a residual is only as good as the sentence
+    # naming it, and 40 is the floor there too. Every bare token (yes, no,
+    # true, n/a, tbd, none) is under it, so no word list is needed. A record
+    # whose path genuinely cannot recur says so IN A SENTENCE with the reason.
+    elif len(str(rec.get('recurrence_open')).strip()) < 40:
+        bad.append('%s -- recurrence_open is %d characters (%r). It exists to '
+                   'NAME what could recur and is not closed -- or, if nothing '
+                   'can, why not -- and 40 is the floor.'
+                   % (where_id, len(str(rec.get('recurrence_open')).strip()),
+                      str(rec.get('recurrence_open')).strip()[:40]))
     return bad
 
 

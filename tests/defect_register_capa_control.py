@@ -139,7 +139,9 @@ def add(extra, files=None):
     D.save = lambda d: saved.update(d)
     D.fmea_loop = lambda rec: None          # not this control's subject
     rec = dict(SYNTHETIC, files=list(FIX_FILES if files is None else files))
-    D.derive = lambda sha: dict(rec)        # nor is the repo's current tip
+    # `ext` since 8f99bb38f, which made cmd_add call derive(sha, ext); the
+    # one-argument mock raised TypeError before any arm ran.
+    D.derive = lambda sha, ext=None: dict(rec)  # nor is the repo's current tip
     out, real_stdout = io.StringIO(), sys.stdout
     sys.stdout = out
     try:
@@ -178,6 +180,13 @@ def main():
     rc, recs, _ = add(['--factors', json.dumps(GOOD)])
     arm('factors with no --recurrence-open are refused',
         rc == 2 and not recs, (rc, len(recs)))
+
+    for bare in ('yes', 'n/a', 'TBD'):
+        rc, recs, out = add(['--factors', json.dumps(GOOD),
+                             '--recurrence-open', bare])
+        arm('--recurrence-open %r is refused -- it names no residual' % bare,
+            rc == 2 and not recs and 'recurrence_open is' in out,
+            (rc, len(recs), out[-200:]))
 
     one = [dict(GOOD[0])]
     rc, recs, _ = add(['--factors', json.dumps(one),

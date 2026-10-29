@@ -126,6 +126,18 @@ try:
             lambda reg: first_cf(reg).pop('recurrence_open'))
     refuses('...and a blank one is the same as none',
             lambda reg: first_cf(reg).__setitem__('recurrence_open', '   '))
+    # "yes" is PRESENT, so the two arms above never saw it -- and seven real
+    # records carried exactly that until 2026-10-29. --check has to refuse a
+    # value that names nothing, not only an absent one.
+    refuses('...and a bare "yes" is refused by --check -- present is not the '
+            'same as naming a residual',
+            lambda reg: first_cf(reg).__setitem__('recurrence_open', 'yes'),
+            'recurrence_open is 3 characters')
+    accepts('...while a SENTENCE saying the path cannot recur, and why, is '
+            'accepted -- the floor refuses silence, not a closed verdict',
+            lambda reg: first_cf(reg).__setitem__(
+                'recurrence_open', 'Nothing on this path can recur: the only '
+                'writer was deleted in the same commit.'))
 
     # ── ONE FACTOR IS A CLAIM, NOT A DEFAULT ───────────────────────────────
     def one_factor(reg, note=None):

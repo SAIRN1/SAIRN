@@ -29142,7 +29142,7 @@
           "action": "The hire date is validated with isRealDate and REFUSED with its own window_error, not repaired: normalising would be the code choosing which date somebody was hired on."
         }
       ],
-      "recurrence_open": "yes"
+      "recurrence_open": "NOT CLOSED. N2's guard is unprotected by the derived arm: api/sen-auth.js now calls soleRoleDemotionRefusal() in setup, but api/_lib/employee-lifecycle-wiring.test.js still lists sen-auth.js in DEMOTION_UNGUARDED_BASELINE and not in DEMOTION_GUARDED, so its 'no endpoint LOSES its sole-role demotion guard' arm would not notice that guard being removed -- only api/n1-n4-and-sf-delete.test.js pins it. N1 and F6 were fixed where found; nothing sweeps for their classes elsewhere (a module whose header states a rule its own write path breaks; a success toast chosen on a pointer being truthy rather than on the operation's result). Not tracked."
     },
     {
       "commit": "3997a045bd26",
@@ -29260,7 +29260,7 @@
           "action": "Each site carries a distinct machine tag and arm A5 fails if two are the same."
         }
       ],
-      "recurrence_open": "yes"
+      "recurrence_open": "NOT CLOSED. api/ai-provenance-client-sites.test.js pins the six sites BY NAME (saveDoc, saveMeasurementReading, grdUploadProgressPhoto, scpUploadProgressPhoto, revGenerate, msbHandleScanResult); it does not derive the population, so a seventh client save site that stores model output without stamping ai_source is caught by no test -- and the server gate still cannot see it, because its trigger is the client-supplied field (factor 1). Not tracked: a derived list of client sites that persist a model response."
     },
     {
       "commit": "46128d86a4fd",
@@ -29368,7 +29368,7 @@
           "action": "Both corrected; the comment-only one says plainly that it is a comment fix and names what the wrong path would have authorised."
         }
       ],
-      "recurrence_open": "yes"
+      "recurrence_open": "NOT CLOSED. Both census files are corrected, but a wrong jsonb path still returns NULL silently anywhere else in sql/: tools/sairn_sql_preflight.py and tools/sql_column_exists_check.py check tables and columns, and nothing compares a ->> path against the shape its writer stores. Factor 2 is still 'planned': tools/tier_a_review_gate.py and tools/tier_a_reviews_store.py record no per-attack-point verdict, so a review can still omit a point without declaring it. Whether the census has been run live (unrun at hank b12, open item 5) is not tracked here."
     },
     {
       "commit": "540e0b162887",
@@ -29986,7 +29986,7 @@
           "action": "The absence of a migration tier is stated in the file's header, and arm A5 ties sv_controlled's row to PRESCRIBER_ROLES role by role."
         }
       ],
-      "recurrence_open": "yes"
+      "recurrence_open": "NOT CLOSED. The two structural [CONFIRM]s were answered by Michael on 2026-10-15 (api/_lib/sv-roles.js:35, :114), but four tier-A resources -- sv_boarding, sv_multisite, sv_portal, sv_reminders -- are still banded OPERATIONS with an open [CONFIRM] at api/_lib/sv-roles.js:210-218, so every role reads AND writes them, including the client-visible portal and reminders, until a practitioner settles them. The class (an authentication gate that never asked what a session may DO) is pinned per app for law, leg, sf and sv only; no tool checks that every session-gated app has a role matrix."
     },
     {
       "commit": "b12a763103e9",
@@ -30370,7 +30370,7 @@
           "action": "COULD NOT RUN with exit 2, counted and named separately in the summary; a pure refactor now exits 2 and a genuinely deleted order= clause still exits 1."
         }
       ],
-      "recurrence_open": "yes"
+      "recurrence_open": "NOT CLOSED. Factor 2 is still only 'planned': tests/faults/transport_timeout_sweep.js still pre-stubs a HAND-WRITTEN list of globals (lines 379-381) with no _sdWriteOk, alfNote or scpLastErr, so the sweep's verdict still depends partly on that list, and it will rot again with the next global a transport's failure path gains. The class -- a failure path that can itself throw -- is driven only on the write transports this sweep extracts, not on other catch paths."
     },
     {
       "commit": "d99b47f9683e",
@@ -30480,7 +30480,7 @@
           "action": "The grant names ONE employee and ONE contact, and expiry is compared to now() on EVERY read. Arms C5/C6/C7 drive all three narrowings."
         }
       ],
-      "recurrence_open": "yes"
+      "recurrence_open": "NOT CLOSED. The fix pins alf_mar against family_mar only (arms A4/A5 and A9 of tests/mar_billing_grant.test.js). Factor 2 stands for every other pair: nothing compares a resource's role set against the set guarding the table its data comes from, so a further sibling resource that reads MAR rows -- the shape that produced three doors to one table in nine days -- would again look locally reasonable. Not tracked: a table-to-reading-resources map whose role sets are compared. Whether sql/2026-10-14-hank-b11-mar-grant.sql has run live (unrun at hank b12) is not re-verified here."
     },
     {
       "commit": "e444dc83ba08",
@@ -30628,7 +30628,7 @@
           "action": "The five pass their pre-read body in; arm A8 drives one of them end to end, because the source arm proves the argument is passed and an ablation showed it does not prove it is read."
         }
       ],
-      "recurrence_open": "yes"
+      "recurrence_open": "NOT CLOSED. The image still rides inside the sd_photos row -- separating the blob from the row is named as the direction of travel and not done (factor 1) -- so the 65,536-byte cap is met by a 44,000-character client budget (SD_PHOTO_DATAURL_BUDGET, stonedesk.html:26249) leaving ~21 KB for aiAnalysis and the rest, and nothing enforces that margin if those fields grow; an overflow is now REPORTED by sdDataFailed rather than silent, not prevented. The 65,536 cap is a house convention on every StoneDesk table, and no sweep looks for another table that starts carrying an image or long model output."
     },
     {
       "commit": "f4f998e43bb4",
