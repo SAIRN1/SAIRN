@@ -5001,8 +5001,8 @@
       "task": "b69 done-line Stop hook refuses a typed done line; deploy_verify_notify classify_command same-line push FILES: tools/sairn_done_line.py tools/deploy_verify_notify.py",
       "claimed_at": "2026-10-29T20:25:26Z",
       "claimed_at_epoch": 1793305526.857497,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-29T21:44:11Z",
       "files": [
         "tools/deploy_verify_notify.py",
         "tools/sairn_done_line.py"
