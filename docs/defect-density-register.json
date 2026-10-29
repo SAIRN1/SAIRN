@@ -39955,7 +39955,7 @@
       "recurrence_open": "A skipped push does not re-run whole-tree checks against the combined base; only gate duration or a merge queue closes that."
     },
     {
-      "commit": "c0d38bf76f39",
+      "commit": "a6cdb0860f77",
       "date": "2026-10-29",
       "subject": "fix(stonedesk, cody b65): a POS sale with no slab holds until the form resets",
       "files": [
@@ -40891,7 +40891,7 @@
       "recurrence_open": "Every b64 hold was released in a finally, but only the 47 b64 handlers were checked for code between the acquire and the try; a hand-written hold elsewhere can repeat it."
     },
     {
-      "commit": "bb92b9f557fb",
+      "commit": "e0d873e80c9b",
       "date": "2026-10-29",
       "subject": "fix(sairngrounds, cody b65): the caddie GPS handlers hold while the fix is pending",
       "files": [
