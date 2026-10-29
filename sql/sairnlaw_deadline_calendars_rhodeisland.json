@@ -1,0 +1,565 @@
+{
+  "_readme": [
+    "SAIRNlaw holiday calendars -- Rhode Island 2026-2031, the EARLY-side reading of R.I. Gen. Laws 25-1-1."
+  ],
+  "holiday_calendars": [
+    {
+      "jurisdiction": "ri",
+      "year": 2026,
+      "authority": {
+        "citation": "R.I. Gen. Laws 25-1-1 (as a reading; Super. R. Civ. P. 6(a) names no statute)",
+        "url": "https://webserver.rilegislature.gov/Statutes/TITLE25/25-1/25-1-1.htm",
+        "computation_url": "https://courts.ri.gov/Courts/superiorcourt/Documents/SuperiorCourtRulesOfCivilProcedure.pdf",
+        "note": "EARLY-SIDE READING, seeded on Michael's b65 direction. Encoded: every day 25-1-1 names, the GENERAL Sunday-to-Monday shift, Thanksgiving (President and Congress appoint it; the incorporation clause reaches both), election day in 2026 and 2030. OMITTED, each EARLY: the employee-only Monday after a Saturday holiday, 2028 election day, governor/Assembly-appointed days. See JURISDICTION_COVERAGE.ri.",
+        "retrieved_at": "2026-10-29"
+      },
+      "dates": [
+        {
+          "date": "2026-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2026-01-01"
+        },
+        {
+          "date": "2026-01-19",
+          "name": "Dr. Martin Luther King, Jr.'s Birthday",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2026-01-19"
+        },
+        {
+          "date": "2026-02-16",
+          "name": "Washington's Birthday",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2026-02-16"
+        },
+        {
+          "date": "2026-05-04",
+          "name": "Rhode Island Independence Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2026-05-04"
+        },
+        {
+          "date": "2026-05-25",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2026-05-25"
+        },
+        {
+          "date": "2026-06-19",
+          "name": "Juneteenth National Freedom Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2026-06-19"
+        },
+        {
+          "date": "2026-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2026-07-04"
+        },
+        {
+          "date": "2026-08-10",
+          "name": "Victory Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2026-08-10"
+        },
+        {
+          "date": "2026-09-07",
+          "name": "Labor Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2026-09-07"
+        },
+        {
+          "date": "2026-10-12",
+          "name": "Columbus Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2026-10-12"
+        },
+        {
+          "date": "2026-11-03",
+          "name": "General election day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1: the Tuesday next after the first Monday in November in a year general state officers are elected (2026)"
+        },
+        {
+          "date": "2026-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2026-11-11"
+        },
+        {
+          "date": "2026-11-26",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 incorporation clause: appointed by the President and by Congress (5 U.S.C. 6103) -- fourth Thursday in November 2026-11-26"
+        },
+        {
+          "date": "2026-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2026-12-25"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "ri",
+      "year": 2027,
+      "authority": {
+        "citation": "R.I. Gen. Laws 25-1-1 (as a reading; Super. R. Civ. P. 6(a) names no statute)",
+        "url": "https://webserver.rilegislature.gov/Statutes/TITLE25/25-1/25-1-1.htm",
+        "computation_url": "https://courts.ri.gov/Courts/superiorcourt/Documents/SuperiorCourtRulesOfCivilProcedure.pdf",
+        "note": "EARLY-SIDE READING, seeded on Michael's b65 direction. Encoded: every day 25-1-1 names, the GENERAL Sunday-to-Monday shift, Thanksgiving (President and Congress appoint it; the incorporation clause reaches both), election day in 2026 and 2030. OMITTED, each EARLY: the employee-only Monday after a Saturday holiday, 2028 election day, governor/Assembly-appointed days. See JURISDICTION_COVERAGE.ri.",
+        "retrieved_at": "2026-10-29"
+      },
+      "dates": [
+        {
+          "date": "2027-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2027-01-01"
+        },
+        {
+          "date": "2027-01-18",
+          "name": "Dr. Martin Luther King, Jr.'s Birthday",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2027-01-18"
+        },
+        {
+          "date": "2027-02-15",
+          "name": "Washington's Birthday",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2027-02-15"
+        },
+        {
+          "date": "2027-05-04",
+          "name": "Rhode Island Independence Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2027-05-04"
+        },
+        {
+          "date": "2027-05-31",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2027-05-31"
+        },
+        {
+          "date": "2027-06-19",
+          "name": "Juneteenth National Freedom Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2027-06-19"
+        },
+        {
+          "date": "2027-07-05",
+          "name": "Independence Day (Sunday shift)",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1: Independence Day falls on Sunday 2027-07-04; \"when either of the above days falls on the first day of the week, then the day following it\""
+        },
+        {
+          "date": "2027-08-09",
+          "name": "Victory Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2027-08-09"
+        },
+        {
+          "date": "2027-09-06",
+          "name": "Labor Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2027-09-06"
+        },
+        {
+          "date": "2027-10-11",
+          "name": "Columbus Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2027-10-11"
+        },
+        {
+          "date": "2027-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2027-11-11"
+        },
+        {
+          "date": "2027-11-25",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 incorporation clause: appointed by the President and by Congress (5 U.S.C. 6103) -- fourth Thursday in November 2027-11-25"
+        },
+        {
+          "date": "2027-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2027-12-25"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "ri",
+      "year": 2028,
+      "authority": {
+        "citation": "R.I. Gen. Laws 25-1-1 (as a reading; Super. R. Civ. P. 6(a) names no statute)",
+        "url": "https://webserver.rilegislature.gov/Statutes/TITLE25/25-1/25-1-1.htm",
+        "computation_url": "https://courts.ri.gov/Courts/superiorcourt/Documents/SuperiorCourtRulesOfCivilProcedure.pdf",
+        "note": "EARLY-SIDE READING, seeded on Michael's b65 direction. Encoded: every day 25-1-1 names, the GENERAL Sunday-to-Monday shift, Thanksgiving (President and Congress appoint it; the incorporation clause reaches both), election day in 2026 and 2030. OMITTED, each EARLY: the employee-only Monday after a Saturday holiday, 2028 election day, governor/Assembly-appointed days. See JURISDICTION_COVERAGE.ri.",
+        "retrieved_at": "2026-10-29"
+      },
+      "dates": [
+        {
+          "date": "2028-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2028-01-01"
+        },
+        {
+          "date": "2028-01-17",
+          "name": "Dr. Martin Luther King, Jr.'s Birthday",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2028-01-17"
+        },
+        {
+          "date": "2028-02-21",
+          "name": "Washington's Birthday",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2028-02-21"
+        },
+        {
+          "date": "2028-05-04",
+          "name": "Rhode Island Independence Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2028-05-04"
+        },
+        {
+          "date": "2028-05-29",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2028-05-29"
+        },
+        {
+          "date": "2028-06-19",
+          "name": "Juneteenth National Freedom Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2028-06-19"
+        },
+        {
+          "date": "2028-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2028-07-04"
+        },
+        {
+          "date": "2028-08-14",
+          "name": "Victory Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2028-08-14"
+        },
+        {
+          "date": "2028-09-04",
+          "name": "Labor Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2028-09-04"
+        },
+        {
+          "date": "2028-10-09",
+          "name": "Columbus Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2028-10-09"
+        },
+        {
+          "date": "2028-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2028-11-11"
+        },
+        {
+          "date": "2028-11-23",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 incorporation clause: appointed by the President and by Congress (5 U.S.C. 6103) -- fourth Thursday in November 2028-11-23"
+        },
+        {
+          "date": "2028-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2028-12-25"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "ri",
+      "year": 2029,
+      "authority": {
+        "citation": "R.I. Gen. Laws 25-1-1 (as a reading; Super. R. Civ. P. 6(a) names no statute)",
+        "url": "https://webserver.rilegislature.gov/Statutes/TITLE25/25-1/25-1-1.htm",
+        "computation_url": "https://courts.ri.gov/Courts/superiorcourt/Documents/SuperiorCourtRulesOfCivilProcedure.pdf",
+        "note": "EARLY-SIDE READING, seeded on Michael's b65 direction. Encoded: every day 25-1-1 names, the GENERAL Sunday-to-Monday shift, Thanksgiving (President and Congress appoint it; the incorporation clause reaches both), election day in 2026 and 2030. OMITTED, each EARLY: the employee-only Monday after a Saturday holiday, 2028 election day, governor/Assembly-appointed days. See JURISDICTION_COVERAGE.ri.",
+        "retrieved_at": "2026-10-29"
+      },
+      "dates": [
+        {
+          "date": "2029-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2029-01-01"
+        },
+        {
+          "date": "2029-01-15",
+          "name": "Dr. Martin Luther King, Jr.'s Birthday",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2029-01-15"
+        },
+        {
+          "date": "2029-02-19",
+          "name": "Washington's Birthday",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2029-02-19"
+        },
+        {
+          "date": "2029-05-04",
+          "name": "Rhode Island Independence Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2029-05-04"
+        },
+        {
+          "date": "2029-05-28",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2029-05-28"
+        },
+        {
+          "date": "2029-06-19",
+          "name": "Juneteenth National Freedom Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2029-06-19"
+        },
+        {
+          "date": "2029-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2029-07-04"
+        },
+        {
+          "date": "2029-08-13",
+          "name": "Victory Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2029-08-13"
+        },
+        {
+          "date": "2029-09-03",
+          "name": "Labor Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2029-09-03"
+        },
+        {
+          "date": "2029-10-08",
+          "name": "Columbus Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2029-10-08"
+        },
+        {
+          "date": "2029-11-12",
+          "name": "Veterans' Day (Sunday shift)",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1: Veterans' Day falls on Sunday 2029-11-11; \"when either of the above days falls on the first day of the week, then the day following it\""
+        },
+        {
+          "date": "2029-11-22",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 incorporation clause: appointed by the President and by Congress (5 U.S.C. 6103) -- fourth Thursday in November 2029-11-22"
+        },
+        {
+          "date": "2029-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2029-12-25"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "ri",
+      "year": 2030,
+      "authority": {
+        "citation": "R.I. Gen. Laws 25-1-1 (as a reading; Super. R. Civ. P. 6(a) names no statute)",
+        "url": "https://webserver.rilegislature.gov/Statutes/TITLE25/25-1/25-1-1.htm",
+        "computation_url": "https://courts.ri.gov/Courts/superiorcourt/Documents/SuperiorCourtRulesOfCivilProcedure.pdf",
+        "note": "EARLY-SIDE READING, seeded on Michael's b65 direction. Encoded: every day 25-1-1 names, the GENERAL Sunday-to-Monday shift, Thanksgiving (President and Congress appoint it; the incorporation clause reaches both), election day in 2026 and 2030. OMITTED, each EARLY: the employee-only Monday after a Saturday holiday, 2028 election day, governor/Assembly-appointed days. See JURISDICTION_COVERAGE.ri.",
+        "retrieved_at": "2026-10-29"
+      },
+      "dates": [
+        {
+          "date": "2030-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2030-01-01"
+        },
+        {
+          "date": "2030-01-21",
+          "name": "Dr. Martin Luther King, Jr.'s Birthday",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2030-01-21"
+        },
+        {
+          "date": "2030-02-18",
+          "name": "Washington's Birthday",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2030-02-18"
+        },
+        {
+          "date": "2030-05-04",
+          "name": "Rhode Island Independence Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2030-05-04"
+        },
+        {
+          "date": "2030-05-27",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2030-05-27"
+        },
+        {
+          "date": "2030-06-19",
+          "name": "Juneteenth National Freedom Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2030-06-19"
+        },
+        {
+          "date": "2030-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2030-07-04"
+        },
+        {
+          "date": "2030-08-12",
+          "name": "Victory Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2030-08-12"
+        },
+        {
+          "date": "2030-09-02",
+          "name": "Labor Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2030-09-02"
+        },
+        {
+          "date": "2030-10-14",
+          "name": "Columbus Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2030-10-14"
+        },
+        {
+          "date": "2030-11-05",
+          "name": "General election day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1: the Tuesday next after the first Monday in November in a year general state officers are elected (2030)"
+        },
+        {
+          "date": "2030-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2030-11-11"
+        },
+        {
+          "date": "2030-11-28",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 incorporation clause: appointed by the President and by Congress (5 U.S.C. 6103) -- fourth Thursday in November 2030-11-28"
+        },
+        {
+          "date": "2030-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2030-12-25"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "ri",
+      "year": 2031,
+      "authority": {
+        "citation": "R.I. Gen. Laws 25-1-1 (as a reading; Super. R. Civ. P. 6(a) names no statute)",
+        "url": "https://webserver.rilegislature.gov/Statutes/TITLE25/25-1/25-1-1.htm",
+        "computation_url": "https://courts.ri.gov/Courts/superiorcourt/Documents/SuperiorCourtRulesOfCivilProcedure.pdf",
+        "note": "EARLY-SIDE READING, seeded on Michael's b65 direction. Encoded: every day 25-1-1 names, the GENERAL Sunday-to-Monday shift, Thanksgiving (President and Congress appoint it; the incorporation clause reaches both), election day in 2026 and 2030. OMITTED, each EARLY: the employee-only Monday after a Saturday holiday, 2028 election day, governor/Assembly-appointed days. See JURISDICTION_COVERAGE.ri.",
+        "retrieved_at": "2026-10-29"
+      },
+      "dates": [
+        {
+          "date": "2031-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2031-01-01"
+        },
+        {
+          "date": "2031-01-20",
+          "name": "Dr. Martin Luther King, Jr.'s Birthday",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2031-01-20"
+        },
+        {
+          "date": "2031-02-17",
+          "name": "Washington's Birthday",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2031-02-17"
+        },
+        {
+          "date": "2031-05-05",
+          "name": "Rhode Island Independence Day (Sunday shift)",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1: Rhode Island Independence Day falls on Sunday 2031-05-04; \"when either of the above days falls on the first day of the week, then the day following it\""
+        },
+        {
+          "date": "2031-05-26",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2031-05-26"
+        },
+        {
+          "date": "2031-06-19",
+          "name": "Juneteenth National Freedom Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2031-06-19"
+        },
+        {
+          "date": "2031-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2031-07-04"
+        },
+        {
+          "date": "2031-08-11",
+          "name": "Victory Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2031-08-11"
+        },
+        {
+          "date": "2031-09-01",
+          "name": "Labor Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2031-09-01"
+        },
+        {
+          "date": "2031-10-13",
+          "name": "Columbus Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2031-10-13"
+        },
+        {
+          "date": "2031-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2031-11-11"
+        },
+        {
+          "date": "2031-11-27",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 incorporation clause: appointed by the President and by Congress (5 U.S.C. 6103) -- fourth Thursday in November 2031-11-27"
+        },
+        {
+          "date": "2031-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "derivation": "R.I. Gen. Laws 25-1-1 2031-12-25"
+        }
+      ]
+    }
+  ]
+}

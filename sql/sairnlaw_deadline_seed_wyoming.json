@@ -1,0 +1,182 @@
+{
+  "_readme": [
+    "SAIRNlaw deadline engine seed -- Wyoming (W.R.C.P., compiled edition eff. 9-21-26).",
+    "Gate: docs/sairnlaw-wyoming-deadline-seed-gate.md (hank b65, 2026-10-29). Every value read verbatim and quoted."
+  ],
+  "rules": [
+    {
+      "rule_id": "wy-rcp-12a1ai-answer-to-complaint",
+      "jurisdiction": "wy",
+      "domain": "civil-litigation",
+      "label": "Answer to a complaint (Wyoming)",
+      "trigger_event": "service_of_summons_and_complaint",
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wy_rcp_6a",
+      "authority": {
+        "citation": "W.R.C.P. 12(a)(1)(A)(i)",
+        "url": "https://www.wyocourts.gov/app/uploads/2025/01/WY-Rules-of-Civ.-Procedure-Eff.-9-21-26.pdf",
+        "quote": "A defendant must serve an answer: (i) within 20 days after being served with the summons and complaint",
+        "note": "NO service_extension: process; 6(d) also excludes Rule 4(r) mail service of process. effective_from is W.R.C.P. 6's adoption (added February 2, 2017, effective March 1, 2017); the compiled edition read is the one effective 9-21-26.",
+        "retrieved_at": "2026-10-29"
+      },
+      "effective_from": "2017-03-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wy-rcp-12a1aii-answer-served-outside-wyoming",
+      "jurisdiction": "wy",
+      "domain": "civil-litigation",
+      "label": "Answer, served outside Wyoming (Wyoming)",
+      "trigger_event": "service_of_summons_and_complaint_outside_state",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wy_rcp_6a",
+      "authority": {
+        "citation": "W.R.C.P. 12(a)(1)(A)(ii)",
+        "url": "https://www.wyocourts.gov/app/uploads/2025/01/WY-Rules-of-Civ.-Procedure-Eff.-9-21-26.pdf",
+        "quote": "(ii) within 30 days after being served with the summons and complaint if service is made outside the State of Wyoming",
+        "note": "A DISTINCT trigger_event: where service happened is a case fact the engine must not guess. effective_from is W.R.C.P. 6's adoption (added February 2, 2017, effective March 1, 2017); the compiled edition read is the one effective 9-21-26.",
+        "retrieved_at": "2026-10-29"
+      },
+      "effective_from": "2017-03-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wy-rcp-33b2-interrogatory-answers",
+      "jurisdiction": "wy",
+      "domain": "civil-litigation",
+      "label": "Answers and objections to interrogatories (Wyoming)",
+      "trigger_event": "service_of_interrogatories",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wy_rcp_6a",
+      "authority": {
+        "citation": "W.R.C.P. 33(b)(2)",
+        "url": "https://www.wyocourts.gov/app/uploads/2025/01/WY-Rules-of-Civ.-Procedure-Eff.-9-21-26.pdf",
+        "quote": "The responding party must serve its answers and any objections within 30 days after being served with the interrogatories.",
+        "note": "Stipulated or ordered times are not visible. effective_from is W.R.C.P. 6's adoption (added February 2, 2017, effective March 1, 2017); the compiled edition read is the one effective 9-21-26.",
+        "retrieved_at": "2026-10-29"
+      },
+      "effective_from": "2017-03-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null,
+      "service_extension": {
+        "standard": "wy_rcp_6d",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "left_with_clerk"
+        ],
+        "note": "W.R.C.P. 6(d): \"served upon the party by mail or by delivery to the clerk for service, three days shall be added to the prescribed period\"."
+      }
+    },
+    {
+      "rule_id": "wy-rcp-34b2a-production-response",
+      "jurisdiction": "wy",
+      "domain": "civil-litigation",
+      "label": "Response to a request for production (Wyoming)",
+      "trigger_event": "service_of_request_for_production",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wy_rcp_6a",
+      "authority": {
+        "citation": "W.R.C.P. 34(b)(2)(A)",
+        "url": "https://www.wyocourts.gov/app/uploads/2025/01/WY-Rules-of-Civ.-Procedure-Eff.-9-21-26.pdf",
+        "quote": "The party to whom the request is directed must respond in writing within 30 days after being served.",
+        "note": "Stipulated or ordered times are not visible. effective_from is W.R.C.P. 6's adoption (added February 2, 2017, effective March 1, 2017); the compiled edition read is the one effective 9-21-26.",
+        "retrieved_at": "2026-10-29"
+      },
+      "effective_from": "2017-03-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null,
+      "service_extension": {
+        "standard": "wy_rcp_6d",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "left_with_clerk"
+        ],
+        "note": "W.R.C.P. 6(d): \"served upon the party by mail or by delivery to the clerk for service, three days shall be added to the prescribed period\"."
+      }
+    },
+    {
+      "rule_id": "wy-rcp-36a3-admission-response",
+      "jurisdiction": "wy",
+      "domain": "civil-litigation",
+      "label": "Response to a request for admission (Wyoming)",
+      "trigger_event": "service_of_request_for_admission",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wy_rcp_6a",
+      "authority": {
+        "citation": "W.R.C.P. 36(a)(3)",
+        "url": "https://www.wyocourts.gov/app/uploads/2025/01/WY-Rules-of-Civ.-Procedure-Eff.-9-21-26.pdf",
+        "quote": "A matter is admitted unless, within 30 days after being served, the party to whom the request is directed serves on the requesting party a written answer or objection addressed to the matter and signed by the party or its attorney.",
+        "note": "A missed date ADMITS the matter. effective_from is W.R.C.P. 6's adoption (added February 2, 2017, effective March 1, 2017); the compiled edition read is the one effective 9-21-26.",
+        "retrieved_at": "2026-10-29"
+      },
+      "effective_from": "2017-03-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null,
+      "service_extension": {
+        "standard": "wy_rcp_6d",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "left_with_clerk"
+        ],
+        "note": "W.R.C.P. 6(d): \"served upon the party by mail or by delivery to the clerk for service, three days shall be added to the prescribed period\"."
+      }
+    },
+    {
+      "rule_id": "wy-rcp-59b-motion-for-new-trial",
+      "jurisdiction": "wy",
+      "domain": "civil-litigation",
+      "label": "Motion for a new trial (Wyoming)",
+      "trigger_event": "entry_of_judgment",
+      "count": {
+        "value": 28,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wy_rcp_6a",
+      "authority": {
+        "citation": "W.R.C.P. 59(b)",
+        "url": "https://www.wyocourts.gov/app/uploads/2025/01/WY-Rules-of-Civ.-Procedure-Eff.-9-21-26.pdf",
+        "quote": "A motion for a new trial must be filed no later than 28 days after the entry of judgment.",
+        "note": "Runs from ENTRY: no 6(d) days. 6(b)(2) forbids extending it. effective_from is W.R.C.P. 6's adoption (added February 2, 2017, effective March 1, 2017); the compiled edition read is the one effective 9-21-26.",
+        "retrieved_at": "2026-10-29"
+      },
+      "effective_from": "2017-03-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    }
+  ]
+}

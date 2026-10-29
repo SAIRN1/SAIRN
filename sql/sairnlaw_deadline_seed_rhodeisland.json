@@ -1,0 +1,261 @@
+{
+  "_readme": [
+    "SAIRNlaw deadline engine seed -- Rhode Island (Superior Court Rules of Civil Procedure, February 2024 PDF).",
+    "Seeded on Michael's b65 direction. The holiday calendar is a READING of R.I. Gen. Laws 25-1-1, recorded in",
+    "docs/sairnlaw-rhodeisland-deadline-seed-blockers.md; every contested day is omitted (EARLY)."
+  ],
+  "rules": [
+    {
+      "rule_id": "ri-rcp-12a1a-answer-to-complaint",
+      "jurisdiction": "ri",
+      "domain": "civil-litigation",
+      "label": "Answer to a complaint (Rhode Island)",
+      "trigger_event": "service_of_summons_and_complaint",
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "ri_rcp_6a",
+      "authority": {
+        "citation": "R.I. Super. R. Civ. P. 12(a)(1)(A)",
+        "url": "https://courts.ri.gov/Courts/superiorcourt/Documents/SuperiorCourtRulesOfCivilProcedure.pdf",
+        "quote": "A defendant shall serve an answer: (A) Within twenty (20) days after the service of the summons, complaint, Language Assistance Notice, and all other required documents upon the defendant",
+        "note": "NO service_extension: process, not \"a notice or other paper\" between parties (EARLY). effective_from is the compiled text's date (February 2024); a matter triggered earlier should have the then-current rule confirmed by hand.",
+        "retrieved_at": "2026-10-29"
+      },
+      "effective_from": "2024-02-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "ri-rcp-12a2-answer-to-crossclaim",
+      "jurisdiction": "ri",
+      "domain": "civil-litigation",
+      "label": "Answer to a cross-claim (Rhode Island)",
+      "trigger_event": "service_of_pleading_stating_crossclaim",
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "ri_rcp_6a",
+      "authority": {
+        "citation": "R.I. Super. R. Civ. P. 12(a)(2)",
+        "url": "https://courts.ri.gov/Courts/superiorcourt/Documents/SuperiorCourtRulesOfCivilProcedure.pdf",
+        "quote": "A party served with a pleading stating a cross-claim against that party shall serve an answer thereto within twenty (20) days after being served.",
+        "note": "Rule 6(d) reaches it. effective_from is the compiled text's date (February 2024); a matter triggered earlier should have the then-current rule confirmed by hand.",
+        "retrieved_at": "2026-10-29"
+      },
+      "effective_from": "2024-02-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null,
+      "service_extension": {
+        "standard": "ri_rcp_6d",
+        "add": 1,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "email",
+          "electronic",
+          "efiling_service"
+        ],
+        "note": "Super. R. Civ. P. 6(d): \"the notice or paper is served upon the party electronically or by mail, one (1) day shall be added to the prescribed period.\" ONE day; electronic service QUALIFIES."
+      }
+    },
+    {
+      "rule_id": "ri-rcp-12a2-reply-to-counterclaim",
+      "jurisdiction": "ri",
+      "domain": "civil-litigation",
+      "label": "Reply to a counterclaim (Rhode Island)",
+      "trigger_event": "service_of_answer_containing_counterclaim",
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "ri_rcp_6a",
+      "authority": {
+        "citation": "R.I. Super. R. Civ. P. 12(a)(2)",
+        "url": "https://courts.ri.gov/Courts/superiorcourt/Documents/SuperiorCourtRulesOfCivilProcedure.pdf",
+        "quote": "The plaintiff shall serve a reply to a counterclaim in the answer within twenty (20) days after service of the answer",
+        "note": "The ordered-reply limb is not seeded. effective_from is the compiled text's date (February 2024); a matter triggered earlier should have the then-current rule confirmed by hand.",
+        "retrieved_at": "2026-10-29"
+      },
+      "effective_from": "2024-02-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null,
+      "service_extension": {
+        "standard": "ri_rcp_6d",
+        "add": 1,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "email",
+          "electronic",
+          "efiling_service"
+        ],
+        "note": "Super. R. Civ. P. 6(d): \"the notice or paper is served upon the party electronically or by mail, one (1) day shall be added to the prescribed period.\" ONE day; electronic service QUALIFIES."
+      }
+    },
+    {
+      "rule_id": "ri-rcp-33-interrogatory-answers",
+      "jurisdiction": "ri",
+      "domain": "civil-litigation",
+      "label": "Answers and objections to interrogatories (Rhode Island)",
+      "trigger_event": "service_of_interrogatories",
+      "count": {
+        "value": 40,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "ri_rcp_6a",
+      "authority": {
+        "citation": "R.I. Super. R. Civ. P. 33(a)",
+        "url": "https://courts.ri.gov/Courts/superiorcourt/Documents/SuperiorCourtRulesOfCivilProcedure.pdf",
+        "quote": "the party upon whom the interrogatories have been served shall serve a copy of the answers and objections on the party submitting the interrogatories within forty (40) days after the service of the interrogatories",
+        "note": "FORTY days, not 30. effective_from is the compiled text's date (February 2024); a matter triggered earlier should have the then-current rule confirmed by hand.",
+        "retrieved_at": "2026-10-29"
+      },
+      "effective_from": "2024-02-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null,
+      "service_extension": {
+        "standard": "ri_rcp_6d",
+        "add": 1,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "email",
+          "electronic",
+          "efiling_service"
+        ],
+        "note": "Super. R. Civ. P. 6(d): \"the notice or paper is served upon the party electronically or by mail, one (1) day shall be added to the prescribed period.\" ONE day; electronic service QUALIFIES."
+      }
+    },
+    {
+      "rule_id": "ri-rcp-34b2-production-response",
+      "jurisdiction": "ri",
+      "domain": "civil-litigation",
+      "label": "Response to a request for production (Rhode Island)",
+      "trigger_event": "service_of_request_for_production",
+      "count": {
+        "value": 40,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "ri_rcp_6a",
+      "authority": {
+        "citation": "R.I. Super. R. Civ. P. 34(b)(2)",
+        "url": "https://courts.ri.gov/Courts/superiorcourt/Documents/SuperiorCourtRulesOfCivilProcedure.pdf",
+        "quote": "The party upon whom the request is served shall serve a written response within forty (40) days after the service of the request, except that a defendant may serve a response within sixty (60) days after service of the summons",
+        "note": "THE 40-DAY LIMB; the defendant's 60-day floor is not computed (EARLY). effective_from is the compiled text's date (February 2024); a matter triggered earlier should have the then-current rule confirmed by hand.",
+        "retrieved_at": "2026-10-29"
+      },
+      "effective_from": "2024-02-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null,
+      "service_extension": {
+        "standard": "ri_rcp_6d",
+        "add": 1,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "email",
+          "electronic",
+          "efiling_service"
+        ],
+        "note": "Super. R. Civ. P. 6(d): \"the notice or paper is served upon the party electronically or by mail, one (1) day shall be added to the prescribed period.\" ONE day; electronic service QUALIFIES."
+      }
+    },
+    {
+      "rule_id": "ri-rcp-36a-admission-response",
+      "jurisdiction": "ri",
+      "domain": "civil-litigation",
+      "label": "Response to a request for admission (Rhode Island)",
+      "trigger_event": "service_of_request_for_admission",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "ri_rcp_6a",
+      "authority": {
+        "citation": "R.I. Super. R. Civ. P. 36(a)",
+        "url": "https://courts.ri.gov/Courts/superiorcourt/Documents/SuperiorCourtRulesOfCivilProcedure.pdf",
+        "quote": "The matter is admitted unless, within thirty (30) days after service of the request, or within such shorter or longer time as the court may allow, the party to whom the request is directed serves upon the party requesting the admission a written answer or objection",
+        "note": "THIRTY, not forty; the defendant's 45-day floor is not computed (EARLY). effective_from is the compiled text's date (February 2024); a matter triggered earlier should have the then-current rule confirmed by hand.",
+        "retrieved_at": "2026-10-29"
+      },
+      "effective_from": "2024-02-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null,
+      "service_extension": {
+        "standard": "ri_rcp_6d",
+        "add": 1,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "email",
+          "electronic",
+          "efiling_service"
+        ],
+        "note": "Super. R. Civ. P. 6(d): \"the notice or paper is served upon the party electronically or by mail, one (1) day shall be added to the prescribed period.\" ONE day; electronic service QUALIFIES."
+      }
+    },
+    {
+      "rule_id": "ri-rcp-59b-motion-for-new-trial",
+      "jurisdiction": "ri",
+      "domain": "civil-litigation",
+      "label": "Motion for a new trial (Rhode Island)",
+      "trigger_event": "entry_of_judgment",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "ri_rcp_6a",
+      "authority": {
+        "citation": "R.I. Super. R. Civ. P. 59(b)",
+        "url": "https://courts.ri.gov/Courts/superiorcourt/Documents/SuperiorCourtRulesOfCivilProcedure.pdf",
+        "quote": "A motion for a new trial shall be served not later than ten (10) days after the entry of the judgment.",
+        "note": "Runs from ENTRY, not service: no Rule 6(d) day. effective_from is the compiled text's date (February 2024); a matter triggered earlier should have the then-current rule confirmed by hand.",
+        "retrieved_at": "2026-10-29"
+      },
+      "effective_from": "2024-02-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "ri-rcp-59e-motion-to-alter-or-amend",
+      "jurisdiction": "ri",
+      "domain": "civil-litigation",
+      "label": "Motion to alter or amend a judgment (Rhode Island)",
+      "trigger_event": "entry_of_judgment_for_motion_to_alter_or_amend",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "ri_rcp_6a",
+      "authority": {
+        "citation": "R.I. Super. R. Civ. P. 59(e)",
+        "url": "https://courts.ri.gov/Courts/superiorcourt/Documents/SuperiorCourtRulesOfCivilProcedure.pdf",
+        "quote": "A motion to alter or amend the judgment shall be served not later than ten (10) days after entry of the judgment.",
+        "note": "Runs from ENTRY: no Rule 6(d) day. effective_from is the compiled text's date (February 2024); a matter triggered earlier should have the then-current rule confirmed by hand.",
+        "retrieved_at": "2026-10-29"
+      },
+      "effective_from": "2024-02-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    }
+  ]
+}

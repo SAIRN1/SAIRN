@@ -89,7 +89,9 @@ const JURISDICTION_LABELS = {
   // With the Alaska seed (hank b63), for the same reason as Maine above.
   ak: 'Alaska',
   nd: 'North Dakota',
-  sd: 'South Dakota'
+  sd: 'South Dakota',
+  ri: 'Rhode Island',
+  wy: 'Wyoming'
 };
 const DOMAIN_LABELS = {
   'civil-litigation': 'Civil litigation',
