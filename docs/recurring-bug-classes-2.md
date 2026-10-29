@@ -132,3 +132,55 @@ A pure-base push carrying a change like that, on top of a base whose own push ha
   - **The re-gate list is DERIVED, not the three hand-listed files.** It is `docs/CRITICALITY-TIERS.md`, all of `.githooks/`, the hook, and every `tools/*.py|js` the hook or `.githooks/pre-push` names or imports: 41 at b58. That closes the "added by hand" gap above. If fewer than 20 are found, the regex has lost its anchor, and the tool exits 2 rather than trusting a short list.
   - **Test-covered:** `tests/run_pure_base_skip_probe.py`, 22 arms. Each of the tier register, two hook files, the hook and a gate-run tool forces GATE. So do re-check rc 1, 2 and did-not-run. An underivable or short read set gives COULD NOT DECIDE. Two ablation arms remove the re-gate rule and the floor, and require the matching arms to flip to SKIP.
   - Moving it into cc's `tools/push_retry.py` is still cc's routing (C1). That is now a call to this tool, not a port of shell logic.
+
+---
+
+## C4. A REMEDY GATED ON AN UNRELATED CONDITION (cc b70)
+
+**Phase / sub-phase / cause:** construction -> automation script (push loop)
+-> **due to** a fix being placed inside the branch of a DIFFERENT decision, so
+it runs only when that unrelated condition happens to hold. The failure it
+exists to prevent then recurs on every other path.
+
+**What it looks like:** a retry loop that keeps failing the same way. The
+fix exists in the script, but it never runs on the path that is actually
+failing.
+
+**Measured occurrences:**
+- **`tools/push_retry.py`, found 2026-10-05.** Derived-doc regeneration sat
+  inside `if behind > 0:`. With nothing behind, the loop made six identical
+  refused pushes and never regenerated. Fixed by extracting
+  `_regenerate_and_fold()` and calling it after every rebase (line 1312) and
+  on any refusal that names a generated document (line 1391).
+- **cody's scratchpad `push_once.sh`, cody b62, routed as O7.** It regenerated
+  `MASTER-PLAN` and `traceability-matrix` only inside
+  `if grep -q "whole-tree re-check not green"`, the pure-base-skip decision.
+  So:
+  - in gate mode the full gate ran on stale documents and refused twice on
+    `derived-docs`, which is cody's b62 double refusal;
+  - `TOOLING-INVENTORY` was never regenerated on either path.
+  - cc b70 confirmed this in the script's source. The fix is in
+    `docs/2026-10-29-cc-b70-o7-push-script.md`: regenerate all three
+    unconditionally after the rebase and BEFORE the skip decision. The
+    recommendation is to retire the script for `tools/push_retry.py`, which
+    already does this.
+
+**Cause tags for this batch's fixes (cc b70, lifecycle phase -> sub-phase -> cause):**
+
+| Fix | Tag |
+|---|---|
+| O7 push-script regeneration (routed fix, cody's script) | construction -> automation script -> remedy gated on an unrelated condition (this class) |
+
+The Tier A discharges, the CRLF cross-check and the field-scope credential
+check were reviews and checks. They changed no code, so they carry no fix
+tag. The CRLF cross-check found no persisted text-mode log writer in hank's,
+cody's or fourth's tools. All 4 append-mode hits are temp fixtures inside
+test probes.
+
+**Mitigation, and what it does not cover:**
+- `push_retry.py` is correct.
+- A private scratchpad loop is invisible to every check and review. Here, it
+  diverged from the tracked tool that had already been fixed for this exact
+  class.
+- The standing remedy is to push through the tracked tool, not a private
+  copy of its logic.

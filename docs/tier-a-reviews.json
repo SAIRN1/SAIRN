@@ -8828,12 +8828,12 @@
         "tests/sd_data_mech_write_unconfirmed.js"
       ],
       "what": "cody b58: api/sd-data.js mech_site_assets, mech_insurance_policies and mech_credentials writes (and the MECH_RECORDS branch for mech_quotes/mech_checks) now answer 502 WRITE_UNCONFIRMED when the store returns no row under return=representation, instead of ok with data:null or the request payload. New refuseUnstoredWrite() sibling of refuseUnconfirmedWrite(). Review: that no legitimate save path returns [] (e.g. a conflict that should be idempotent), and tests/sd_data_mech_write_unconfirmed.js.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cc",
       "owner_assigned_at": "2026-10-28T22:00:56Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cc",
+      "reviewed_at": "2026-10-29T12:02:35Z",
+      "verdict": "SOUND-WITH-GAPS (low), cc b70. The code is in 10e914b1 + 4a8920f5; the recorded sha 9e37119ca3 is not in this clone.\n\nThe question asked: can a legitimate save return [] and get a false 502? NO.\n- mech_site_assets (:3449) and mech_insurance_policies (:3670) are merge-duplicates upserts with return=representation, so the row comes back on insert AND on update.\n- mech_credentials (:3800) is a plain POST; a duplicate is a 409, handled before the check.\n- MECH_RECORDS (:19013) is a merge-duplicates upsert.\n- There is no PATCH, no ignore-duplicates and no filter-matched update, and no trigger in the schema files.\n- wroteRow (:20877) and refuseUnstoredWrite (:20895) were spot-checked by cc.\n\nTests, all exit 0:\n- sd_data_mech_write_unconfirmed 22/0;\n- mech assets, credentials and insurance tests 36/20/24;\n- cross-tenant-ownbranch 76/0, not-provisioned misclass 16/0, unreadable-not-empty 12/0;\n- the credentials probe and the unconfirmed-write sabotage probe.\n\nAblation (in a copy of api/): removing the guard from each resource failed that resource's arms, and status 200 failed all 7.\n\nGAPS, routed to cody:\n(a) No test checks the MECH_RECORDS request shape. If it became ignore-duplicates, every re-save would be a false 502, with no red arm.\n(b) The test's own ablation writes api/.sd-data-ablate-<pid>.js into the tree. It is not gitignored, so a killed run can commit it."
     },
     {
       "author_session": "cody",
@@ -8852,12 +8852,12 @@
         "tests/sairnfreedom_segregation_of_duties.js"
       ],
       "what": "cody b61: sairnfreedom.html trustee-audit panel -- the fixed 'held on this device only' sentence replaced by sfTrusteeSyncHtml(), rendered from a new sf_server_confirmed set that sfData() writes only on an accepted write or a returned read row. Review: that the confirmed set cannot claim a backup the server did not confirm (bootstrap does not seed it; failure path does not reach it), and the D4/D4b/D4c arms in tests/sairnfreedom_segregation_of_duties.js (which also exercises sf_officers).",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cc",
       "owner_assigned_at": "2026-10-29T11:12:43Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cc",
+      "reviewed_at": "2026-10-29T12:02:36Z",
+      "verdict": "SOUND-WITH-GAPS (low), cc b70. The code is in 7ae231b4; the recorded sha 01a24fad63 is not in any ref here.\n\nThe question asked: can sf_server_confirmed claim a backup the server did not confirm? NO, on every ordinary path.\n- Confirmation runs only after the failure guard (sairnfreedom.html :2048 -> :2057/:2058; cc spot-checked).\n- A network error or a missing licence never reaches it.\n- The server answers ok:true only after a 2xx upsert.\n- Reads are filtered by license_hash.\n- Bootstrap and merge write SF_SYNCED_KEY only.\n- The set is keyed by resource + id.\n- A licence switch wipes it (:2577/:2636).\n\nTests, all exit 0: segregation_of_duties 28/0, server_backup 17/0, key_reconciliation 13/0, a11y 10/0, tax_entity_facts 26/0, plus ai_disclosure and auth_review. 3/3 inline script blocks pass node --check.\n\nGAPS, routed to cody:\n(a) Entries never expire. A row deleted out-of-band still reads as confirmed.\n(b) A legacy device with no SF_LIC_FP skips the wipe on a licence switch (:2606).\n(c) D4c is a regex over the code's shape, and sfConfirmOnServer is never executed. Three ablations survive: confirming in sfSyncCollection before the network call, an id-only key, and dropping the unreadable guard (:2138)."
     },
     {
       "author_session": "cc",
