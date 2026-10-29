@@ -41178,7 +41178,7 @@
       "recurrence_open": "Any handler awaiting a device API (camera, GPS, file picker) is outside the b64 sweep's server-write shape; only these two were checked."
     },
     {
-      "commit": "0d833cde790b",
+      "commit": "af2db16b3c87",
       "date": "2026-10-29",
       "subject": "fix(sairnlegacy, hank b69 H1x): every stored id passed from an inline handler goes through JA() -- a JSON string literal, HTML-escaped",
       "files": [
@@ -41445,7 +41445,7 @@
       "recurrence_open": "cc b56's E/I/M/X StoneDesk scenarios (esigApprove, invoice Paid, margin, tax) still FAIL and are routed, not fixed."
     },
     {
-      "commit": "df07e9fed81c",
+      "commit": "6cd786113de1",
       "date": "2026-10-29",
       "subject": "fix(sairnlaw, hank b69 M5): a deposit in transit older than 30 days stops the trust reconciliation at PARTIAL and is named in the bank leg",
       "files": [
