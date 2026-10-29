@@ -41406,6 +41406,46 @@
         }
       ],
       "recurrence_open": "cc b56's E/I/M/X StoneDesk scenarios (esigApprove, invoice Paid, margin, tax) still FAIL and are routed, not fixed."
+    },
+    {
+      "commit": "b3e717894b51",
+      "date": "2026-10-29",
+      "subject": "fix(sairnlaw, hank b69 M5): a deposit in transit older than 30 days stops the trust reconciliation at PARTIAL and is named in the bank leg",
+      "files": [
+        "api/_lib/law-trust-reconcile.js",
+        "api/_lib/law-trust-reconcile.test.js",
+        "docs/recurring-bug-classes.md"
+      ],
+      "lines_added": 80,
+      "lines_removed": 1,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "fault-injection",
+      "summary": "api/_lib/law-trust-reconcile.js treated any uncleared deposit as in transit with no age limit, so a $40 trust shortfall carried as a deposit dated 91 days before the statement balanced the bank leg and the reconciliation read AGREES / Reconciled (cc b55 stress M5). A deposit in transit older than 30 days now stops the status at PARTIAL and is listed in bank_vs_ledger.stale_deposits_in_transit with a why the Trust Accounting panel shows. Stress probe M5 now PASS; 4 new arms, 2 red with the status line removed.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/sairnlaw_iolta_reconcile_stress.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "5e0b531f2776",
+        "date": "2026-09-18",
+        "subject": "fix(sairnlaw): the IOLTA reconciliation stops agreeing over money it never compared, and learns what an uncleared cheque is",
+        "lag_days": 41
+      },
+      "citation_note": "No standing rule names an age limit on reconciling items; proposed: an outstanding item is a timing difference only while it is young enough to be one.",
+      "contributing_factors": [
+        {
+          "factor": "The outstanding-items model encoded a timing difference without the property that makes it one: that it resolves within days",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "stale deposits in transit (> 30 days) stop the status at PARTIAL and are named"
+        }
+      ],
+      "recurrence_open": "Stale UNCLEARED CHEQUES are not flagged (a different question: escheat and stale-dated cheques); the 30-day threshold is hank's choice, not a bar rule, and M6 (misallocation with totals unchanged) remains a limit of reconciliation.",
+      "single_factor_note": "one model gap"
     }
   ],
   "started": "2026-09-09",
