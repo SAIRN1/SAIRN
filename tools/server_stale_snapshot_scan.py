@@ -42,6 +42,11 @@ READ = re.compile(r"=\s*await\s+[A-Za-z0-9_$.]*fetch\s*\((?:(?!method\s*:\s*['\"
 JSON = re.compile(r"await\s+[A-Za-z0-9_$]+\.json\s*\(\s*\)")
 WRITE = re.compile(r"fetch\s*\((?:(?!\bfetch\s*\().){0,600}?method\s*:\s*['\"](PATCH|PUT|POST)['\"]", re.S)
 GUARD = re.compile(r"If-Match|version=eq\.|updated_at=eq\.|etag|rpc/|resolution=|on_conflict=|row_version|\.lock\b|advisory", re.I)
+# A CONDITIONAL WRITE IS A COMPARE-AND-SET (hank b67, S3 triage): a filter on
+# any column other than the row id -- `spent_at=is.null`, `status=neq.revoked`,
+# `renewal_count=eq.<value read>` -- makes the write refuse when the row has
+# moved. 7 of the first 41 api/ hits were exactly this, and were guarded.
+CAS = re.compile(r"[?&](?!id=)[a-z_]+=(?:is|neq|eq|lt|gt)\.", re.I)
 
 
 def strip_comments(js):
@@ -85,7 +90,7 @@ def scan_text(js):
             if "await" not in between:
                 continue
             window = after[w.start():w.end() + 400]
-            if GUARD.search(window):
+            if GUARD.search(window) or CAS.search(window):
                 continue
             hits.add(js.count("\n", 0, start + r.end() + w.start()) + 1)
             break
@@ -118,7 +123,8 @@ FIX_NOAWAIT = """async function bump(id) {
   fetch(rest('t?id=eq.' + id), { method: 'PATCH', headers: h, body: JSON.stringify({ count: rows[0].count + 1 }) });
 }"""
 FIX_ARROW = FIX_POS.replace("async function bump(id) {", "const bump = async (id) => {")
-FIX_COMMENTED = FIX_POS.replace("  await fetch(rest('t?id=eq.' + id), { method: 'PATCH'", "  // await fetch(rest('t?id=eq.' + id), { method: 'PATCH'")
+FIX_CAS = FIX_POS.replace("rest('t?id=eq.' + id), { method", "rest('t?id=eq.' + id + '&spent_at=is.null'), { method")
+FIX_COMMENTED =FIX_POS.replace("  await fetch(rest('t?id=eq.' + id), { method: 'PATCH'", "  // await fetch(rest('t?id=eq.' + id), { method: 'PATCH'")
 
 
 def selftest():
@@ -131,6 +137,8 @@ def selftest():
         ("NEGATIVE: a read with no write is not the shape", scan_text(FIX_NOWRITE) == []),
         ("NEGATIVE: no await between read and write is not the shape", scan_text(FIX_NOAWAIT) == []),
         ("NEGATIVE: a commented-out write is not code", scan_text(FIX_COMMENTED) == []),
+        ("NEGATIVE (b67): a spent_at=is.null compare-and-set is a guard", scan_text(FIX_CAS) == []),
+        ("POSITIVE (b67): an id-only filter is NOT a guard", scan_text(FIX_POS) != []),
     ]
     bad = 0
     for name, ok in arms:

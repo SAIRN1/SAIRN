@@ -45,3 +45,16 @@
   - Michael pastes the Rule 6 text, Rules 12/33/34/36/59 and the order's effective date from Lexis, with the
     retrieval date;
   - or supplies the direct vtcourts.gov URL of the 2017 Rule 6 promulgation order.
+
+## b67 (2026-10-29): PRIMARY SOURCE FOUND — UNBLOCKED, to be seeded next batch
+- **What it is:** the Vermont Supreme Court's promulgation order, filed with the Legislative Committee on Judicial Rules.
+  - **URL:** https://legislature.vermont.gov/Documents/2018/WorkGroups/Judicial Rules/October 23, 2017 Meeting/W~Erik Fitzpatrick~Materials for Judicial Rules Meeting on October 24, 2017 ~10-23-2017.pdf
+  - **Size:** 5,761,306 bytes, 1,450 extracted lines.
+- **Promulgation clause** (extracted line 131): "That these rules and forms, as added or amended, are prescribed and
+  promulgated effective January 1, 2018."
+- **"RULE 6. TIME"** begins at line 189, with its Reporter's Notes at lines 270–297:
+  - (a) is the "day is a day" rule, the federal language;
+  - (a)(7) covers applicable statutes;
+  - (e) adds three days, following FRCP 6(d) as of 2005.
+- **Caveat for the gate:** this is the text AS OF 2018-01-01. Any later amendment to Rule 6 or Rules 12/33/34/36/59
+  must be checked against vtcourts.gov's promulgated list before seeding.
