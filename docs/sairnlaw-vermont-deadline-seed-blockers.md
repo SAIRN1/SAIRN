@@ -98,3 +98,30 @@
 - confirmation that the promulgated page is complete back to 2018. In either case, also answer whether e-service still gets +3.
 
 **Then:** the ND pattern. Rows triggered by entry (59) and the holiday table can be seeded without settling gap 2. Rows triggered by service cannot.
+
+## b69 (2026-10-29): the official Judiciary rules page was read directly. NEITHER condition can be confirmed there, so this stays NOT SEEDED
+
+**Seeding requires both of these, by Michael's b69 instruction:**
+1. the date the V.R.C.P. is current through;
+2. whether e-service still gets +3 days under Rule 6(e).
+
+The official page answers neither. Read at vermontjudiciary.org/attorneys/rules on 2026-10-29:
+- **It does not host a compiled current V.R.C.P., and it gives no current-through date.** Its words are: "All Vermont court rules are available through LexisNexis. The Vermont Judiciary does not administer the LexisNexis website and does not have responsibility for the accuracy of the information provided there."
+  - So the Judiciary's own designated source for current text disclaims accuracy.
+  - That source is the advance.lexis.com container, which is a script-driven viewer. It cannot be read by tools/sairn_http.py.
+- **The promulgated list is "Promulgated Rules Over the Last Two Years"**, in the page's own heading.
+  - This confirms what b68 inferred from the years on the page.
+  - The effective dates printed in the orders now listed run from 2022-10-01 to 2025-10-01.
+- **Every VRCP and VREF order on that list was fetched and its text extracted** (14 PDFs):
+  - VRCP: 4(c); 9.2; 11(e)/43/56; 16.2/26(f); 55(a); 65(b)(1); 79(a); 80.12/81(a).
+  - VREF: 1(g)/2(h)/3/5(d)/6(c); 5 (emergency); 5(d)(1); 7(a)(7); 9(d); 11(f).
+  - None of them mentions Rule 6(e), "three days", "3 days" or "additional time", and none amends Rule 5(b).
+  - **That establishes no 6(e) change from about 2022-10 to 2026-10. It establishes nothing from 2018-01-01 to then.**
+
+**Net result:**
+- The 2018 text of 6(e), which adds 3 days for (4) electronic service, is the last text an official Judiciary page shows.
+- An amendment between 2018 and 2022 can be neither confirmed nor ruled out from any official page.
+
+**What would unblock it:** either of these from a human.
+- A Lexis printout of V.R.C.P. 6, 12, 33, 34, 36 and 59 that shows its "current through" line.
+- The Judiciary's own answer to two questions: were Rules 6/12/33/34/36/59 amended after 2018-01-01, and does 6(e) still add 3 days for e-service?
