@@ -17,3 +17,8 @@ HANK b67 REPORT -- 2026-10-29
 5. C1b discipline: BYPASS-LOG touched only via push_retry (union/LF). The register is JSON, so it is not
    union-merged; the shrink check and re-seat guard it instead.
 Evidence: SAIRN-handoff-hank-b67.md
+
+CLOSE-OUT (stop order):
+- Nothing was in flight and no claim is held. The 7 untracked root files are not hank's and were left (U1).
+- Every open item is listed in handoff §8 with its exact next step: S4, J5, J6, J2, J4, S5, S6, S7, T1, A1, P1, R1, G1.
+- The final SHA equal to origin/main is in the close-out digest.

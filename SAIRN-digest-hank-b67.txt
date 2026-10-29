@@ -1,5 +1,5 @@
 HANK b67 DIGEST -- 2026-10-29 -- S3 triaged; VT source found; DC hard-blocked; J4/J5/J6 verbatim below
-CONTEXT 75.1% of 1,000,000 -- 751,002 tokens, measured.
+CONTEXT 75.9% of 1,000,000 -- 758,507 tokens, measured.
 STATUS: pushed via push_retry --loop; claim sairnlaw is released after landing.
 1. S3: of 41 sites, 30 inserts, 6 CAS-guarded (S2 fixed; 35 left), 4 low, 1 REAL: api/agent/poll.js:112 double-delivery.
 2. VT: source FOUND (LCJR Oct-2017 materials on legislature.vermont.gov; order eff. 2018-01-01). Seed next batch.
@@ -15,7 +15,7 @@ J4 (verbatim) -- every one is encoded EARLY:
 J5 (verbatim): "VT source FOUND: https://legislature.vermont.gov/Documents/2018/WorkGroups/Judicial Rules/October 23, 2017 Meeting/W~Erik Fitzpatrick~Materials for Judicial Rules Meeting on October 24, 2017 ~10-23-2017.pdf -- 'prescribed and promulgated effective January 1, 2018'; RULE 6. TIME at extracted line 189. Next: read Rules 6/12/33/34/36/59, check vtcourts.gov for later amendments, seed by the ND pattern."
 J6 (verbatim): "DC HARD BLOCKER: dccourts.gov returns 403 to every automated request (root, rules pages, the Rule 6 PDFs); no official alternate copy found. Unblock: a human downloads the Superior Court Civil Rules 6/12/33/34/36/59 from dccourts.gov and commits them with the retrieval date."
 DECISION-NEEDED (Michael): J6 DC files; J4 answers.
-NEXT: S4 poll.js fix; J5 VT seed (hank).
+NEXT (close-out, all in handoff §8): S4 poll.js; J5 VT seed; S6 fold no-op (hank). J6 DC files, J2/J4 counsel, A1, P1, R1 (Michael). S7, T1 (cc). G1 (cody/fourth).
 CHANGED: tools/server_stale_snapshot_scan.py, VT blocker doc, register, b67 docs.
 SQL-path: none new.
 EVIDENCE-path: SAIRN-handoff-hank-b67.md

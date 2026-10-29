@@ -71,3 +71,27 @@ This handoff was written before the report.
 
 ## 7. TRANSCRIPT
 C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-hank\58897a7d-eff3-428b-8fec-18274a858ae9.jsonl
+
+## 8. CLOSE-OUT (Michael's stop order, 2026-10-29) — every open item and its exact next step
+**No change was in flight.** No new work was started and no claim is held (`sairn_claim.py list` shows none for
+hank). The final SHA, checked against origin/main, is in the report.
+
+**Left uncommitted ON PURPOSE (U1, not hank's).** These 7 untracked root files predate this session, and committing
+them would publish material nobody has reviewed: `.claude/settings.json.bak`, `.claude/settings.json.hooks.bak`,
+`conflict_excerpt.txt`, `dir`, `full_conflict.txt`, `resolve_conflict.py`, `schema_snapshot_raw.json`.
+
+| # | open item | owner | exact next step |
+|---|---|---|---|
+| S4 | `api/agent/poll.js:112` can deliver one command twice | hank | in the PATCH URL append `'&status=eq.pending'`, send `Prefer: return=representation`, deliver only the commands the PATCH returned; add a test with two concurrent polls; register record |
+| J5 | Vermont not seeded | hank | open the LCJR PDF (handoff §2 URL), read RULE 6 (line 189) and Rules 12/33/34/36/59; check vtcourts.gov/attorneys/rules/promulgated for any VRCP 6/12/33/34/36/59 order after 2018-01-01; then the ND pattern: standards push → load → verify → seed push |
+| J6 | DC not seeded (hard blocker) | Michael | a human downloads Superior Court Civil Rules 6, 12, 33, 34, 36 and 59 from dccourts.gov and commits them under `sql/` or `docs/` with the retrieval date; then hank gates and seeds |
+| J2 | RI holiday reading needs confirmation | Michael / counsel | answer J4 question (7); if any answer differs, edit `JURISDICTION_COVERAGE.ri` and the calendar, reload, re-verify |
+| J4 | 7 lawyer's questions (verbatim in the digest) | Michael / counsel | send them; each answer changes a named row or calendar, all of them currently EARLY |
+| S5 | the 35 remaining S2 sites | file owners | the 30 inserts are not lost updates; read the 2 cross-table and 2 low sites only if their rows can be written concurrently |
+| S6 | push_retry's fold logs "derived-docs commit failed" with an empty error when nothing is staged | hank | in `_regenerate_and_fold`, return `nothing to fold` when `git diff --cached --quiet` succeeds; one selftest arm |
+| S7 | push_retry's ACCUMULATED shrink check false-positives on a LEGITIMATE upstream removal (known-red-suites 63→62, b66) | cc | compare our own commits' effect on the ledger, not the pre/post-rebase counts |
+| T1 | Tier A review of cdf71e894 (#1274) | cc | `python tools/tier_a_review_gate.py --discharge hank <opened_at> "<verdict>"` |
+| A1 | ALF audit-owner recovery SQL | Michael | run `sql/alf-audit-owner-recovery.sql` as-is; move the PIN from `.git\sairn-alf-audit-owner-pin` to a password manager and delete that file |
+| P1 | SAIRNcode trial gate is client-side | Michael | decide whether to add `license_keys.trial_ends_at` plus a server check in `api/sc-auth.js` login |
+| R1 | readiness state-ID presence for coordinator/scheduler | Michael | keep it, or suppress it for non-HR roles |
+| G1 | fx identity in the other clones | cody, fourth | confirm there is no local `user.*` and run `tools/committer_identity_check.py` |
