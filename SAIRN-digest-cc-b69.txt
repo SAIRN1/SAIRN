@@ -1,0 +1,20 @@
+DIGEST cc b69
+STATUS: all six items closed; landed through f0d9151c (+ this handoff). No override/skip/--force.
+ITEM 4: start-of-batch: presence 4/4, install regression 37/37, cc tools OWNER_LINE; owner map had drifted (check exit 1) -> regenerated.
+ITEM 1: watchdog OPERATOR = hank (batch start, same findings file); recorded in the tool header + TOOLING-INVENTORY entry; owner stays cc.
+ITEM 2: 23 reads -- owners by all-time app claim history (blame only found a refactor). cc's 3 DECLARED from design commits:
+  sd_crm (a4f0a1a0), dnt_rollup (af5aeddf), exec_context (562d1ded); 38/38 clean, 4 wrong declarations all caught; Tier A obligation -> hank.
+  20 routed: hank 6, fourth 6, cody 8 (docs/2026-10-29-cc-b69-field-scope-routing.md); rules file added to cody/fourth overrides.
+ITEM 3: AST audit of 69 cc-owned files: 54 text-mode writes; 1 real -- logged_exec log CRLF on Windows -> LF-only append_line(), fixture, ablation red.
+ITEM 5: block-log sanitiser = H1's per-character formula (last diff); PARITY arm. Live: fresh row LF + byte-identical under H1's formula; 35/35 rows 5 cols.
+DECISION-NEEDED: none.
+UNVERIFIED: live blocks for the 3 new field-scope rules (no stonedesk/dental audit credentials or fixtures yet).
+CHANGED: tools/{field_scope_rules.json,builder_auditor_deny_hook.py,logged_exec.py,sairn_watchdog.py,tooling_inventory.py},
+  docs/{2026-10-29-cc-b69-field-scope-routing.md,sairn-path-manifest.json,tier-a-reviews.json,tool-owner-map.json,TOOLING-INVENTORY.md}.
+SQL: none.
+EVIDENCE-path: SAIRN-handoff-cc-b69.md, SAIRN-report-cc-b69.txt, docs/2026-10-29-cc-b69-field-scope-routing.md
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\52164776-0b08-422d-94e1-7a56daf3eaaa.jsonl
+OPEN: hank/fourth/cody declare their routed reads; hank reviews the 3 new rules + runs the watchdog at batch start. FOR H1: #1756 fixed in cc b67.
+NEXT: hank -- alf_mar declaration first; review obligation on sd_crm/dnt_rollup/exec_context.
+CONTEXT 65.6% of 1,000,000 -- 656,170 tokens, measured.
+END-OF-REPORT

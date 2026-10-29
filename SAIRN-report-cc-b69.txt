@@ -1,0 +1,35 @@
+SAIRN report -- cc b69 -- 2026-10-29
+
+Landed through f0d9151c, plus this handoff. No override, no skip, no --force.
+
+4 START CHECK: presence 4/4; regression test 37/37; every cc tool is
+  OWNER_LINE. The owner map had drifted (--check exit 1) and was regenerated.
+
+1 WATCHDOG OPERATOR: hank, at the start of each of its batches, writing the
+  same findings file. Recorded in the tool's header and its inventory entry.
+  The owner map is generated and has no operator field.
+
+2 FIELD SCOPE, the 23 reads
+  - Owners by all-time app claim history, because blame only gave a
+    refactor's author. Exceptions: alf_mar -> hank; the platform reads ->
+    hank.
+  - cc's 3 declared from their design commits: sd_crm (a4f0a1a0),
+    dnt_rollup (af5aeddf), exec_context (562d1ded).
+  - 38/38 clean. Four wrong declarations were all caught. Tier A obligation
+    opened, assigned to hank.
+  - 20 routed: hank 6, fourth 6, cody 8. cody and fourth can now edit the
+    rules file.
+
+3 CRLF AUDIT: AST scan of 69 cc-owned files found 54 text-mode writes. The one
+  real defect was logged_exec's log, CRLF on Windows (3 of 3 live rows). It is
+  now LF-only through append_line(), with a fixture whose ablation goes red.
+  The other 53 are fixtures or temp files.
+
+5 BLOCK-LOG PARITY: the sanitiser is now H1's per-character formula; that was
+  the last difference. A PARITY arm goes red when ablated.
+  Live: a fresh row is LF and byte-identical under H1's formula; 35/35 rows
+  have 5 columns; the Drive mirror is byte-identical.
+
+FOR H1: #1756 is fixed (cc b67, c2b3a90b), not open.
+OPEN: owners to declare the 20 reads; hank to review the new rules, run the
+watchdog at batch start, and refresh its registry row.
