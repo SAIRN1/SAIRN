@@ -6,6 +6,16 @@ It FLAGS and writes a findings file. It fixes nothing and decides nothing.
 Built by cc in b67 on Michael's instruction: "You build it, you don't operate
 it." It is not wired into any hook, gate or schedule.
 
+SCHEDULED (cc b71, Michael's instruction): Windows Task Scheduler task
+"SAIRN-watchdog" runs it every 15 minutes through
+~/SAIRN-SESSION-LOCKS/watchdog-run.cmd, which passes
+--repo "G:\\My Drive\\SAIRN-status". It therefore reads each agent's latest
+DRIVE handoff and digest, and takes the landing time from the file mtime
+because there is no git there. The task's "Last Result" is THIS tool's exit
+code: 1 means findings were written, not that the run failed. Liveness is the
+findings file's own generated_utc. It never messages, pauses or touches an
+agent.
+
 OPERATOR: hank (Michael's decision, 2026-10-29, cc b69 item 1). hank runs
 `python tools/sairn_watchdog.py` at the START of each of its own batches,
 before touching shared config. Findings land in the same file every time,

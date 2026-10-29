@@ -202,3 +202,51 @@ test probes.
 **Not tagged, because they are not fixes:**
 - the H1/H2 routed index rows (item 4);
 - the #909 rule-name list (item 3).
+
+---
+
+## C5. A CHECK WITH NO OPERATOR, OR A WORKSPACE WITH NO REAPER (cc b71)
+
+**Phase / sub-phase / cause:** operations -> scheduling / workspace hygiene
+-> **due to** a tool or workspace being created by one action, with no second
+action responsible for running it or removing it. It stays dormant or stale,
+and nothing reports that.
+
+**Measured occurrences:**
+- **`tools/sairn_watchdog.py`.**
+  - Built in cc b67 "not operated" by instruction.
+  - It was first run by hand in cc b68.
+  - hank was named operator in cc b69, at batch start only.
+  - Between those points, its REGISTRY-BEHIND findings (hank b61 vs b63, then
+    b65 vs b66) sat unflagged unless somebody started a batch.
+  - Fixed cc b71: Windows Task Scheduler task `SAIRN-watchdog`, every 15
+    minutes, reading the Drive handoffs. The first scheduled run wrote hank
+    b65 vs b66 at 12:54:26Z.
+- **Three Claude Code agent worktrees under `Documents/SAIRN/.claude/worktrees/`.**
+  - They were still registered in `git worktree list` long after their
+    sessions ended, and each `.git` link file read as a stray `.git` in the
+    tree.
+  - Fixed cc b71, on Michael's choice: `git worktree remove` for the two
+    clean ones (`sairn-precommit-lessons-and-tools`, and
+    `stonedesk-chamfered-corners` with --force for `__pycache__` only). Their
+    branches are kept.
+  - `agent-ad8f80cc19dee3bb4` is KEPT: it holds an uncommitted `api/claude.js`
+    change.
+
+**Cause tags for this batch's fixes (cc b71, lifecycle phase -> sub-phase -> cause):**
+
+| Fix | Tag |
+|---|---|
+| Watchdog scheduled every 15 min | operations -> scheduling -> a check with no operator on a cadence (this class) |
+| Two stale agent worktrees removed | operations -> workspace hygiene -> worktrees created per agent session, no reaper (this class) |
+
+**Not fixed this batch, stated:** `ctxmeter.py`'s false-floor bug. No file of
+that name exists in the four builder clones, `~/.claude`, the session
+scratchpads, the Drive status folder or a 4-deep home search. Michael chose to
+skip it.
+
+**Mitigation, and what it does not cover:**
+- The scheduled task runs only while the user is logged on, because the
+  Drive mount must be present.
+- A worktree with uncommitted work is never reaped automatically. That is a
+  human decision every time.
