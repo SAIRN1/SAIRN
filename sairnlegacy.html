@@ -1501,6 +1501,11 @@ var pyInvoiceId=null,acCompleteId=null;
 var legSession=null;
 
 function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+// A record value passed as an argument from an inline handler: a JS string
+// literal, then HTML-escaped, because the attribute is HTML-decoded BEFORE the
+// JS runs -- so H() alone, or a raw value between ' quotes, lets a stored id
+// close the string (H1 #1734 / hank b69 H1x).
+function JA(s){return H(JSON.stringify(String(s==null?'':s)));}
 // Added (2026-08-09 audit): Tribute external_link is free text typed by
 // staff, rendered as a real <a href>. H() HTML-escapes it but places no
 // restriction on scheme -- a "javascript:..." value contains none of the
@@ -2603,7 +2608,7 @@ function rCases(){
   tb.innerHTML=filtered.length?filtered.slice().reverse().map(function(c){
     return '<tr><td>'+H(c.case_number)+'</td><td>'+H(c.decedent_name)+'</td><td>'+H(c.family_contact_name||'--')+'</td><td>'+H(c.assigned_director||'--')+'</td>'+
       '<td>'+(c.service_date?fdate(c.service_date):'--')+'</td><td><span class="badge '+(statusColors[c.status]||'bx')+'">'+H(c.status)+'</span></td>'+
-      '<td><button class="btn bo bs" onclick="editCase(\''+c.id+'\')">Edit</button></td></tr>';
+      '<td><button class="btn bo bs" onclick="editCase('+JA(c.id)+')">Edit</button></td></tr>';
   }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No cases found</td></tr>';
 }
 
@@ -2670,8 +2675,8 @@ function rDispatches(){
     var nextStatus={Dispatched:'En Route','En Route':'On Scene','On Scene':'Completed'}[d.status];
     return '<tr><td>'+H(caseLabel(d.case_id))+'</td><td>'+H(d.vehicle||'--')+'</td><td>'+H(d.staff_assigned||'--')+'</td><td>'+H(d.pickup_location||'--')+'</td>'+
       '<td><span class="badge '+(statusColors[d.status]||'bx')+'">'+H(d.status)+'</span></td><td>'+locText+'</td>'+
-      '<td>'+(nextStatus?'<button class="btn bo bs" onclick="setDispatchStatus(\''+d.id+'\',\''+nextStatus+'\')">Mark '+nextStatus+'</button> ':'')+
-      '<button class="btn bo bs" onclick="shareDispatchLocation(\''+d.id+'\')">Share Location</button></td></tr>';
+      '<td>'+(nextStatus?'<button class="btn bo bs" onclick="setDispatchStatus('+JA(d.id)+',\''+nextStatus+'\')">Mark '+nextStatus+'</button> ':'')+
+      '<button class="btn bo bs" onclick="shareDispatchLocation('+JA(d.id)+')">Share Location</button></td></tr>';
   }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No dispatches yet</td></tr>';
 }
 async function addCustodyEntry(){
@@ -2900,7 +2905,7 @@ function rMerch(){
   $('mc-catalog-list').innerHTML=catalog.length?catalog.map(function(m){
     var myUnits=units.filter(function(u){return u.merch_id===m.id;});
     return '<div class="card"><div class="ch"><span class="ct">'+H(m.model_name)+'</span><span class="badge bx" style="margin-left:8px">'+H(m.category)+'</span>'+
-      '<span style="margin-left:auto;display:flex;gap:8px"><button class="btn bo bs" onclick="editMerch(\''+m.id+'\')">Edit</button><button class="btn bo bs" onclick="openUnitModal(\''+m.id+'\')">+ Add Unit</button></span></div>'+
+      '<span style="margin-left:auto;display:flex;gap:8px"><button class="btn bo bs" onclick="editMerch('+JA(m.id)+')">Edit</button><button class="btn bo bs" onclick="openUnitModal('+JA(m.id)+')">+ Add Unit</button></span></div>'+
       '<div class="cb">'+
       '<div class="srow"><span class="slbl">SKU</span><span class="sval">'+H(m.sku||'--')+'</span></div>'+
       '<div class="srow"><span class="slbl">Cost / Retail</span><span class="sval">'+fmt(m.cost)+' / '+fmt(m.retail)+'</span></div>'+
@@ -2908,8 +2913,8 @@ function rMerch(){
         myUnits.map(function(u){
           return '<tr><td>'+H(u.unit_serial)+'</td><td><span class="badge '+(statusColors[u.status]||'bx')+'">'+H(u.status)+'</span></td>'+
             '<td>'+(u.reserved_for_case_id?H(caseLabel(u.reserved_for_case_id)):'--')+'</td>'+
-            '<td>'+(u.status==='Available'?'<button class="btn bp bs" onclick="openReserveModal(\''+u.id+'\')">Reserve</button>':'')+
-              (u.status==='Reserved'?'<button class="btn bo bs" onclick="releaseUnit(\''+u.id+'\')">Release</button> <button class="btn bp bs" onclick="markUnitSold(\''+u.id+'\')">Mark Sold</button>':'')+
+            '<td>'+(u.status==='Available'?'<button class="btn bp bs" onclick="openReserveModal('+JA(u.id)+')">Reserve</button>':'')+
+              (u.status==='Reserved'?'<button class="btn bo bs" onclick="releaseUnit('+JA(u.id)+')">Release</button> <button class="btn bp bs" onclick="markUnitSold('+JA(u.id)+')">Mark Sold</button>':'')+
               '</td></tr>';
         }).join('')+'</tbody></table></div>':'<div style="color:var(--muted);font-size:12px;margin-top:10px">No physical units logged yet for this model.</div>')+
       '</div></div>';
@@ -2978,8 +2983,8 @@ function rDocs(){
   var tb=$('dctbody');
   tb.innerHTML=list.length?list.slice().reverse().map(function(d){
     var actions='';
-    if(d.status==='Draft')actions='<button class="btn bo bs" onclick="sendDoc(\''+d.id+'\')">Send</button>';
-    else if(d.status==='Sent')actions='<button class="btn bp bs" onclick="openDocSignModal(\''+d.id+'\')">Record Signature</button>';
+    if(d.status==='Draft')actions='<button class="btn bo bs" onclick="sendDoc('+JA(d.id)+')">Send</button>';
+    else if(d.status==='Sent')actions='<button class="btn bp bs" onclick="openDocSignModal('+JA(d.id)+')">Record Signature</button>';
     return '<tr><td>'+H(caseLabel(d.case_id))+'</td><td>'+H(d.doc_type)+'</td><td><span class="badge '+(statusColors[d.status]||'bx')+'">'+H(d.status)+'</span></td>'+
       '<td>'+H(d.esign_name||'--')+'</td><td>'+actions+'</td></tr>';
   }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">No documents yet</td></tr>';
@@ -3050,7 +3055,7 @@ function rPermits(){
   tb.innerHTML=list.length?list.slice().reverse().map(function(r){
     return '<tr><td>'+H(caseLabel(r.case_id))+'</td><td>'+H(r.decedent_full_name)+'</td><td>'+(r.date_of_death?fdate(r.date_of_death):'--')+'</td>'+
       '<td>'+H(r.permit_type)+'</td><td><span class="badge '+(statusColors[r.permit_status]||'bx')+'">'+H(r.permit_status)+'</span></td>'+
-      '<td><button class="btn bo bs" onclick="editPermit(\''+r.id+'\')">Edit</button></td></tr>';
+      '<td><button class="btn bo bs" onclick="editPermit('+JA(r.id)+')">Edit</button></td></tr>';
   }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No death records yet</td></tr>';
 }
 
@@ -3185,7 +3190,7 @@ function rScheduling(){
     return '<tr><td>'+H(facilityLabel(b.facility_id))+'</td><td>'+H(b.case_id?caseLabel(b.case_id):'--')+'</td>'+
       '<td>'+fdatetime(b.start_time)+'</td><td>'+fdatetime(b.end_time)+'</td><td>'+H(b.purpose||'--')+'</td>'+
       '<td><span class="badge '+(statusColors[b.status]||'bx')+'">'+H(b.status)+'</span></td>'+
-      '<td>'+(b.status==='Scheduled'?'<button class="btn bo bs" onclick="cancelBooking(\''+b.id+'\')">Cancel</button>':'--')+'</td></tr>';
+      '<td>'+(b.status==='Scheduled'?'<button class="btn bo bs" onclick="cancelBooking('+JA(b.id)+')">Cancel</button>':'--')+'</td></tr>';
   }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No bookings yet</td></tr>';
   $('sc-facility-list').innerHTML=fl.length?fl.map(function(f){
     return '<div class="srow"><span class="slbl">'+H(f.name)+'</span><span class="badge bx">'+H(f.type)+'</span></div>';
@@ -3235,7 +3240,7 @@ function rCemetery(){
     return '<tr><td>'+H(p.section)+'</td><td>'+H(p.row||'--')+'</td><td>'+H(p.plot_number)+'</td>'+
       '<td><span class="badge '+(statusColors[p.status]||'bx')+'">'+H(p.status)+'</span></td>'+
       '<td>'+H(p.owner_name||'--')+'</td><td>'+H(p.deed_number||'--')+'</td><td>'+H(p.case_id?caseLabel(p.case_id):'--')+'</td>'+
-      '<td><button class="btn bo bs" onclick="editPlot(\''+p.id+'\')">Edit</button></td></tr>';
+      '<td><button class="btn bo bs" onclick="editPlot('+JA(p.id)+')">Edit</button></td></tr>';
   }).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No plots found</td></tr>';
 }
 
@@ -3389,7 +3394,7 @@ function rCremation(){
   tb.innerHTML=list.length?list.slice().reverse().map(function(c){
     return '<tr><td>'+H(caseLabel(c.case_id))+'</td><td>'+H(c.crematory_name||'--')+'</td><td>'+(c.scheduled_datetime?fdatetime(c.scheduled_datetime):'--')+'</td>'+
       '<td><span class="badge '+(statusColors[c.status]||'bx')+'">'+H(c.status)+'</span></td><td>'+H(c.disposition_type||'--')+'</td>'+
-      '<td><button class="btn bo bs" onclick="editCremation(\''+c.id+'\')">Edit</button> <button class="btn bo bs" onclick="logCremationHandoff(\''+c.case_id+'\')">Log Handoff</button></td></tr>';
+      '<td><button class="btn bo bs" onclick="editCremation('+JA(c.id)+')">Edit</button> <button class="btn bo bs" onclick="logCremationHandoff('+JA(c.case_id)+')">Log Handoff</button></td></tr>';
   }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No cremation records yet</td></tr>';
   legCsRender();
 }
@@ -3454,7 +3459,7 @@ function rPreneed(){
   pntb.innerHTML=pn.length?pn.slice().reverse().map(function(p){
     return '<tr><td>'+H(p.client_name)+'</td><td>'+H(p.plan_type)+'</td><td>'+fmt(p.total_price)+'</td><td>'+fmt(p.amount_paid)+'</td>'+
       '<td><span class="badge '+(statusColors[p.status]||'bx')+'">'+H(p.status)+'</span></td><td>'+(p.linked_case_id?H(caseLabel(p.linked_case_id)):'--')+'</td>'+
-      '<td><button class="btn bo bs" onclick="editPreneed(\''+p.id+'\')">Edit</button></td></tr>';
+      '<td><button class="btn bo bs" onclick="editPreneed('+JA(p.id)+')">Edit</button></td></tr>';
   }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No pre-need plans yet</td></tr>';
   var assignColors={'Not Assigned':'bx',Assigned:'bw',Paid:'bg'};
   var instb=$('instbody');
@@ -3469,7 +3474,7 @@ function rPreneed(){
     var next=nextAssign[i.assignment_status];
     return '<tr><td>'+H(caseLabel(i.case_id))+'</td><td>'+H(i.policy_number)+'</td><td>'+H(i.insurer_name||'--')+'</td><td>'+fmt(i.face_value)+'</td>'+
       '<td><span class="badge '+(assignColors[i.assignment_status]||'bx')+'">'+H(i.assignment_status)+'</span></td>'+
-      '<td>'+(next?'<button class="btn bo bs" onclick="advanceInsuranceStatus(\''+i.id+'\')">Mark '+next+'</button>':'--')+'</td></tr>';
+      '<td>'+(next?'<button class="btn bo bs" onclick="advanceInsuranceStatus('+JA(i.id)+')">Mark '+next+'</button>':'--')+'</td></tr>';
   }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No insurance policies yet</td></tr>';
 }
 async function advanceInsuranceStatus(id){
@@ -4186,14 +4191,14 @@ function rInvoicing(){
     var total=invoiceTotal(i),paid=invoicePaid(i),balance=total-paid;
     return '<tr><td>'+H(i.invoice_number)+'</td><td>'+H(caseLabel(i.case_id))+'</td><td>'+fmt(total)+'</td><td>'+fmt(balance)+'</td>'+
       '<td><span class="badge '+(statusColors[i.status]||'bx')+'">'+H(i.status)+'</span></td>'+
-      '<td><button class="btn bo bs" onclick="openStatement(\''+i.id+'\')">Statement</button>'+
-      (balance>0?' <button class="btn bp bs" onclick="openPaymentModal(\''+i.id+'\')">Record Payment</button>':'')+'</td></tr>';
+      '<td><button class="btn bo bs" onclick="openStatement('+JA(i.id)+')">Statement</button>'+
+      (balance>0?' <button class="btn bp bs" onclick="openPaymentModal('+JA(i.id)+')">Record Payment</button>':'')+'</td></tr>';
   }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No invoices yet</td></tr>';
   var gtb=$('gpltbody');
   gtb.innerHTML=gplServices().map(function(s){
-    return '<tr><td>'+H(s.category)+'</td><td><input id="gplprice-'+s.id+'" aria-label="Price for '+H(s.category)+'" type="number" value="'+s.price+'" style="width:110px" onchange="saveGplServicePrice(\''+s.id+'\')"></td>'+
+    return '<tr><td>'+H(s.category)+'</td><td><input id="gplprice-'+s.id+'" aria-label="Price for '+H(s.category)+'" type="number" value="'+s.price+'" style="width:110px" onchange="saveGplServicePrice('+JA(s.id)+')"></td>'+
       '<td><label class="chk" style="padding:0"><input type="checkbox" id="gplnd-'+s.id+'"'+(s.non_declinable===true?' checked':'')+
-      ' onchange="saveGplNonDeclinable(\''+s.id+'\')"> <span style="font-size:12px;color:var(--muted)">cannot be declined</span></label></td></tr>';
+      ' onchange="saveGplNonDeclinable('+JA(s.id)+')"> <span style="font-size:12px;color:var(--muted)">cannot be declined</span></label></td></tr>';
   }).join('');
   rGplNonDeclinableStatus();
   legRenderPredictiveInsights();
@@ -4321,7 +4326,7 @@ function rObituary(){
   var tb=$('obtbody');
   tb.innerHTML=list.length?list.slice().reverse().map(function(o){
     return '<tr><td>'+H(caseLabel(o.case_id))+'</td><td><span class="badge '+(statusColors[o.status]||'bx')+'">'+H(o.status)+'</span></td>'+
-      '<td><button class="btn bo bs" onclick="obOpen(\''+o.case_id+'\')">Open</button></td></tr>';
+      '<td><button class="btn bo bs" onclick="obOpen('+JA(o.case_id)+')">Open</button></td></tr>';
   }).join(''):'<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:24px;">No obituaries yet</td></tr>';
 }
 function obOpen(caseId){$('obcase').value=caseId;rObituaryCaseChange();}
@@ -4555,7 +4560,7 @@ function rAftercare(){
     return '<tr><td>'+H(caseLabel(a.case_id))+'</td><td>'+H(a.checkin_type)+'</td>'+
       '<td'+(overdue?' style="color:var(--danger);font-weight:700"':'')+'>'+fdate(a.due_date)+(overdue?' &#9888;':'')+'</td>'+
       '<td><span class="badge '+(statusColors[a.status]||'bx')+'">'+H(a.status)+'</span></td><td>'+H(a.notes||'--')+'</td>'+
-      '<td>'+(a.status==='Pending'?'<button class="btn bp bs" onclick="openAftercareNoteModal(\''+a.id+'\')">Mark Complete</button>':'--')+'</td></tr>';
+      '<td>'+(a.status==='Pending'?'<button class="btn bp bs" onclick="openAftercareNoteModal('+JA(a.id)+')">Mark Complete</button>':'--')+'</td></tr>';
   }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No check-ins scheduled yet</td></tr>';
 }
 
@@ -4610,7 +4615,7 @@ function rProcession(){
     }
     return '<tr><td>'+H(caseLabel(p.case_id))+'</td><td>'+H(p.lead_vehicle_label)+'</td>'+
       '<td><span class="badge '+(statusColors[p.status]||'bx')+'">'+H(p.status)+'</span></td><td>'+locText+'</td>'+
-      '<td>'+(p.status==='Active'?'<button class="btn bo bs" onclick="shareProcessionLocation(\''+p.id+'\')">Share Location</button> <button class="btn bo bs" onclick="endProcession(\''+p.id+'\')">End</button>':'--')+'</td></tr>';
+      '<td>'+(p.status==='Active'?'<button class="btn bo bs" onclick="shareProcessionLocation('+JA(p.id)+')">Share Location</button> <button class="btn bo bs" onclick="endProcession('+JA(p.id)+')">End</button>':'--')+'</td></tr>';
   }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">No procession sessions yet</td></tr>';
 }
 
@@ -4736,7 +4741,7 @@ function rCerts(){
     var s=certStatus(c.expiration_date);
     return '<tr><td>'+H(c.staff_name)+'</td><td>'+H(c.cert_type)+'</td><td>'+H(c.license_number||'--')+'</td><td>'+H(c.issuing_state||'--')+'</td>'+
       '<td>'+(c.expiration_date?fdate(c.expiration_date):'--')+'</td><td><span class="badge '+s.cls+'">'+s.label+'</span></td>'+
-      '<td><button class="btn bo bs" onclick="editCert(\''+c.id+'\')">Edit</button></td></tr>';
+      '<td><button class="btn bo bs" onclick="editCert('+JA(c.id)+')">Edit</button></td></tr>';
   }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No certifications on file yet</td></tr>';
 }
 
@@ -4781,7 +4786,7 @@ function rPets(){
   tb.innerHTML=list.length?list.slice().reverse().map(function(p){
     return '<tr><td>'+H(p.pet_name)+'</td><td>'+H(p.species||'--')+'</td><td>'+H(p.owner_name||'--')+'</td><td>'+H(p.service_type)+'</td>'+
       '<td><span class="badge '+(statusColors[p.status]||'bx')+'">'+H(p.status)+'</span></td>'+
-      '<td><button class="btn bo bs" onclick="editPet(\''+p.id+'\')">Edit</button></td></tr>';
+      '<td><button class="btn bo bs" onclick="editPet('+JA(p.id)+')">Edit</button></td></tr>';
   }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No pet cases yet</td></tr>';
 }
 
@@ -4845,7 +4850,7 @@ function rKeepsakes(){
     var nextStatus={Ordered:'Received',Received:'Delivered'}[o.status];
     return '<tr><td>'+H(caseLabel(o.case_id))+'</td><td>'+H(keepsakeLabel(o.item_id))+'</td><td>'+H(String(o.quantity==null?'':o.quantity))+'</td>'+
       '<td><span class="badge '+(statusColors[o.status]||'bx')+'">'+H(o.status)+'</span></td><td>'+fdate(o.order_date)+'</td>'+
-      '<td>'+(nextStatus?'<button class="btn bo bs" onclick="advanceKeepsakeOrder(\''+o.id+'\')">Mark '+nextStatus+'</button>':'--')+'</td></tr>';
+      '<td>'+(nextStatus?'<button class="btn bo bs" onclick="advanceKeepsakeOrder('+JA(o.id)+')">Mark '+nextStatus+'</button>':'--')+'</td></tr>';
   }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No orders yet</td></tr>';
 }
 
@@ -4936,7 +4941,7 @@ function rMonument(){
   tb.innerHTML=list.length?list.slice().reverse().map(function(m){
     return '<tr><td>'+H(caseLabel(m.case_id))+'</td><td>'+H(m.vendor_name||'--')+'</td><td>'+H(m.monument_type)+'</td><td>'+H(m.inscription_name||'--')+'</td>'+
       '<td><span class="badge '+(statusColors[m.status]||'bx')+'">'+H(m.status)+'</span></td>'+
-      '<td><button class="btn bo bs" onclick="editMonument(\''+m.id+'\')">Edit</button></td></tr>';
+      '<td><button class="btn bo bs" onclick="editMonument('+JA(m.id)+')">Edit</button></td></tr>';
   }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No monument orders yet</td></tr>';
 }
 
@@ -5009,7 +5014,7 @@ function rFlorist(){
     var f=fl.find(function(x){return x.id===o.florist_id;});
     return '<tr><td>'+H(caseLabel(o.case_id))+'</td><td>'+H(f?f.name:'--')+'</td><td>'+H(o.description||'--')+'</td>'+
       '<td>'+fmt(o.amount)+'</td><td>'+fmt(o.commission_amount)+'</td><td><span class="badge '+(statusColors[o.status]||'bx')+'">'+H(o.status)+'</span></td>'+
-      '<td>'+(o.status==='Ordered'?'<button class="btn bo bs" onclick="markFloristDelivered(\''+o.id+'\')">Mark Delivered</button>':'--')+'</td></tr>';
+      '<td>'+(o.status==='Ordered'?'<button class="btn bo bs" onclick="markFloristDelivered('+JA(o.id)+')">Mark Delivered</button>':'--')+'</td></tr>';
   }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No florist orders yet</td></tr>';
 }
 
@@ -5073,7 +5078,7 @@ function rCaterer(){
     var nextStatus={Booked:'Confirmed',Confirmed:'Completed'}[o.status];
     return '<tr><td>'+H(caseLabel(o.case_id))+'</td><td>'+H(c?c.name:'--')+'</td><td>'+H(o.event_description||'--')+'</td>'+
       '<td>'+(o.guest_count||'--')+'</td><td>'+fmt(o.amount)+'</td><td><span class="badge '+(statusColors[o.status]||'bx')+'">'+H(o.status)+'</span></td>'+
-      '<td>'+(nextStatus?'<button class="btn bo bs" onclick="advanceCatererOrder(\''+o.id+'\')">Mark '+nextStatus+'</button>':'--')+'</td></tr>';
+      '<td>'+(nextStatus?'<button class="btn bo bs" onclick="advanceCatererOrder('+JA(o.id)+')">Mark '+nextStatus+'</button>':'--')+'</td></tr>';
   }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No catering bookings yet</td></tr>';
 }
 
@@ -5156,7 +5161,7 @@ function rClergy(){
     var nextStatus={Requested:'Confirmed',Confirmed:'Completed'}[b.status];
     return '<tr><td>'+H(caseLabel(b.case_id))+'</td><td>'+H(c?c.name:'--')+'</td><td>'+H(b.event_type)+'</td>'+
       '<td>'+fdatetime(b.start_time)+'</td><td>'+fdatetime(b.end_time)+'</td><td><span class="badge '+(statusColors[b.status]||'bx')+'">'+H(b.status)+'</span></td>'+
-      '<td>'+(nextStatus?'<button class="btn bo bs" onclick="advanceClergyBooking(\''+b.id+'\')">Mark '+nextStatus+'</button>':'--')+'</td></tr>';
+      '<td>'+(nextStatus?'<button class="btn bo bs" onclick="advanceClergyBooking('+JA(b.id)+')">Mark '+nextStatus+'</button>':'--')+'</td></tr>';
   }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No clergy bookings yet</td></tr>';
 }
 
@@ -5240,7 +5245,7 @@ function rLivery(){
     var nextStatus={Requested:'Confirmed',Confirmed:'Completed'}[b.status];
     return '<tr><td>'+H(caseLabel(b.case_id))+'</td><td>'+H(b.source)+'</td><td>'+label+'</td>'+
       '<td>'+(b.booking_date?fdate(b.booking_date):'--')+'</td><td><span class="badge '+(statusColors[b.status]||'bx')+'">'+H(b.status)+'</span></td>'+
-      '<td>'+(nextStatus?'<button class="btn bo bs" onclick="advanceLiveryBooking(\''+b.id+'\')">Mark '+nextStatus+'</button>':'--')+'</td></tr>';
+      '<td>'+(nextStatus?'<button class="btn bo bs" onclick="advanceLiveryBooking('+JA(b.id)+')">Mark '+nextStatus+'</button>':'--')+'</td></tr>';
   }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No transportation bookings yet</td></tr>';
 }
 
@@ -5321,7 +5326,7 @@ function legRenderAccess(){
         var active=e.active!==false;
         // &#39; rather than an escaped quote: the browser decodes the entity
         // before evaluating the attribute, so this needs no backslash.
-        var idArg='&#39;'+H(e.employee_id)+'&#39;';
+        var idArg=JA(e.employee_id);
         return '<tr><td>'+H(e.employee_id)+(e.employee_id===me?' <span class="badge bx">you</span>':'')+'</td>'+
           '<td>'+H(e.display_name||'--')+'</td><td>'+H(e.role||'')+'</td>'+
           '<td>'+(active?'<span class="badge bg">active</span>':'<span class="badge br">inactive</span>')+'</td>'+
