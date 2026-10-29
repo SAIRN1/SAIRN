@@ -4533,6 +4533,17 @@
       "status": "released",
       "released_at": "2026-10-29T11:43:17Z",
       "files": null
+    },
+    {
+      "id": "cody-1793274865",
+      "session": "cody",
+      "subject": "sairnmechanical",
+      "task": "cody b63 sd-data verifySessionToken pre-gate mechBackup tier a gaps routed entries",
+      "claimed_at": "2026-10-29T11:54:25Z",
+      "claimed_at_epoch": 1793274865.085659,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
