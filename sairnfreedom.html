@@ -2604,6 +2604,17 @@ function sfLicenceGuard(k) {
   var next = sfLicFingerprint(k);
   var prev = null;
   try { prev = localStorage.getItem(SF_LIC_FP); } catch (e) { return true; }
+  // A device from before the fingerprint still has the key sfUnlock() stored
+  // under K_LIC, so it is NOT unknown whose data this is (cc b70 gap, cody b65).
+  // Only when no readable key is stored either is the adopt below a guess.
+  // Read directly rather than through ld()/K_LIC ('sf_license_key', which st()
+  // stores as JSON) so the guard stays self-contained, as the suites lift it.
+  if (!prev) {
+    var oldKey = null;
+    try { oldKey = JSON.parse(localStorage.getItem('sf_license_key')); } catch (e) {}
+    if (typeof oldKey === 'string' && oldKey.trim()) prev = sfLicFingerprint(oldKey.trim());
+    if (prev === next) { try { localStorage.setItem(SF_LIC_FP, next); } catch (e) {} return true; }
+  }
   if (!prev) { try { localStorage.setItem(SF_LIC_FP, next); } catch (e) {} return true; }
   if (prev === next) return true;
 

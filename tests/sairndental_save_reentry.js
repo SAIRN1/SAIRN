@@ -129,7 +129,7 @@ function world(answer) {
     dntLastErrText: () => '', dntWriteFailText: (r, f) => f,
     st: (k, list) => { box.rows = list; return true; }
   });
-  for (const s of [
+  const SPECS = [
     {
       id: 'PV', name: 'addProvider',
       src: H.optional(html, /var dntProviderSaving\s*=\s*false;/) + '\n' + L('async function addProvider(){'),
@@ -153,8 +153,32 @@ function world(answer) {
       given: (write, box) => Object.assign(common(write, box), { cvEditId: null, coverageRules: () => box.rows.slice() }),
       press: (ctx) => ctx.saveCoverageRule()
     }
-  ]) {
+  ];
+  for (const s of SPECS) {
     await H.drive({ check, id: s.id, name: s.name, mk: H.mkFor(s), ok: { id: 'x' }, refused: null });
+  }
+
+  // 4. THE HOLD MUST BE RELEASED BY THE SAME try THAT TAKES IT (cc b73, LOW).
+  // dntCredWriting++ sat before the `try`, with rCredentials(null) between
+  // them, so a render that throws leaked the hold -- and since b65's
+  // one-at-a-time guard reads that hold, every later add was refused until a
+  // reload. The CD3 throw arm throws from the write, inside the try, so it
+  // never reached this line.
+  console.log('4. addCredential: a render that throws does not leave the hold taken');
+  {
+    const cd = SPECS.find((s) => s.id === 'CD');
+    let thrown = false;
+    const spec = Object.assign({}, cd, {
+      given: (write, box) => Object.assign(cd.given(write, box), {
+        rCredentials: () => { if (!thrown) { thrown = true; throw new Error('render failed'); } }
+      })
+    });
+    const w = H.mkFor(spec)(() => Promise.resolve({ id: 'x' }));
+    w.refill(); await Promise.resolve().then(() => w.press()).catch(() => {}); await H.settle();
+    w.refill(); await Promise.resolve().then(() => w.press()).catch(() => {}); await H.settle();
+    check('CD4 addCredential: after the pending-render throws once, the next add is accepted and sent',
+      thrown && w.writes() === 1 && !w.toasts().some((t) => /Still saving/.test(t)),
+      JSON.stringify({ thrown, writes: w.writes(), toasts: w.toasts() }));
   }
   finished = true;
   console.log('\n' + (fail ? 'FAILED' : 'ok') + '  sairndental save re-entry: ' + pass + ' passed, ' + fail + ' failed');

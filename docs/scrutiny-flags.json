@@ -2298,6 +2298,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sd_data_mech_write_unconfirmed.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "if (!/resolution=(merge|ignore)-duplicates/.test(prefer)) {"
+    }
+   ],
+   "sha": "1df6a93ba28a888e70eea8ede7d3e91f7e2774f4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/b21-bridge-unknown-action.test.js",
    "class": "test file",
    "level": "CHANGE",

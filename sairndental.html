@@ -3101,9 +3101,12 @@ async function addCredential(){
   // it says so; and it is re-asked whether or not the write landed, because
   // the server's board is the truth about what the server holds -- the toast
   // says when the new record is not among it.
-  dntCredWriting++;rCredentials(null);
+  // The render sits INSIDE the try that releases the hold: a throw between
+  // the increment and the try used to leak it, and the one-at-a-time guard
+  // above then refused every later add until a reload (cc b73).
   var syncResult=null;
-  try{syncResult=await sdnData('write','dnt_credentials',rec);}finally{dntCredWriting--;}
+  dntCredWriting++;
+  try{rCredentials(null);syncResult=await sdnData('write','dnt_credentials',rec);}finally{dntCredWriting--;}
   toast(syncResult?'Credential record added':dntWriteFailText('dnt_credentials','Saved on this device only -- the server did not accept it, so it is not on any other workstation'),syncResult?3000:7000);
   refreshCredentialBoard(true);
 }
