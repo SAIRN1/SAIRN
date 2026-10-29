@@ -174,6 +174,52 @@ function world(push) {
   ]) {
     await H.drive({ check, id: s.id, name: s.name, mk: H.mkFor(s), ok: s.ok, refused: s.refused });
   }
+  // 4. THE GPS WAIT IS A WAIT TOO (cody b65, b64 handoff item 3). gcdPlaceOrder
+  // and gcdMarkShotEnd await the device's GPS fix, not the server, so the b64
+  // sweep (which looked for a server write) passed them. A second press during
+  // the fix sent a second Pro Shop order, or recorded the same shot twice. Here
+  // the pending call is cmCaptureGps; arms PO / MS 1-3 as in the harness.
+  console.log('4. the caddie GPS handlers: one fix at a time');
+  const FIX = { lat: 40.1, lng: -75.2, accuracy_m: 4 };
+  const caddie = (write, box) => ({
+    gcdActiveRound: () => box.round, gcdCurrentHole: () => box.hole,
+    cmCaptureGps: write, gcdSaveRound() {}, gcdHaversineM: () => 142,
+    gcdOrderTotal: () => 12, gcdOrders: () => box.rows.slice(),
+    st: (k, list) => { if (k === 'grd_cart_orders') box.rows = list; return true; },
+    grdData: () => Promise.resolve({ id: 'x' })
+  });
+  const gpsSpec = (id, name, decl, refill, rows) => ({
+    id, name,
+    src: H.optional(html, new RegExp('var ' + decl + '\\s*=\\s*false;')) + '\n' + L('async function ' + name + '(){'),
+    given: (write, box) => {
+      box.round = { id: 'R-1', property_id: 'P-1', player_label: 'Group 4' };
+      box.hole = { zone_id: 'Z-9', zone_name: 'Hole 9', shots: [] };
+      return caddie(write, box);
+    },
+    // No `rows` for the harness: the record is made AFTER the fix, so while
+    // the fix is pending there is none to count. The count is checked below,
+    // once both presses have settled.
+    refill, count: rows, press: (ctx) => ctx[name](),
+    ok: FIX, refused: null
+  });
+  for (const s of [
+    gpsSpec('PO', 'gcdPlaceOrder', 'gcdOrderPlacing',
+      (ctx) => { ctx.gcdOrderLines = [{ name: 'Water', price: 2, qty: 6 }]; }, (box) => box.rows.length),
+    gpsSpec('MS', 'gcdMarkShotEnd', 'gcdShotEnding',
+      (ctx) => { ctx.gcdShotStart = { lat: 40.0, lng: -75.2, accuracy_m: 3 }; }, (box) => box.hole.shots.length)
+  ]) {
+    await H.drive({ check, id: s.id, name: s.name, mk: H.mkFor(s), ok: s.ok, refused: s.refused });
+    const held = [];
+    const box = {};
+    const spec = Object.assign({}, s, { given: (write, b) => { Object.assign(box, { b }); return s.given(write, b); } });
+    const w = H.mkFor(spec)(() => new Promise((r) => held.push(r)));
+    w.refill(); const a = w.press(); await H.flush();
+    w.refill(); const b2 = w.press(); await H.flush();
+    held.forEach((r) => r(FIX));
+    await Promise.allSettled([a, b2]); await H.settle();
+    check(s.id + '4 ' + s.name + ': two presses during one fix leave exactly ONE record',
+      s.count(box.b) === 1, JSON.stringify({ records: s.count(box.b), fixes: w.writes() }));
+  }
   finished = true;
   console.log('\n' + (fail ? 'FAILED' : 'ok') + '  sairngrounds save re-entry: ' + pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);

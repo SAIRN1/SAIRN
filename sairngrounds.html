@@ -3065,13 +3065,21 @@ async function gcdMarkShotStart(){
   gcdShotStart = fix;
   $('gcd-shot-state').innerHTML = '<div class="note">Ball position marked, '+gcdAccBadge(fix.accuracy_m)+'. Play the shot, then mark where it finished.</div>';
 }
+// ONE FIX AT A TIME (cody b65). Both handlers below await the device's GPS,
+// not the server, and the button stays live for that wait: a second press
+// recorded the same shot twice, or sent the Pro Shop a second order.
+var gcdShotEnding = false;
+var gcdOrderPlacing = false;
 async function gcdMarkShotEnd(){
+  if(gcdShotEnding){toast('Still getting a GPS fix -- one moment');return;}
   var round = gcdActiveRound();
   var hole = round ? gcdCurrentHole(round) : null;
   if(!hole){toast('Arrive at a hole first');return;}
   if(!gcdShotStart){toast('Mark the ball position first -- a shot distance needs both ends');return;}
   toast('Getting GPS fix...');
-  var fix = await cmCaptureGps();
+  var fix = null;
+  gcdShotEnding = true;
+  try{ fix = await cmCaptureGps(); }finally{ gcdShotEnding = false; }
   if(!fix){toast('Could not get a GPS fix -- check location permission and try again',5000);return;}
   var band = gcdShotStart.accuracy_m + fix.accuracy_m;
   var m = gcdHaversineM(gcdShotStart, fix);
@@ -3187,12 +3195,15 @@ function gcdRenderOrderLines(){
     : '<div style="color:var(--muted);font-size:13px">Nothing on this order yet</div>';
 }
 async function gcdPlaceOrder(){
+  if(gcdOrderPlacing){toast('Still sending the last order -- one moment');return;}
   var round = gcdActiveRound();
   var hole = round ? gcdCurrentHole(round) : null;
   if(!round){toast('Start a round first -- the order is delivered to a player on the course');return;}
   if(!gcdOrderLines.length){toast('Add at least one item');return;}
   toast('Getting GPS fix so the shop can find you...');
-  var fix = await cmCaptureGps();
+  var fix = null;
+  gcdOrderPlacing = true;
+  try{ fix = await cmCaptureGps(); }finally{ gcdOrderPlacing = false; }
   if(!fix){toast('Could not get a GPS fix. The order is not sent, because a delivery with no position is worse than none',6000);return;}
   var rec = {id:'CO-'+Date.now(), property_id:round.property_id, round_id:round.id,
     player_label:round.player_label, zone_id:hole?hole.zone_id:'', zone_name:hole?hole.zone_name:'',
