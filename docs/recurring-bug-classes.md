@@ -55,3 +55,13 @@ watching is fixes that ship WITHOUT a control, and that number is zero here.
 **All four are mine and three of the four were caught by RUNNING the thing, not
 by reading it** — which is the same ratio batch 10 recorded. Number 9 is the
 exception and it was caught by somebody else reading my file.
+
+## 2026-10-29 — batch 65 (cody)
+
+| # | Defect | Phase | Sub-phase | Cause | Commit |
+|---|---|---|---|---|---|
+| 1 | `tests/sd_data_mech_write_unconfirmed.js` never looked at the request's `Prefer` header, so a mech upsert switched to ignore-duplicates would have made every RE-save a false 502 with no arm red; and its ablation copy `api/.sd-data-ablate-*.js` was not gitignored | coding | test coverage | **due to** arms written against the RESPONSE only, with a mock that echoed whatever was sent, so the request shape was never a variable; the ablation file was cleaned up in `finally`, and nobody pictured the killed run (cc b70) | `1df6a93ba` |
+| 2 | `sairnfreedom.html` `sfLicenceGuard` adopted any new key on a device with no fingerprint, so licence B opened licence A's local records and A's server-confirmed set | design | first-run state | **due to** a premise stated in the design comment ("no way to know which licence its data belongs to") that was false: the app stores the key itself under `sf_license_key`, beside the data (cc b70) | `a9764b923` |
+| 3 | `sairndental.html` `addCredential` leaked `dntCredWriting` when `rCredentials(null)` threw, and the b64 one-at-a-time guard then refused every later add until a reload | coding | error handling | **due to** a hold acquired OUTSIDE the try/finally that releases it, with a call between the two; b64's throw arm threw from inside the `try` and so could not reach the gap (cc b73) | `a9764b923` |
+
+**All three were found by somebody else's review, not by me.** Two of the three (1, 3) are the same shape that batch 10 named: something meant to happen on the way OUT — a cleanup, a release — skipped on a path the author's own arm did not drive. Row 2 is a different shape: a design comment's premise taken as fact and never re-checked against what the file itself stores.

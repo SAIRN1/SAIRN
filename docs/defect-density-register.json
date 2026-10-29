@@ -40756,6 +40756,100 @@
         }
       ],
       "recurrence_open": "Any other could-not-tell code added to the server later must be added to the kept list too; nothing enforces that."
+    },
+    {
+      "commit": "a9764b923766",
+      "date": "2026-10-29",
+      "subject": "fix(sairnfreedom, sairndental, cody b65): two routed review gaps, each fixture-first",
+      "files": [
+        "docs/scrutiny-flags.json",
+        "sairndental.html",
+        "sairnfreedom.html",
+        "tests/sairndental_save_reentry.js",
+        "tests/sairnfreedom_licence_guard_legacy.js"
+      ],
+      "lines_added": 179,
+      "lines_removed": 4,
+      "app": "sairnfreedom",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "sfLicenceGuard adopted any new licence key on a device with no fingerprint, although the key sfUnlock() stored sat beside the data, so licence B opened licence A's local records and A's server-confirmed set with no question. It now fingerprints the stored key and asks, as the fingerprint path does.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "343c5a3275b1",
+        "date": "2026-09-03",
+        "subject": "feat(platform): a licence change no longer hands the next customer the previous one's records",
+        "lag_days": 56
+      },
+      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b65 row 2.",
+      "contributing_factors": [
+        {
+          "factor": "The first-run branch was designed on the premise that nothing says whose data is on the device, while the app stores the licence key itself in the same store.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The guard fingerprints the stored key when no fingerprint exists and asks before a different licence opens the data."
+        },
+        {
+          "factor": "No test drove the guard on a device that predates the fingerprint; licence_rekey_isolation covers only no-key and fingerprint-present states.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "tests/sairnfreedom_licence_guard_legacy.js, six arms, L1/L2 red on the old guard."
+        }
+      ],
+      "recurrence_open": "The same first-run adopt shape is in the other apps' licence guards that licence_rekey_isolation lifts; only sairnfreedom's was checked for a stored key in b65."
+    },
+    {
+      "commit": "a9764b923766",
+      "date": "2026-10-29",
+      "subject": "fix(sairnfreedom, sairndental, cody b65): two routed review gaps, each fixture-first",
+      "files": [
+        "docs/scrutiny-flags.json",
+        "sairndental.html",
+        "sairnfreedom.html",
+        "tests/sairndental_save_reentry.js",
+        "tests/sairnfreedom_licence_guard_legacy.js"
+      ],
+      "lines_added": 179,
+      "lines_removed": 4,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "independent-review",
+      "summary": "sairndental addCredential took dntCredWriting before the try that releases it, with rCredentials(null) between; a render that threw leaked the hold, and the b64 one-at-a-time guard then refused every later credential add until a reload. Found by cc b73; the render is now inside the try.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "046e3f4f71a2",
+        "date": "2026-10-29",
+        "subject": "fix(apps, cody b64): the other 41 re-entrant saves are guarded -- all 47 found by the sweep are now fixed, each fixture-first",
+        "lag_days": 0
+      },
+      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b65 row 3 (cc b73's tag: a hold acquired outside the try/finally that releases it).",
+      "contributing_factors": [
+        {
+          "factor": "The hold was incremented before the try whose finally releases it, with a render call in between, so a synchronous throw there skipped the release.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "rCredentials(null) moved inside the try; arm CD4 throws from the render once and requires the next add to be sent."
+        },
+        {
+          "factor": "The b64 one-at-a-time guard began reading a counter whose release was never guaranteed on every path; the b64 throw arm threw from the write, inside the try, so it could not reach the gap.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "CD4 drives the throw from the line between the increment and the try."
+        }
+      ],
+      "recurrence_open": "Every b64 hold was released in a finally, but only the 47 b64 handlers were checked for code between the acquire and the try; a hand-written hold elsewhere can repeat it."
     }
   ],
   "started": "2026-09-09",
