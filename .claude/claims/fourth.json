@@ -4938,6 +4938,19 @@
       "files": [
         "sairnsenior.html"
       ]
+    },
+    {
+      "id": "fourth-1793278769",
+      "session": "fourth",
+      "subject": "sairnvet",
+      "task": "b67 H1-1779 refused sv_controlled write is shown on screen FILES: sairnvet.html",
+      "claimed_at": "2026-10-29T12:59:29Z",
+      "claimed_at_epoch": 1793278769.3313963,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "sairnvet.html"
+      ]
     }
   ],
   "refusals": [
