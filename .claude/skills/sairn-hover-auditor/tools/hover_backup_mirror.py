@@ -724,18 +724,92 @@ def _write_askpass_shim(target_dir=None):
     return bat
 
 
+def mail_evidence_refusal(msg_id, seq_s, tip, text):
+    """None when TEXT is the JSON a Gmail get_message returns for MSG_ID, the
+    message is labelled SENT, and its ANCHOR_PAYLOAD carries exactly SEQ_S and
+    TIP; otherwise why not. b112: 12 of the 15 ids this file recorded between
+    seq 640 and 691 do not resolve in Gmail, because --record-anchor took the
+    id on trust. It still cannot prove the file came from Gmail; it can refuse
+    an id for which no matching mail was read."""
+    try:
+        m = json.loads(text)
+    except ValueError:
+        return 'the mail file is not the JSON a Gmail get_message returns'
+    if not isinstance(m, dict) or m.get('id') != msg_id:
+        return 'the mail file is for a different message id (%s)' % (
+            m.get('id') if isinstance(m, dict) else None)
+    if 'SENT' not in (m.get('labelIds') or []):
+        return 'the mail is not labelled SENT'
+    p = re.search(r'ANCHOR_PAYLOAD:\s*(\{.*?\})', m.get('plaintextBody') or '', re.S)
+    try:
+        pay = json.loads(p.group(1)) if p else None
+    except ValueError:
+        pay = None
+    if not isinstance(pay, dict):
+        return 'the mail body carries no readable ANCHOR_PAYLOAD'
+    if str(pay.get('seq')) != str(seq_s) or pay.get('tip_hash') != tip:
+        return 'the mail payload (seq=%s hash=%s...) is not the anchor being recorded' % (
+            pay.get('seq'), str(pay.get('tip_hash'))[:12])
+    return None
+
+
+def cmd_flag_unresolved(argv):
+    """--flag-unresolved <gmail_message_id> <detail...>: append a permanent
+    anchor-unresolved row for an id already recorded in mirror-anchors.jsonl
+    whose message could not be read back from Gmail. The row has no tip_hash,
+    so last_recorded_anchor() never selects it; the original row is not edited."""
+    if len(argv) < 2:
+        print('--flag-unresolved needs <gmail_message_id> <detail>')
+        return EXIT_COULD_NOT_RUN
+    msg_id, detail = argv[0], ' '.join(argv[1:])
+    seq = None
+    try:
+        with open(ANCHORS_FILE, encoding='utf-8') as f:
+            for line in f:
+                if line.strip():
+                    row = json.loads(line)
+                    if row.get('gmail_message_id') == msg_id and row.get('tip_hash'):
+                        seq = row.get('seq')
+    except (OSError, ValueError) as e:
+        print('COULD NOT RUN: cannot read %s (%s)' % (ANCHORS_FILE, e))
+        return EXIT_COULD_NOT_RUN
+    if seq is None:
+        print('REFUSED: %s is not a recorded anchor id' % msg_id)
+        return EXIT_COULD_NOT_RUN
+    with open(ANCHORS_FILE, 'a', encoding='utf-8') as f:
+        f.write(json.dumps({'type': 'anchor-unresolved', 'gmail_message_id': msg_id,
+                            'seq': seq, 'detail': detail,
+                            'flagged_at': datetime.now(timezone.utc)
+                            .strftime('%Y-%m-%dT%H:%M:%SZ')}) + '\n')
+    print('flagged unresolved: seq=%s message=%s' % (seq, msg_id))
+    return EXIT_CLEAN
+
+
 def cmd_record_anchor(argv):
-    """--record-anchor <gmail_message_id> <seq> <tip_hash>: the anchor-mail
-    verification leg of the session-end routine. REFUSES unless the seq and
-    hash being recorded match the LIVE log tip right now -- recording an
-    anchor that does not match the log would manufacture the exact
-    disagreement the anchor exists to detect. On success appends one row to
-    mirror-anchors.jsonl, so 'was the anchor actually sent and did it match'
-    is answerable from the filesystem, not from a session's memory."""
-    if len(argv) < 3:
-        print('--record-anchor needs <gmail_message_id> <seq> <tip_hash>')
+    """--record-anchor <gmail_message_id> <seq> <tip_hash> --mail-file <path>:
+    the anchor-mail verification leg of the session-end routine. <path> holds
+    the Gmail get_message JSON for that id, read back after sending (b112).
+    REFUSES unless that mail matches the id, seq and hash AND the seq and
+    hash match the LIVE log tip right now -- recording an anchor that does
+    not match the log would manufacture the exact disagreement the anchor
+    exists to detect. On success appends one row to mirror-anchors.jsonl,
+    so 'was the anchor actually sent and did it match' is answerable from
+    the filesystem, not from a session's memory."""
+    if len(argv) < 5 or argv[3] != '--mail-file':
+        print('--record-anchor needs <gmail_message_id> <seq> <tip_hash> '
+              '--mail-file <path to the get_message JSON>')
         return EXIT_COULD_NOT_RUN
     msg_id, seq_s, tip = argv[0], argv[1], argv[2]
+    try:
+        with open(argv[4], encoding='utf-8') as f:
+            why = mail_evidence_refusal(msg_id, seq_s, tip, f.read())
+    except OSError as e:
+        print('COULD NOT RUN: cannot read the mail file (%s)' % e)
+        return EXIT_COULD_NOT_RUN
+    if why:
+        print('REFUSED: %s -- an id recorded without a matching mail is the '
+              'defect b112 found in 12 of 15 old rows.' % why)
+        return EXIT_COULD_NOT_RUN
     last = None
     try:
         with open(os.path.join(HERE, LOG_NAME), encoding='utf-8') as f:
@@ -1156,8 +1230,35 @@ def run_fixtures():
 
     # --- record-anchor refuses a mismatched tip (the real log is the ---
     # --- fixture here: any wrong hash must bounce) ---
-    ck('--record-anchor REFUSES an anchor that does not match the live tip',
+    def _mail(**kw):
+        m = {'id': 'msg-test', 'labelIds': ['SENT', 'INBOX'],
+             'plaintextBody': 'ANCHOR_PAYLOAD: {"anchored_at": "t", "seq": 1, '
+                              '"tip_hash": "%s", "total_entries": 1}\n\nContext.' % ('f' * 64)}
+        m.update(kw)
+        return json.dumps(m)
+    with tempfile.TemporaryDirectory() as _d:
+        _mf = os.path.join(_d, 'mail.json')
+        with open(_mf, 'w', encoding='utf-8') as _f:
+            _f.write(_mail())
+        ck('--record-anchor REFUSES an anchor that does not match the live tip '
+           '(the mail is valid, so only the tip can refuse it)',
+           cmd_record_anchor(['msg-test', '1', 'f' * 64, '--mail-file', _mf]) == EXIT_COULD_NOT_RUN)
+    ck('--record-anchor REFUSES with no --mail-file at all',
        cmd_record_anchor(['msg-test', '1', 'f' * 64]) == EXIT_COULD_NOT_RUN)
+    ck('mail evidence: a matching SENT mail passes',
+       mail_evidence_refusal('msg-test', '1', 'f' * 64, _mail()) is None)
+    ck('mail evidence: a different message id is refused',
+       mail_evidence_refusal('other-id', '1', 'f' * 64, _mail()) is not None)
+    ck('mail evidence: a mail not labelled SENT is refused',
+       mail_evidence_refusal('msg-test', '1', 'f' * 64, _mail(labelIds=['INBOX'])) is not None)
+    ck('mail evidence: a payload with another seq is refused',
+       mail_evidence_refusal('msg-test', '2', 'f' * 64, _mail()) is not None)
+    ck('mail evidence: a payload with another hash is refused',
+       mail_evidence_refusal('msg-test', '1', 'e' * 64, _mail()) is not None)
+    ck('mail evidence: a body with no ANCHOR_PAYLOAD is refused',
+       mail_evidence_refusal('msg-test', '1', 'f' * 64, _mail(plaintextBody='hello')) is not None)
+    ck('mail evidence: text that is not JSON is refused',
+       mail_evidence_refusal('msg-test', '1', 'f' * 64, 'not json') is not None)
 
     # --- the scheduled drill's comparison, locked both ways (2026-09-28) ---
     ck('drill_compare PASSES when the restored log holds the anchored '
@@ -1394,7 +1495,10 @@ def main(argv):
         return cmd_push()
     if '--record-anchor' in argv:
         i = argv.index('--record-anchor')
-        return cmd_record_anchor(argv[i + 1:i + 4])
+        return cmd_record_anchor(argv[i + 1:i + 6])
+    if '--flag-unresolved' in argv:
+        i = argv.index('--flag-unresolved')
+        return cmd_flag_unresolved(argv[i + 1:])
     if '--restore-remote' in argv:
         return cmd_restore_remote()
     if '--drill-due' in argv:
