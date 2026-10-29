@@ -92,8 +92,46 @@ const PROFILE = Object.freeze({
   + 'prepare one, can stage a cremation authorisation for signature.',
   signerRefusal:
     'Only a licensed funeral director (Owner or Director) can countersign a '
-  + 'cremation authorisation.'
+  + 'cremation authorisation.',
+  // ── F3, ENFORCED ON THE COUNTERSIGN ROUTE (fourth b69, Michael's b69 item 2)
+  // An apprentice prepares a cremation only when (a) this home's F3 config
+  // clears it -- decide(..., 'prepare') with the home's settings, so an EMPTY
+  // F3 is DENY and `forbidden` wins -- and (b) a specific licensed supervisor
+  // is recorded on the record in this field. Checked at prepare and at filing.
+  supervisorField: 'authorized_by_supervisor',
+  preparePolicy: legPreparePolicy
 });
+
+/**
+ * The home's F3 config, read fresh, applied through legRoles.decide. A missing
+ * row or an unprovisioned table is the NARROW default (empty F3, so DENY); a
+ * read that FAILS is a 502 and never permission.
+ */
+async function legPreparePolicy(ctx, resource, role) {
+  const r = await fetch(ctx.rest('sairnlegacy_settings?license_hash=eq.'
+    + encodeURIComponent(ctx.licHash) + '&select=apprentice&limit=1'), { headers: ctx.headers });
+  const rows = await r.json().catch(() => null);
+  let home = {};
+  if (r.ok) {
+    if (!Array.isArray(rows)) {
+      return { status: 502, body: { error: { code: 'UNREADABLE_SETTINGS',
+        message: 'The home\'s apprentice settings could not be read, so nothing '
+               + 'was staged or saved. Try again shortly.' } } };
+    }
+    home = { apprentice: (rows[0] && rows[0].apprentice) || null };
+  } else if (!cs.isMissingTable(rows)) {
+    return { status: 502, body: { error: { code: 'UNREADABLE_SETTINGS',
+      message: 'The home\'s apprentice settings could not be read, so nothing '
+             + 'was staged or saved. Try again shortly.' } } };
+  }
+  if (legRoles.decide(resource, role, legRoles.LEG_PREPARE_ACTION, null, home) !== legRoles.ALLOW) {
+    return { status: 403, body: { error: { code: 'APPRENTICE_NOT_CLEARED',
+      message: 'This home has not cleared apprentices to prepare a cremation '
+             + 'authorisation. An owner can change that in Settings (apprentice '
+             + 'permissions). Nothing was staged or saved.' } } };
+  }
+  return null;
+}
 
 // VALIDATED AT MODULE LOAD, not on the first request. A malformed profile is a
 // programming error in this repo and should take the endpoint down loudly at

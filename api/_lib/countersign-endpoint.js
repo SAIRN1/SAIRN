@@ -206,6 +206,13 @@ async function handleAction(profile, req, res, lic) {
           res.status(400).json({ error: { message: 'payload is required and must be the exact record to be written' } });
           return;
         }
+        // A NON-SIGNER PREPARER meets the profile's conditions BEFORE a token
+        // exists (fourth b69): role alone was the whole check, which made an
+        // empty F3 a silent yes. See cs.checkPreparerConditions.
+        const pc = await cs.checkPreparerConditions(profile,
+          { licHash: licHash, rest: rest, headers: headers },
+          resource, caller.role, body.payload, caller.employee_id);
+        if (pc) { res.status(pc.status).json(pc.body); return; }
         const tok = cs.newToken();
         const expires = new Date(Date.now() + cs.TOKEN_TTL_MS).toISOString();
         const r = await fetch(rest(profile.tokenTable), {

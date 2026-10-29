@@ -72,7 +72,10 @@ const SESSION_HEADER = HDR_M[1];
 const { signSessionToken } = require(path.join(API_DIR, '_lib/auth.js'));
 
 const ROSTER = { 'emp-app': 'apprentice', 'emp-dir': 'director', 'emp-liv': 'livery' };
-const PAYLOAD = { id: 'CR-1', case_id: 'CS-1', decedent: 'test' };
+// fourth b69 (Michael's b69 item 2): an apprentice-prepared cremation must
+// RECORD the licensed supervisor who authorised it, and that supervisor must be
+// the director who countersigns -- emp-dir in every signed row below.
+const PAYLOAD = { id: 'CR-1', case_id: 'CS-1', decedent: 'test', authorized_by_supervisor: 'emp-dir' };
 const TOKEN = ['b48', 'countersign', 'fixture'].join('-');
 
 // `settingsRow` and `tokenRow` are the knobs; `seen` records every call.

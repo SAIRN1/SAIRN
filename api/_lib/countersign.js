@@ -234,6 +234,51 @@ async function currentStanding(profile, ctx, employeeId) {
 }
 
 /**
+ * A PREPARER WHO IS NOT A SIGNER -- the conditions a profile may add, checked
+ * at prepare AND again at filing. Returns a refusal ({status, body}) or null.
+ *
+ * ── WHY (fourth b69, Michael's b69 item 2) ─────────────────────────────────
+ * The endpoint checked the preparer by ROLE alone, so on SAIRNlegacy any
+ * apprentice could stage a cremation authorisation and a director could file
+ * it whatever the home's F3 config said -- an empty F3 was a silent yes.
+ * Michael's rule: an apprentice prepares a cremation only when F3 clears it
+ * AND a specific licensed supervisor is recorded as authorising it; empty F3
+ * is DENY. Two optional profile hooks carry that, so the shared module stays
+ * app-agnostic and a profile without them (SAIRNlaw) is unchanged:
+ *   profile.preparePolicy(ctx, resource, role) -> refusal | null
+ *   profile.supervisorField -- the payload key naming the supervisor. It is
+ *     INSIDE the content the countersignature hashes, so the name is part of
+ *     what is signed, and at filing it must be the director who signed.
+ */
+async function checkPreparerConditions(profile, ctx, resource, preparerRole, payload, preparerId) {
+  if (isSigner(profile, preparerRole)) return null;
+  if (typeof profile.preparePolicy === 'function') {
+    const refusal = await profile.preparePolicy(ctx, resource, preparerRole);
+    if (refusal) return refusal;
+  }
+  if (!profile.supervisorField) return null;
+  const sup = payload && payload[profile.supervisorField];
+  if (typeof sup !== 'string' || !sup.trim()) {
+    return { status: 403, body: { error: { code: 'SUPERVISOR_REQUIRED',
+      message: 'Name the licensed supervisor who authorised this preparation ('
+             + profile.signerLabel + '). Nothing was staged or saved.' } } };
+  }
+  if (sup === preparerId) {
+    return { status: 403, body: { error: { code: 'SUPERVISOR_SAME_PERSON',
+      message: 'The supervisor must be someone other than the person who '
+             + 'prepared the record. Nothing was staged or saved.' } } };
+  }
+  const standing = await currentStanding(profile, ctx, sup);
+  if (standing.refusal && standing.refusal.status !== 403) return standing.refusal;
+  if (standing.refusal || !isSigner(profile, standing.role)) {
+    return { status: 403, body: { error: { code: 'SUPERVISOR_NOT_QUALIFIED',
+      message: 'The supervisor named on this record is not an active '
+             + profile.signerLabel + '. Nothing was staged or saved.' } } };
+  }
+  return null;
+}
+
+/**
  * THE HALF api/sd-data.js CALLS, and it returns A REFUSAL OR NULL -- never a
  * boolean. A boolean invites `if (!ok) { /* log and continue *\/ }`, and this
  * must be the thing that stops the write rather than a fact about it. Copied
@@ -447,6 +492,24 @@ async function requireCountersignature(profile, ctx) {
   // writes racing the same token, one wins and the other gets zero rows back.
   // Without it the check-then-spend gap is exactly wide enough for a double
   // submit to file two cremation authorisations on one signature.
+  // ── A NON-SIGNER PREPARER: the profile's conditions, AT FILING (b69) ─────
+  // Re-checked here and not only at prepare: the home's config at FILE time
+  // governs, and a record staged before F3 was narrowed must not file after.
+  // The supervisor recorded in the signed content must be the director who
+  // actually countersigned -- a name nobody signed is not an authorisation.
+  if (!isSigner(profile, row.prepared_role)) {
+    const pc = await checkPreparerConditions(profile, ctx, resource,
+      row.prepared_role, payload, row.prepared_by);
+    if (pc) return pc;
+    if (profile.supervisorField
+        && payload[profile.supervisorField] !== row.countersign_employee_id) {
+      return { status: 403, body: { error: { code: 'SUPERVISOR_DID_NOT_SIGN',
+        message: 'The supervisor named on this record is not the director who '
+               + 'countersigned it. The named supervisor must sign it. Nothing '
+               + 'was saved.' } } };
+    }
+  }
+
   const spend = await fetch(rest(profile.tokenTable + '?id=eq.' + enc(row.id)
     + '&spent_at=is.null'), {
     method: 'PATCH',
@@ -467,6 +530,7 @@ async function requireCountersignature(profile, ctx) {
 }
 
 module.exports = {
+  checkPreparerConditions,
   TOKEN_TTL_MS,
   MODE_ALWAYS, MODE_PREPARED_ONLY, MODES,
   canonical, contentHash, hashToken, newToken, isMissingTable,
