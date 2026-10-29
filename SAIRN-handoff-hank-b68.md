@@ -24,13 +24,31 @@ All fixes are in commit `d4867af07`. The cause tags are in `docs/recurring-bug-c
 - **Not changed (#1744):** the label and semantics of the Release Rate KPI. The register states the Transferred gap, and changing the KPI is a product decision.
 - **Not done:** I did not write a defect-density-register record for the four fixes.
 
-## 2. Tier A review
+## 2. Tier A reviews — every obligation ASSIGNED TO hank, discharged, most overdue first
+| opened | author | resource | verdict |
+|---|---|---|---|
+| 2026-10-22T16:02:10Z | cody b51 | leg_cremations (countersign off-profile -> 500) | **SOUND**. There are 4 production callers, and each one's table is a subset of its PROFILE (measured with node). b51 test 5/5. |
+| 2026-10-22T21:18:41Z | fourth b57 | slabs (a11y names) | **SOUND**. The recorded sha `a7a8bb27a` does not resolve; the landed commit is `09e810819`. Only aria-labels moved, and the applier never overrides an existing name. a11y 49/49. |
+| 2026-10-23T16:49:24Z | cc b55 | law_trust_reconcile (IOLTA stress) | **SOUND-WITH-GAPS**. **M5 is a real reconciler defect**: an uncleared deposit 91 days old balances the bank leg, because outstanding items have no age limit. **M6 is a real IOLTA failure but a LIMIT of reconciliation**, so it should not be counted as a reconciler FAIL. |
+| 2026-10-27T14:26:58Z | cc b56 | sd_approvals (StoneDesk presence) | **SOUND**. All 8 named FAILs are real at HEAD. T1 (signature not checked; deposit_status passed through verbatim), T2 (`:36672` one-untracked → COMPLIANT, w9 ignored) and T4a (`:10828-9` literal tiles) were confirmed at the source. |
+| 2026-10-27T14:59:52Z | cc b58 | leg_cremations, leg_invoices (legacy presence) | **SOUND**. L1: no api code reads `authorization_on_file`/`waiting_period_observed`. L3: `legComposeStatement` has no zero-price or negative-price refusal. |
+| 2026-10-29T11:22:16Z | cc b69 | dnt_rollup / exec_context / sd_crm (field-scope rules) | **SOUND**. Each declaration matches its commit's stated design. The office-id literal is right. Field scope 38/38. |
 
-- **Discharged:** the most overdue obligation **assigned to hank**: cody b51, `countersign.js` off-profile → 500, opened 2026-10-22T16:02:10Z.
-  - Verdict: **SOUND**.
-  - There are 4 production callers. Each one is gated by a table that is a subset of its PROFILE, measured with node.
-  - The b51 test passes 5/5, including the ablation arm.
-- **Interpretation, stated:** I read "your own eligible" as *assigned to hank*. If it means any obligation hank could take over, the oldest is fourth's 2026-10-05 `quotes`, at 580h and held by cody.
+- "Your own eligible" was read as *assigned to hank*. No obligation assigned to hank is still open.
+- The oldest obligation that anybody may take over is fourth's 2026-10-05 `quotes`, at 580h, held by cody.
+
+## 2b. Backlog
+- **S4 fixed (`a4069b882`):** `api/agent/poll.js` now delivers by compare-and-set.
+  - The PATCH carries `&status=eq.pending` and `return=representation`.
+  - Only the poll whose PATCH returned the row delivers it.
+  - A failed PATCH delivers nothing: the response is 502 and the row stays pending.
+  - `api/b68-agent-poll-cas.test.js` passes 4/4. **Arm X is red on the pre-fix file**: the same race delivered the command twice.
+- **S6 fixed (`aeb3f2b80`):** the push_retry fold returns `nothing to fold` when nothing is staged. The new selftest arm was red before the fix, and ALL ARMS PASS after it.
+- **J5 NOT seeded (`aca5b364f`):** the 2018 V.R.C.P. text and the 1 V.S.A. § 371 holiday list are tabled in `docs/sairnlaw-vermont-deadline-seed-blockers.md` §b68. Three named gaps would each force a guess:
+  - amendments after 2018 cannot be ruled out, because the official page is a rolling window from 2020;
+  - whether electronic service still gets +3 days under 6(e);
+  - the observed days under § 371(b).
+- **Cause tags:** all 6 fixes have one, in `docs/recurring-bug-classes.md` under "batch 68".
 
 ## 3. CLAIMS HELD
 
@@ -40,12 +58,12 @@ All fixes are in commit `d4867af07`. The cause tags are in `docs/recurring-bug-c
 
 | # | item | owner | next step |
 |---|---|---|---|
-| T2 | next obligation assigned to hank: fourth 2026-10-22T21:18:41Z `slabs` (166h) | hank | `--list`, read the record, then `--discharge fourth 2026-10-22T21:18:41Z "<verdict>"`. After that come cc `law_trust_reconcile` (146h), cc `sd_approvals` (52h), cc `leg_cremations, leg_invoices` (52h), and cc `dnt_*` (8h). |
-| S4 | `api/agent/poll.js:112` can deliver one command twice | hank | carried from b67 §8, unchanged |
-| S6 | push_retry fold reports an empty "derived-docs commit failed" | hank | carried from b67 §8 |
-| J5 | Vermont is not seeded | hank | carried from b67 §8 (the LCJR PDF) |
+| J5 | Vermont | Michael / hank | Michael: a current compiled V.R.C.P. with an "as amended through" date, or confirmation that the promulgated page covers 2018 onward, and whether e-service gets +3. hank: then the ND pattern; rows triggered by entry can go first |
+| M5 | IOLTA reconciler: an aged deposit in transit balances the bank leg | sairnlaw owner (cc's probe found it) | in `api/_lib/law-trust-reconcile.js`, surface uncleared deposits older than a stated threshold as their own status; the probe's M5 then turns PASS |
+| SDP | StoneDesk presence FAILs (T1a/b/d, T2a/b, T3a/b, T4a + E/I/M/X) | StoneDesk owner | route into the open-work index; T4a is a fabricated KPI on an OSHA panel |
+| LGP | SAIRNlegacy presence FAILs L1a/b, L2a, L3a/b | sairnlegacy owner | route; L1 has the countersign lock read the record's authorisation fields |
 | H1x | raw `o.id` in inline onclick, 38 sites in sairnlegacy | hank | a separate pass; quote it with `H()` / `JSON.stringify`, or use closures |
 | J6, J4, J2, A1, P1, R1, G1, S5, S7, T1 | carried | as in b67 §8 | unchanged |
 
 - **Left uncommitted on purpose (U1):** the same 7 untracked root files listed in b67 §8.
-- **Context:** 140,616 tokens measured. The window was declared as 200,000, the conservative bound, because the real window was not known. That is why the batch stopped here and did not take on S4.
+- **Context:** the window was first declared as 200,000, a guess, then re-declared as 1,000,000. The evidence for 1M is that b67 in this clone measured 758,507 tokens, which a 200K window cannot hold. 222,443 tokens at this point.
