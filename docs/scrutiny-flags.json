@@ -11073,6 +11073,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_sairnbuild_server_wins_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a4de92258b3d564c8ecdbf54a546f57795ddc37a",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnbuild_server_wins.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a4de92258b3d564c8ecdbf54a546f57795ddc37a",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "docs/hank-evidence/b11_live_gate_probe.py",
    "class": "test file",
    "level": "WEAKENING",

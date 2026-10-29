@@ -250,3 +250,17 @@ skip it.
   Drive mount must be present.
 - A worktree with uncommitted work is never reaped automatically. That is a
   human decision every time.
+
+---
+
+## C6. CAUSE TAGS FOR EVERY FIX IN fourth b68
+
+**Each fix that landed in b68 is tagged phase -> sub-phase -> cause.** The vocabulary is `tools/defect_register.py`'s. A fix that belongs to a standing class names the class.
+
+| fix (commit) | phase -> sub-phase -> **due to** cause | one-off or class |
+|---|---|---|
+| bld session-flag arm accepted `!BLD_SESSION_REQUIRED[key]` and `false&&BLD_SESSION_REQUIRED[key]` (`a4de92258`, cause 1) | coding -> test assertions / criterion definition -> **due to** "the argument MENTIONS the map" standing in for "the argument IS the map value". A regex with `[^)]*` before the name admits any operator in front of it | **class.** The proxy shape matches the b17 `key==='bld_bids'` substring and the b23/b28 arms in the same file. Other suites matching an argument with `[^)]*<name>` were not swept |
+| the same arm's call-site loop named `bldHydrateOne`, which does not exist (`a4de92258`, cause 2) | coding -> error handling / population -> **due to** a `try { fn(name) } catch { return }` that turned "not found" into a pass, under a comment saying absence is not a pass | **class C2** (not-run read as pass) |
+| sairncash: a typed $0 prior-year tax read as "not provided" (`63272f29d`) | coding -> input handling / falsy zero -> **due to** `Number(v) \|\| null` on save, `if (x)` in `calcQuarterlySetAside()`, and `x \|\| ''` on display. Each treats 0 as absent | **class.** "Falsy zero" is the same shape as the b57 `(Number(null)\|\|0)` rendering that this file's own comment warns about. Other apps' `\|\| null` saves of money fields were not swept |
+
+**Not tagged, because they are not fixes:** the bld_bids Tier A discharge (the review itself), and the live check of `sairnmechanical.html`.
