@@ -18,6 +18,19 @@ you have:
 Both are the same shape this repo keeps finding elsewhere: a check that answers
 "nothing found" when it means "did not look".
 
+  * AND THE APPS THEMSELVES WERE NEVER SCANNED BY THE SAIRN RULES (cody b62).
+    The custom rules are `languages: [javascript, typescript]`, so Semgrep
+    targets .js/.ts files only. Every app is an .html file whose code is
+    INLINE <script>, and Semgrep removed extract mode (which read inline
+    script) in 1.65.0 -- so 24 apps' JavaScript was never a target, and this
+    tool only reported files that appeared in `errors`. A file Semgrep never
+    targets is in neither `results` nor `errors`: silent. Now each tracked
+    app's inline scripts are extracted to a .js twin with the SAME line numbers
+    (everything else blanked), scanned with the same config, and mapped back to
+    the .html path. And the report states what no rule here targets at all
+    (the tracked .sql files), from Semgrep's own `paths.scanned`, rather than
+    leaving it implied.
+
 Usage:
     python tools/run_semgrep.py               # custom SAIRN rules
     python tools/run_semgrep.py --default     # the p/default registry ruleset
@@ -30,6 +43,7 @@ Needs `pip install semgrep`. On Windows the console entry point shells out to
 """
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -128,6 +142,58 @@ def env():
     return e
 
 
+_SCRIPT = re.compile(r'(<script\b([^>]*)>)(.*?)</script\s*>', re.S | re.I)
+_JS_TYPE = re.compile(r'''\btype\s*=\s*["']?([\w/+.-]+)''', re.I)
+JS_TYPES = ('', 'text/javascript', 'application/javascript', 'module')
+
+
+def inline_js(html):
+    """The page with everything but inline JavaScript blanked, newlines kept,
+    so a finding's line in the twin IS its line in the .html. A <script src>
+    is not inline, and a non-JS type (JSON, templates) is not JavaScript."""
+    keep = [False] * len(html)
+    for m in _SCRIPT.finditer(html):
+        attrs = m.group(2)
+        t = _JS_TYPE.search(attrs)
+        if re.search(r'\bsrc\s*=', attrs, re.I) or (t and t.group(1).lower() not in JS_TYPES):
+            continue
+        for i in range(m.start(3), m.end(3)):
+            keep[i] = True
+    return ''.join(c if keep[i] or c == '\n' else ' ' for i, c in enumerate(html))
+
+
+def tracked(*patterns):
+    r = subprocess.run(['git', 'ls-files', '-z', '--'] + list(patterns), cwd=REPO,
+                       capture_output=True)
+    if r.returncode != 0:
+        return None
+    return [p for p in r.stdout.decode('utf-8', 'replace').split('\0')
+            if p and not p.startswith(('archive/', 'docs/skill-backups/', 'node_modules/'))]
+
+
+def extract_apps(outdir):
+    """({twin path: tracked .html path}, [apps that could not be read]).
+    An unreadable app is returned, never skipped: it is a could-not-scan."""
+    twins, unreadable = {}, []
+    apps = tracked('*.html')
+    if apps is None:
+        return twins, ['(git ls-files failed -- no app list)']
+    for rel in apps:
+        try:
+            src = open(os.path.join(REPO, rel), encoding='utf-8', errors='replace').read()
+        except OSError as e:
+            unreadable.append('%s (%s)' % (rel, e))
+            continue
+        js = inline_js(src)
+        if not js.strip():
+            continue
+        twin = os.path.join(outdir, rel.replace('/', '__') + '.inline.js')
+        with open(twin, 'w', encoding='utf-8', newline='') as fh:
+            fh.write(js)
+        twins[os.path.normcase(os.path.abspath(twin))] = rel
+    return twins, unreadable
+
+
 def main(argv):
     exe = semgrep_bin()
     if not exe:
@@ -149,6 +215,8 @@ def main(argv):
 
     config = 'p/default' if '--default' in argv else RULES
     tmp = os.path.join(tempfile.gettempdir(), 'sairn_semgrep.json')
+    twin_dir = tempfile.mkdtemp(prefix='sairn-semgrep-apps-')
+    twins, unreadable_apps = extract_apps(twin_dir)
     cmd = [exe, 'scan', '--config', config, '--json', '-o', tmp,
            '--metrics=off', '--no-git-ignore',
            '--max-target-bytes', '0', '--timeout', '60',
@@ -156,16 +224,23 @@ def main(argv):
            '--exclude', 'archive', '--exclude', 'docs/skill-backups',
            # The rule fixtures contain deliberate violations. Excluded from the
            # scan, never from `--test`, which is what proves the rules fire.
-           '--exclude', 'tools/semgrep', REPO]
+           '--exclude', 'tools/semgrep', REPO, twin_dir]
     p = subprocess.run(cmd, cwd=REPO, env=env(), capture_output=True, text=True,
                        encoding='utf-8', errors='replace')
     if not os.path.exists(tmp):
+        shutil.rmtree(twin_dir, ignore_errors=True)
         print(((p.stdout or '') + (p.stderr or '')).strip()[-2000:])
         print('\nSemgrep produced no report. NOT a pass.')
         return 2
 
     d = json.load(open(tmp, encoding='utf-8'))
+    shutil.rmtree(twin_dir, ignore_errors=True)
     results, errors = d.get('results', []), d.get('errors', [])
+
+    def home(pth):
+        return twins.get(os.path.normcase(os.path.abspath(os.path.join(REPO, str(pth)))), pth)
+    for x in results:
+        x['path'] = home(x['path'])
     sev = {}
     for x in results:
         sev[x['extra']['severity']] = sev.get(x['extra']['severity'], 0) + 1
@@ -185,13 +260,36 @@ def main(argv):
         pth = e.get('path')
         if isinstance(pth, list):
             pth = '/'.join(map(str, pth))
-        unscanned.setdefault(str(pth), set()).add(str(t))
+        unscanned.setdefault(str(home(pth)), set()).add(str(t))
     if unscanned:
         print('\n  COULD NOT FULLY SCAN -- %d file(s). NOT a pass:' % len(unscanned))
         for pth, ts in sorted(unscanned.items()):
             print('    %-46s %s' % (pth, ','.join(sorted(ts))))
 
-    if unscanned:
+    # WHAT THIS CONFIG NEVER TARGETS, stated rather than implied: Semgrep's own
+    # list of scanned paths against what is tracked. A language no rule here
+    # covers is a SCOPE LIMIT, printed every run; it is not a pass for it.
+    scanned = {os.path.normcase(os.path.abspath(os.path.join(REPO, q)))
+               for q in (d.get('paths') or {}).get('scanned', [])}
+    print('\n  APPS: inline JavaScript of %d tracked .html file(s) scanned via '
+          'line-preserving twins' % len(set(twins) & scanned))
+    not_twinned = sorted(set(twins) - scanned)
+    sql = tracked('*.sql')
+    if sql is None:
+        print('  COULD NOT LIST tracked files -- coverage below is unknown')
+        return 2
+    sql_hit = [q for q in sql if os.path.normcase(os.path.abspath(os.path.join(REPO, q))) in scanned]
+    print('  NOT COVERED: %d of %d tracked .sql file(s) -- no rule in this config '
+          'targets SQL' % (len(sql) - len(sql_hit), len(sql)))
+    if not_twinned or unreadable_apps:
+        print('  COULD NOT SCAN the inline JS of %d app(s). NOT a pass:'
+              % (len(not_twinned) + len(unreadable_apps)))
+        for t in not_twinned:
+            print('    ' + twins[t])
+        for t in unreadable_apps:
+            print('    ' + t)
+
+    if unscanned or not_twinned or unreadable_apps:
         return 2
     return 1 if results else 0
 
