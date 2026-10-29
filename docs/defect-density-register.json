@@ -40341,7 +40341,7 @@
       "recurrence_open": "No SQL rule exists, so the 313 tracked .sql files remain unscanned by Semgrep; only the disclosure is new. H2's tools-hover2 semgrep_risk_pack has the same .html gap and is H2's."
     },
     {
-      "commit": "e94ebe4241cb",
+      "commit": "a74ea763b224",
       "date": "2026-10-29",
       "subject": "fix(sairnmechanical, cody b63): close cc's four b67 Tier A gaps on the backup path, and the redaction probe b58 broke",
       "files": [
