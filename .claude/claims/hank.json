@@ -4780,6 +4780,17 @@
       "status": "released",
       "released_at": "2026-10-29T12:12:52Z",
       "files": null
+    },
+    {
+      "id": "hank-1793278327",
+      "session": "hank",
+      "subject": "sairnlaw",
+      "task": "vermont dc s3 triage",
+      "claimed_at": "2026-10-29T12:52:07Z",
+      "claimed_at_epoch": 1793278327.1015837,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
