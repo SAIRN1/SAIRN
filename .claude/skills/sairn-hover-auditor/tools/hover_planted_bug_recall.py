@@ -680,11 +680,37 @@ def selftest():
        rc_nonode == EXIT_COULD_NOT_RUN
        and 'EVERY NUMBER BELOW IS UNTRUSTED' in buf2.getvalue())
 
+    # b106: the advertised vendor flag refuses until the arm exists (log 1775).
+    for _verb in ('--run', '--injection'):
+        buf3 = io.StringIO()
+        with contextlib.redirect_stdout(buf3):
+            rc_v = main([_verb, '--with-vendor'])
+        ck('P20 %s --with-vendor REFUSES with exit 2 and says the arm is not implemented, instead of '
+           'printing the deterministic result as if a vendor arm had run' % _verb,
+           rc_v == EXIT_COULD_NOT_RUN and 'not implemented' in buf3.getvalue()
+           and 'RECALL PER CLASS' not in buf3.getvalue() and 'SEED LIST HASH' not in buf3.getvalue())
+    buf4 = io.StringIO()
+    with contextlib.redirect_stdout(buf4):
+        rc_f = main(['--freeze'])
+    ck('P21 CONTROL: without the flag --freeze still runs (exit 0), so the refusal is the flag and not the tool',
+       rc_f == EXIT_OK and 'SEED LIST FROZEN' in buf4.getvalue())
+
     print('%d ok, %d failed' % (ok[0], bad[0]))
     return EXIT_OK if not bad[0] else EXIT_LOOK
 
 
+VENDOR_ARM_IMPLEMENTED = False
+
+
 def main(argv):
+    # b106: --with-vendor was advertised from b72 and read by nothing, so a run with it printed
+    # exactly what --run prints (log 1775). Until the vendor arm exists the flag REFUSES, so a
+    # clean-looking output can never be taken for a vendor measurement that did not happen.
+    if '--with-vendor' in argv and not VENDOR_ARM_IMPLEMENTED:
+        print('COULD NOT RUN: --with-vendor is not implemented. The vendor arm of the planted-bug '
+              'measurement does not exist, so no vendor detection rate was measured and none is '
+              'claimed. Run without the flag for the deterministic recall.')
+        return EXIT_COULD_NOT_RUN
     if '--selftest' in argv:
         return selftest()
     if '--freeze' in argv:
