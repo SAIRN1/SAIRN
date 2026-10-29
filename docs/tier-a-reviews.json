@@ -8544,12 +8544,12 @@
         "api/b51-countersign-lock-drift.test.js"
       ],
       "what": "cody b51: api/_lib/countersign.js requireCountersignature now REFUSES (500 COUNTERSIGN_LOCK_MISCONFIGURED) a resource its PROFILE does not lock, instead of returning null (= signed, proceed). All four callers (sd-data law gate x2, leg gate, law-attest) call it only after their own table says the resource is locked, so off-profile is list drift and used to file the write unsigned (cc b50 review of d6b37bb1). api/b51-countersign-lock-drift.test.js drives leg_cremations under a drifted PROFILE. Review: no caller relies on null for an unlocked resource; the 500 is unreachable without drift.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "hank",
       "owner_assigned_at": "2026-10-22T16:02:10Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "hank",
+      "reviewed_at": "2026-10-29T19:03:44Z",
+      "verdict": "hank b68 REVIEW of cody b51 (countersign.js off-profile -> 500 COUNTERSIGN_LOCK_MISCONFIGURED). CRITERIA: (a) no production caller relies on null for an unlocked resource; (b) the 500 is unreachable without list drift. VERDICT: SOUND. (a) Exactly four production callers at fcc8bcaf0 (grep requireCountersignature( over api/, tests excluded): sd-data.js:2542 and :17068 call only when LAW_TRUST_TWO_STAGE[resource]===true; sd-data.js:17697 only when legRoles.requiresCountersignature(resource); law-attest.js:429 only with attest.ATTEST_RESOURCE inside SIGNER_MODE_DUAL. None passes a resource its own table does not lock. (b) Measured with node, not read: law two-stage set = 1 resource, 0 missing from law-countersign PROFILE.lockedResources; leg: of 36 resources in legRoles.resources(), requiresCountersignature is true for leg_cremations only, 0 missing from leg-countersign PROFILE; law-attest PROFILE locks law_trust_attestation = ATTEST_RESOURCE. So the 500 needs a table/profile divergence. api/b51-countersign-lock-drift.test.js 5/5 at HEAD, including arm X (ablation: with return null restored the drifted write files). Residual, not a defect: the drift is caught at request time, not at load; a load-time assertion that each caller's table is a subset of its PROFILE would turn it into a deploy failure. Not filed."
     },
     {
       "author_session": "hank",

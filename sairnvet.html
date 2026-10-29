@@ -6596,8 +6596,16 @@ function saveWildlifeEdit(id){
   var list = getWildlifeCases();
   var w = list.find(function(x){ return x.id===id; });
   if(!w) return;
-  w.status = document.getElementById('wr-edit-status').value;
-  w.releaseDate = document.getElementById('wr-edit-releasedate').value || null;
+  var status = document.getElementById('wr-edit-status').value;
+  var releaseDate = document.getElementById('wr-edit-releasedate').value || null;
+  // A closing status with no date drops out of Active Cases but never reaches
+  // Released YTD or Release Rate, and its days in care run on to today.
+  if(WILDLIFE_CLOSED_STATUSES.indexOf(status)!==-1 && !releaseDate){
+    showToast('Set the Release/Outcome date to mark a case '+status,'error');
+    return;
+  }
+  w.status = status;
+  w.releaseDate = releaseDate;
   saveWildlifeCases(list);
   cancelWildlifeEdit();
   renderWildlifeRehab();

@@ -4833,7 +4833,7 @@ function rKeepsakes(){
   var otb=$('ksotbody');
   otb.innerHTML=orders.length?orders.slice().reverse().map(function(o){
     var nextStatus={Ordered:'Received',Received:'Delivered'}[o.status];
-    return '<tr><td>'+H(caseLabel(o.case_id))+'</td><td>'+H(keepsakeLabel(o.item_id))+'</td><td>'+o.quantity+'</td>'+
+    return '<tr><td>'+H(caseLabel(o.case_id))+'</td><td>'+H(keepsakeLabel(o.item_id))+'</td><td>'+H(String(o.quantity==null?'':o.quantity))+'</td>'+
       '<td><span class="badge '+(statusColors[o.status]||'bx')+'">'+H(o.status)+'</span></td><td>'+fdate(o.order_date)+'</td>'+
       '<td>'+(nextStatus?'<button class="btn bo bs" onclick="advanceKeepsakeOrder(\''+o.id+'\')">Mark '+nextStatus+'</button>':'--')+'</td></tr>';
   }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No orders yet</td></tr>';

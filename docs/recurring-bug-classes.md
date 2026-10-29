@@ -68,3 +68,14 @@ exception and it was caught by somebody else reading my file.
 
 **Rows 1-3 were found by somebody else's review, not by me.** Two of those three (1, 3) are the same shape that batch 10 named: something meant to happen on the way OUT — a cleanup, a release — skipped on a path the author's own arm did not drive. Row 2 is a different shape: a design comment's premise taken as fact and never re-checked against what the file itself stores.
 Rows 4 and 5 are b64's own leftovers, and both sit just outside the shape the b64 sweep searched for -- the sweep's predicate, not the handlers, decided what was found.
+
+**All three were found by somebody else's review, not by me.** Two of the three (1, 3) are the same shape that batch 10 named: something meant to happen on the way OUT — a cleanup, a release — skipped on a path the author's own arm did not drive. Row 2 is a different shape: a design comment's premise taken as fact and never re-checked against what the file itself stores.
+
+## 2026-10-29 — batch 68 (hank), the four H1 findings routed to hank
+
+| # | Defect | Phase | Sub-phase | Cause | Commit |
+|---|---|---|---|---|---|
+| 1 | `sairnlegacy.html` keepsake order table wrote `o.quantity` into `innerHTML` unescaped, while the cells beside it used `H()` (H1 #1734) | coding | output encoding | **due to** a value assumed numeric because the CLIENT coerces it (`Number(..)||1`), while the server write branch accepts any type, so a direct API write stores markup | this batch |
+| 2 | `docs/CRITICALITY-TIERS.md` cells for `leg_memorials` and `leg_liveryvendors` said "no PII" (H1 #1740) | requirement | register classification | **due to** a row classified by the stated B rule without reading its write site; same shape as the `leg_guestbook` cell corrected 2026-09-30 | this batch |
+| 3 | `sairnvet.html` `saveWildlifeEdit()` accepted a closing status with a blank outcome date, so the case left Active Cases and never reached Released YTD / Release Rate (H1 #1744) | coding | input validation | **due to** a required pairing (closing status ⇒ date) stated only in help text under the form, not enforced on save | this batch |
+| 4 | `tools/sql_placeholder_check.py` lexer: E-string backslash escape ignored (false negative), apostrophe in a quoted identifier opened a string (false COULD NOT RUN), declaration matched by substring and on raw lines (H1 #1747) | design | hand-written lexer | **due to** a lexer modelling fewer quoting forms than the grammar has, and an exemption matched more loosely than the sentence granting it; the fixtures did not reach these shapes | this batch |

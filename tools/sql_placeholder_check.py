@@ -62,7 +62,7 @@ import re
 import subprocess
 import sys
 
-CRITERIA_VERSION = '2026-10-28.1'
+CRITERIA_VERSION = '2026-10-29.1'
 
 DUNDER = re.compile(r'__[A-Z][A-Z0-9_]*__')
 MUSTACHE = re.compile(r'\{\{\s*[A-Za-z_][A-Za-z0-9_. ]*\}\}')
@@ -114,11 +114,39 @@ def lex(src):
             i = j + 2
             buf_line = line
             continue
+        if c == '"':
+            # A quoted identifier is code, but an apostrophe inside it must not
+            # open a string (H1 #1747 (2): that was a false COULD NOT RUN).
+            k = i + 1
+            while True:
+                k = src.find('"', k)
+                if k == -1:
+                    raise CouldNotRun('unterminated " identifier starting on line %d' % line)
+                if src.startswith('""', k):
+                    k += 2
+                    continue
+                break
+            body = src[i:k + 1]
+            buf.append(body)
+            line += body.count('\n')
+            i = k + 1
+            continue
         if c == "'":
+            # E'...' is the one string form where a backslash escapes the next
+            # character, quote included (H1 #1747 (1): ignoring that slipped
+            # the quote pairing by one and read a placeholder as a comment).
+            estring = i > 0 and src[i - 1] in 'eE' and (
+                i < 2 or not (src[i - 2].isalnum() or src[i - 2] in '_$'))
             flush()
             start, j = line, i + 1
             while True:
-                k = src.find("'", j)
+                if estring:
+                    k = j
+                    while k < n and src[k] != "'":
+                        k += 2 if src[k] == '\\' else 1
+                    k = -1 if k >= n else k
+                else:
+                    k = src.find("'", j)
                 if k == -1:
                     raise CouldNotRun("unterminated ' string starting on line %d" % start)
                 if src.startswith("''", k):
@@ -154,17 +182,21 @@ def lex(src):
 
 def scan(src):
     """Return (findings, declared, bad_declarations) for one file's text."""
+    tokens = lex(src)
+    # A declaration counts only when the whole line IS a comment -- a line of
+    # the same shape inside a string literal is data (H1 #1747 (3)).
+    comment_at = {ln: text for kind, text, ln in tokens if kind == 'comment'}
     declared, bad_decl = {}, []
     for ln, raw in enumerate(src.splitlines(), 1):
         m = DECL.match(raw)
-        if m:
+        if m and comment_at.get(ln, '').strip() == raw.strip():
             why = (m.group(2) or '').strip()
             if len(why) < 20:
                 bad_decl.append((ln, m.group(1)))
             else:
                 declared[m.group(1)] = why
     findings = []
-    for kind, text, ln in lex(src):
+    for kind, text, ln in tokens:
         if kind == 'comment':
             continue
         hits = []
@@ -177,7 +209,9 @@ def scan(src):
                 hits.append((name, m.group(0)))
         for name, tok in hits:
             bare = tok.strip("'")
-            ok = any(d == bare or d == tok or d in tok for d in declared)
+            # Exact token only: a substring test let 'PIN' clear __PIN_HASH__
+            # and '__' clear every dunder token (H1 #1747 (3)).
+            ok = any(d == bare or d == tok for d in declared)
             findings.append({'line': ln + text[:max(text.find(tok), 0)].count('\n'),
                              'shape': name, 'token': tok, 'declared': ok})
     return findings, declared, bad_decl
@@ -259,6 +293,19 @@ FIXTURES = [
     ('an unterminated dollar-quote is COULD NOT RUN', "do $$ begin select 1;", 2),
     ('a tagged dollar-quote nests inside $$', "do $$ begin execute $q$select '__X_Y__'$q$; end $$;", 1),
     ('lower-case dunder is not a placeholder (no false positive on __proto__-like names)', "select '__proto__';", 0),
+    # H1 #1747, hank b68: each of these classified wrong under 2026-10-28.1.
+    ("an E-string's escaped quote does not slip the pairing", "select E'a\\'', '--'; insert into t values ('__PIN_HASH__');", 1),
+    ("...and a plain string's backslash is NOT an escape", "select 'a\\', '__PIN_HASH__';", 1),
+    ("an apostrophe in a quoted identifier is not a string", 'select 1 as "it\'s"; select 2;', 0),
+    ('a declaration does not cover a token that CONTAINS it',
+     "-- sql-placeholder-lint: operator-input PIN -- a role password must never be committed\n"
+     "insert into t values ('__PIN_HASH__');", 1),
+    ('a declaration of __ does not cover every dunder token',
+     "-- sql-placeholder-lint: operator-input __ -- a role password must never be committed\n"
+     "insert into t values ('__PIN_HASH__');", 1),
+    ('a declaration-shaped line inside a string literal is data, not a declaration',
+     "select '\n-- sql-placeholder-lint: operator-input __PIN_HASH__ -- a role password must never be committed\n';\n"
+     "insert into t values ('__PIN_HASH__');", 1),
 ]
 
 
