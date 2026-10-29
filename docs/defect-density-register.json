@@ -41178,6 +41178,43 @@
       "recurrence_open": "Any handler awaiting a device API (camera, GPS, file picker) is outside the b64 sweep's server-write shape; only these two were checked."
     },
     {
+      "commit": "e4027b3e5689",
+      "date": "2026-10-29",
+      "subject": "fix(sairnlegacy, hank b69 H1x): every stored id passed from an inline handler goes through JA() -- a JSON string literal, HTML-escaped",
+      "files": [
+        "docs/recurring-bug-classes.md",
+        "sairnlegacy.html",
+        "tests/sairnlegacy_inline_handler_args.js"
+      ],
+      "lines_added": 120,
+      "lines_removed": 30,
+      "app": "sairnlegacy",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "sairnlegacy.html interpolated 33 stored record ids raw between \\' quotes inside inline onclick/onchange handlers, and built the employee-id argument as &#39;+H(id)+&#39;. The browser HTML-decodes the attribute before the JS runs and the server accepts any id format, so an id holding a quote closed the string and ran in whoever opened the page (H1 #1734 disclosed it as app-wide). All 34 now go through JA() = H(JSON.stringify(String(v))). tests/sairnlegacy_inline_handler_args.js 15/15; arm X proves both old forms run injected code.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "app-wide pattern present across many commits; not traced to one"
+      },
+      "citation_note": "No standing rule names inline-handler arguments as a separate encoding context; proposed: a value passed from an inline handler is a JS string literal, then HTML-escaped.",
+      "contributing_factors": [
+        {
+          "factor": "Inline handlers are an HTML-then-JS context, and the app escaped for neither (raw) or for HTML only (H)",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "JA() for every record value passed from an inline handler"
+        }
+      ],
+      "recurrence_open": "Other apps (stonedesk, sairnlaw, sairnvet and more) use the same raw inline-handler id shape and were not swept; there is still no server-side format check on leg payload ids.",
+      "single_factor_note": "one encoding-context gap across 34 sites"
+    },
+    {
       "commit": "f0afc23b39dd",
       "date": "2026-10-29",
       "subject": "fix(sairnvet, fourth b67): H1 #1779 -- a refused controlled-substance WRITE is shown on screen, naming the server code",
