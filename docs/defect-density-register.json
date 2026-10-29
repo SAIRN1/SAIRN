@@ -40168,49 +40168,6 @@
       "recurrence_open": "Other fixed 'this device only' / 'not synced' sentences in other apps are not checked against their SYNCED lists; only this panel is now rendered from confirmed state."
     },
     {
-      "commit": "cbd6cc10e938",
-      "date": "2026-10-29",
-      "subject": "fix(push_retry, hank b65): a landed fast retry's BYPASS-LOG row no longer blocks the next run's rebase",
-      "files": [
-        "tools/push_retry.py"
-      ],
-      "lines_added": 42,
-      "lines_removed": 0,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "live-verification",
-      "summary": "push_retry --loop left a landed fast retry's BYPASS-LOG row uncommitted, so the next loop run started with a dirty tracked file and its first rebase refused (exit 3, fail-closed). Fixed: an append-only BYPASS-LOG change is committed as gate bookkeeping before each rebase.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "4a60ab021f5f",
-        "date": "2026-10-28",
-        "subject": "fix(push_retry, hank b63): a REFUSED fast retry no longer logs, so the next rebase is not blocked",
-        "lag_days": 1
-      },
-      "citation_note": "No rule says a retry tool must leave a clean tree between runs; C1 records it.",
-      "contributing_factors": [
-        {
-          "factor": "The landed-skip row was deliberately left uncommitted, and the loop never folded BYPASS-LOG before its rebase",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "_fold_bypass_rows() commits an append-only change as gate bookkeeping each attempt"
-        },
-        {
-          "factor": "b63 fixed the refused-skip case and reasoned about the landed one without driving it across two loop runs",
-          "kind": "detection",
-          "action_status": "planned",
-          "action": "an end-to-end arm driving two consecutive loop runs against a scratch repo"
-        }
-      ],
-      "recurrence_open": "Any other tool-written tracked file left dirty between loop runs stops the rebase the same way."
-    },
-    {
       "commit": "c21eb4ebe653",
       "date": "2026-10-29",
       "subject": "fix(sairnmechanical, fourth b65): saveQuote stores the client the quote was generated for",
@@ -40295,6 +40252,49 @@
       "recurrence_open": "Other server files with calendar-day logic and no per-licence time zone; America/New_York is a platform-wide assumption, not a per-customer one."
     },
     {
+      "commit": "cbd6cc10e938",
+      "date": "2026-10-29",
+      "subject": "fix(push_retry, hank b65): a landed fast retry's BYPASS-LOG row no longer blocks the next run's rebase",
+      "files": [
+        "tools/push_retry.py"
+      ],
+      "lines_added": 42,
+      "lines_removed": 0,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "live-verification",
+      "summary": "push_retry --loop left a landed fast retry's BYPASS-LOG row uncommitted, so the next loop run started with a dirty tracked file and its first rebase refused (exit 3, fail-closed). Fixed: an append-only BYPASS-LOG change is committed as gate bookkeeping before each rebase.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "4a60ab021f5f",
+        "date": "2026-10-28",
+        "subject": "fix(push_retry, hank b63): a REFUSED fast retry no longer logs, so the next rebase is not blocked",
+        "lag_days": 1
+      },
+      "citation_note": "No rule says a retry tool must leave a clean tree between runs; C1 records it.",
+      "contributing_factors": [
+        {
+          "factor": "The landed-skip row was deliberately left uncommitted, and the loop never folded BYPASS-LOG before its rebase",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "_fold_bypass_rows() commits an append-only change as gate bookkeeping each attempt"
+        },
+        {
+          "factor": "b63 fixed the refused-skip case and reasoned about the landed one without driving it across two loop runs",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "an end-to-end arm driving two consecutive loop runs against a scratch repo"
+        }
+      ],
+      "recurrence_open": "Any other tool-written tracked file left dirty between loop runs stops the rebase the same way."
+    },
+    {
       "commit": "d547ca08ac2b",
       "date": "2026-10-29",
       "subject": "fix(tools, cody b62): run_semgrep scans the apps' inline JavaScript and states what it does not cover",
@@ -40339,6 +40339,51 @@
         }
       ],
       "recurrence_open": "No SQL rule exists, so the 313 tracked .sql files remain unscanned by Semgrep; only the disclosure is new. H2's tools-hover2 semgrep_risk_pack has the same .html gap and is H2's."
+    },
+    {
+      "commit": "e94ebe4241cb",
+      "date": "2026-10-29",
+      "subject": "fix(sairnmechanical, cody b63): close cc's four b67 Tier A gaps on the backup path, and the redaction probe b58 broke",
+      "files": [
+        "sairnmechanical.html",
+        "tests/mech_backup_not_silent.js",
+        "tests/mech_docs_redaction_wiring_probe.py"
+      ],
+      "lines_added": 201,
+      "lines_removed": 7,
+      "app": "sairnmechanical",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "SAIRNmechanical saveDoc could save a duplicate document: after b57 it waited up to 15 s for the server backup before toasting while the save button stayed live, so a second click re-ran the save. Re-entry guard added; plus three test gaps cc found by ablation (local-write ordering, truthy-on-success, the unprovisioned fixture's wrong shape) closed, and the redaction wiring probe b58 broke repaired.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "8259a6dd25fe",
+        "date": "2026-10-28",
+        "subject": "fix(sairnmechanical, cody b57): a backup that never ran, and a restore that never read, both said nothing",
+        "lag_days": 1
+      },
+      "citation_note": "A re-entrancy defect introduced by making a toast wait on an async push; no PR rule id names it.",
+      "contributing_factors": [
+        {
+          "factor": "saveDoc waited on the async push before toasting but left its trigger live, so the save could be re-entered while the first push was pending.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Re-entry guard released on resolve and reject; arms D1-D3."
+        },
+        {
+          "factor": "The b57 tests asserted outcomes but not ordering or the server's real response shapes, so three ablations of the new code stayed green until an independent reviewer ran them.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Arms L, P1/P4 and the real-shape fixture added, each red under the named ablation."
+        }
+      ],
+      "recurrence_open": "Other saves that now await a server answer before re-enabling (sairnmechanical saveQuote/saveCheck and other apps' push-then-toast paths) were not swept for the same re-entry window."
     }
   ],
   "started": "2026-09-09",
