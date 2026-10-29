@@ -13869,6 +13869,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_semgrep_inline_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "sections A and B still run; only the live arm C is skipped, and says so)."
+    }
+   ],
+   "sha": "d547ca08ac2bf0e27d6df9020833533ea6ee1241",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": ".claude/settings.json",
    "class": "CI / hook configuration",
    "level": "WEAKENING",

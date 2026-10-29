@@ -1,0 +1,41 @@
+SAIRN REPORT -- cody b62 (2026-10-29)
+=====================================
+Handoff: SAIRN-handoff-cody-b62.md.
+
+1. PUSH OF b61: LANDED CLEAN.
+   - Tip 917d9bdba, 0 REFUSED. The manifest commit 7641c8c60 is on origin as 659888571.
+   - The gate first required two things, both added:
+     - a register record for the sairnfreedom fix;
+     - a Tier A obligation for sf_trustee_audits and sf_officers, assigned to cc.
+
+2. api/b48-sd-agent-error-leak.test.js: 3/3 passed, rc 0. The full output is in handoff section 2.
+
+3. G1 fx@example.invalid SCAN (hank's method: fx-identity commits intersected with the commits this clone's reflog created):
+   - 374 fx@example.invalid commits were created here, 2026-10-06 to 2026-10-22; 357 are on origin/main.
+   - 47 fx@local commits were created here, 2026-10-22 to 10-28.
+   - Since the b57 fix: 82 of 82 commits created here are mikied68. CLEAN now.
+   - History is not rewritten; that is Michael's decision.
+
+4. THE TWO CARRIED GAPS, ROOT-CAUSED FIRST:
+   a. Calibration confidences: H2's, NOT patched.
+      - The cause is missing data. 10 H2 confidences have no resolution row: seq 1078-1080, 1082-1085, 1091, 1109, and 1115, which b55 missed.
+      - The Brier score cannot discriminate yet.
+      - Routed to H2. It sits under the auditor deny scope.
+   b. Semgrep .html/.sql: FIXED on the build side.
+      - Cause: the rules target only .js/.ts, the apps are inline <script> in .html, and extract mode was removed in Semgrep 1.65. On top of that, run_semgrep read only `errors`, so 24 apps were silently never scanned.
+      - Fix: each app's inline JS gets a line-preserving twin, which is scanned and mapped back. Coverage is read from paths.scanned, and the 313 .sql files are reported NOT COVERED (no SQL rule exists).
+      - Real run: 1 pre-existing finding (sd-data.js:2301); 0 from the apps.
+      - Probe 9/9; red on the old tool.
+
+5. EMAILED-ANCHOR CONTRADICTION: DETERMINED, NOT EDITED.
+   - The entries are in the auditors' append-only chain logs, which build agents do not write.
+   - H2 seq813 is wrong: b19 widened the gate, it did not retire the email leg. seq871 (b33) is the real removal.
+   - seq1111/1147/1156 contradict 871. What is left is H2's email tooling, not a pending decision.
+   - H1 seq1704/1715/1721 overstate "DRILL PASSED": no fresh anchor mail exists, and the b33 decision is not recorded for H1's mirror.
+   - Routed: H2, H1, Michael.
+   - My b55 wording ("sign-off OPEN", "b19 retirement") is corrected in the handoff.
+
+6. b62 PUSH: LANDED.
+   - Tip 053e52285.
+   - The gate blocked it twice on derived docs gone stale after the rebase.
+   - The push script does not regenerate them in gate mode; routed as O7.

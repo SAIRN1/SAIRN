@@ -1,0 +1,14 @@
+DIGEST -- cody b62, 2026-10-29. Items 1-3 DONE; item 4: Semgrep fixed, calibration routed to H2; item 5 determined and routed.
+STATUS: TOOLS, TESTS, DOCS. NO SQL. NO APP CHANGE. NO LIVE DATA WRITES.
+CHANGED: tools/run_semgrep.py, tests/run_semgrep_inline_probe.py (new), register, manifest, derived docs.
+LANDED: b61 tip 917d9bdba (manifest commit as 659888571), b62 tip 053e52285. 0 REFUSED.
+ITEM 1 -- b61 pushed clean after a register record and a Tier A obligation (sairnfreedom, assigned to cc).
+ITEM 2 -- b48-sd-agent-error-leak.test.js: 3/3 passed, rc 0; full output in handoff section 2.
+ITEM 3 -- fx scan: 374 fx@example.invalid + 47 fx@local created here (to 10-28); 82/82 since are clean. No rewrite.
+ITEM 4 -- calibration: 10 unresolved H2 confidences (incl. 1115) -- H2's. Semgrep: 24 apps never scanned; now via twins.
+ITEM 5 -- H2 seq813 wrong (b19 widened, b33 removed); 1111/1147/1156 contradict 871; H1 DRILL PASSED overstated.
+DECISION-NEEDED: Michael -- does the email-leg removal cover H1's mirror? cc -- Tier A reviews; O7 push-script regen.
+UNVERIFIED: whether sd-data.js:2301's app-agnostic verifySessionToken is intended.
+NEXT: H2 resolve confidences + seq813 correction; H1 qualify DRILL PASSED; a SQL rule set or keep the disclosed limit.
+EVIDENCE-path: SAIRN-handoff-cody-b62.md, SAIRN-report-cody-b62.txt
+CONTEXT 56.7% of 1,000,000 -- 566,873 tokens, measured.
