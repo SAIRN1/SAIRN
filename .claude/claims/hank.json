@@ -4755,8 +4755,8 @@
       "task": "push_retry separate fold commit stale snapshot scan js coverage",
       "claimed_at": "2026-10-29T10:42:38Z",
       "claimed_at_epoch": 1793270558.858793,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-29T11:06:04Z",
       "files": null
     }
   ],
