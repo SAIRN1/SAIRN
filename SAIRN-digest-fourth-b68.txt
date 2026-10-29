@@ -17,12 +17,12 @@ CHANGED:
   known-red: capa reconfirmed
 1 the review findings are routed to hank, cody and cc with exact next steps (handoff section 3)
 2 mech re-entrancy guards are NOT started: blocked by cody's live claim
-3 the whole known-red re-drive did not finish (>2h); the other 62 entries are not claimed
+3 known-red re-drive finished after close: 3 moved to recovered, 1 kept (env), 2 timed out
 4 CORRECTION: a4de92258 has no Tier A obligation; the gate refused --open. Routed to cody
 NEXT, in order:
-  a. fourth: finish red_suite_register_check (item 21)
+  a. fourth: drive run_selftest_independence_probe beside the clones; the 2 timeouts
   b. fourth: mech guards once cody releases (#3)
   c. fourth: vet append-only + countersign (#13, #14)
-UNVERIFIED: known-red entries other than capa (re-drive unfinished); the b38/b18 findings rest on handler mocks, not a live deleted-row drive.
+UNVERIFIED: 2 known-red suites timed out; the b38/b18 findings rest on handler mocks, not a live deleted-row drive.
 EVIDENCE-path: tests/sairncash_prior_tax_zero.js; tests/sairnbuild_cost_forecast_writer.js; tests/run_sairnbuild_server_wins_sabotage_probe.py arms 16-19.
 Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\83c60d05-1589-4389-a5cf-cd99265bab76.jsonl

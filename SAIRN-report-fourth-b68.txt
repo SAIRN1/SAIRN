@@ -97,3 +97,13 @@ PUSH NOTES
     with its reason. No skip, override or force was used.
   - One push lost a remote ref race; push_retry --loop rebased it and
     re-seated the register citations.
+
+ADDENDUM, after close -- KNOWN-RED RE-DRIVE FINISHED
+  red_suite_register_check reported 4 RECOVERED. Each was then driven alone:
+    sairnfreedom_auth_review_probe.js       exit 0  -> moved to recovered
+    sairnfreedom_segregation_of_duties.js   exit 0  -> moved to recovered
+    write_readback_shape_probe.py           exit 0  -> moved to recovered
+    run_selftest_independence_probe.py      exit 1 alone; its arm needs
+      sibling clones, so this is an environment artefact -> KEPT registered
+  COULD NOT RUN (timed out at 420s, not a pass): install_git_hooks_check_probe.py,
+  push_gate/check9_probe.py.
