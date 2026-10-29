@@ -180,7 +180,14 @@ def scan_stale(js):
 def scan_file(path):
     with open(path, "r", encoding="utf-8", errors="replace") as fh:
         html = fh.read()
-    blocks = script_blocks(html)
+    # A .js FILE IS ONE SCRIPT BLOCK (hank b64). This read only <script> tags,
+    # so a server file -- all of api/*.js -- returned None, was dropped from
+    # `results`, and the summary read "0 UTC calendar derivations" for 191
+    # files it had never looked at. A wrapped re-run found six.
+    if path.lower().endswith((".js", ".mjs", ".cjs")):
+        blocks = [html]
+    else:
+        blocks = script_blocks(html)
     if not blocks:
         return None
     js = strip_comments("\n".join(blocks))
@@ -210,7 +217,11 @@ def main():
     # Measured from `docs/`, not reasoned about. An explicit path argument is
     # still CWD-relative on purpose: a path a human types means what they typed.
     paths = args.paths or sorted(glob.glob(os.path.join(REPO, "*.html")))
-    results = [r for r in (scan_file(p) for p in paths if os.path.isfile(p)) if r]
+    named = [p for p in paths if os.path.isfile(p)]
+    results = [r for r in (scan_file(p) for p in named) if r]
+    # A NAMED FILE THAT YIELDS NO SCRIPT IS NOT A CLEAN FILE. Say how many, by
+    # name, rather than let them vanish from the denominator (hank b64).
+    unread = [p for p in named if not any(r["path"] == p for r in results)]
 
     total_utc = 0
     total_open = 0
@@ -252,6 +263,10 @@ def main():
     # without it -- they read as a clean platform whether this scanned 22 files
     # or none.
     print("%d file(s) scanned" % len(results))
+    if unread:
+        print("%d named file(s) had NO script to scan and were NOT read: %s"
+              % (len(unread), ", ".join(os.path.relpath(p, REPO) if os.path.isabs(p) else p
+                                        for p in unread[:10])))
     if not results:
         print("ZERO files were scanned, so the zeros below are not a pass. "
               "Name paths explicitly, or run with no arguments to scan the "
@@ -273,7 +288,8 @@ THESE ARE QUESTIONS, NOT DEFECTS. Read each one before acting:
   * A bare new Date().toISOString() storing an instant is correct and is never
     reported. Only .slice(0,10) and .slice(0,7) calendar derivations are.
 """)
-    return 0
+    # Zero files scanned is COULD NOT RUN, never a pass (PR 1.11).
+    return 0 if results else 2
 
 
 if __name__ == "__main__":

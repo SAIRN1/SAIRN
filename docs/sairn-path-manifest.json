@@ -76,7 +76,8 @@
       "docs/sairnlaw-northdakota-deadline-seed-gate.md",
       "docs/sairnlaw-rhodeisland-deadline-seed-blockers.md",
       "docs/sairnlaw-southdakota-deadline-seed-gate.md",
-      "docs/sairnlaw-vermont-deadline-seed-blockers.md"
+      "docs/sairnlaw-vermont-deadline-seed-blockers.md",
+      "tools/sairn_stale_snapshot_scan.py"
     ],
     "cc": [
       "api/sd-data.js",
