@@ -1344,7 +1344,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     </select></div></div>
     <div class="fr"><div class="fg"><label>Cost Code</label><input id="cm-code" placeholder="01-Labour"></div><div class="fg"><label>Vendor / Crew</label><input id="cm-vendor" placeholder="Builders FirstSource"></div></div>
     <div class="fr"><div class="fg"><label>Budget ($)</label><input id="cm-budget" type="number" placeholder="25000"></div><div class="fg"><label>Committed ($)</label><input id="cm-committed" type="number" placeholder="24100"></div></div>
-    <div class="fg"><label>Actual ($)</label><input id="cm-actual" type="number" placeholder="0"></div>
+    <div class="fr"><div class="fg"><label>Actual ($)</label><input id="cm-actual" type="number" placeholder="0"></div><div class="fg"><label>Forecast at completion ($)</label><input id="cm-forecast" type="number" min="0" placeholder="Blank = budget"></div></div>
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
       <button class="btn bo" onclick="closeCostModal()">Cancel</button>
       <button class="btn bp" onclick="saveCost()">Save Cost Line</button>
@@ -5394,7 +5394,7 @@ function rCostTbl(){
 function openCostModal(){
   if(!jobs().length){toast('Add a job first - a cost line must belong to one');return;}
   ceid=null;fillJobSelects();
-  ['cm-code','cm-vendor','cm-budget','cm-committed','cm-actual'].forEach(function(f){var el=$(f);if(el)el.value='';});
+  ['cm-code','cm-vendor','cm-budget','cm-committed','cm-actual','cm-forecast'].forEach(function(f){var el=$(f);if(el)el.value='';});
   $('cm-kind').value='labour';
   $('costmodal').classList.add('on');
 }
@@ -5405,6 +5405,7 @@ function editCost(id){
   $('cm-job').value=c.job_id||'';$('cm-kind').value=c.kind||'labour';
   $('cm-code').value=c.cost_code||'';$('cm-vendor').value=c.vendor||'';
   $('cm-budget').value=c.budget||'';$('cm-committed').value=c.committed||'';$('cm-actual').value=c.actual||'';
+  $('cm-forecast').value=(c.forecast===undefined||c.forecast===null)?'':c.forecast;
   $('costmodal').classList.add('on');
 }
 function saveCost(){
@@ -5420,7 +5421,12 @@ function saveCost(){
     vendor:$('cm-vendor').value.trim(),
     budget:parseFloat($('cm-budget').value)||0,
     committed:parseFloat($('cm-committed').value)||0,
-    actual:parseFloat($('cm-actual').value)||0
+    actual:parseFloat($('cm-actual').value)||0,
+    // THE WRITER forecastFor() NEVER HAD (fourth b68). Blank is null, so the
+    // line falls back to its budget, and a cleared box really clears: rec
+    // carries the key, so the carry-forward below cannot restore the old one.
+    // A typed 0 is kept.
+    forecast:(function(v){v=String(v).trim();var n=parseFloat(v);return v!==''&&isFinite(n)&&n>=0?n:null;})($('cm-forecast').value)
   };
   // Same carry-forward guard as saveJob(): never drop a field the form does
   // not render.
