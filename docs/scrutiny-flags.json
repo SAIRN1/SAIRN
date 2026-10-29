@@ -13627,6 +13627,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_deploy_verify_entry_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c7d7e74d82434649fb3dbd04351a8ef67c8e4a05",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/mar_billing_grant.test.js",
    "class": "test file",
    "level": "CHANGE",

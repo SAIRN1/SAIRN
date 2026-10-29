@@ -9072,6 +9072,29 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-10-29T21:38:43Z",
+      "opened_at_sha": "a02ed68cf7e3de4c4712d9109d117d9804da47a8",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 6,
+      "resources": [
+        "law_trusttx",
+        "leg_cremations"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/b69-leg-f3-supervisor.test.js"
+      ],
+      "what": "fourth b69, a02ed68cf: leg_cremations F3 on the countersign route. api/_lib/countersign.js gains checkPreparerConditions (profile.preparePolicy + profile.supervisorField), called at the endpoint's prepare and in requireCountersignature before the spend; api/leg-countersign.js supplies legPreparePolicy (fresh sairnlegacy_settings read -> decide prepare; missing = narrow default, unreadable = 502) and supervisorField authorized_by_supervisor, which must equal the countersigner at filing. WHAT TO CHECK HARDEST: (1) the check runs AFTER the attester standing loop at filing -- is there an order where a bad record spends a token before refusal? (2) currentStanding's non-403 refusals (503) pass through for the supervisor lookup -- correct fail-closed shape? (3) law: neither hook set, so law_trusttx unchanged -- confirm with the law suites; (4) Michael's reading 'recorded as authorizing' is implemented as 'named in the signed record AND is the countersigner' -- disagree if that is too strict. Reviewer must not be fourth.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-10-29T21:38:43Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

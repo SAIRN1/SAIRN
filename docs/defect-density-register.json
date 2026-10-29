@@ -40620,6 +40620,61 @@
       "recurrence_open": "Other saves that now await a server answer before re-enabling (sairnmechanical saveQuote/saveCheck and other apps' push-then-toast paths) were not swept for the same re-entry window."
     },
     {
+      "commit": "a02ed68cf7e3",
+      "date": "2026-10-29",
+      "subject": "fix(sairnlegacy api, fourth b69): an apprentice prepares a cremation only when F3 clears it AND a named licensed supervisor authorises it; empty F3 = deny",
+      "files": [
+        "api/_lib/countersign-endpoint.js",
+        "api/_lib/countersign.js",
+        "api/b48-leg-f3-prepare-deferral.test.js",
+        "api/b51-countersign-lock-drift.test.js",
+        "api/b69-leg-f3-supervisor.test.js",
+        "api/leg-countersign.js",
+        "docs/sairn-path-manifest.json"
+      ],
+      "lines_added": 297,
+      "lines_removed": 4,
+      "app": "sairnlegacy",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "SAIRNlegacy's countersign endpoint let any apprentice stage a cremation authorisation by role alone, and a director could file it whatever the home's F3 config said (even with cremations forbidden: 200) -- found by fourth b68's review of hank b18. Michael's rule: an apprentice prepares a cremation only when F3 clears it and a named licensed supervisor (authorized_by_supervisor, inside the signed content) authorises it, and that supervisor must be the countersigner; empty F3 is deny. Enforced at prepare and again at filing.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "54d6e95d9678",
+        "date": "2026-10-19",
+        "subject": "feat(sairnlaw,sairnlegacy): the four remaining practitioner answers, and the trust lock finally decides before the table",
+        "lag_days": 10
+      },
+      "citation_note": "No standing rule requires a per-home authorisation policy to be enforced on every route that stages a regulated record.",
+      "contributing_factors": [
+        {
+          "factor": "The F3 policy was enforced on the apprentice save path (decide) but not on the countersign route the apprentice actually uses.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "preparePolicy hook, checked at prepare and at filing."
+        },
+        {
+          "factor": "No record named which licensed supervisor authorised an apprentice preparation.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "authorized_by_supervisor in the signed content; it must be the countersigner."
+        },
+        {
+          "factor": "The b18 tests treated apprentice-prepares/director-files as the normal flow, so the gap read as intended behaviour.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "api/b69-leg-f3-supervisor.test.js; b48 and b51 payloads updated."
+        }
+      ],
+      "recurrence_open": "sairnlegacy.html has no field yet for naming the supervisor, so an apprentice cannot complete the flow from the UI until it is added (blocked this batch by hank's claim); other preparer-only roles on other apps were not swept."
+    },
+    {
       "commit": "a4de92258b3d",
       "date": "2026-10-29",
       "subject": "fix(tests, fourth b68): the bld session-flag arm accepted a negated flag and checked one call site of three",
@@ -41085,6 +41140,48 @@
       "recurrence_open": "41 further real instances are being fixed in the same batch; any handler added later can reintroduce the shape until the sweep scanner becomes a standing check."
     },
     {
+      "commit": "c7d7e74d8243",
+      "date": "2026-10-29",
+      "subject": "fix(tools, fourth b69): deploy_verify_notify skipped a real push chained after echo, grep or `;` (cc b74 F-1)",
+      "files": [
+        "docs/sairn-path-manifest.json",
+        "tests/run_deploy_verify_entry_probe.py",
+        "tools/deploy_verify_notify.py"
+      ],
+      "lines_added": 62,
+      "lines_removed": 10,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "tools/deploy_verify_notify.py classify_command filed a real git push as not-a-push when it followed echo, cat, grep or ; on the same line (echo start; git push origin main), because the mention-only filter tested whole lines; the post-push deploy check was then skipped silently. Found by cc b74's independent review (3 of 10 probe cases wrong). Now classified per shell segment outside quotes, comments dropped.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The line-level _MENTION_ONLY filter came with the 2026-10-05 entry-condition rewrite; that commit was not re-traced this batch."
+      },
+      "citation_note": "No standing rule names per-segment parsing of shell commands.",
+      "contributing_factors": [
+        {
+          "factor": "A filter correct for one command was applied to a whole line holding several.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "_segments() splits on separators outside quotes; each segment is judged."
+        },
+        {
+          "factor": "The entry probe had mention-only and push rows but none chaining the two.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Six rows added, including quoted and commented-out pushes."
+        }
+      ],
+      "recurrence_open": "Other hooks that classify Bash commands by substring (e.g. the deny hook) were not swept for the same line-vs-segment shape."
+    },
+    {
       "commit": "ca1cf0fcaab1",
       "date": "2026-10-29",
       "subject": "fix(sd-sub-data, hank b64): COI / licence expiry compared against the LOCAL day, not the UTC day",
@@ -41538,48 +41635,6 @@
         }
       ],
       "recurrence_open": "Any other could-not-tell code added to the server later must be added to the kept list too; nothing enforces that."
-    },
-    {
-      "commit": "36ebcb80f6da",
-      "date": "2026-10-29",
-      "subject": "fix(tools, fourth b69): deploy_verify_notify skipped a real push chained after echo, grep or `;` (cc b74 F-1)",
-      "files": [
-        "docs/sairn-path-manifest.json",
-        "tests/run_deploy_verify_entry_probe.py",
-        "tools/deploy_verify_notify.py"
-      ],
-      "lines_added": 62,
-      "lines_removed": 10,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "independent-review",
-      "summary": "tools/deploy_verify_notify.py classify_command filed a real git push as not-a-push when it followed echo, cat, grep or ; on the same line (echo start; git push origin main), because the mention-only filter tested whole lines; the post-push deploy check was then skipped silently. Found by cc b74's independent review (3 of 10 probe cases wrong). Now classified per shell segment outside quotes, comments dropped.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The line-level _MENTION_ONLY filter came with the 2026-10-05 entry-condition rewrite; that commit was not re-traced this batch."
-      },
-      "citation_note": "No standing rule names per-segment parsing of shell commands.",
-      "contributing_factors": [
-        {
-          "factor": "A filter correct for one command was applied to a whole line holding several.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "_segments() splits on separators outside quotes; each segment is judged."
-        },
-        {
-          "factor": "The entry probe had mention-only and push rows but none chaining the two.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Six rows added, including quoted and commented-out pushes."
-        }
-      ],
-      "recurrence_open": "Other hooks that classify Bash commands by substring (e.g. the deny hook) were not swept for the same line-vs-segment shape."
     }
   ],
   "started": "2026-09-09",
