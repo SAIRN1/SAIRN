@@ -8858,6 +8858,34 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-10-29T11:22:16Z",
+      "opened_at_sha": "c3fd884c4a5033032c03819d59bed0bfb7325a9c",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 8,
+      "resources": [
+        "dnt_appointments",
+        "dnt_charges",
+        "dnt_patients",
+        "dnt_rollup",
+        "dnt_settings",
+        "exec_context",
+        "sd_crm"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tools/field_scope_rules.json"
+      ],
+      "what": "cc b69: tools/field_scope_rules.json declares three role-scope rules held by the blocking field-scope gate (check 4c): sd_crm.read (management sees every lead, others their assigned leads, unassigned management-only; a4f0a1a0), dnt_rollup.read (owner only, no row-level data -- counts and sums keyed by office; af5aeddf) and exec_context.read (owner/admin only; 562d1ded). No handler code changed. Review: is each declaration the DESIGN its commit states rather than a copy of the branch, and is the dnt_rollup location_id-as-literal seed (the roll-up is keyed by office) right rather than hiding a leak? Handler mode 38/38; four wrong declarations were each caught.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-10-29T11:22:16Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
