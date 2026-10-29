@@ -2343,6 +2343,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairnmechanical_records_b67.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "1e78b69d49fa23b3c639066304976c45beb17893",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/_lib/routes.test.js",
    "class": "test file",
    "level": "WEAKENING",
