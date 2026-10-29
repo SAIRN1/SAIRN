@@ -1,0 +1,13 @@
+DIGEST cc b75
+STATUS: closed at context threshold after item 1.
+DONE: b74 pushed (manifest entry per precedent 25aff5d0); b74 report+digest+done line.
+NOT DONE: item 2 -- two cody b65 Tier A obligations assigned to cc; exact steps in handoff section 2.
+DECISION-NEEDED: none new.
+UNVERIFIED: none.
+CHANGED: SAIRN-handoff-cc-b75.md, report, digest.
+SQL: none.
+EVIDENCE-path: SAIRN-handoff-cc-b75.md, SAIRN-report-cc-b75.txt (literal list + hook output)
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\a046cdf7-9eaf-4291-b1ac-b9b8bb34da67.jsonl
+NEXT: fresh session -- review cody b65 obligations 19:12:48Z then 19:34:54Z.
+CONTEXT 90.8% of 200,000 -- 181,686 tokens, measured.
+END-OF-REPORT
