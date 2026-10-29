@@ -24,3 +24,14 @@ Live pages sairnsenior.html and sairnvet.html: markers present, byte-identical.
   #1754 and #1779 are fixed.
   The scrutiny ledger check is CLEAN (950 rows uncheckable, stated).
 4 SCREENSHOTS -- committed.
+
+WRAP-UP (Michael's stop order, same batch)
+  a4414c595b16  mechanical job/invoice/inspection records   on origin/main: yes
+                (cherry-picked after cody released sairnmechanical; no new
+                claim; 16/16 on top of cody's b64; mech suites green)
+  df43a02d7b3a  wrap-up handoff (20 open items, each with its next step)   yes
+  Live sairnmechanical.html: mechJobSave present; byte-identical to
+  origin/main:sairnmechanical.html.
+  Nothing uncommitted and no stash. b67-mech is redundant (delete it).
+  The final commit SHA == origin/main HEAD is measured after the last push
+  and stated in the digest's STATUS line and in SAIRN-ACTIVE-WORK-fourth.md.
