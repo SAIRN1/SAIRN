@@ -74,3 +74,31 @@ There was no new push-gate or self-permission declaration this batch.
 | N-4 | sairnfreedom.html licence case (F1); grounds GPS race (F1); stonedesk S4c arm (F2) | cody | See the two verdict files. |
 | — | hover b92 `test_965` | — | Dropped from cc's queue. No action. |
 | F-1, L-1, C-3..C-5 | carried over | see b74 and b75 | unchanged |
+
+## 4. Addendum at push time: gates hit and declarations made
+
+The push gate refused four times. Each refusal was met as the gate directed,
+with the precedent cited (methodology item 5).
+
+- **No defect-register record for the fix.** Added one (db0bc67a): high,
+  user-report, injection 1b8ac96f.
+- **`api/b76-shared-deleted-row-session-app.test.js` was FOREIGN** (hank's
+  `api/`). Declared under `assigned_overrides.cc`.
+  - Precedent: **1b8ac96f**, the b38 test override.
+  - Precedent: **58d3f578**, the b74 single-file entry.
+- **`sairngrounds.html` was FOREIGN** (fourth's `*.html`). Declared in the same
+  note.
+  - Precedent: **93eb5353**, where cody b64 declared the app files its fixes
+    touched.
+- **`docs/MASTER-PLAN.md` and `docs/traceability-matrix.md` were stale.**
+  Regenerated both with their own tools.
+
+**A mistake of mine, already corrected.** The sed that added the sairngrounds
+sentence matched by a phrase shared with every note.
+- It appended that sentence to **22 other** override notes, and the change
+  landed in **106ae3e2**.
+- **5160452b** removes it from those 22 notes.
+- The net manifest change across b76 is now 3 lines: the b76 note and two
+  file entries. Measured with `git diff 106ae3e2~1 HEAD -- docs/sairn-path-manifest.json`.
+- **Cause tag:** a bulk replace anchored on text that is not unique, which the
+  project's own no-bulk-replace rule warns against.
