@@ -39955,6 +39955,92 @@
       "recurrence_open": "A skipped push does not re-run whole-tree checks against the combined base; only gate duration or a merge queue closes that."
     },
     {
+      "commit": "01a24fad6340",
+      "date": "2026-10-29",
+      "subject": "fix(sairnfreedom, cody b61): the trustee-audit panel shows what the server has confirmed, not a fixed \"held on this device only\"",
+      "files": [
+        "sairnfreedom.html",
+        "tests/sairnfreedom_segregation_of_duties.js"
+      ],
+      "lines_added": 110,
+      "lines_removed": 14,
+      "app": "sairnfreedom",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "SAIRNfreedom's trustee-audit panel told the user every audit was 'held on this device only' for weeks after sf_trustee_audits started syncing (e3446a48b) -- a false statement about where audit evidence is. The fixed flagbox is replaced by a line rendered from what the server has confirmed per record (sf_server_confirmed, written only on an accepted write or a returned row, never by the bootstrap seed); D4/D4b/D4c red on the old page.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "e3446a48bfc6",
+        "date": "2026-09-29",
+        "subject": "feat(sairnfreedom): sf_trustee_audits reached the server for the first time -- and the registry's own reconciliation had been one short for weeks",
+        "lag_days": 30
+      },
+      "citation_note": "A disclosure that outlived the limitation it disclosed; no PR rule id names stale UI copy.",
+      "contributing_factors": [
+        {
+          "factor": "The panel's sync disclosure was a fixed sentence written while the resource could not sync, and nothing tied it to SF_SYNCED, so it stayed when the resource joined the synced list.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The line is rendered from a server-confirmed set; test D4/D4b/D4c drive it."
+        },
+        {
+          "factor": "The test arm that guarded the sentence said in its own message it must be rewritten when the resource synced, and the change that synced it did not run or update that arm.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Arm rewritten in b61; it now fails if the fixed sentence returns."
+        }
+      ],
+      "recurrence_open": "Other fixed 'this device only' / 'not synced' sentences in other apps are not checked against their SYNCED lists; only this panel is now rendered from confirmed state."
+    },
+    {
+      "commit": "2c776fcbd474",
+      "date": "2026-10-29",
+      "subject": "fix(sairngrounds, fourth b65): clearing a day's alcohol sale hours CLOSES it -- it saved the day open 00:00-23:59",
+      "files": [
+        "docs/sairn-path-manifest.json",
+        "sairngrounds.html",
+        "tests/fourth_b65_record_fixes.js"
+      ],
+      "lines_added": 142,
+      "lines_removed": 1,
+      "app": "sairngrounds",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "sairngrounds saveMsbHours turned a cleared day's start/end into 00:00/23:59, so closing a day to alcohol sales saved it open all day. Found by the b64 worldwide audit code read.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "not-bisected"
+      },
+      "citation_note": "No standing rule names this shape.",
+      "contributing_factors": [
+        {
+          "factor": "saveMsbHours defaulted empty start/end to 00:00/23:59, so a cleared day saved open all day",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "cleared day saved closed; one-sided entry refused; check refuses a closed day"
+        },
+        {
+          "factor": "nothing drove the clear-a-day path; the audit read found it",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/fourth_b65_record_fixes.js grounds arms"
+        }
+      ],
+      "recurrence_open": "A window still cannot cross midnight, and the server write does not validate the hours."
+    },
+    {
       "commit": "48a3e5d79374",
       "date": "2026-10-29",
       "subject": "fix(stale-snapshot-scan, hank b64): .js files are scanned, unread files are named, zero scanned exits 2",
@@ -39997,50 +40083,6 @@
         }
       ],
       "recurrence_open": "The stale-snapshot arm still targets the client store shape, so its zero on server code is not evidence (a planted server-side read-await-write was not detected)."
-    },
-    {
-      "commit": "ca1cf0fcaab1",
-      "date": "2026-10-29",
-      "subject": "fix(sd-sub-data, hank b64): COI / licence expiry compared against the LOCAL day, not the UTC day",
-      "files": [
-        "api/b64-sub-compliance-local-day.test.js",
-        "api/sd-sub-data.js"
-      ],
-      "lines_added": 68,
-      "lines_removed": 3,
-      "app": "stonedesk",
-      "layer": "product",
-      "severity": "low",
-      "detection_method": "static-checker",
-      "summary": "api/sd-sub-data.js complianceStatus compared COI and licence expiry against the UTC day, which turns at 7-8 p.m. Eastern, so a document on its last valid evening read expired and the sub-assignment check refused (409) for hours. Fixed with a local-day helper (America/New_York).",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": "tools/sairn_stale_snapshot_scan.py",
-      "found_by_session": null,
-      "injection": {
-        "commit": "aff235eee3c8",
-        "date": "2026-08-04",
-        "subject": "feat: Subcontractor Portal (Phase 1) -- roster, job assignment, pay tracking, separate sub login",
-        "lag_days": 86
-      },
-      "citation_note": "No standing rule names server-side calendar-day derivation; the client-side UTC-date sweep (2026-09-02) covered html only.",
-      "contributing_factors": [
-        {
-          "factor": "complianceStatus took today as the UTC date while expiry is a local calendar day",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "localTodayISO() in America/New_York at line 71 and both callers; 9/0 test on the shipped functions"
-        },
-        {
-          "factor": "The UTC-calendar scanner read only script tags, so it never saw this server file",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "stale-snapshot scan reads .js whole (6cbf84660)"
-        }
-      ],
-      "recurrence_open": "Other server files with calendar-day logic and no per-licence time zone; America/New_York is a platform-wide assumption, not a per-customer one."
     },
     {
       "commit": "4c3f3d1fc3fb",
@@ -40086,46 +40128,6 @@
       "recurrence_open": "The award is still gated client-side only; nothing server-side checks eligibility."
     },
     {
-      "commit": "c21eb4ebe653",
-      "date": "2026-10-29",
-      "subject": "fix(sairnmechanical, fourth b65): saveQuote stores the client the quote was generated for",
-      "files": [
-        "sairnmechanical.html"
-      ],
-      "lines_added": 1,
-      "lines_removed": 1,
-      "app": "sairnmechanical",
-      "layer": "product",
-      "severity": "low",
-      "detection_method": "code-review",
-      "summary": "sairnmechanical saveQuote stored {id,date,trade,text} and dropped the client the quote was generated for. Found by the b64 worldwide audit.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "not-bisected"
-      },
-      "citation_note": "No standing rule names this shape.",
-      "contributing_factors": [
-        {
-          "factor": "saveQuote built the record without the client field the form collects",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "client stored"
-        },
-        {
-          "factor": "no test read the saved quote record",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "tests/fourth_b65_record_fixes.js mechanical arm"
-        }
-      ],
-      "recurrence_open": "Quotes created before this fix carry no client and cannot be backfilled."
-    },
-    {
       "commit": "66acd0501fb2",
       "date": "2026-10-29",
       "subject": "fix(sairncash, fourth b65): the hidden AGI checkbox no longer manufactures a \"no\"; Solo 401(k) room is capped at earnings",
@@ -40166,21 +40168,19 @@
       "recurrence_open": "A typed 0 prior-year tax is still read as not provided, in both the save and the calculation."
     },
     {
-      "commit": "2c776fcbd474",
+      "commit": "c21eb4ebe653",
       "date": "2026-10-29",
-      "subject": "fix(sairngrounds, fourth b65): clearing a day's alcohol sale hours CLOSES it -- it saved the day open 00:00-23:59",
+      "subject": "fix(sairnmechanical, fourth b65): saveQuote stores the client the quote was generated for",
       "files": [
-        "docs/sairn-path-manifest.json",
-        "sairngrounds.html",
-        "tests/fourth_b65_record_fixes.js"
+        "sairnmechanical.html"
       ],
-      "lines_added": 142,
+      "lines_added": 1,
       "lines_removed": 1,
-      "app": "sairngrounds",
+      "app": "sairnmechanical",
       "layer": "product",
-      "severity": "high",
+      "severity": "low",
       "detection_method": "code-review",
-      "summary": "sairngrounds saveMsbHours turned a cleared day's start/end into 00:00/23:59, so closing a day to alcohol sales saved it open all day. Found by the b64 worldwide audit code read.",
+      "summary": "sairnmechanical saveQuote stored {id,date,trade,text} and dropped the client the quote was generated for. Found by the b64 worldwide audit.",
       "rules": [],
       "citation_confidence": "not-citable",
       "injection_phase": "coding",
@@ -40193,19 +40193,63 @@
       "citation_note": "No standing rule names this shape.",
       "contributing_factors": [
         {
-          "factor": "saveMsbHours defaulted empty start/end to 00:00/23:59, so a cleared day saved open all day",
+          "factor": "saveQuote built the record without the client field the form collects",
           "kind": "technical",
           "action_status": "done",
-          "action": "cleared day saved closed; one-sided entry refused; check refuses a closed day"
+          "action": "client stored"
         },
         {
-          "factor": "nothing drove the clear-a-day path; the audit read found it",
+          "factor": "no test read the saved quote record",
           "kind": "detection",
           "action_status": "done",
-          "action": "tests/fourth_b65_record_fixes.js grounds arms"
+          "action": "tests/fourth_b65_record_fixes.js mechanical arm"
         }
       ],
-      "recurrence_open": "A window still cannot cross midnight, and the server write does not validate the hours."
+      "recurrence_open": "Quotes created before this fix carry no client and cannot be backfilled."
+    },
+    {
+      "commit": "ca1cf0fcaab1",
+      "date": "2026-10-29",
+      "subject": "fix(sd-sub-data, hank b64): COI / licence expiry compared against the LOCAL day, not the UTC day",
+      "files": [
+        "api/b64-sub-compliance-local-day.test.js",
+        "api/sd-sub-data.js"
+      ],
+      "lines_added": 68,
+      "lines_removed": 3,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "static-checker",
+      "summary": "api/sd-sub-data.js complianceStatus compared COI and licence expiry against the UTC day, which turns at 7-8 p.m. Eastern, so a document on its last valid evening read expired and the sub-assignment check refused (409) for hours. Fixed with a local-day helper (America/New_York).",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/sairn_stale_snapshot_scan.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "aff235eee3c8",
+        "date": "2026-08-04",
+        "subject": "feat: Subcontractor Portal (Phase 1) -- roster, job assignment, pay tracking, separate sub login",
+        "lag_days": 86
+      },
+      "citation_note": "No standing rule names server-side calendar-day derivation; the client-side UTC-date sweep (2026-09-02) covered html only.",
+      "contributing_factors": [
+        {
+          "factor": "complianceStatus took today as the UTC date while expiry is a local calendar day",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "localTodayISO() in America/New_York at line 71 and both callers; 9/0 test on the shipped functions"
+        },
+        {
+          "factor": "The UTC-calendar scanner read only script tags, so it never saw this server file",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "stale-snapshot scan reads .js whole (6cbf84660)"
+        }
+      ],
+      "recurrence_open": "Other server files with calendar-day logic and no per-licence time zone; America/New_York is a platform-wide assumption, not a per-customer one."
     }
   ],
   "started": "2026-09-09",
