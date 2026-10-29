@@ -12559,6 +12559,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_builder_hook_install_regression.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c96e4c0f3ff8f53189c355b6bc17c616adb91a0b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/push_gate_path_scope_sabotage_probe.py",
    "class": "test file",
    "level": "WEAKENING",
