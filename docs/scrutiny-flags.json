@@ -55,6 +55,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairnfreedom_segregation_of_duties.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "01a24fad63406160e4d7daedbd41a4a26d7445a6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sairndental_a11y_pass.js",
    "class": "test file",
    "level": "CHANGE",
@@ -2885,6 +2893,19 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "2fe89f267317e107471b4969abb4182a57125bdb",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_comment_strip_agreement_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "'independent count can see -- a delimiter has run away, or the count drifted')"
+    }
+   ],
+   "sha": "30568a75d7d0b5fe050eeb97c0e854619c23f51e",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -13702,6 +13723,22 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "d9e00831e5790b3264c3ed3d8b7b70e42431d240",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/defect_register_capa_control.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "da099a5cb20a1896a199fc8aa71b1528556781e8",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_capa_fields_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "da099a5cb20a1896a199fc8aa71b1528556781e8",
    "criteria_version": "2026-10-06.1"
   },
   {

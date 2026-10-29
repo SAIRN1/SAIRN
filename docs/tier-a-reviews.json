@@ -8834,6 +8834,30 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-29T11:12:43Z",
+      "opened_at_sha": "01a24fad63406160e4d7daedbd41a4a26d7445a6",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 0,
+      "resources": [
+        "sf_officers",
+        "sf_trustee_audits"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "sairnfreedom.html",
+        "tests/sairnfreedom_segregation_of_duties.js"
+      ],
+      "what": "cody b61: sairnfreedom.html trustee-audit panel -- the fixed 'held on this device only' sentence replaced by sfTrusteeSyncHtml(), rendered from a new sf_server_confirmed set that sfData() writes only on an accepted write or a returned read row. Review: that the confirmed set cannot claim a backup the server did not confirm (bootstrap does not seed it; failure path does not reach it), and the D4/D4b/D4c arms in tests/sairnfreedom_segregation_of_duties.js (which also exercises sf_officers).",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-29T11:12:43Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
