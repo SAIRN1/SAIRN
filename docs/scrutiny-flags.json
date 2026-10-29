@@ -4623,6 +4623,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/licence_guard_legacy_device.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "45bf57f0c2cf567f0831fcad3d68aae2c54b32aa",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/licence_rekey_isolation.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "45bf57f0c2cf567f0831fcad3d68aae2c54b32aa",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_b14_leg_aftercare_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -12904,6 +12920,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairnfreedom_confirmed_ttl.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "check('T10 ids are stored as strings and null/undefined are skipped',"
+    }
+   ],
+   "sha": "bdfe0609adeba0796db933b9626570c4b6490e1b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/b48-sd-agent-error-leak.test.js",
    "class": "test file",
    "level": "WEAKENING",
@@ -14898,6 +14927,14 @@
     }
    ],
    "sha": "de2608c30ed5acbe0ba1cbd2706beaa3ac084a67",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnmechanical_save_reentry.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "de354736590f507ba4d312b258fe029f2defb8d1",
    "criteria_version": "2026-10-06.1"
   },
   {
