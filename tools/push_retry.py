@@ -886,6 +886,30 @@ def selftest():
         "git('commit', '--amend', '--no-edit')\n        else:" in __import__('inspect').getsource(_regenerate_and_fold)
         or 'REGEN_PREFIX' in __import__('inspect').getsource(_regenerate_and_fold),
         'the regenerate step does not reference REGEN_PREFIX')
+    # ── S6 (hank b68): untracked files alone make `status --porcelain`
+    # non-empty; with nothing staged the fold must say so, not report a commit
+    # failure with an empty error. Driven on a scratch repo, generators stubbed.
+    g = globals()
+    keep = (REPO, g['regenerate'], g['amend_safety'], g['reseat_only'])
+    tmp2 = tempfile.mkdtemp(prefix='push_retry_selftest_s6_')
+    try:
+        REPO = tmp2
+        git('init', '-q')
+        git('config', 'user.email', 'a@b.c')
+        git('config', 'user.name', 'selftest')
+        io.open(os.path.join(tmp2, 'f.txt'), 'w', encoding='utf-8').write('x')
+        git('add', '-A')
+        git('commit', '-q', '-m', 'work: mine')
+        io.open(os.path.join(tmp2, 'stray.txt'), 'w', encoding='utf-8').write('untracked')
+        g['regenerate'] = lambda: []
+        g['amend_safety'] = lambda: (True, [])
+        g['reseat_only'] = lambda: (False, 'no change to fold')
+        f7, w7 = _regenerate_and_fold()
+        arm('S6 -- untracked files only, nothing staged: "nothing to fold", not an empty commit failure',
+            not f7 and w7.startswith('nothing to fold'), w7)
+    finally:
+        REPO, g['regenerate'], g['amend_safety'], g['reseat_only'] = keep
+        shutil.rmtree(tmp2, ignore_errors=True)
     return out, bad
 
 
@@ -976,6 +1000,11 @@ def _regenerate_and_fold():
         # for exactly that. Regenerated documents now live in ONE derived-docs
         # commit on top, amended in place on later attempts, and excluded from
         # the patch-id set by subject (see _outgoing_state).
+        # Untracked files alone make the porcelain above non-empty. With
+        # nothing staged `git commit` fails with its reason on stdout, which
+        # logged "derived-docs commit failed:" and an empty error (hank b67 S6).
+        if git('diff', '--cached', '--quiet')[0] == 0:
+            return False, 'nothing to fold -- the generated documents already match'
         subj = head_subject() or ''
         _rc, _pub, _ = git('branch', '--remotes', '--contains', 'HEAD')
         if subj.startswith(REGEN_PREFIX) and _rc == 0 and not _pub.strip():
