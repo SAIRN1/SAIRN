@@ -39955,47 +39955,6 @@
       "recurrence_open": "A skipped push does not re-run whole-tree checks against the combined base; only gate duration or a merge queue closes that."
     },
     {
-      "commit": "a6cdb0860f77",
-      "date": "2026-10-29",
-      "subject": "fix(stonedesk, cody b65): a POS sale with no slab holds until the form resets",
-      "files": [
-        "stonedesk.html",
-        "tests/stonedesk_save_reentry.js"
-      ],
-      "lines_added": 25,
-      "lines_removed": 9,
-      "app": "stonedesk",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "stonedesk posCompleteSale with no slab attached awaited nothing but left the form filled for 2.5 s before posResetForm, so a second press recorded the same sale under a new invoice number. The sale now holds until the reset has run.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The 2.5 s reset dates from the Mobile POS panel (178dfccc3, 2026-07-26); whether a second press then reached the save path depended on later edits not traced here."
-      },
-      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b65 row 5.",
-      "contributing_factors": [
-        {
-          "factor": "The sale finished synchronously but left the form filled and the button live for the 2.5 s before the reset, so the existing hold (taken only around the slab reservation) did not cover the window.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "posSaleSaving stays held until the scheduled reset has run, released in finally."
-        },
-        {
-          "factor": "The re-entry suite carried the duplicate as its CONTROL arm (one invoice per press, exactly as before), so the shape was pinned as correct.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "S4 now requires one invoice and a reason; S4b requires the next sale after the reset."
-        }
-      ],
-      "recurrence_open": "Every handler that resets on a timer rather than at once has the same window; only posCompleteSale was checked."
-    },
-    {
       "commit": "046e3f4f71a2",
       "date": "2026-10-29",
       "subject": "fix(apps, cody b64): the other 41 re-entrant saves are guarded -- all 47 found by the sweep are now fixed, each fixture-first",
@@ -40051,46 +40010,48 @@
       "recurrence_open": "Out-of-shape re-entry remains open: grounds GPS waits (gcdPlaceOrder, gcdMarkShotEnd), stonedesk's 2.5 s no-slab POS reset window, and handlers that never reset their inputs; no standing checker for the shape yet."
     },
     {
-      "commit": "519ca798b02d",
+      "commit": "0f8c36e107da",
       "date": "2026-10-29",
-      "subject": "fix(sairnbuild, fourth b68): the WIP forecast had no writer -- the cost modal now enters, edits and clears it",
+      "subject": "fix(sairnfreedom, cody b66): a server confirmation expires after 90 days and is re-verified",
       "files": [
-        "docs/sairn-path-manifest.json",
-        "sairnbuild.html",
-        "tests/sairnbuild_cost_forecast_writer.js"
+        "sairnfreedom.html",
+        "tests/sairnfreedom_confirmed_ttl.js"
       ],
-      "lines_added": 127,
-      "lines_removed": 5,
-      "app": "sairnbuild",
+      "lines_added": 165,
+      "lines_removed": 14,
+      "app": "sairnfreedom",
       "layer": "product",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "sairnbuild's WIP schedule divides cost-to-date by forecastFor(), which reads each cost line's forecast and falls back to budget, but saveCost() never wrote a forecast and the cost modal had no input for it. Every job's estimated cost at completion was its budget, and the 're-forecast the affected cost lines' warning could not be acted on. The modal now enters, edits and clears it (blank = budget, a cleared box clears, 0 is kept).",
+      "severity": "low",
+      "detection_method": "independent-review",
+      "summary": "sairnfreedom's sf_server_confirmed entries never expired, so a row deleted out-of-band read as server-confirmed forever (cc b70 gap a). Each id now carries the server's last answer time and reads as confirmed for 90 days; untimed legacy entries are re-verified.",
       "rules": [],
       "citation_confidence": "not-citable",
-      "injection_phase": "requirement",
-      "phase_confidence": "stated",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
       "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "unknown_reason": "forecastFor() and the WIP copy were added in an earlier batch without a writer; the commit was not traced this batch."
+        "commit": "7ae231b4721b",
+        "date": "2026-10-29",
+        "subject": "fix(sairnfreedom, cody b61): the trustee-audit panel shows what the server has confirmed, not a fixed \"held on this device only\"",
+        "lag_days": 0
       },
-      "citation_note": "No standing rule requires a computed field's reader to ship with a writer.",
+      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b66 row 3.",
       "contributing_factors": [
         {
-          "factor": "A reader (forecastFor) and its UI copy shipped with no input or save path for the field it reads.",
+          "factor": "The confirmed set recorded THAT the server answered, never WHEN, so nothing could age it.",
           "kind": "technical",
           "action_status": "done",
-          "action": "#cm-forecast input; openCostModal, editCost and saveCost write it."
+          "action": "sf_server_confirmed_at stamps each id; sfConfirmedRead filters to 90 days."
         },
         {
-          "factor": "The WIP suites tested forecastFor() with fixtures that already carried forecast, so the missing writer could not show.",
+          "factor": "No test executed sfConfirmOnServer; the existing arm was a regex over its shape.",
           "kind": "process",
           "action_status": "done",
-          "action": "tests/sairnbuild_cost_forecast_writer.js drives the real modal functions."
+          "action": "tests/sairnfreedom_confirmed_ttl.js runs the real functions under a fixed clock."
         }
       ],
-      "recurrence_open": "Other computed fields with a reader and no writer were not swept."
+      "recurrence_open": "Any future confirmed-set or cache of server answers in another app needs the same expiry; none exists today."
     },
     {
       "commit": "1d2aea0e2b32",
@@ -40135,6 +40096,87 @@
         }
       ],
       "recurrence_open": "Other surfaces that print skew_ms (none found by grep in sairnsenior.html) would need the same treatment."
+    },
+    {
+      "commit": "23421fd517db",
+      "date": "2026-10-29",
+      "subject": "fix(done-line, cody b66): a hand-typed done line with no record this turn is refused",
+      "files": [
+        "docs/sairn-path-manifest.json",
+        "tools/sairn_done_line.py"
+      ],
+      "lines_added": 61,
+      "lines_removed": 5,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/sairn_done_line.py's Stop hook checked the final message only when it had recorded a done line this turn, so a hand-typed 'done b<n> <id>' with no record -- an id from memory or copied from an earlier batch -- ended the session unchecked. Now refused, capped against looping.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "a367bd0c2521",
+        "date": "2026-10-28",
+        "subject": "feat(cc b66): done-line wrapper + Stop hook; deny hook logs to the shared deny-blocks.log; untracked-only script scan",
+        "lag_days": 1
+      },
+      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b66 row 1.",
+      "contributing_factors": [
+        {
+          "factor": "The hook keyed its whole check on its own state file; the absent-record case was treated as not-a-final-step rather than as an unverified claim.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A done-shaped final message with no record this turn is refused and names the command."
+        },
+        {
+          "factor": "The selftest had a no-record arm asserting allow, with no done-shaped text in it.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Three red-first arms: no record, earlier-turn record, and the loop cap."
+        }
+      ],
+      "recurrence_open": "Any other final-message contract that keys on a tool's own state file has the same blind spot when the tool was never run."
+    },
+    {
+      "commit": "29cfd28072fd",
+      "date": "2026-10-29",
+      "subject": "fix(hank b68 S4): api/agent/poll.js delivers a command by compare-and-set; two concurrent polls no longer both deliver it",
+      "files": [
+        "api/agent/poll.js",
+        "api/b68-agent-poll-cas.test.js",
+        "docs/recurring-bug-classes.md"
+      ],
+      "lines_added": 131,
+      "lines_removed": 5,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "api/agent/poll.js PATCHed a command to delivered by id alone after reading it with status=eq.pending, so two concurrent polls of one agent could both deliver (and the agent run) one command, and the PATCH result was ignored. Fixed by compare-and-set (&status=eq.pending, return=representation, deliver only the returned row; a failed PATCH delivers nothing, 502). api/b68-agent-poll-cas.test.js 4/4, arm X red on the pre-fix file.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the delivery PATCH predates the b67 S2 scan; its introducing commit was not traced this batch"
+      },
+      "citation_note": "No standing rule requires a read-then-write on a status column to compare-and-set; proposed: a status-transition PATCH carries the status it expects as a filter.",
+      "contributing_factors": [
+        {
+          "factor": "The read filtered status=eq.pending but the write did not, so two readers of the same pending row both won",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "PATCH filters status=eq.pending and delivers only the returned row"
+        }
+      ],
+      "recurrence_open": "Other read-then-PATCH status transitions in api/ are not all guarded; b67 S3 triaged 41 sites and left 35 classified mechanically, not read one by one.",
+      "single_factor_note": "one mechanism; the ignored PATCH result is the same read-then-write gap seen from the other side"
     },
     {
       "commit": "2c776fcbd474",
@@ -40264,6 +40306,48 @@
         }
       ],
       "recurrence_open": "The award is still gated client-side only; nothing server-side checks eligibility."
+    },
+    {
+      "commit": "519ca798b02d",
+      "date": "2026-10-29",
+      "subject": "fix(sairnbuild, fourth b68): the WIP forecast had no writer -- the cost modal now enters, edits and clears it",
+      "files": [
+        "docs/sairn-path-manifest.json",
+        "sairnbuild.html",
+        "tests/sairnbuild_cost_forecast_writer.js"
+      ],
+      "lines_added": 127,
+      "lines_removed": 5,
+      "app": "sairnbuild",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "sairnbuild's WIP schedule divides cost-to-date by forecastFor(), which reads each cost line's forecast and falls back to budget, but saveCost() never wrote a forecast and the cost modal had no input for it. Every job's estimated cost at completion was its budget, and the 're-forecast the affected cost lines' warning could not be acted on. The modal now enters, edits and clears it (blank = budget, a cleared box clears, 0 is kept).",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "requirement",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "forecastFor() and the WIP copy were added in an earlier batch without a writer; the commit was not traced this batch."
+      },
+      "citation_note": "No standing rule requires a computed field's reader to ship with a writer.",
+      "contributing_factors": [
+        {
+          "factor": "A reader (forecastFor) and its UI copy shipped with no input or save path for the field it reads.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "#cm-forecast input; openCostModal, editCost and saveCost write it."
+        },
+        {
+          "factor": "The WIP suites tested forecastFor() with fixtures that already carried forecast, so the missing writer could not show.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "tests/sairnbuild_cost_forecast_writer.js drives the real modal functions."
+        }
+      ],
+      "recurrence_open": "Other computed fields with a reader and no writer were not swept."
     },
     {
       "commit": "5368dca7abb4",
@@ -40435,6 +40519,103 @@
       "recurrence_open": "Other fixed 'this device only' / 'not synced' sentences in other apps are not checked against their SYNCED lists; only this panel is now rendered from confirmed state."
     },
     {
+      "commit": "824bab9dddff",
+      "date": "2026-10-29",
+      "subject": "fix(sairnmechanical, cody b66): a failed credential or asset write is reported, not swallowed (cc b73 R-12)",
+      "files": [
+        "sairnmechanical.html",
+        "tests/sairnmechanical_save_reentry.js"
+      ],
+      "lines_added": 33,
+      "lines_removed": 4,
+      "app": "sairnmechanical",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "independent-review",
+      "summary": "sairnmechanical mechCredAdd and mechAssetAdd had no rejection handler: a rejected write, or one answering with no response, released the hold and showed nothing, leaving an unhandled rejection (cc b73 R-12). Both now report 'Not saved' in the form's error line.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The .then chain without a rejection handler predates b64 (cc b73 says so); the introducing commit was not traced."
+      },
+      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b66 row 4.",
+      "contributing_factors": [
+        {
+          "factor": "A promise chain with a then and a finally and no rejection handler; the finally made the hold correct, which hid that the failure was silent.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Rejection handler as the second argument of then, on the write alone."
+        },
+        {
+          "factor": "The re-entry harness asserts the hold is released after a rejected write, not that the user was told.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Arms MC4/MA4 require the message and no unhandled rejection."
+        }
+      ],
+      "recurrence_open": "Other b64-guarded .then handlers may share the shape; only these two were checked."
+    },
+    {
+      "commit": "862ed35910eb",
+      "date": "2026-10-29",
+      "subject": "fix(platform, cody b66): 12 more licence guards no longer adopt a different licence on a legacy device",
+      "files": [
+        "sairnbiz.html",
+        "sairnbuild.html",
+        "sairncare.html",
+        "sairncode.html",
+        "sairndental.html",
+        "sairndesign.html",
+        "sairngrounds.html",
+        "sairnlaw.html",
+        "sairnlegacy.html",
+        "sairnroofing.html",
+        "sairnscape.html",
+        "sairnsenior.html",
+        "tests/licence_guard_legacy_device.js",
+        "tests/licence_rekey_isolation.js"
+      ],
+      "lines_added": 255,
+      "lines_removed": 4,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "Twelve apps' licence guards (dental, senior, care, build, design, law, legacy, roofing, code, biz, grounds, scape) adopted any new licence key on a device with no fingerprint although the previous key sat beside the data, so licence B opened licence A's local records. Each now fingerprints the stored key and asks.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "343c5a3275b1",
+        "date": "2026-09-03",
+        "subject": "feat(platform): a licence change no longer hands the next customer the previous one's records",
+        "lag_days": 56
+      },
+      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b66 row 2 (same cause as b65 row 2).",
+      "contributing_factors": [
+        {
+          "factor": "One shared design premise -- nothing says whose data is on a legacy device -- was copied into thirteen guards from one commit; the premise was false in all of them.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Each guard fingerprints the stored key when no fingerprint exists."
+        },
+        {
+          "factor": "licence_rekey_isolation pinned the flaw as the requirement: its first-run arm stored one key and entered a different one and asserted adopt.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Fixture corrected; tests/licence_guard_legacy_device.js covers all 13 apps."
+        }
+      ],
+      "recurrence_open": "A new app scaffolded from the old guard text reintroduces it; sairn-app-scaffold does not yet carry the corrected guard."
+    },
+    {
       "commit": "9b77ae455ec2",
       "date": "2026-10-29",
       "subject": "fix(sairnmechanical, cody b63): close cc's four b67 Tier A gaps on the backup path, and the redaction probe b58 broke",
@@ -40530,6 +40711,170 @@
       "recurrence_open": "Other suites that check a call argument by regex with [^)]* before a name were not swept."
     },
     {
+      "commit": "a6cdb0860f77",
+      "date": "2026-10-29",
+      "subject": "fix(stonedesk, cody b65): a POS sale with no slab holds until the form resets",
+      "files": [
+        "stonedesk.html",
+        "tests/stonedesk_save_reentry.js"
+      ],
+      "lines_added": 25,
+      "lines_removed": 9,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "stonedesk posCompleteSale with no slab attached awaited nothing but left the form filled for 2.5 s before posResetForm, so a second press recorded the same sale under a new invoice number. The sale now holds until the reset has run.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The 2.5 s reset dates from the Mobile POS panel (178dfccc3, 2026-07-26); whether a second press then reached the save path depended on later edits not traced here."
+      },
+      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b65 row 5.",
+      "contributing_factors": [
+        {
+          "factor": "The sale finished synchronously but left the form filled and the button live for the 2.5 s before the reset, so the existing hold (taken only around the slab reservation) did not cover the window.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "posSaleSaving stays held until the scheduled reset has run, released in finally."
+        },
+        {
+          "factor": "The re-entry suite carried the duplicate as its CONTROL arm (one invoice per press, exactly as before), so the shape was pinned as correct.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "S4 now requires one invoice and a reason; S4b requires the next sale after the reset."
+        }
+      ],
+      "recurrence_open": "Every handler that resets on a timer rather than at once has the same window; only posCompleteSale was checked."
+    },
+    {
+      "commit": "b9e85ee5777a",
+      "date": "2026-10-29",
+      "subject": "fix(hank b68): H1 #1734/#1740/#1744/#1747 cleared; Tier A leg_cremations review discharged",
+      "files": [
+        "docs/CRITICALITY-TIERS.md",
+        "docs/recurring-bug-classes.md",
+        "docs/tier-a-reviews.json",
+        "sairnlegacy.html",
+        "sairnvet.html",
+        "tools/sql_placeholder_check.py"
+      ],
+      "lines_added": 79,
+      "lines_removed": 15,
+      "app": "sairnlegacy",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "H1 #1734: sairnlegacy.html keepsake order table (now :4836) wrote o.quantity into innerHTML with no H() while the case, item and status cells beside it were escaped; the server leg write branch checks no type of quantity, so a caller with a write grant could store markup that runs in the owner's browser. Fixed with H(String(...)). The raw o.id in inline onclick (38 sites app-wide) is a separate, pre-existing pattern and is NOT fixed here.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "the keepsake order render was not traced to its introducing commit this batch"
+      },
+      "citation_note": "No standing rule names stored numeric fields as needing H() in innerHTML; the app escapes text cells by habit and skipped the numeric one.",
+      "contributing_factors": [
+        {
+          "factor": "The client coerces quantity with Number(..)||1, so the value was assumed numeric at render; the server accepts any type",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "escape the cell like its neighbours"
+        }
+      ],
+      "recurrence_open": "The raw o.id interpolation into inline onclick handlers remains at about 38 sites in sairnlegacy.html (H1 count); server-side type checks on leg payloads are still absent.",
+      "single_factor_note": "one cell; the app-wide raw-id interpolation is recorded as open item H1x, not as a factor of this one"
+    },
+    {
+      "commit": "b9e85ee5777a",
+      "date": "2026-10-29",
+      "subject": "fix(hank b68): H1 #1734/#1740/#1744/#1747 cleared; Tier A leg_cremations review discharged",
+      "files": [
+        "docs/CRITICALITY-TIERS.md",
+        "docs/recurring-bug-classes.md",
+        "docs/tier-a-reviews.json",
+        "sairnlegacy.html",
+        "sairnvet.html",
+        "tools/sql_placeholder_check.py"
+      ],
+      "lines_added": 79,
+      "lines_removed": 15,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": "H1 #1744: sairnvet.html saveWildlifeEdit() stored a closing status (Released/Deceased/Euthanized/Transferred) with a blank release/outcome date, so the case left Active Cases but never reached Released YTD or Release Rate, and its days in care ran on to today. Now refused with a toast. Transferred remains outside Release Rate by design and the register cell says so.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "the wildlife edit form was not traced to its introducing commit this batch"
+      },
+      "citation_note": "No standing rule requires a status that closes a record to carry its closing date; the pairing was stated only in help text.",
+      "contributing_factors": [
+        {
+          "factor": "The closing-status-needs-a-date pairing lived only in the help text under the form",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "enforce it in saveWildlifeEdit"
+        }
+      ],
+      "recurrence_open": "addWildlifeCase and any import path were not checked for the same pairing; the Release Rate label still does not say Transferred is excluded.",
+      "single_factor_note": "one missing validation"
+    },
+    {
+      "commit": "b9e85ee5777a",
+      "date": "2026-10-29",
+      "subject": "fix(hank b68): H1 #1734/#1740/#1744/#1747 cleared; Tier A leg_cremations review discharged",
+      "files": [
+        "docs/CRITICALITY-TIERS.md",
+        "docs/recurring-bug-classes.md",
+        "docs/tier-a-reviews.json",
+        "sairnlegacy.html",
+        "sairnvet.html",
+        "tools/sql_placeholder_check.py"
+      ],
+      "lines_added": 79,
+      "lines_removed": 15,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": "H1 #1747: tools/sql_placeholder_check.py (push CHECK 4d) ignored E-string backslash escapes (a false negative that read a placeholder as a comment), opened a string on an apostrophe inside a double-quoted identifier (false COULD NOT RUN), and matched operator-input declarations by substring and on raw lines including inside string literals. Fixed; criteria 2026-10-29.1, 6 new fixtures (5 red on 2026-10-28.1), --all clean over 312 files. Latent: 0 of 310 real files had any of the shapes.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "995e53c9aac9",
+        "date": "2026-10-28",
+        "subject": "feat(tools, hank b60): push-time SQL placeholder check (L1) -- blocks undeclared placeholders, fails closed",
+        "lag_days": 1
+      },
+      "citation_note": "No standing rule says a hand-written lexer must model every quoting form of its grammar.",
+      "contributing_factors": [
+        {
+          "factor": "The lexer modelled fewer quoting forms than Postgres has, and the exemption was matched more loosely than the sentence granting it",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "model E-strings and quoted identifiers; exact-token declarations on whole comment lines"
+        }
+      ],
+      "recurrence_open": "Other hand-written SQL lexers in tools/ (if any) were not swept for the same quoting gaps; dollar-quote tags inside E-strings are untested.",
+      "single_factor_note": "one design gap in one tool, three shapes"
+    },
+    {
       "commit": "c21eb4ebe653",
       "date": "2026-10-29",
       "subject": "fix(sairnmechanical, fourth b65): saveQuote stores the client the quote was generated for",
@@ -40568,6 +40913,42 @@
         }
       ],
       "recurrence_open": "Quotes created before this fix carry no client and cannot be backfilled."
+    },
+    {
+      "commit": "c3b7e2ec5270",
+      "date": "2026-10-29",
+      "subject": "fix(hank b68 S6): push_retry fold returns 'nothing to fold' when nothing is staged, not an empty commit failure",
+      "files": [
+        "docs/recurring-bug-classes.md",
+        "tools/push_retry.py"
+      ],
+      "lines_added": 30,
+      "lines_removed": 0,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "tools/push_retry.py _regenerate_and_fold() treated a non-empty git status --porcelain (which counts untracked files) as something to commit; with nothing staged, git commit refused on stdout and the tool logged \"derived-docs commit failed:\" with an empty error. Now returns \"nothing to fold\" when git diff --cached --quiet succeeds. Selftest arm S6 red before, green after.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the fold commit path was reshaped in hank b64 (C1a); the exact introducing commit was not traced"
+      },
+      "citation_note": "No standing rule says a fold step must test the index rather than the working tree before committing.",
+      "contributing_factors": [
+        {
+          "factor": "A dirty-tree test stood in for a staged-changes test, and only stderr was reported",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "check the index with git diff --cached --quiet before committing"
+        }
+      ],
+      "recurrence_open": "Other helpers in tools/ that commit after a porcelain check were not swept; the same proxy may sit in them.",
+      "single_factor_note": "one mechanism with two visible symptoms: the false failure and its empty message"
     },
     {
       "commit": "c654f1152ffb",
@@ -40753,6 +41134,50 @@
       "recurrence_open": "No SQL rule exists, so the 313 tracked .sql files remain unscanned by Semgrep; only the disclosure is new. H2's tools-hover2 semgrep_risk_pack has the same .html gap and is H2's."
     },
     {
+      "commit": "e0d873e80c9b",
+      "date": "2026-10-29",
+      "subject": "fix(sairngrounds, cody b65): the caddie GPS handlers hold while the fix is pending",
+      "files": [
+        "sairngrounds.html",
+        "tests/sairngrounds_save_reentry.js"
+      ],
+      "lines_added": 59,
+      "lines_removed": 2,
+      "app": "sairngrounds",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "sairngrounds gcdPlaceOrder and gcdMarkShotEnd awaited the GPS fix with the trigger live: a second press sent the Pro Shop a second, empty, zero-dollar cart order, and a second shot-end press threw a TypeError on the already-cleared shot start. Both now hold until the fix settles.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "0c7dc7da4108",
+        "date": "2026-09-02",
+        "subject": "feat(sairngrounds): the Golf Course Module's on-course layer -- the mapped points are finally read",
+        "lag_days": 57
+      },
+      "citation_note": "No PR rule id fits; C5-shape re-entry, cause-tagged in docs/recurring-bug-classes.md, cody b65 row 4.",
+      "contributing_factors": [
+        {
+          "factor": "The handler awaits the device GPS fix with the button live; the b64 sweep looked only for a server write, so a device wait was outside its shape.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A hold taken before the fix and released in finally, in gcdPlaceOrder and gcdMarkShotEnd."
+        },
+        {
+          "factor": "No arm drove a second press during a non-server wait.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Arms PO/MS 1-4 drive the real handlers with cmCaptureGps held."
+        }
+      ],
+      "recurrence_open": "Any handler awaiting a device API (camera, GPS, file picker) is outside the b64 sweep's server-write shape; only these two were checked."
+    },
+    {
       "commit": "f0afc23b39dd",
       "date": "2026-10-29",
       "subject": "fix(sairnvet, fourth b67): H1 #1779 -- a refused controlled-substance WRITE is shown on screen, naming the server code",
@@ -40891,50 +41316,6 @@
       "recurrence_open": "Every b64 hold was released in a finally, but only the 47 b64 handlers were checked for code between the acquire and the try; a hand-written hold elsewhere can repeat it."
     },
     {
-      "commit": "e0d873e80c9b",
-      "date": "2026-10-29",
-      "subject": "fix(sairngrounds, cody b65): the caddie GPS handlers hold while the fix is pending",
-      "files": [
-        "sairngrounds.html",
-        "tests/sairngrounds_save_reentry.js"
-      ],
-      "lines_added": 59,
-      "lines_removed": 2,
-      "app": "sairngrounds",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "sairngrounds gcdPlaceOrder and gcdMarkShotEnd awaited the GPS fix with the trigger live: a second press sent the Pro Shop a second, empty, zero-dollar cart order, and a second shot-end press threw a TypeError on the already-cleared shot start. Both now hold until the fix settles.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "0c7dc7da4108",
-        "date": "2026-09-02",
-        "subject": "feat(sairngrounds): the Golf Course Module's on-course layer -- the mapped points are finally read",
-        "lag_days": 57
-      },
-      "citation_note": "No PR rule id fits; C5-shape re-entry, cause-tagged in docs/recurring-bug-classes.md, cody b65 row 4.",
-      "contributing_factors": [
-        {
-          "factor": "The handler awaits the device GPS fix with the button live; the b64 sweep looked only for a server write, so a device wait was outside its shape.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "A hold taken before the fix and released in finally, in gcdPlaceOrder and gcdMarkShotEnd."
-        },
-        {
-          "factor": "No arm drove a second press during a non-server wait.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Arms PO/MS 1-4 drive the real handlers with cmCaptureGps held."
-        }
-      ],
-      "recurrence_open": "Any handler awaiting a device API (camera, GPS, file picker) is outside the b64 sweep's server-write shape; only these two were checked."
-    },
-    {
       "commit": "fac708f14ba0",
       "date": "2026-10-29",
       "subject": "fix(sairnsenior, fourth b67): H1 #1754 -- a could-not-tell answer keeps the claim draft instead of withdrawing it",
@@ -40977,202 +41358,6 @@
         }
       ],
       "recurrence_open": "Any other could-not-tell code added to the server later must be added to the kept list too; nothing enforces that."
-    },
-    {
-      "commit": "29cfd28072fd",
-      "date": "2026-10-29",
-      "subject": "fix(hank b68 S4): api/agent/poll.js delivers a command by compare-and-set; two concurrent polls no longer both deliver it",
-      "files": [
-        "api/agent/poll.js",
-        "api/b68-agent-poll-cas.test.js",
-        "docs/recurring-bug-classes.md"
-      ],
-      "lines_added": 131,
-      "lines_removed": 5,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "api/agent/poll.js PATCHed a command to delivered by id alone after reading it with status=eq.pending, so two concurrent polls of one agent could both deliver (and the agent run) one command, and the PATCH result was ignored. Fixed by compare-and-set (&status=eq.pending, return=representation, deliver only the returned row; a failed PATCH delivers nothing, 502). api/b68-agent-poll-cas.test.js 4/4, arm X red on the pre-fix file.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "the delivery PATCH predates the b67 S2 scan; its introducing commit was not traced this batch"
-      },
-      "citation_note": "No standing rule requires a read-then-write on a status column to compare-and-set; proposed: a status-transition PATCH carries the status it expects as a filter.",
-      "contributing_factors": [
-        {
-          "factor": "The read filtered status=eq.pending but the write did not, so two readers of the same pending row both won",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "PATCH filters status=eq.pending and delivers only the returned row"
-        }
-      ],
-      "recurrence_open": "Other read-then-PATCH status transitions in api/ are not all guarded; b67 S3 triaged 41 sites and left 35 classified mechanically, not read one by one.",
-      "single_factor_note": "one mechanism; the ignored PATCH result is the same read-then-write gap seen from the other side"
-    },
-    {
-      "commit": "b9e85ee5777a",
-      "date": "2026-10-29",
-      "subject": "fix(hank b68): H1 #1734/#1740/#1744/#1747 cleared; Tier A leg_cremations review discharged",
-      "files": [
-        "docs/CRITICALITY-TIERS.md",
-        "docs/recurring-bug-classes.md",
-        "docs/tier-a-reviews.json",
-        "sairnlegacy.html",
-        "sairnvet.html",
-        "tools/sql_placeholder_check.py"
-      ],
-      "lines_added": 79,
-      "lines_removed": 15,
-      "app": "sairnlegacy",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "hover-audit",
-      "summary": "H1 #1734: sairnlegacy.html keepsake order table (now :4836) wrote o.quantity into innerHTML with no H() while the case, item and status cells beside it were escaped; the server leg write branch checks no type of quantity, so a caller with a write grant could store markup that runs in the owner's browser. Fixed with H(String(...)). The raw o.id in inline onclick (38 sites app-wide) is a separate, pre-existing pattern and is NOT fixed here.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover",
-      "injection": {
-        "unknown_reason": "the keepsake order render was not traced to its introducing commit this batch"
-      },
-      "citation_note": "No standing rule names stored numeric fields as needing H() in innerHTML; the app escapes text cells by habit and skipped the numeric one.",
-      "contributing_factors": [
-        {
-          "factor": "The client coerces quantity with Number(..)||1, so the value was assumed numeric at render; the server accepts any type",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "escape the cell like its neighbours"
-        }
-      ],
-      "recurrence_open": "The raw o.id interpolation into inline onclick handlers remains at about 38 sites in sairnlegacy.html (H1 count); server-side type checks on leg payloads are still absent.",
-      "single_factor_note": "one cell; the app-wide raw-id interpolation is recorded as open item H1x, not as a factor of this one"
-    },
-    {
-      "commit": "b9e85ee5777a",
-      "date": "2026-10-29",
-      "subject": "fix(hank b68): H1 #1734/#1740/#1744/#1747 cleared; Tier A leg_cremations review discharged",
-      "files": [
-        "docs/CRITICALITY-TIERS.md",
-        "docs/recurring-bug-classes.md",
-        "docs/tier-a-reviews.json",
-        "sairnlegacy.html",
-        "sairnvet.html",
-        "tools/sql_placeholder_check.py"
-      ],
-      "lines_added": 79,
-      "lines_removed": 15,
-      "app": "sairnvet",
-      "layer": "product",
-      "severity": "low",
-      "detection_method": "hover-audit",
-      "summary": "H1 #1744: sairnvet.html saveWildlifeEdit() stored a closing status (Released/Deceased/Euthanized/Transferred) with a blank release/outcome date, so the case left Active Cases but never reached Released YTD or Release Rate, and its days in care ran on to today. Now refused with a toast. Transferred remains outside Release Rate by design and the register cell says so.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover",
-      "injection": {
-        "unknown_reason": "the wildlife edit form was not traced to its introducing commit this batch"
-      },
-      "citation_note": "No standing rule requires a status that closes a record to carry its closing date; the pairing was stated only in help text.",
-      "contributing_factors": [
-        {
-          "factor": "The closing-status-needs-a-date pairing lived only in the help text under the form",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "enforce it in saveWildlifeEdit"
-        }
-      ],
-      "recurrence_open": "addWildlifeCase and any import path were not checked for the same pairing; the Release Rate label still does not say Transferred is excluded.",
-      "single_factor_note": "one missing validation"
-    },
-    {
-      "commit": "b9e85ee5777a",
-      "date": "2026-10-29",
-      "subject": "fix(hank b68): H1 #1734/#1740/#1744/#1747 cleared; Tier A leg_cremations review discharged",
-      "files": [
-        "docs/CRITICALITY-TIERS.md",
-        "docs/recurring-bug-classes.md",
-        "docs/tier-a-reviews.json",
-        "sairnlegacy.html",
-        "sairnvet.html",
-        "tools/sql_placeholder_check.py"
-      ],
-      "lines_added": 79,
-      "lines_removed": 15,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "low",
-      "detection_method": "hover-audit",
-      "summary": "H1 #1747: tools/sql_placeholder_check.py (push CHECK 4d) ignored E-string backslash escapes (a false negative that read a placeholder as a comment), opened a string on an apostrophe inside a double-quoted identifier (false COULD NOT RUN), and matched operator-input declarations by substring and on raw lines including inside string literals. Fixed; criteria 2026-10-29.1, 6 new fixtures (5 red on 2026-10-28.1), --all clean over 312 files. Latent: 0 of 310 real files had any of the shapes.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover",
-      "injection": {
-        "commit": "995e53c9aac9",
-        "date": "2026-10-28",
-        "subject": "feat(tools, hank b60): push-time SQL placeholder check (L1) -- blocks undeclared placeholders, fails closed",
-        "lag_days": 1
-      },
-      "citation_note": "No standing rule says a hand-written lexer must model every quoting form of its grammar.",
-      "contributing_factors": [
-        {
-          "factor": "The lexer modelled fewer quoting forms than Postgres has, and the exemption was matched more loosely than the sentence granting it",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "model E-strings and quoted identifiers; exact-token declarations on whole comment lines"
-        }
-      ],
-      "recurrence_open": "Other hand-written SQL lexers in tools/ (if any) were not swept for the same quoting gaps; dollar-quote tags inside E-strings are untested.",
-      "single_factor_note": "one design gap in one tool, three shapes"
-    },
-    {
-      "commit": "c3b7e2ec5270",
-      "date": "2026-10-29",
-      "subject": "fix(hank b68 S6): push_retry fold returns 'nothing to fold' when nothing is staged, not an empty commit failure",
-      "files": [
-        "docs/recurring-bug-classes.md",
-        "tools/push_retry.py"
-      ],
-      "lines_added": 30,
-      "lines_removed": 0,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "low",
-      "detection_method": "code-review",
-      "summary": "tools/push_retry.py _regenerate_and_fold() treated a non-empty git status --porcelain (which counts untracked files) as something to commit; with nothing staged, git commit refused on stdout and the tool logged \"derived-docs commit failed:\" with an empty error. Now returns \"nothing to fold\" when git diff --cached --quiet succeeds. Selftest arm S6 red before, green after.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "the fold commit path was reshaped in hank b64 (C1a); the exact introducing commit was not traced"
-      },
-      "citation_note": "No standing rule says a fold step must test the index rather than the working tree before committing.",
-      "contributing_factors": [
-        {
-          "factor": "A dirty-tree test stood in for a staged-changes test, and only stderr was reported",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "check the index with git diff --cached --quiet before committing"
-        }
-      ],
-      "recurrence_open": "Other helpers in tools/ that commit after a porcelain check were not swept; the same proxy may sit in them.",
-      "single_factor_note": "one mechanism with two visible symptoms: the false failure and its empty message"
     }
   ],
   "started": "2026-09-09",

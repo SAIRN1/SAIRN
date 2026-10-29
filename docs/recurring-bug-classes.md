@@ -81,3 +81,16 @@ Rows 4 and 5 are b64's own leftovers, and both sit just outside the shape the b6
 | 4 | `tools/sql_placeholder_check.py` lexer: E-string backslash escape ignored (false negative), apostrophe in a quoted identifier opened a string (false COULD NOT RUN), declaration matched by substring and on raw lines (H1 #1747) | design | hand-written lexer | **due to** a lexer modelling fewer quoting forms than the grammar has, and an exemption matched more loosely than the sentence granting it; the fixtures did not reach these shapes | this batch |
 | 5 | `api/agent/poll.js` PATCHed a command `delivered` by id alone, so two concurrent polls of one agent could both deliver it (b67 S3 candidate, S4) | design | concurrency | **due to** a read-then-write with no compare-and-set: the read filtered `status=eq.pending`, the write did not, and the PATCH's failure was ignored | this batch |
 | 6 | `tools/push_retry.py` `_regenerate_and_fold()` logged "derived-docs commit failed:" with an empty error when only untracked files were present (b67 S6) | coding | error handling | **due to** "the tree is dirty" (porcelain non-empty, which counts untracked files) standing in for "something is staged", and `git commit`'s refusal going to stdout while only stderr was reported | this batch |
+
+## 2026-10-29 — batch 66 (cody)
+
+Every routed finding below names its source inline: session, commit and, for an auditor finding, the seq.
+
+| # | Defect | Phase | Sub-phase | Cause | Commit |
+|---|---|---|---|---|---|
+| 1 | `tools/sairn_done_line.py` Stop hook (cc b66, `a367bd0c2`) let a hand-typed `done b<n> <id>` end the session when it had recorded nothing this turn | design | state coupling | **due to** the check being keyed on the tool's OWN state file, so "the tool never ran" read as "not a final step" instead of "an unverified claim" | `23421fd51` |
+| 2 | Twelve more licence guards adopted a different licence on a legacy device (b65 found it in sairnfreedom, `f4d8c29fa`) | design | first-run state | **due to** one false premise, "nothing says whose data this is", copied into thirteen guards from `343c5a327`; and `licence_rekey_isolation` pinned the flaw as its requirement | `862ed3591` |
+| 3 | `sf_server_confirmed` entries never expired (cc b70 gap (a), on cody b61 `7ae231b47`) | design | data lifecycle | **due to** a record of THAT the server answered, with no WHEN, so nothing could age it | `0f8c36e10` |
+| 4 | sairnmechanical `mechCredAdd` / `mechAssetAdd` swallowed a rejected write (cc b73 R-12, `69c36d5ff`) | coding | error handling | **due to** a `.then().finally()` chain with no rejection handler; the `finally` made the hold correct, which hid that the failure was silent | `824bab9dd` |
+
+**Rows 2 and 4 are the same shape at two scales:** a check that held for the case its author drove (one app; a hold released) and said nothing about the case next to it (twelve apps; the user told). Row 2's arm pinned the wrong answer as the right one, which is the second time this batch pair has found that (b65 row 5, stonedesk S4).

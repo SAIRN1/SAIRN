@@ -5775,12 +5775,12 @@
         "tests/sd_data_sdn_blob_scope.js"
       ],
       "what": "api/sd-data.js, the ONE generic SDN_RESOURCES write branch serving all 18 SAIRNdesign resources: data: payload replaced with storedBlob(payload, []), and the 200 response's fallback limb switched to the stripped object. Before this, any key the caller invented -- including a forged license_hash, app_id or p_license_hash -- was stored verbatim in the data jsonb column and echoed back on read beside the real columns that contradict it. Twelve of the eighteen resources carry client identity or money. LATENT, not live: every read resolves tenancy from the real license_hash COLUMN, which always wins. WHAT A REVIEWER SHOULD ATTACK: (1) THE EMPTY COLUMN LIST. Every sibling storedBlob call site passes ['id']; this one passes []. My reason is that those branches re-attach the id from its column on read and this branch returns x.data verbatim, so ['id'] would empty the id off every record in eighteen resources -- check that reading of the read limb, because if I am wrong the fix is under-strict. (2) updated_at is a real column and is NOT stripped from the blob, so a caller-supplied updated_at still sits inside data; I left it because the read never returns the column and widening the strip was not the finding -- that judgement is reviewable and may be wrong. (3) sdn_clients has a BESPOKE write branch earlier in file order that already used storedBlob; confirm the generic branch is genuinely unreachable for it, because if it is reachable the two branches now strip differently. (4) tests/sd_data_sdn_blob_scope.js asserts on the captured upstream POST body rather than the response -- check arm C1 really drives an UNGATED resource and that arm D2's block scoping is right, since its first version cut on a string that only exists in a comment.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cody",
       "owner_assigned_at": "2026-10-06T07:29:58Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cody",
+      "reviewed_at": "2026-10-29T20:15:09Z",
+      "verdict": "SOUND-WITH-GAPS (low), cody b66 (2026-10-29). Reviewed the generic SDN_RESOURCES write branch in api/sd-data.js at HEAD; the anchored commit is 581e214fb133. tests/sd_data_sdn_blob_scope.js: 10/0.\n\n(1) THE EMPTY COLUMN LIST: SOUND. The generic read (:15801) selects only `data` and returns `x.data` verbatim (:15804), so nothing re-attaches an id from its column. ['id'] would strip the id from every record of all 18 resources. storedBlob (api/_lib/blob.js) removes only columnKeys plus license_hash, app_id and p_license_hash, so [] strips exactly the scope keys.\n(2) updated_at LEFT IN THE BLOB: SOUND as a judgement. sairndesign.html never reads updated_at (grep: 0 hits), so a caller-supplied value inside `data` is returned to the client and trusted by nothing.\n(3) sdn_clients IS UNREACHABLE in the generic branch: SOUND. The bespoke read and write branches (:6679, :6698) both return on every path, and they come first in file order.\n(4) THE TEST: SOUND. C1 drives sdn_moodboards, which is not in SD_SESSION_GATED, and asserts on the captured upstream POST body. D2 cuts the block at the next 4-space `if (`. The branch's own ifs sit at 6 spaces, and `upToEnd.length < sdnBlock.length` proves the cut was found, so the scoping is right.\n\nGAP (low), THE b58 WRITE-UNCONFIRMED CLASS, in two places this record touches:\n  a. The generic branch's 200 (:15860) answers ok with `sdnData` when the upstream returned NO row: `(Array.isArray(rows) && rows[0]) ? rows[0].data : sdnData`. The record calls this \"the stored row\" limb. It is the shape cody b58 fixed in the mech branches (wroteRow() + refuseUnstoredWrite(), 502 WRITE_UNCONFIRMED). Here, all 18 SDN resources report a save the store did not echo.\n  b. The bespoke sdn_clients write (:6746) answers 200 from the payload, without reading `rows` at all.\nNext step for hank (api/ owner): apply the b58 pattern to both, with arms that are red first. tests/sd_data_mech_write_unconfirmed.js is a template: an empty echo must be a 502.\nSTALE CITATIONS in the branch comment: ':12399' and ':12403' now sit at :15801 and :15804."
     },
     {
       "author_session": "hank",
@@ -5795,12 +5795,12 @@
         "sairnsenior.html"
       ],
       "what": "sairnsenior.html plus 13 criticality-register rows. CODE: sairnsenior.html gains a COMMENT ONLY -- an exemption note above SEN_AGENCY_DEFAULT recording that sen_settings must never get an st('sen_settings') local accessor, because it is server-authoritative by the 2026-08-27 decision that removed a localStorage copy of a federally-mandated EVV configuration; adding the accessor to satisfy citation_line_drift_check.py would re-create that bug. No executable line changed; checkblocks EXIT=0, 3 blocks, 0 failed. REGISTER: 42 citations across 13 rows read against the source at HEAD -- 28 genuinely drifted and corrected, 14 already right. WHAT A REVIEWER SHOULD ATTACK: (1) THE FALSE-POSITIVE CLAIM. I assert five flagged-DRIFTED citations are correct -- law_timeentries:1977 (a comment, not a write), law_picases:4646, grd_rounds:3004 and :3046, grd_irr_zones:3694 -- on the ground that the tool's verdict is a nearest-local-write-site PROXY. Re-open each and disagree if the citation does not in fact support its sentence; if I am wrong the backlog is understated, not overstated. (2) THE DE-CITING CHANGE. I rewrote superseded line numbers from the backticked colon form (colon then digits, inside backticks) to the word 'line' followed by the bare digits, so CITE_RE stops re-reporting dead numbers, 18 occurrences. That deliberately makes the tool's count smaller. Check it is not hiding anything live -- every LEFT side of an arrow pair should be a number I replaced in the same sentence. (3) alf_staff is the biggest single cell: seven citations, offsets +21 to +1470, and :4430 had been standing for TWO distinct facts (a render site and a KPI write). Verify both new numbers, :4579 and :4582. (4) bld_warranty's old :2182 is the definition of the fmt() helper -- plausible enough to pass a casual check -- so confirm :6904 is the actual row render. NOTE ON THIS RECORD ITSELF, left in rather than cleaned away: the two gaps you may see repaired above were caused by writing this text in a double-quoted bash string -- the backticked examples were run as command substitution and vanished from the record. Caught by reading the stored entry back instead of trusting the tool's 'RECORDED' line, which is the same read-what-landed discipline the rest of this batch uses.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cody",
       "owner_assigned_at": "2026-10-06T07:56:17Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cody",
+      "reviewed_at": "2026-10-29T20:16:22Z",
+      "verdict": "SOUND, cody b66 (2026-10-29). Reviewed AT THE ANCHORED COMMIT f98982410649, not at HEAD: every cited line has moved since 10-06, so a HEAD read would grade the wrong bytes. I used `git show f98982410649:<file> | sed -n <N>p` for each citation, and the commit's own diff of docs/CRITICALITY-TIERS.md.\n\nCODE: sairnsenior.html gains comments only. Every added line in the diff is a // line, and HEAD still has NO st('sen_settings') accessor: the only two hits, :6335 and :6337, are inside that comment.\n\n(1) THE FIVE \"FALSE POSITIVE\" CLAIMS: all five hold. Each cited line supports its sentence at the commit:\n  law_timeentries sairnlaw.html:1977 is the comment recording the empty-billing_code defect; the sentence says it \"records a real prior defect\", not that it is a write.\n  law_picases :4646 is the \"Net to Client\" 18px render.\n  grd_rounds :3004 is the holes.push with arrived_at/completed_at; :3046 is the shots.push. Their functions, :2969 gcdStartRound, :2996 gcdArriveHole and :3036 gcdMarkShotEnd, also hold.\n  grd_irr_zones :3694 is the last_service cell, inside rIrrigation() at :3675.\nSo the tool's DRIFTED verdict was its nearest-local-write proxy, as the record says.\n(2) THE DE-CITING CHANGE: nothing live is hidden. The diff adds 20 \"line `N`\" occurrences; the record said 18, and the difference is bld_warranty's 2182 named twice in prose. 13 are arrow pairs. Each of the other 7 sits in a \"the cell cited line N ... at HEAD it is X\" sentence that names the current site in the same sentence (6864, 2182 twice, 6411, 5637, 4075, 4514). Of the 13 arrow left-sides, 9 were the live :N in the removed text. The other 4 (3227, 5842, 5899, 5903) appear in text this commit wrote fresh, each beside its replacement.\n(3) alf_staff: :4579 is `function rCertStatus(){` and :4582 sets #cp-certs-expiring. Both correct, and one old number (4430) was indeed standing for two facts. :3376 saveStaff, :3388 certDaysUntil and :3389 rStaff also hold.\n(4) bld_warranty: :6904 is the row render `fmt(w.cost)`, :6887 the reduce, and :1053 the Total Cost KPI. The old :2182 is the fmt() definition, as the record says.\nNo gap found. Limit: each citation was checked for what its sentence claims about that line. Tier verdicts were not re-derived."
     },
     {
       "author_session": "cody",
@@ -9001,6 +9001,29 @@
       "status": "open",
       "reviewer_owner": "cc",
       "owner_assigned_at": "2026-10-29T19:34:54Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-29T20:17:23Z",
+      "opened_at_sha": "0f8c36e107dafccebcfacf73f81e2f03c49cd052",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 0,
+      "resources": [
+        "sf_trustee_audits"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "sairnfreedom.html",
+        "tests/sairnfreedom_confirmed_ttl.js"
+      ],
+      "what": "cody b66: (1) 12 licence guards. Each of sairndental, sairnsenior, sairncare, sairnbuild, sairndesign, sairnlaw, sairnlegacy, sairnroofing, sairncode, sairnbiz, sairngrounds and sairnscape now, with no fingerprint, fingerprints the stored key (raw, or JSON for sb_lic, grd_lic, scp_lic). If it differs from the key entered, the guard takes the existing confirm-and-wipe path. (2) sairnfreedom: a 90-day TTL on sf_server_confirmed (stamps in sf_server_confirmed_at). (3) sairnmechanical: mechCredAdd/mechAssetAdd report a rejected or answerless write. (4) db/schema_snapshot.json re-captured from live, verified group by group.\nWHAT TO ATTACK FIRST: (1) is the widest, a dialog on a path that used to be silent. Confirm that for each app the stored-key NAME is the one the gate writes. The fixture names are taken from each caller's setItem/st line; check that no app also normalises the key differently from its gate, e.g. upper-case in the gate and as-typed in storage, because that would turn a same-licence device into a \"different licence\" and offer a wipe. SECOND: (2)'s legacy entries, ids with no time, now read as NOT confirmed until the next read re-stamps them. Confirm that the trustee line saying \"NOT yet confirmed\" for that window is acceptable, and that a read does re-stamp them: sfData read -> sfConfirmOnServer at :2058. THIRD: in (3) the rejection handler covers the write alone, so a throw inside the success path is still unhandled. It was before as well; judge whether it should be caught too.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-10-29T20:17:23Z",
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
