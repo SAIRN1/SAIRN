@@ -4618,8 +4618,8 @@
       "task": "licence guard legacy-device sweep 12 apps and confirmed-set TTL",
       "claimed_at": "2026-10-29T20:06:34Z",
       "claimed_at_epoch": 1793304394.1028202,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-29T20:18:24Z",
       "files": null
     }
   ],
