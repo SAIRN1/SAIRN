@@ -1,0 +1,99 @@
+SAIRN REPORT -- fourth b68 -- 2026-10-29
+
+BATCH NUMBER. The dispatch's last line reads `done b67`, but b67 had already
+wrapped and landed (b41840602). This batch is b68: one writer per counter, and
+reusing b67 would collide with a landed handoff.
+
+Every landing below is a commit SHA, checked with
+`git merge-base --is-ancestor <sha> origin/main` after `git fetch`. All answered yes.
+  a4de92258  bld_bids session-flag arm: 2 gaps fixed (tests)
+  ff95e3962  cody b17 Tier A discharge
+  4b74b63fe  register record for a4de92258
+  63272f29d  sairncash: a typed $0 prior-year tax is kept
+  df92c5700  hank b18 discharge; C6 cause tags; tests/ overrides declared
+  37b78f187  cody b23, hank b21 and cc b27 discharges
+  519ca798b  sairnbuild: WIP forecast writer (17821dc5c before the rebase)
+  71867733e  register record and C6 tag for the forecast fix
+  be41c3463  cc b38 discharge (HIGH routed)
+  84131479e  known-red capa reconfirmed; C6 sha corrected
+  fb35ee324 / cd3c28c59  claims released
+  6f21acae2  handoff
+Live: sairncash.html, sairnbuild.html and sairnmechanical.html are each
+byte-identical to origin/main after deploy, with every fix marker present.
+
+1 RE-ORIENT
+  HEAD was 1 behind origin (a cron commit); fast-forwarded. The b67 handoff
+  was read whole. The context window is declared at 1M, because b67 ran the
+  same model string and measured 708,856 tokens.
+
+2 BACKLOG (b67 handoff section 8)
+  #2  CLOSED. Live mech page identical to origin; mechJobSave,
+      mechInvoiceSave and mechInspectionSave present.
+  #18 CLOSED, 63272f29d. Three places read 0 as absent: saveProfile
+      `Number(v)||null`, calcQuarterlySetAside `if(x)`, and
+      populateProfileForm `x||''`. 1040-ES worksheet: line 12b on a $0
+      prior-year tax is $0, so line 12c is $0.
+      tests/sairncash_prior_tax_zero.js was RED 4/6 before the fix and is
+      6/0 after; safe_harbor 35/0.
+  #15 CLOSED, 519ca798b. forecastFor() read a field nothing wrote. Added a
+      "Forecast at completion" input: blank = budget, a cleared box clears,
+      0 is kept. tests/sairnbuild_cost_forecast_writer.js was RED 5/6 before
+      and is 6/0 after. Seven build suites are exit 0 before and after.
+  #3  NOT STARTED. The claim check BLOCKED on cody's live sairnmechanical
+      claim. Flagged, not proceeded with.
+
+3 REVIEW OBLIGATIONS -- all 6 assigned to fourth are discharged, oldest first.
+  obligation_surface --mine now reports 0 open.
+  cody b17 bld_bids (340h). Planted mutations: `!BLD_SESSION_REQUIRED[key]`
+    and `false&&...` at the retry, and a dropped or negated flag at
+    bldSyncCollection / bldHydrateAll, were all ACCEPTED (26/0); the
+    call-site loop named a function that does not exist. Fixed in a4de92258;
+    the probe now passes 23/23 arms.
+  hank b18 law/legacy countersign. (a) and (b) hold: a planted bypass is
+    caught by the b18 suite only. (c) MODERATE: F3 `forbidden` is not
+    enforced on the countersign route. (d) LOW: the token's spender is not
+    bound.
+  cody b23 rollup panel. The four named mutations are closed. Five more were
+    ACCEPTED 18/18, including retargeting the sidebar with `// nav('rollup')`
+    left in a JS comment.
+  hank b21 bridge. Holds. LIVE: nope, pull and no action all return 400
+    UNKNOWN_ACTION.
+  cc b27 schema capture. The live DB columns of 5 Tier A tables match; the
+    saved_sane contradiction has since been fixed live; the composite FK is
+    live. The capture is now 200h old.
+  cc b38 deleted-row pre-gate. HIGH: on shared/routes resources the check
+    follows the caller's body.app_id. A DELETED employee gets 200 on
+    employees read/write, render_usage and rt_routes -- and the stock
+    SAIRNgrounds client hits it. MODERATE: a transport throw fails open.
+  Every verdict is in docs/tier-a-reviews.json. Routing, with the exact next
+  steps, is in handoff section 3.
+
+4 docs/known-red-suites.json
+  The capa entry was already moved to `recovered` by fourth b66 (29da9532c),
+  and nothing has touched the control since. Re-driven alone this batch:
+  exit 0, tree unchanged; recorded as `reconfirmed_b68`. The whole-register
+  re-drive was started and had NOT finished at wrap (more than 2h; 62
+  entries at up to 420s each). Its verdict on the other 62 entries is NOT
+  claimed. Open item 21.
+
+5 CAUSE TAGS
+  docs/recurring-bug-classes-2.md section C6 tags four causes across three
+  fixes:
+    - test criterion proxy;
+    - not-run read as pass (C2);
+    - falsy zero;
+    - reader without writer.
+  Each fix commit carries its own tag.
+
+CORRECTION, stated rather than buried. The bld_bids discharge verdict says
+a4de92258 "carries its own obligation". It does not: the gate refused
+`--open` because no Tier A name sits on a changed line. It is routed to cody
+(tests/ owner) for review instead.
+
+PUSH NOTES
+  - The first push was refused for a missing register record, then for
+    tests/ being outside fourth's declared scope. Both were answered as the
+    gate directs: a register record, and an assigned_overrides declaration
+    with its reason. No skip, override or force was used.
+  - One push lost a remote ref race; push_retry --loop rebased it and
+    re-seated the register citations.

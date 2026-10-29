@@ -1,0 +1,28 @@
+SAIRN DIGEST -- fourth b68 -- 2026-10-29
+CONTEXT 34.4% of 1,000,000 -- 344,329 tokens, measured.
+STATUS: everything landed and was live-verified. The batch is b68 because b67 had already wrapped; the dispatch said b67.
+DECISION-NEEDED (Michael):
+  1. May an apprentice prepare a cremation under an EMPTY F3? (handoff section 3)
+  2. Re-capture db/schema_snapshot.json (200h old).
+  3. The mech SQL.
+  4. The PIN files.
+HIGH ROUTED (cc): the b38 deleted-row check follows caller body.app_id on shared/routes resources. A deleted employee gets 200, including the stock SAIRNgrounds rt_routes client.
+READ: SAIRN-handoff-fourth-b68.md (whole state). Detail: SAIRN-report-fourth-b68.txt.
+SQL: none this batch.
+CHANGED:
+  a4de92258  bld session-flag arm accepted a negated flag and checked 1 call site of 3 (tests)
+  63272f29d  sairncash: a typed $0 prior-year tax was read as "not provided"
+  519ca798b  sairnbuild: the WIP forecast had no writer
+  docs/tier-a-reviews.json: 6 of 6 fourth obligations discharged
+  known-red: capa reconfirmed
+1 the review findings are routed to hank, cody and cc with exact next steps (handoff section 3)
+2 mech re-entrancy guards are NOT started: blocked by cody's live claim
+3 the whole known-red re-drive did not finish (>2h); the other 62 entries are not claimed
+4 CORRECTION: a4de92258 has no Tier A obligation; the gate refused --open. Routed to cody
+NEXT, in order:
+  a. fourth: finish red_suite_register_check (item 21)
+  b. fourth: mech guards once cody releases (#3)
+  c. fourth: vet append-only + countersign (#13, #14)
+UNVERIFIED: known-red entries other than capa (re-drive unfinished); the b38/b18 findings rest on handler mocks, not a live deleted-row drive.
+EVIDENCE-path: tests/sairncash_prior_tax_zero.js; tests/sairnbuild_cost_forecast_writer.js; tests/run_sairnbuild_server_wins_sabotage_probe.py arms 16-19.
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\83c60d05-1589-4389-a5cf-cd99265bab76.jsonl

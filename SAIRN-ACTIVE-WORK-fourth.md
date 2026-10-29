@@ -2356,3 +2356,17 @@ Full account: `SAIRN-handoff-fourth-b67.md`.
 - **Final content commit `6a88c93ab85fd68ec0ba2cbaa5a01aa8aa2b0b73`** was measured EQUAL to origin/main's HEAD (`git rev-parse HEAD` == `git rev-parse origin/main`) after `git fetch`, with a clean tree.
 - The commit carrying this entry is its direct child, and is re-checked the same way after its own push.
 - 20 open items, each with its next step: `SAIRN-handoff-fourth-b67.md` §8.
+
+## batch b68 -- 2026-10-29, CLOSED
+
+- The batch is b68; the dispatch said b67, which had already wrapped.
+- All 6 Tier A obligations assigned to fourth are discharged. The cc b38 HIGH finding (shared/routes deleted-row bypass) is routed to cc.
+- Fixes landed:
+  - `a4de92258` bld session-flag arm (tests);
+  - `63272f29d` sairncash $0 prior-year tax;
+  - `519ca798b` sairnbuild WIP forecast writer.
+- Live pages are byte-identical to origin.
+- known-red: capa reconfirmed; the whole-register re-drive is unfinished (open item 21).
+- Mech re-entrancy guards: blocked by cody's claim.
+
+Full account: `SAIRN-handoff-fourth-b68.md`.
