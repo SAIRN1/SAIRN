@@ -263,10 +263,64 @@ check('1b. KNOWN-BAD for 1: dropping mech_docs from that map is CAUGHT -- or '
           (SCANNED_MAP.search(H_CODE.replace("mech_docs: 'text'", "// removed"))
            or _map_m).group(1)) if _map_m else False,
       'the arm cannot tell a map that covers mech_docs from one that does not')
+# ── ARM 2 WENT STALE ON 2026-10-28 AND THE SUBJECT GOT STRICTER, NOT WEAKER ─
+# It required `rows[0].data : mPayload` -- the fallback arm that answered ok
+# with the redacted payload when the store echoed no row. cody b58 (10e914b1)
+# DELETED that fallback: an unechoed write is now refused, and the success
+# answer is the stored row and nothing else. So the anchor vanished, arm 9's
+# baseline went false and the probe exited 2 while redaction was intact.
+#
+# THE QUESTION IS UNCHANGED: is the redacted payload what is stored, and is
+# nothing raw handed back? It is now answered INSIDE the MECH_RECORDS write
+# branch -- the old literal was unique to it, but `rows[0].data` and
+# `data: payload` are not unique in this file, so a file-wide test would be
+# answered by somebody else's branch.
+MECH_WRITE_OPEN = "if (MECH_RECORDS[resource] && action === 'write') {"
+
+
+def mech_write_span(code):
+    """(start, end) of the MECH_RECORDS write branch, string-aware braces."""
+    i = code.find(MECH_WRITE_OPEN)
+    if i == -1:
+        return None
+    k, depth, quote = code.find('{', i), 0, None
+    while k < len(code):
+        c = code[k]
+        if quote:
+            if c == '\\':
+                k += 2
+                continue
+            if c == quote:
+                quote = None
+        elif c in '\'"`':
+            quote = c
+        elif c == '{':
+            depth += 1
+        elif c == '}':
+            depth -= 1
+            if depth == 0:
+                return i, k + 1
+        k += 1
+    return None
+
+
+def stores_and_returns_redacted(code):
+    sp = mech_write_span(code)
+    if not sp:
+        return False
+    b = code[sp[0]:sp[1]]
+    return ('data: mPayload' in b
+            and bool(re.search(r'res\.status\(200\)\.json\(\{\s*ok:\s*true,\s*'
+                               r'data:\s*rows\[0\]\.data\s*\}\)', b))
+            and not re.search(r'\bdata:\s*[^,;}]*\bpayload\b', b))
+
+
 check('2. the redacted payload is what gets stored AND what is returned',
-      'data: mPayload' in H_CODE and 'rows[0].data : mPayload' in H_CODE,
-      'returning the raw request body on the fallback arm hands the client '
-      'back the unredacted text it sent')
+      stores_and_returns_redacted(H_CODE),
+      'the MECH_RECORDS write branch must store `data: mPayload`, answer with '
+      'the stored row (`rows[0].data`), and hand back the raw request body '
+      'nowhere -- that returns the unredacted text the client sent. branch '
+      'found=%s' % bool(mech_write_span(H_CODE)))
 
 # ── 3: THE CLIENT COPY ──────────────────────────────────────────────────
 SAVE_DOC = function_body(RAW_APP, 'saveDoc')
@@ -357,7 +411,16 @@ MUTATIONS = [
      'handler'),
     ('9. storing the RAW payload instead of the redacted one is REFUSED',
      lambda s: s.replace('data: mPayload', 'data: payload', 1),
-     lambda code: 'data: mPayload' in code and 'rows[0].data : mPayload' in code,
+     stores_and_returns_redacted,
+     'handler'),
+    # The RETURN half arm 9 used to cover through the fallback literal, planted
+    # INSIDE the branch (strip_comments preserves offsets) so a second
+    # `data: rows[0].data` elsewhere in the file cannot absorb it.
+    ('9b. answering with the RAW payload instead of the stored row is REFUSED',
+     lambda s: (lambda sp: s if not sp else s[:sp[0]] + s[sp[0]:sp[1]].replace(
+         'data: rows[0].data', 'data: payload', 1) + s[sp[1]:])(
+             mech_write_span(strip_comments(s))),
+     stores_and_returns_redacted,
      'handler'),
     ('10. dropping the limits note from the row is REFUSED',
      lambda s: s.replace('note: red.note', 'note: null', 1),

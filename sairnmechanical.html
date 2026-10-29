@@ -1818,7 +1818,13 @@ function mechRedactLocal(text){
   });
   return{text:out,redacted:n>0};
 }
+// ONE SAVE AT A TIME (cody b63, gap (d) of cc b67's review). The toast below
+// waits on the push -- up to MECH_FETCH_TIMEOUT_MS -- and the button stayed
+// live the whole time, so a second click saved the same scan as a SECOND
+// document with a second id. Held from the push until it answers, either way.
+var mechDocSaving=false;
 function saveDoc(){
+  if(mechDocSaving){showToast('Still saving the last document -- one moment');return;}
   var el=document.getElementById('doc-out');
   var txt=el?(el.textContent||'').trim():'';
   if(!txt){showToast('Nothing to save yet -- scan a document first');return;}
@@ -1860,10 +1866,14 @@ function saveDoc(){
   var redNote=red.redacted
     ? ' -- identifiers removed. Names in prose are not.'
     : '. Nothing matched a redaction rule; names in prose are never removed.';
-  Promise.resolve(mechBackup('mech_docs',arr[0])).then(function(d){
+  // Promise.resolve().then so a push that THROWS still lands in the reject arm
+  // and releases the hold, instead of leaving every later save refused.
+  mechDocSaving=true;
+  Promise.resolve().then(function(){return mechBackup('mech_docs',arr[0]);}).then(function(d){
+    mechDocSaving=false;
     showToast(d ? 'Saved and synced'+redNote
                 : 'Kept on this device only -- the server backup did not complete'+redNote);
-  },function(){showToast('Kept on this device only -- the server backup did not complete'+redNote);});
+  },function(){mechDocSaving=false;showToast('Kept on this device only -- the server backup did not complete'+redNote);});
 }
 function saveTakeoff(){
   var el=document.getElementById('bp-out');
