@@ -3953,7 +3953,13 @@ async function saveIrrZone(){
 }
 // Same real, non-fabricated hand-off pattern as Design Walk's sendDesignToQuote:
 // real checklist line items, $0 amounts, priced through the existing Quote editor.
+// ONE QUOTE AT A TIME (cody b65): the draft quote is filed, then its server
+// write is awaited with the zone checklist unchanged, and a second press during
+// that wait filed the same draft quote again under a new Q- id. Held until the
+// write answers, either way.
+var grdIrrQuoting=false;
 async function sendIrrZoneToQuote(){
+  if(grdIrrQuoting){toast('Still sending the last quote -- one moment');return;}
   var propertyId=$('izproperty').value,name=$('izname').value.trim();
   if(!propertyId){toast('Select a property first');return;}
   var checklist=$('izchecklist').value.split('\n').map(function(l){return l.trim();}).filter(Boolean);
@@ -3962,7 +3968,9 @@ async function sendIrrZoneToQuote(){
   var quotes=ld('grd_quotes',[]);
   var qrec={id:'Q-'+Date.now(),property_id:propertyId,lines:lines,status:'Draft',valid:daysFromNow(30)};
   quotes.push(qrec);st('grd_quotes',quotes);
-  var syncResult=await grdData('write','quotes',qrec);
+  var syncResult;
+  grdIrrQuoting=true;
+  try{syncResult=await grdData('write','quotes',qrec);}finally{grdIrrQuoting=false;}
   toast(syncResult?('Sent to Quoting as draft '+qrec.id+' -- pricing still needs to be filled in'):('Saved on this device only -- server sync failed, try again with a connection'),syncResult?3000:6000);
 }
 
@@ -4065,7 +4073,13 @@ function rBoq(){
   $('boq-unpriced-note').style.display=unpriced.length?'block':'none';
   if(unpriced.length)$('boq-unpriced-note').textContent=unpriced.length+' item type(s) have no rate configured -- add them in the Rate Table tab for a complete price.';
 }
+// ONE QUOTE AT A TIME (cody b65): the draft quote is filed, then its server
+// write is awaited with the property selection unchanged, and a second press during
+// that wait filed the same draft quote again under a new Q- id. Held until the
+// write answers, either way.
+var grdBoqQuoting=false;
 async function sendBoqToQuote(){
+  if(grdBoqQuoting){toast('Still sending the last quote -- one moment');return;}
   var propertyId=$('boqproperty').value;
   if(!propertyId){toast('Select a property first');return;}
   var lines=computeBOQ(propertyId);
@@ -4077,7 +4091,9 @@ async function sendBoqToQuote(){
   var quotes=ld('grd_quotes',[]);
   var qrec={id:'Q-'+Date.now(),property_id:propertyId,lines:quoteLines,status:'Draft',valid:daysFromNow(30)};
   quotes.push(qrec);st('grd_quotes',quotes);
-  var syncResult=await grdData('write','quotes',qrec);
+  var syncResult;
+  grdBoqQuoting=true;
+  try{syncResult=await grdData('write','quotes',qrec);}finally{grdBoqQuoting=false;}
   toast(syncResult?('BOQ sent to Quoting as draft '+qrec.id):('Saved on this device only -- server sync failed, try again with a connection'),syncResult?3000:6000);
 }
 
@@ -4195,7 +4211,13 @@ async function saveWf(){
   var syncResult=await grdData('write','grd_water_features',rec);
   toast(syncResult?'Water feature saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
+// ONE QUOTE AT A TIME (cody b65): the draft quote is filed, then its server
+// write is awaited with the feature checklist unchanged, and a second press during
+// that wait filed the same draft quote again under a new Q- id. Held until the
+// write answers, either way.
+var grdWfQuoting=false;
 async function sendWfToQuote(){
+  if(grdWfQuoting){toast('Still sending the last quote -- one moment');return;}
   var propertyId=$('wfproperty').value,name=$('wfname').value.trim();
   if(!propertyId){toast('Select a property first');return;}
   var checklist=$('wfchecklist').value.split('\n').map(function(l){return l.trim();}).filter(Boolean);
@@ -4204,7 +4226,9 @@ async function sendWfToQuote(){
   var quotes=ld('grd_quotes',[]);
   var qrec={id:'Q-'+Date.now(),property_id:propertyId,lines:lines,status:'Draft',valid:daysFromNow(30)};
   quotes.push(qrec);st('grd_quotes',quotes);
-  var syncResult=await grdData('write','quotes',qrec);
+  var syncResult;
+  grdWfQuoting=true;
+  try{syncResult=await grdData('write','quotes',qrec);}finally{grdWfQuoting=false;}
   toast(syncResult?('Sent to Quoting as draft '+qrec.id+' -- pricing still needs to be filled in'):('Saved on this device only -- server sync failed, try again with a connection'),syncResult?3000:6000);
 }
 
@@ -4312,7 +4336,12 @@ function viewEcoReport(id){
 // sensors exist here). Layer 7 is Claude, grounded ONLY in layers 1-6,
 // same anti-fabrication system-prompt discipline as claimGeneratePacket()
 // and disRespond() elsewhere on the platform (SAIRNbuild item 5).
+// ONE REPORT AT A TIME (cody b65): the report waits on the AI call and then on
+// its own server write, and a second press during either wait generated and
+// filed a second report. Held until both answer, either way.
+var grdEcoReporting=false;
 async function genEcosystemReport(){
+  if(grdEcoReporting){toast('Still generating the last report -- one moment');return;}
   var propertyId=$('ecoproperty').value;
   if(!propertyId){toast('Select a property first');return;}
   var prop=ld('grd_properties',[]).find(function(x){return x.id===propertyId;});
@@ -4348,6 +4377,7 @@ async function genEcosystemReport(){
 
   $('eco-result-wrap').style.display='block';
   $('eco-result').textContent='Generating report...';
+  grdEcoReporting=true;
   try{
     var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:900,app_id:APP_ID,is_demo:true,system:sys,
@@ -4368,7 +4398,7 @@ async function genEcosystemReport(){
     toast(syncResult?'Report generated and saved':'Report generated and saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
   }catch(e){
     $('eco-result').textContent='Could not reach Claude for layer 7. Layers 1-6 (computed/manual) are still real and usable on their own:\n\n'+facts;
-  }
+  }finally{grdEcoReporting=false;}
 }
 
 // === DREAMCLOSE (item 7) ==========================================
@@ -4427,7 +4457,13 @@ async function dcAnalyze(){
     $('dc-result').textContent='Could not reach Claude. Check your connection and try again.';
   }
 }
+// ONE QUOTE AT A TIME (cody b65): the draft quote is filed, then its server
+// write is awaited with the design still loaded, and a second press during
+// that wait filed the same draft quote again under a new Q- id. Held until the
+// write answers, either way.
+var grdDcQuoting=false;
 async function dcCreateQuote(){
+  if(grdDcQuoting){toast('Still sending the last quote -- one moment');return;}
   var propertyId=$('dc-property').value;
   if(!propertyId||!dcCurrentDesignText){toast('Get an AI design description first');return;}
   var lines=dcCurrentDesignText.split('\n').filter(function(l){return /^[-*]\s/.test(l.trim());})
@@ -4436,7 +4472,9 @@ async function dcCreateQuote(){
   var quotes=ld('grd_quotes',[]);
   var qrec={id:'Q-'+Date.now(),property_id:propertyId,lines:lines,status:'Draft',valid:daysFromNow(30)};
   quotes.push(qrec);st('grd_quotes',quotes);
-  var syncResult=await grdData('write','quotes',qrec);
+  var syncResult;
+  grdDcQuoting=true;
+  try{syncResult=await grdData('write','quotes',qrec);}finally{grdDcQuoting=false;}
   dcCurrentQuoteId=qrec.id;
   $('dc-approval-wrap').style.display='block';
   toast(syncResult?('Priced proposal created as draft quote '+qrec.id+' -- pricing still needs to be filled in'):('Saved on this device only -- server sync failed, try again with a connection'),syncResult?3000:6000);

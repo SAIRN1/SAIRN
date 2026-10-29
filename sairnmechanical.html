@@ -2758,7 +2758,13 @@ function mechData(action, resource, payload) {
     });
   };
 
+  // ONE CREDENTIAL AT A TIME (cody b65): the form is cleared only after
+  // mechData answers, and a second press during that wait sent the same
+  // credential again under a second id -- a second record, not a duplicate the
+  // server refuses. Held until the write answers, either way.
+  var mechCredSaving=false;
   window.mechCredAdd = function () {
+    if (mechCredSaving) { showToast('Still saving the last credential -- one moment'); return; }
     var g = function (id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
     var err = document.getElementById('mech-cred-err');
     if (err) err.textContent = '';
@@ -2789,7 +2795,8 @@ function mechData(action, resource, payload) {
       has_expiry: hasExp === 'true',
       expires_on: hasExp === 'true' ? g('mc-expires') : null
     };
-    mechData('write', 'mech_credentials', payload).then(function (res) {
+    mechCredSaving = true;
+    new Promise(function (done) { done(mechData('write', 'mech_credentials', payload)); }).then(function (res) {
       if (res.body && res.body.ok) {
         ['mc-tech', 'mc-number', 'mc-issuer', 'mc-issued', 'mc-expires', 'mc-jurisdiction'].forEach(function (id) {
           var el = document.getElementById(id); if (el) el.value = '';
@@ -2801,7 +2808,7 @@ function mechData(action, resource, payload) {
       // broken, and those messages exist precisely to be shown.
       var msg = (res.body && res.body.error && res.body.error.message) || ('Could not save (HTTP ' + res.status + ').');
       if (err) err.textContent = msg;
-    });
+    }).finally(function () { mechCredSaving = false; });
   };
 
 
@@ -3014,7 +3021,12 @@ function mechData(action, resource, payload) {
   }
   window.mechAssetRefresh = mechAssetRefresh;
 
+  // ONE ASSET AT A TIME (cody b65): the form is cleared only after
+  // mechData answers, and a second press during that wait sent the same site
+  // asset again under a second id. Held until the write answers, either way.
+  var mechAssetSaving=false;
   window.mechAssetAdd = function () {
+    if (mechAssetSaving) { showToast('Still saving the last asset -- one moment'); return; }
     var g = function (id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
     var err = document.getElementById('mech-asset-err');
     if (err) err.textContent = '';
@@ -3069,7 +3081,8 @@ function mechData(action, resource, payload) {
       leak_detected_on: g('ma-leak-detected') || null,
       leak_repair_verified_on: g('ma-leak-verified') || null
     };
-    mechData('write', 'mech_site_assets', payload).then(function (res) {
+    mechAssetSaving = true;
+    new Promise(function (done) { done(mechData('write', 'mech_site_assets', payload)); }).then(function (res) {
       if (res.body && res.body.ok) {
         // ma-state is DELIBERATELY NOT CLEARED. The next asset entered is
         // overwhelmingly at the same site, and clearing it would put
@@ -3083,7 +3096,7 @@ function mechData(action, resource, payload) {
       }
       var msg = (res.body && res.body.error && res.body.error.message) || ('Could not save (HTTP ' + res.status + ').');
       if (err) err.textContent = msg;
-    });
+    }).finally(function () { mechAssetSaving = false; });
   };
 
 

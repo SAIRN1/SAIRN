@@ -78,6 +78,9 @@ function harness(opts) {
   vm.createContext(ctx);
   vm.runInContext(fnBody('var cvEditId=null;').replace(/^var cvEditId=null;\{[\s\S]*$/, 'var cvEditId=null;') + '\n'
     + 'var cvEditId=null;\n'
+    // saveCoverageRule's re-entry hold (cody b65), lifted from the file: if the
+    // declaration goes, the handler's reference throws and every arm fails.
+    + (html.match(/var dntCoverageSaving\s*=\s*false;/) || [''])[0] + '\n'
     + fnBody('function editCoverageRule(') + '\n'
     + fnBody('function cancelCoverageEdit(') + '\n'
     + fnBody('async function saveCoverageRule()') + '\n'

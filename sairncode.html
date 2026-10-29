@@ -3983,7 +3983,27 @@ How to answer:
             saveRevenueEntries(list);
             renderRevenue();
         }
+        // ONE SAVE AT A TIME, PER FORM (cody b65). Every add-function below
+        // pushes its row, stores it, then AWAITS scData before it clears the
+        // form -- the addClaimEntry shape. The button stayed live for that wait
+        // and the form still held every value, so a second press added the same
+        // row again under a new id and synced it. scSaveBusy() refuses that
+        // press; scHoldWhile() holds the form's key until the write answers, is
+        // refused, rejects or throws. Keyed per form, so a pending write in one
+        // panel never holds another. tests/sairncode_save_reentry.js T1-T4.
+        var scSavePending = {};
+        function scSaveBusy(key){
+            if (!scSavePending[key]) return false;
+            showToast('Still saving the last entry -- one moment');
+            return true;
+        }
+        async function scHoldWhile(key, write){
+            scSavePending[key] = true;
+            try { return await write(); }
+            finally { scSavePending[key] = false; }
+        }
         async function addRevenueEntry(){
+            if (scSaveBusy('addRevenueEntry')) return;
             var payer = document.getElementById('rev-add-payer').value;
             var charge = parseFloat(document.getElementById('rev-add-charge').value);
             var collected = parseFloat(document.getElementById('rev-add-collected').value);
@@ -3998,7 +4018,7 @@ How to answer:
             // login would overwrite this device's local cache with the server's
             // (still-missing) list, silently dropping the entry. Now awaited and
             // reflected in the toast.
-            var synced = saved ? await scData('write', 'sc_revenue', list[list.length - 1]) : null;
+            var synced = saved ? await scHoldWhile('addRevenueEntry', function(){ return scData('write', 'sc_revenue', list[list.length - 1]); }) : null;
             renderRevenue();
             document.getElementById('rev-add-charge').value = '';
             document.getElementById('rev-add-collected').value = '';
@@ -4056,6 +4076,7 @@ How to answer:
             renderDashboard();
         }
         async function addDenialEntry(){
+            if (scSaveBusy('addDenialEntry')) return;
             var code = document.getElementById('den-add-code').value.trim();
             var cause = document.getElementById('den-add-cause').value.trim();
             var count = parseInt(document.getElementById('den-add-count').value, 10);
@@ -4066,7 +4087,7 @@ How to answer:
             list.push({id:'dn'+Date.now(), code:code, cause:cause||'—', count:count, amount:amount, status:status});
             var saved = saveDenialEntries(list);
             // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
-            var synced = saved ? await scData('write', 'sc_denial', list[list.length - 1]) : null;
+            var synced = saved ? await scHoldWhile('addDenialEntry', function(){ return scData('write', 'sc_denial', list[list.length - 1]); }) : null;
             renderDenial();
             renderDashboard();
             document.getElementById('den-add-code').value = '';
@@ -4152,6 +4173,7 @@ How to answer:
             renderDenialEvents();
         }
         async function addDenialEventEntry(){
+            if (scSaveBusy('addDenialEventEntry')) return;
             var code = document.getElementById('dne-add-code').value.trim();
             var payer = document.getElementById('dne-add-payer').value.trim();
             var reason = document.getElementById('dne-add-reason').value.trim();
@@ -4162,7 +4184,7 @@ How to answer:
             var list = getDenialEventEntries();
             list.push({id:'dne'+Date.now(), code:code, payer:payer, reason:reason||'—', specialty:specialty||'', amount:amount, date:date||scLocalToday()});
             var saved = saveDenialEventEntries(list);
-            var synced = saved ? await scData('write', 'sc_denial_events', list[list.length - 1]) : null;
+            var synced = saved ? await scHoldWhile('addDenialEventEntry', function(){ return scData('write', 'sc_denial_events', list[list.length - 1]); }) : null;
             renderDenialEvents();
             document.getElementById('dne-add-code').value = '';
             document.getElementById('dne-add-payer').value = '';
@@ -4212,6 +4234,7 @@ How to answer:
             renderCompliance();
         }
         async function addComplianceItem(){
+            if (scSaveBusy('addComplianceItem')) return;
             var item = document.getElementById('comp-add-item').value.trim();
             var cat = document.getElementById('comp-add-cat').value;
             var status = document.getElementById('comp-add-status').value;
@@ -4220,7 +4243,7 @@ How to answer:
             list.push({id:'cp'+Date.now(), item:item, cat:cat, status:status, date:scLocalToday()});
             var saved = saveComplianceItems(list);
             // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
-            var synced = saved ? await scData('write', 'sc_compliance', list[list.length - 1]) : null;
+            var synced = saved ? await scHoldWhile('addComplianceItem', function(){ return scData('write', 'sc_compliance', list[list.length - 1]); }) : null;
             renderCompliance();
             document.getElementById('comp-add-item').value = '';
             showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Compliance item added' : scWriteRefusalText('Compliance item added on this device only -- server sync failed, will not appear on other devices until resolved')));
@@ -4268,6 +4291,7 @@ How to answer:
             renderDashboard();
         }
         async function addFraudAlert(){
+            if (scSaveBusy('addFraudAlert')) return;
             var desc = document.getElementById('frd-add-desc').value.trim();
             var conf = parseFloat(document.getElementById('frd-add-conf').value);
             var amount = parseFloat(document.getElementById('frd-add-amount').value);
@@ -4277,7 +4301,7 @@ How to answer:
             list.push({id:'fr'+Date.now(), desc:desc, conf:conf, amount:amount, status:status});
             var saved = saveFraudAlerts(list);
             // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
-            var synced = saved ? await scData('write', 'sc_fraud', list[list.length - 1]) : null;
+            var synced = saved ? await scHoldWhile('addFraudAlert', function(){ return scData('write', 'sc_fraud', list[list.length - 1]); }) : null;
             renderFraud();
             renderDashboard();
             document.getElementById('frd-add-desc').value = '';
@@ -4369,6 +4393,7 @@ How to answer:
             renderPrebill();
         }
         async function addScrubEntry(){
+            if (scSaveBusy('addScrubEntry')) return;
             var claim = document.getElementById('pb-add-claim').value.trim();
             var error = document.getElementById('pb-add-error').value.trim();
             var value = parseFloat(document.getElementById('pb-add-value').value);
@@ -4379,7 +4404,7 @@ How to answer:
             list.push({id:'pb'+Date.now(), claim:claim, error:error, value:isNaN(value)?0:value, time:isNaN(time)?0:time, status:status});
             var saved = saveScrubEntries(list);
             // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
-            var synced = saved ? await scData('write', 'sc_prebill', list[list.length - 1]) : null;
+            var synced = saved ? await scHoldWhile('addScrubEntry', function(){ return scData('write', 'sc_prebill', list[list.length - 1]); }) : null;
             renderPrebill();
             document.getElementById('pb-add-claim').value = '';
             document.getElementById('pb-add-error').value = '';
@@ -4420,6 +4445,7 @@ How to answer:
             renderScrubRules();
         }
         async function addScrubRule(){
+            if (scSaveBusy('addScrubRule')) return;
             var type = document.getElementById('rule-add-type').value;
             var code1 = document.getElementById('rule-add-code1').value.trim();
             var code2 = document.getElementById('rule-add-code2').value.trim();
@@ -4432,7 +4458,7 @@ How to answer:
             var list = getScrubRules();
             list.push({id:'sr'+Date.now(), type:type, code1:code1, code2:code2||'—', note:note||'—', source:source});
             var saved = saveScrubRules(list);
-            var synced = saved ? await scData('write', 'sc_scrubrules', list[list.length - 1]) : null;
+            var synced = saved ? await scHoldWhile('addScrubRule', function(){ return scData('write', 'sc_scrubrules', list[list.length - 1]); }) : null;
             renderScrubRules();
             document.getElementById('rule-add-code1').value = '';
             document.getElementById('rule-add-code2').value = '';
@@ -4562,6 +4588,7 @@ How to answer:
             renderHcc();
         }
         async function addHccEntry(){
+            if (scSaveBusy('addHccEntry')) return;
             var cat = document.getElementById('hcc-add-cat').value.trim();
             var patient = document.getElementById('hcc-add-patient').value.trim();
             var value = parseFloat(document.getElementById('hcc-add-value').value);
@@ -4571,7 +4598,7 @@ How to answer:
             list.push({id:'hc'+Date.now(), cat:cat, patient:patient||'—', value:value, status:status});
             var saved = saveHccEntries(list);
             // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
-            var synced = saved ? await scData('write', 'sc_hcc', list[list.length - 1]) : null;
+            var synced = saved ? await scHoldWhile('addHccEntry', function(){ return scData('write', 'sc_hcc', list[list.length - 1]); }) : null;
             renderHcc();
             document.getElementById('hcc-add-cat').value = '';
             document.getElementById('hcc-add-patient').value = '';
@@ -4619,6 +4646,7 @@ How to answer:
             renderDrg();
         }
         async function addDrgEntry(){
+            if (scSaveBusy('addDrgEntry')) return;
             var code = document.getElementById('drg-add-code').value.trim();
             var patient = document.getElementById('drg-add-patient').value.trim();
             var tier = document.getElementById('drg-add-tier').value;
@@ -4628,7 +4656,7 @@ How to answer:
             list.push({id:'dg'+Date.now(), code:code, patient:patient||'—', tier:tier, payment:payment});
             var saved = saveDrgEntries(list);
             // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
-            var synced = saved ? await scData('write', 'sc_drg', list[list.length - 1]) : null;
+            var synced = saved ? await scHoldWhile('addDrgEntry', function(){ return scData('write', 'sc_drg', list[list.length - 1]); }) : null;
             renderDrg();
             document.getElementById('drg-add-code').value = '';
             document.getElementById('drg-add-patient').value = '';
@@ -4677,6 +4705,7 @@ How to answer:
             renderQuery();
         }
         async function addQueryEntry(){
+            if (scSaveBusy('addQueryEntry')) return;
             var patient = document.getElementById('qry-add-patient').value.trim();
             var physician = document.getElementById('qry-add-physician').value.trim();
             var type = document.getElementById('qry-add-type').value.trim();
@@ -4687,7 +4716,7 @@ How to answer:
             list.push({id:'qr'+Date.now(), patient:patient, physician:physician||'—', type:type, value:isNaN(value)?0:value, status:status});
             var saved = saveQueryEntries(list);
             // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
-            var synced = saved ? await scData('write', 'sc_query', list[list.length - 1]) : null;
+            var synced = saved ? await scHoldWhile('addQueryEntry', function(){ return scData('write', 'sc_query', list[list.length - 1]); }) : null;
             renderQuery();
             document.getElementById('qry-add-patient').value = '';
             document.getElementById('qry-add-physician').value = '';
@@ -4745,6 +4774,7 @@ How to answer:
             renderEncoder();
         }
         async function addEncoderCode(){
+            if (scSaveBusy('addEncoderCode')) return;
             var code = document.getElementById('enc-add-code').value.trim();
             var type = document.getElementById('enc-add-type').value;
             var desc = document.getElementById('enc-add-desc').value.trim();
@@ -4754,7 +4784,7 @@ How to answer:
             list.push({id:'ec'+Date.now(), code:code, type:type, desc:desc, bundling:bundling});
             var saved = saveEncoderCodes(list);
             // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
-            var synced = saved ? await scData('write', 'sc_encoder', list[list.length - 1]) : null;
+            var synced = saved ? await scHoldWhile('addEncoderCode', function(){ return scData('write', 'sc_encoder', list[list.length - 1]); }) : null;
             renderEncoder();
             document.getElementById('enc-add-code').value = '';
             document.getElementById('enc-add-desc').value = '';
@@ -4855,6 +4885,7 @@ How to answer:
             renderRac();
         }
         async function addRacEntry(){
+            if (scSaveBusy('addRacEntry')) return;
             var ref = document.getElementById('rac-add-ref').value.trim();
             var amount = parseFloat(document.getElementById('rac-add-amount').value);
             var status = document.getElementById('rac-add-status').value;
@@ -4863,7 +4894,7 @@ How to answer:
             list.push({id:'ra'+Date.now(), ref:ref, amount:amount, status:status});
             var saved = saveRacEntries(list);
             // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
-            var synced = saved ? await scData('write', 'sc_rac', list[list.length - 1]) : null;
+            var synced = saved ? await scHoldWhile('addRacEntry', function(){ return scData('write', 'sc_rac', list[list.length - 1]); }) : null;
             renderRac();
             document.getElementById('rac-add-ref').value = '';
             document.getElementById('rac-add-amount').value = '';
@@ -4910,6 +4941,7 @@ How to answer:
             renderTelehealth();
         }
         async function addTelehealthEntry(){
+            if (scSaveBusy('addTelehealthEntry')) return;
             var claim = document.getElementById('th-add-claim').value.trim();
             var pos = document.getElementById('th-add-pos').value.trim();
             var mod = document.getElementById('th-add-mod').value.trim();
@@ -4920,7 +4952,7 @@ How to answer:
             list.push({id:'tl'+Date.now(), claim:claim, pos:pos||'—', mod:mod||'—', value:isNaN(value)?0:value, status:status});
             var saved = saveTelehealthEntries(list);
             // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
-            var synced = saved ? await scData('write', 'sc_telehealth', list[list.length - 1]) : null;
+            var synced = saved ? await scHoldWhile('addTelehealthEntry', function(){ return scData('write', 'sc_telehealth', list[list.length - 1]); }) : null;
             renderTelehealth();
             document.getElementById('th-add-claim').value = '';
             document.getElementById('th-add-pos').value = '';
@@ -5045,6 +5077,7 @@ How to answer:
             renderAsaBaseUnits();
         }
         async function addAsaBaseUnit(){
+            if (scSaveBusy('addAsaBaseUnit')) return;
             var cpt = document.getElementById('abu-add-cpt').value.trim();
             var units = parseFloat(document.getElementById('abu-add-units').value);
             var source = document.getElementById('abu-add-source').value.trim();
@@ -5052,7 +5085,7 @@ How to answer:
             var list = getAsaBaseUnits();
             list.push({id:'abu'+Date.now(), cpt:cpt, units:units, source:source});
             var saved = saveAsaBaseUnits(list);
-            var synced = saved ? await scData('write', 'sc_anesthesia_base_units', list[list.length - 1]) : null;
+            var synced = saved ? await scHoldWhile('addAsaBaseUnit', function(){ return scData('write', 'sc_anesthesia_base_units', list[list.length - 1]); }) : null;
             renderAsaBaseUnits();
             document.getElementById('abu-add-cpt').value = '';
             document.getElementById('abu-add-units').value = '';
@@ -5078,6 +5111,7 @@ How to answer:
             }
         }
         async function addAnesthesiaEntry(){
+            if (scSaveBusy('addAnesthesiaEntry')) return;
             var caseRef = document.getElementById('an-add-case').value.trim();
             var cpt = document.getElementById('an-add-cpt').value.trim();
             var base = parseFloat(document.getElementById('an-add-base').value);
@@ -5099,7 +5133,7 @@ How to answer:
             list.push({id:'an'+Date.now(), caseRef:caseRef, cpt:cpt, base:base, minutes:minutes, physicalStatus:physicalStatus, qc:qc, qpStatus:qpStatus||'', conversionFactor:qpStatus === 'manual' ? conversionFactor : null});
             var saved = saveAnesthesiaEntries(list);
             // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
-            var synced = saved ? await scData('write', 'sc_anesthesia', list[list.length - 1]) : null;
+            var synced = saved ? await scHoldWhile('addAnesthesiaEntry', function(){ return scData('write', 'sc_anesthesia', list[list.length - 1]); }) : null;
             renderAnesthesia();
             document.getElementById('an-add-case').value = '';
             document.getElementById('an-add-cpt').value = '';
@@ -5197,6 +5231,7 @@ How to answer:
             }
         }
         async function saveSpecialtyCheck(){
+            if (scSaveBusy('saveSpecialtyCheck')) return;
             if (!_spcLastAnswer) { showToast('Ask a question first'); return; }
             var verdict = document.getElementById('spc-verdict').value;
             var notes = document.getElementById('spc-notes').value.trim();
@@ -5214,7 +5249,7 @@ How to answer:
             };
             list.push(rec);
             var saved = saveSpecialtyChecks(list);
-            var synced = saved ? await scData('write', 'sc_specialty_checks', rec) : null;
+            var synced = saved ? await scHoldWhile('saveSpecialtyCheck', function(){ return scData('write', 'sc_specialty_checks', rec); }) : null;
             renderSpecialtyChecks();
             document.getElementById('spc-question').value = '';
             document.getElementById('spc-notes').value = '';
@@ -5250,6 +5285,7 @@ How to answer:
             renderSpecialtyChecklists();
         }
         async function addSpecialtyChecklistItem(){
+            if (scSaveBusy('addSpecialtyChecklistItem')) return;
             var specialty = document.getElementById('scl-add-specialty').value;
             var item = document.getElementById('scl-add-item').value.trim();
             var source = document.getElementById('scl-add-source').value.trim();
@@ -5257,7 +5293,7 @@ How to answer:
             var list = getSpecialtyChecklist();
             list.push({id:'scl'+Date.now(), specialty:specialty, item:item, source:source});
             var saved = saveSpecialtyChecklist(list);
-            var synced = saved ? await scData('write', 'sc_specialty_checklists', list[list.length - 1]) : null;
+            var synced = saved ? await scHoldWhile('addSpecialtyChecklistItem', function(){ return scData('write', 'sc_specialty_checklists', list[list.length - 1]); }) : null;
             renderSpecialtyChecklists();
             document.getElementById('scl-add-item').value = '';
             document.getElementById('scl-add-source').value = '';
@@ -5324,6 +5360,7 @@ How to answer:
             renderAuth();
         }
         async function addAuthEntry(){
+            if (scSaveBusy('addAuthEntry')) return;
             var authId = document.getElementById('auth-add-id').value.trim();
             var proc = document.getElementById('auth-add-proc').value.trim();
             var exp = document.getElementById('auth-add-exp').value;
@@ -5333,7 +5370,7 @@ How to answer:
             list.push({id:'at'+Date.now(), authId:authId, proc:proc, exp:exp, units:isNaN(units)?1:units});
             var saved = saveAuthEntries(list);
             // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
-            var synced = saved ? await scData('write', 'sc_auth', list[list.length - 1]) : null;
+            var synced = saved ? await scHoldWhile('addAuthEntry', function(){ return scData('write', 'sc_auth', list[list.length - 1]); }) : null;
             renderAuth();
             document.getElementById('auth-add-id').value = '';
             document.getElementById('auth-add-proc').value = '';
@@ -5394,6 +5431,7 @@ How to answer:
         }
 
         async function addAuthRequestEntry(){
+            if (scSaveBusy('addAuthRequestEntry')) return;
             var payer = document.getElementById('authreq-add-payer').value.trim();
             var patientRef = document.getElementById('authreq-add-patient').value.trim();
             var procedure = document.getElementById('authreq-add-procedure').value.trim();
@@ -5406,7 +5444,7 @@ How to answer:
             var rec = { id:'ar'+Date.now(), payer:payer, patientRef:patientRef||'', procedure:procedure, urgency:urgency, submittedVia:submittedOn?submittedVia:'', submittedOn:submittedOn||'', status:status, decisionOn:'', decisionNotes:'', signedOffBy:'', signedOffAt:'' };
             list.push(rec);
             var saved = saveAuthRequestEntries(list);
-            var synced = saved ? await scData('write', 'sc_auth_requests', rec) : null;
+            var synced = saved ? await scHoldWhile('addAuthRequestEntry', function(){ return scData('write', 'sc_auth_requests', rec); }) : null;
             renderAuthRequests();
             document.getElementById('authreq-add-payer').value = '';
             document.getElementById('authreq-add-patient').value = '';
@@ -6409,6 +6447,7 @@ How to answer:
             renderAr();
         }
         async function addArEntry(){
+            if (scSaveBusy('addArEntry')) return;
             var patient = document.getElementById('ar-add-patient').value.trim();
             var amount = parseFloat(document.getElementById('ar-add-amount').value);
             var days = parseInt(document.getElementById('ar-add-days').value, 10);
@@ -6418,7 +6457,7 @@ How to answer:
             list.push({id:'ar'+Date.now(), patient:patient, amount:amount, days:days, status:status});
             var saved = saveArEntries(list);
             // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
-            var synced = saved ? await scData('write', 'sc_ar', list[list.length - 1]) : null;
+            var synced = saved ? await scHoldWhile('addArEntry', function(){ return scData('write', 'sc_ar', list[list.length - 1]); }) : null;
             renderAr();
             document.getElementById('ar-add-patient').value = '';
             document.getElementById('ar-add-amount').value = '';
@@ -6589,6 +6628,7 @@ How to answer:
             renderCredentialScopes();
         }
         async function addProviderEntry(){
+            if (scSaveBusy('addProviderEntry')) return;
             var name = document.getElementById('prov-add-name').value.trim();
             var specialty = document.getElementById('prov-add-specialty').value.trim();
             var license = document.getElementById('prov-add-license').value.trim();
@@ -6600,7 +6640,7 @@ How to answer:
             list.push({id:'pv'+Date.now(), name:name, specialty:specialty, license:license||'—', cred:cred, qpStatus:qpStatus||'', perf:isNaN(perf)?0:perf});
             var saved = saveProviderEntries(list);
             // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
-            var synced = saved ? await scData('write', 'sc_providers', list[list.length - 1]) : null;
+            var synced = saved ? await scHoldWhile('addProviderEntry', function(){ return scData('write', 'sc_providers', list[list.length - 1]); }) : null;
             renderProviders();
             renderCredentialScopes();
             document.getElementById('prov-add-name').value = '';
@@ -7674,6 +7714,7 @@ How to answer:
             }
         }
         async function addCredentialScope(){
+            if (scSaveBusy('addCredentialScope')) return;
             var providerId = document.getElementById('cs-add-provider').value;
             var specialty = document.getElementById('cs-add-specialty').value;
             var scope = document.getElementById('cs-add-scope').value.trim();
@@ -7687,7 +7728,7 @@ How to answer:
                         specialty: specialty, scope: scope, source: source, created_at: new Date().toISOString() };
             list.push(rec);
             var saved = saveCredentialScopes(list);
-            var synced = saved ? await scData('write', 'sc_credential_scope', rec) : null;
+            var synced = saved ? await scHoldWhile('addCredentialScope', function(){ return scData('write', 'sc_credential_scope', rec); }) : null;
             renderCredentialScopes(); renderCodedItems();
             document.getElementById('cs-add-scope').value = '';
             document.getElementById('cs-add-source').value = '';
@@ -11817,6 +11858,7 @@ How to answer:
             renderDme();
         }
         async function addDmeRecord(){
+            if (scSaveBusy('addDmeRecord')) return;
             var bene = document.getElementById('dme-add-bene').value.trim();
             var code = document.getElementById('dme-add-code').value.trim();
             var desc = document.getElementById('dme-add-desc').value.trim();
@@ -11826,7 +11868,7 @@ How to answer:
             var list = getDmeRecords();
             list.push({id:'dm'+Date.now(), beneficiary:bene, hcpcs:code, desc:desc, dos:dos, mode:mode});
             var saved = saveDmeRecords(list);
-            var synced = saved ? await scData('write', 'sc_dme', list[list.length - 1]) : null;
+            var synced = saved ? await scHoldWhile('addDmeRecord', function(){ return scData('write', 'sc_dme', list[list.length - 1]); }) : null;
             renderDme();
             document.getElementById('dme-add-bene').value = '';
             document.getElementById('dme-add-code').value = '';
@@ -12260,6 +12302,7 @@ How to answer:
             renderPcTc();
         }
         async function addPcTcEntry(){
+            if (scSaveBusy('addPcTcEntry')) return;
             var code = document.getElementById('pt-add-code').value.trim();
             var indicator = document.getElementById('pt-add-indicator').value;
             var desc = document.getElementById('pt-add-desc').value.trim();
@@ -12272,7 +12315,7 @@ How to answer:
             var list = getPcTcEntries();
             list.push({id:'pt'+Date.now(), code:code, indicator:indicator, desc:desc, source:source});
             var saved = savePcTcEntries(list);
-            var synced = saved ? await scData('write', 'sc_pctc', list[list.length - 1]) : null;
+            var synced = saved ? await scHoldWhile('addPcTcEntry', function(){ return scData('write', 'sc_pctc', list[list.length - 1]); }) : null;
             renderPcTc();
             document.getElementById('pt-add-code').value = '';
             document.getElementById('pt-add-indicator').value = '';

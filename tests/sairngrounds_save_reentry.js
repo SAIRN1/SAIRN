@@ -28,6 +28,7 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const H = require('./lib/save_reentry_harness.js');
 
 const FILE = process.argv[2] || path.join(__dirname, '..', 'sairngrounds.html');
 const html = fs.readFileSync(FILE, 'utf8').replace(/\r\n/g, '\n');
@@ -118,6 +119,60 @@ function world(push) {
     check('G3 after ' + label + ' the next press is not held: two presses, two invoices',
       w.counts().inv === 2 && !w.ctx.toasts.some((t) => /Still creating/.test(t)),
       JSON.stringify({ threw, counts: w.counts(), toasts: w.ctx.toasts }));
+  }
+  // 3. FIVE MORE (cody b65). Four quote senders file a draft quote locally,
+  // then AWAIT its server write before they say anything, with the source
+  // panel unchanged -- a second press filed the same draft quote again under a
+  // new Q- id. genEcosystemReport waits on the AI call and then on the report
+  // write; a second press during either wait generated and filed a second
+  // report. Arms: IZ / BQ / WF / DQ / EA / EB 1-3, meanings in
+  // tests/lib/save_reentry_harness.js. Quote senders store BEFORE the write,
+  // so a second row is the duplicate too.
+  console.log('3. the quote senders and the ecosystem report');
+  let seq = 0;
+  const L = H.makeLift(html, FILE);
+  const quoteWorld = (write, box) => ({
+    ld: (k, d) => (k === 'grd_quotes' ? box.rows.slice() : (d || [])),
+    st: (k, list) => { if (k === 'grd_quotes') box.rows = list; return true; },
+    daysFromNow: () => '2026-11-28', grdData: write, fmt: (n) => '$' + n,
+    computeBOQ: () => [{ label: 'Rotor head', qty: 4, unit: 'ea', rate: 30, extended: 120 }],
+    dcCurrentDesignText: '- sod the front bed\n- edge with pavers', dcCurrentQuoteId: null
+  });
+  const quoteSpec = (id, name, decl, fields) => ({
+    id, name, fields,
+    src: H.optional(html, new RegExp('var ' + decl + '\\s*=\\s*false;')) + '\n' + L('async function ' + name + '(){'),
+    given: quoteWorld, rows: (box) => box.rows.length, press: (ctx) => ctx[name](),
+    ok: { id: 'x' }, refused: null
+  });
+  const AI_OK = { json: () => Promise.resolve({ content: [{ text: 'Layer 7: aerate the 9th.' }] }) };
+  const AI_REFUSED = { json: () => Promise.resolve({ error: { message: 'rate limited' } }) };
+  const ecoSpec = (id, leg) => ({
+    id, name: 'genEcosystemReport (' + leg + ' pending)',
+    src: H.optional(html, /var grdEcoReporting\s*=\s*false;/) + '\n' + L('async function genEcosystemReport(){'),
+    fields: { ecoproperty: 'P-1', 'eco-soil': 'compacted', 'eco-bio': 'herons' },
+    given: (write, box) => ({
+      PROXY: '/api/claude', APP_ID: 'sairngrounds',
+      ld: (k, d) => (d || []), bldIrrZones: () => [], bldWf: () => [], bldInvasive: () => [],
+      bldEcoReports: () => box.rows.slice(), st: (k, list) => { if (k === 'grd_ecosystem_reports') box.rows = list; return true; },
+      sfFence: (a, b) => b, grdLocalToday: () => '2026-10-29', fdate: (d) => d,
+      fetch: leg === 'AI call' ? write : () => Promise.resolve(AI_OK),
+      grdData: leg === 'AI call' ? () => Promise.resolve({ id: 'x' }) : write
+    }),
+    // The report is filed after the AI answers: a row only measures the
+    // write-leg wait.
+    rows: leg === 'AI call' ? undefined : (box) => box.rows.length,
+    press: (ctx) => ctx.genEcosystemReport(),
+    ok: leg === 'AI call' ? AI_OK : { id: 'x' }, refused: leg === 'AI call' ? AI_REFUSED : null
+  });
+  for (const s of [
+    quoteSpec('IZ', 'sendIrrZoneToQuote', 'grdIrrQuoting', { izproperty: 'P-1', izname: 'Zone 3', izchecklist: '4 rotors\n1 valve' }),
+    quoteSpec('BQ', 'sendBoqToQuote', 'grdBoqQuoting', { boqproperty: 'P-1' }),
+    quoteSpec('WF', 'sendWfToQuote', 'grdWfQuoting', { wfproperty: 'P-1', wfname: 'Koi pond', wfchecklist: '1 pump\n2 lights' }),
+    quoteSpec('DQ', 'dcCreateQuote', 'grdDcQuoting', { 'dc-property': 'P-1' }),
+    ecoSpec('EA', 'AI call'),
+    ecoSpec('EB', 'report write')
+  ]) {
+    await H.drive({ check, id: s.id, name: s.name, mk: H.mkFor(s), ok: s.ok, refused: s.refused });
   }
   finished = true;
   console.log('\n' + (fail ? 'FAILED' : 'ok') + '  sairngrounds save re-entry: ' + pass + ' passed, ' + fail + ' failed');

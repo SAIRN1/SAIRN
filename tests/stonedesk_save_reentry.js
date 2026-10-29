@@ -31,6 +31,7 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const H = require('./lib/save_reentry_harness.js');
 
 const FILE = process.argv[2] || path.join(__dirname, '..', 'stonedesk.html');
 const html = fs.readFileSync(FILE, 'utf8').replace(/\r\n/g, '\n');
@@ -129,6 +130,49 @@ function world(reserve, slabId) {
     await w.sale(); await w.sale();
     check('S4 CONTROL: with no slab attached nothing is awaited and each press records its invoice, as before',
       w.ctx.reserves === 0 && w.ctx.sd_invoices.length === 2, JSON.stringify({ reserves: w.ctx.reserves, invoices: w.ctx.sd_invoices.length }));
+  }
+  // 4. TWO MORE (cody b65). saveQuote with a slab attached AWAITS the slab
+  // reservation before it files the quote, with the slab still attached and
+  // the quote number not yet advanced: a second press reserved again for the
+  // same client and filed a second quote under the SAME number.
+  // sdSlabsImportLegacy pushes each legacy row into real inventory and AWAITS
+  // its sync, and only marks the import done after the last one: a second
+  // press during that loop imported every legacy slab again. Arms QS / LI 1-3,
+  // meanings in tests/lib/save_reentry_harness.js.
+  console.log('4. saveQuote (slab attached) and the legacy slab import');
+  const L = H.makeLift(html, FILE);
+  for (const s of [
+    {
+      id: 'QS', name: 'saveQuote (slab attached)',
+      src: H.optional(html, /var sdQuoteSaving\s*=\s*false;/) + '\n' + L('async function saveQuote() {'),
+      fields: { 'client-name': 'Dana Whitfield' },
+      given: (write, box) => ({
+        lastCalc: { total: 5400, proj: { name: 'Kitchen' }, mat: { name: 'Granite' }, tierKey: 'std' },
+        TIERS: { std: { label: 'Standard' } }, currentTier: 'std', currentQuoteNum: 'Q-7', quoteCounter: 8,
+        sdSlabs: [{ id: 'SLAB-9' }], SD_HOLD_MINUTES_QUOTE: 30,
+        sdReserveSlab: write, quoteHistory: box.rows, st: () => true
+      }),
+      // The salesperson re-attaches the slab before each press: a filed quote
+      // detaches it on purpose.
+      refill: (ctx) => { ctx.qbReservedSlabId = 'SLAB-9'; },
+      press: (ctx) => ctx.saveQuote(),
+      ok: { ok: true, slab: { reservedUntil: '2026-10-30T12:00:00Z' } },
+      refused: { ok: false, message: 'That slab is held for Lee.' }
+    },
+    {
+      // Each slab is pushed BEFORE its sync, so a second row is the duplicate.
+      id: 'LI', name: 'sdSlabsImportLegacy',
+      src: H.optional(html, /var sdSlabImporting\s*=\s*false;/) + '\n' + L('window.sdSlabsImportLegacy=async function(){'),
+      given: (write, box) => ({
+        legacyRows: () => [{ stone: 'Calacatta', size: '120x60', vendor: 'MSI', location: 'A3' }],
+        sdSlabs: box.rows, slabSyncOne: write, localStorage: { setItem() {}, getItem: () => null }
+      }),
+      rows: (box) => box.rows.length,
+      press: (ctx) => ctx.sdSlabsImportLegacy(),
+      ok: true, refused: false
+    }
+  ]) {
+    await H.drive({ check, id: s.id, name: s.name, mk: H.mkFor(s), ok: s.ok, refused: s.refused });
   }
   finished = true;
   console.log('\n' + (fail ? 'FAILED' : 'ok') + '  stonedesk save re-entry: ' + pass + ' passed, ' + fail + ' failed');

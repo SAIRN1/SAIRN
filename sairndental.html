@@ -2855,12 +2855,19 @@ function rProviders(){
   fillDentalSelects();
   if(isOwnerNow&&!dntRoster.length)dntLoadRoster();
 }
+// ONE PROVIDER AT A TIME (cody b65): the form is cleared only after the
+// server answers, and a second press during that wait added the same provider
+// again under a new id. Held until the write answers, either way.
+var dntProviderSaving=false;
 async function addProvider(){
+  if(dntProviderSaving){toast('Still adding the last provider -- one moment');return;}
   var name=$('pv-add-name').value.trim();
   if(!name){toast('Provider name required');return;}
   var rec={id:newId('PV'),name:name,role:$('pv-add-role').value,operatory_id:$('pv-add-operatory').value||'',
     linked_employee_id:($('pv-add-login')?$('pv-add-login').value:'')||'',active:true,created_at:dntLocalToday()};
-  var syncResult=await sdnData('write','dnt_providers',rec);
+  var syncResult;
+  dntProviderSaving=true;
+  try{syncResult=await sdnData('write','dnt_providers',rec);}finally{dntProviderSaving=false;}
   // Server FIRST, local second -- the opposite of this app's older handlers.
   // A linked_employee_id can be refused (409 EMPLOYEE_ALREADY_LINKED, or 403 if
   // the caller is not the owner), and writing to localStorage before knowing
@@ -3030,6 +3037,11 @@ function dntCredFailureText(){
 }
 
 async function addCredential(){
+  // ONE CREDENTIAL AT A TIME (cody b65): dntCredWriting already counts this
+  // function's in-flight write (try/finally below), but nothing refused a
+  // second press during it -- which stored and sent the same credential again
+  // under a new id. It is incremented nowhere else, so it is this form's hold.
+  if(dntCredWriting>0){toast('Still saving the last credential -- one moment');return;}
   var providerId=$('cd-add-provider').value;
   if(!providerId){toast('Add a provider first');return;}
   var type=$('cd-add-type').value;
@@ -3737,7 +3749,12 @@ function cancelCoverageEdit(){
 // RENAMED from addCoverageRule() 2026-09-04, because it no longer only adds. A
 // function called add that also updates is the kind of stale name this file has
 // had to correct before; the onclick and every test anchor moved with it.
+// ONE RULE AT A TIME (cody b65): the form is reset only after the server
+// answers, and a second press during that wait sent the same new rule again
+// under a new id. Held until the write answers, either way.
+var dntCoverageSaving=false;
 async function saveCoverageRule(){
+  if(dntCoverageSaving){toast('Still saving the last coverage rule -- one moment');return;}
   var payer=$('cv-add-payer').value.trim();
   var procedureTypeId=$('cv-add-procedure').value;
   var pct=parseFloat($('cv-add-percent').value);
@@ -3751,7 +3768,9 @@ async function saveCoverageRule(){
   if(cvEditId&&!existing){toast('That coverage rule is no longer on file -- refresh and try again',4000);cancelCoverageEdit();rCoverage();return;}
   var rec={id:cvEditId||newId('CV'),payer:payer,procedure_type_id:procedureTypeId,coverage_percent:pct,
     created_at:(existing&&existing.created_at)||dntLocalToday()};
-  var syncResult=await sdnData('write','dnt_coverage_rules',rec);
+  var syncResult;
+  dntCoverageSaving=true;
+  try{syncResult=await sdnData('write','dnt_coverage_rules',rec);}finally{dntCoverageSaving=false;}
   // SERVER FIRST, LOCAL SECOND, changed 2026-09-04 -- the same reordering
   // addProvider() above already carries, and for the same reason. As of today
   // this write can be REFUSED: 409 COVERAGE_RULE_EXISTS when another rule

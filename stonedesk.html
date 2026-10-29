@@ -9096,8 +9096,16 @@ function sdInvExport(){
     try{ localStorage.setItem('sd_slab_legacy_dismissed','1'); }catch(e){}
     sdSlabsRender();
   };
+  // ONE IMPORT AT A TIME (cody b65): each legacy row is pushed into inventory and
+  // its sync awaited, and the import is marked done only after the last one, so a
+  // second press during that loop imported every legacy slab again. Held until
+  // the loop ends, either way.
+  var sdSlabImporting=false;
   window.sdSlabsImportLegacy=async function(){
+    if(sdSlabImporting){ if(typeof showToast==='function') showToast('Still importing the legacy slabs -- one moment'); return; }
     var rows=legacyRows(); if(!rows.length) return;
+    sdSlabImporting=true;
+    try{
     var n=0;
     for(var i=0;i<rows.length;i++){
       var r=rows[i];
@@ -9120,6 +9128,7 @@ function sdInvExport(){
     try{ localStorage.setItem('sd_slab_legacy_dismissed','1'); }catch(e){}
     sdSlabsRender();
     if(typeof showToast==='function') showToast(n+' legacy slab(s) imported into real inventory.');
+    }finally{ sdSlabImporting=false; }
   };
 
   window.sdSlabsRender=function(){
@@ -14087,7 +14096,13 @@ function calc() {
 // == SAVE QUOTE ================================================
 // async since 2026-09-02: the slab reservation below now asks the server and
 // obeys a refusal, instead of overwriting whoever already had the slab.
+// ONE QUOTE AT A TIME (cody b65): with a slab attached the quote is filed only
+// after the reservation answers, and a second press during that wait reserved
+// again for the same client and filed a second quote under the SAME number.
+// Held until the reservation answers, either way.
+var sdQuoteSaving=false;
 async function saveQuote() {
+  if (sdQuoteSaving) return showToast('Still saving the last quote -- one moment');
   if (!lastCalc.total) return showToast('Build a quote first.');
   const q = {
     num: currentQuoteNum,
@@ -14133,8 +14148,11 @@ async function saveQuote() {
     // nobody would clear. The window is asked for here rather than left to the
     // server's default so the reason is visible at the call site -- this is the
     // quote path, and a quote is the thing that expires.
+    sdQuoteSaving = true;
+    try {
     var qbRes = await sdReserveSlab(qbSlab || { id: qbReservedSlabId }, q.client,
                                     SD_HOLD_MINUTES_QUOTE);
+    } finally { sdQuoteSaving = false; }
     if (!qbRes.ok) {
       if (typeof showToast === 'function') showToast(qbRes.message);
       if (typeof notify === 'function') notify(qbRes.message, 'err');

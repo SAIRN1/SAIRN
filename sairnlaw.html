@@ -4390,7 +4390,13 @@ async function runAiDraft(){
     $('draftresult').value='Could not connect to Claude. Check your connection and try again.';
   }
 }
+// ONE DOCUMENT AT A TIME (cody b65): the draft is filed, then the server write
+// is awaited with the draft still in the box, and a second press during that wait
+// filed the same AI draft on the matter again under a new id. Held until the
+// write answers, either way.
+var lawDraftSaving=false;
 async function saveDraftAsDocument(){
+  if(lawDraftSaving){toast('Still saving the last draft -- one moment');return;}
   var matterId=$('draftmatter').value;
   var text=$('draftresult').value;
   if(!matterId){toast('Select a matter first');return;}
@@ -4401,7 +4407,9 @@ async function saveDraftAsDocument(){
     uploaded_date:lawLocalToday(),created_at:lawLocalToday()};
   var list=matterDocs();list.push(rec);st('law_matterdocs',list);
   rDocs();
-  var syncResult=await sdnData('write','law_matterdocs',rec);
+  var syncResult;
+  lawDraftSaving=true;
+  try{syncResult=await sdnData('write','law_matterdocs',rec);}finally{lawDraftSaving=false;}
   toast(syncResult?'Saved as document':lawWriteFailText('law_matterdocs','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function openReviewPicker(){

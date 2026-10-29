@@ -2478,7 +2478,13 @@ function alfFamilyRefresh(){
   });
 }
 
+// ONE CONTACT AT A TIME (cody b65): the form is cleared only after the server
+// answers, and a second press during that wait recorded the same family contact
+// -- with the same medication-status consent -- again under a new id. Held until
+// the write answers, either way.
+var alfFamilySaving=false;
 window.alfFamilySave=function(){
+  if(alfFamilySaving){toast('Still saving the last contact -- one moment');return;}
   var g=function(id){var el=$(id);return el?String(el.value||'').trim():'';};
   var err=$('fc-err'); if(err) err.textContent='';
   if(!alfIsManagement()){ if(err) err.textContent='Recording a family contact, and granting them sight of medication status, is a management action.'; return; }
@@ -2496,6 +2502,8 @@ window.alfFamilySave=function(){
     phone: g('fc-phone')||null,
     mar_consent: g('fc-consent')==='true'
   };
+  alfFamilySaving=true;
+  try{
   alfFamilyData('write',payload).then(function(res){
     if(res.ok&&res.body){
       ['fc-id','fc-name','fc-rel','fc-email','fc-phone'].forEach(function(id){var el=$(id);if(el)el.value='';});
@@ -2510,7 +2518,8 @@ window.alfFamilySave=function(){
     // only"). A bare HTTP number would throw that away.
     var msg=(res.error&&res.error.message)||('Could not save (HTTP '+res.status+').');
     if(err) err.textContent=msg;
-  });
+  }).finally(function(){alfFamilySaving=false;});
+  }catch(e){alfFamilySaving=false;throw e;}
 };
 
 // "See what they see" -- the SERVER's answer, not a local reconstruction.
@@ -3306,7 +3315,12 @@ async function csConfirmWitness(){
       ? 'Witnessing is not set up on this facility yet -- run sql/sairncare_witness_schema.sql. Nothing was confirmed.'
       : 'Not confirmed'+(msg?' -- '+msg:'')+'.';
 }
+// ONE COUNT AT A TIME (cody b65): the modal closes only after the server
+// answers, and a second press during that wait sent the same witnessed count
+// again and logged it twice on the MAR. Held until the write answers, either way.
+var csCountSaving=false;
 async function saveCsCount(){
+  if(csCountSaving){toast('Still saving the last count -- one moment');return;}
   var medId=$('cs-medication').value;
   var witness=$('cs-witness').value;
   if(!medId){toast('Select a medication');return;}
@@ -3323,7 +3337,9 @@ async function saveCsCount(){
   // count happened. Same reasoning as StoneDesk's sdLocAdd -- a refusal and an
   // outage are not the same answer, and only one of them will ever land on a
   // retry.
-  var syncResult=await marWrite('count',rec,csWitnessToken);
+  var syncResult;
+  csCountSaving=true;
+  try{syncResult=await marWrite('count',rec,csWitnessToken);}finally{csCountSaving=false;}
   if(syncResult){
     var list=marEntries();
     list.push(marPayload('count',rec));
@@ -4610,7 +4626,12 @@ function crToggleType(){
   $('cr-training-fields').style.display=isTraining?'block':'none';
   $('cr-credential-fields').style.display=isTraining?'none':'block';
 }
+// ONE CREDENTIAL AT A TIME (cody b65): the modal closes only after the server
+// answers, and a second press during that wait recorded the same credential or
+// training hours again under a new id. Held until the write answers, either way.
+var crSaving=false;
 async function saveCredEntry(){
+  if(crSaving){toast('Still saving the last entry -- one moment');return;}
   var type=$('cr-type').value;
   var staffId=$('cr-staff').value;
   if(!staffId){toast('Select a staff member');return;}
@@ -4623,7 +4644,9 @@ async function saveCredEntry(){
     if(!$('cr-credname').value.trim()){toast('Enter the credential name');return;}
     rec.credential=$('cr-credname').value.trim();rec.expires_on=$('cr-expires').value;
   }
-  var saved=await alfData('write','alf_staff_credentials',rec,true);
+  var saved;
+  crSaving=true;
+  try{saved=await alfData('write','alf_staff_credentials',rec,true);}finally{crSaving=false;}
   if(!saved){toast('Server sync failed -- the entry was NOT recorded. Try again with a connection.');return;}
   closeCredModal();
   await crRefresh();
@@ -4785,7 +4808,12 @@ function openOpAuditModal(type){
   $('opauditmodal').classList.add('on');
 }
 function closeOpAuditModal(){$('opauditmodal').classList.remove('on');}
+// ONE CHECK AT A TIME (cody b65): the modal closes only after the server
+// answers, and a second press during that wait recorded the same audit check
+// again under a new id. Held until the write answers, either way.
+var opaSaving=false;
 async function saveOpAudit(){
+  if(opaSaving){toast('Still saving the last check -- one moment');return;}
   var rec={id:newId('OPA'),record_type:_opaType,observed_on:$('opa-date').value,notes:$('opa-notes').value.trim()};
   if(_opaType==='food_temp'){
     var t=$('opa-temp').value;
@@ -4800,7 +4828,9 @@ async function saveOpAudit(){
     rec.subject=$('opa-subject').value.trim();
     rec.passed=$('opa-passed').value==='1';
   }
-  var saved=await alfData('write','alf_op_audits',rec,true);
+  var saved;
+  opaSaving=true;
+  try{saved=await alfData('write','alf_op_audits',rec,true);}finally{opaSaving=false;}
   if(!saved){toast('Server sync failed -- the check was NOT recorded. Try again with a connection.');return;}
   closeOpAuditModal();
   await rOpAudit();

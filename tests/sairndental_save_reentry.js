@@ -27,6 +27,7 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const H = require('./lib/save_reentry_harness.js');
 
 const FILE = process.argv[2] || path.join(__dirname, '..', 'sairndental.html');
 const html = fs.readFileSync(FILE, 'utf8').replace(/\r\n/g, '\n');
@@ -113,6 +114,47 @@ function world(answer) {
     check('R3 after ' + label + ' the next press is not held: two presses, two requests',
       w.requests.length === 2 && !w.toasts.some((t) => /Still sending/.test(t)),
       JSON.stringify({ requests: w.requests.length, toasts: w.toasts }));
+  }
+  // 3. THREE MORE SAVES (cody b65), same shape: each sends its record and only
+  // resets its form after the server answers, so a second press during that
+  // wait sent the same record again under a new id. Arms: PV / CD / CV 1-3,
+  // meanings in tests/lib/save_reentry_harness.js.
+  console.log('3. addProvider, addCredential, saveCoverageRule');
+  let seq = 0;
+  const L = H.makeLift(html, FILE);
+  const credDecl = html.match(/var dntCredSeq=0,dntCredSettled=0,dntCredWriting=0;/);
+  if (!credDecl) { console.log('COULD NOT RUN: the dntCredWriting declaration is not in ' + FILE); process.exit(2); }
+  const common = (write, box) => ({
+    newId: (p) => p + '-' + (++seq), dntLocalToday: () => '2026-10-29', sdnData: write,
+    dntLastErrText: () => '', dntWriteFailText: (r, f) => f,
+    st: (k, list) => { box.rows = list; return true; }
+  });
+  for (const s of [
+    {
+      id: 'PV', name: 'addProvider',
+      src: H.optional(html, /var dntProviderSaving\s*=\s*false;/) + '\n' + L('async function addProvider(){'),
+      fields: { 'pv-add-name': 'Dr Lee', 'pv-add-role': 'dentist', 'pv-add-operatory': '', 'pv-add-login': '' },
+      given: (write, box) => Object.assign(common(write, box), { providers: () => box.rows.slice() }),
+      press: (ctx) => ctx.addProvider()
+    },
+    {
+      // Stored locally BEFORE the write, so a second row is the duplicate too.
+      id: 'CD', name: 'addCredential',
+      src: credDecl[0] + '\n' + L('async function addCredential(){'),
+      fields: { 'cd-add-provider': 'PV-1', 'cd-add-type': 'certification', 'cd-cert-name': 'CPR', 'cd-cert-issuer': 'AHA', 'cd-cert-expires': '2027-06-30' },
+      given: (write, box) => Object.assign(common(write, box), { credentials: () => box.rows.slice() }),
+      rows: (box) => box.rows.length,
+      press: (ctx) => ctx.addCredential()
+    },
+    {
+      id: 'CV', name: 'saveCoverageRule',
+      src: H.optional(html, /var dntCoverageSaving\s*=\s*false;/) + '\n' + L('async function saveCoverageRule(){'),
+      fields: { 'cv-add-payer': 'Delta Dental', 'cv-add-procedure': 'PT-1', 'cv-add-percent': '80' },
+      given: (write, box) => Object.assign(common(write, box), { cvEditId: null, coverageRules: () => box.rows.slice() }),
+      press: (ctx) => ctx.saveCoverageRule()
+    }
+  ]) {
+    await H.drive({ check, id: s.id, name: s.name, mk: H.mkFor(s), ok: { id: 'x' }, refused: null });
   }
   finished = true;
   console.log('\n' + (fail ? 'FAILED' : 'ok') + '  sairndental save re-entry: ' + pass + ' passed, ' + fail + ' failed');
