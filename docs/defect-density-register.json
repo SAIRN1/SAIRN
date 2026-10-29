@@ -38987,49 +38987,6 @@
       "recurrence_open": "Three more ok-with-null write acks remain outside sairnmechanical (sd-data.js supplier_lead_times, sd_approvals, alf_family_contacts); routed in the cody b58 handoff."
     },
     {
-      "commit": "a6947c576b5e",
-      "date": "2026-10-28",
-      "subject": "fix(tools, cody b59): dead_function_sweep's runaway guard compares against an independent comment count, not a fixed 25%",
-      "files": [
-        "tests/run_sairn_dead_function_sweep_probe.py",
-        "tools/sairn_dead_function_sweep.py"
-      ],
-      "lines_added": 77,
-      "lines_removed": 14,
-      "app": "PLATFORM",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "sairn_dead_function_sweep refused three correct comment strips (sairnbiz 31.0%, sairncash 30.0%, sairnsenior 25.5% blanked) as runaway delimiters because its guard was a fixed 25% resting on a stale 'single-digit density' assumption; an independent comment-line count agreed within 0.5 points. Since M20 the default run exited 2. Guard now compares against comment_estimate() + 5 points; all 22 apps swept, exit 0.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The 25% constant predates 2026-09-04; the b58 M20 change made it binding."
-      },
-      "citation_note": "PR 1.11 in reverse: a could-not-run verdict that was not true -- the third state has to be earned as much as a pass.",
-      "contributing_factors": [
-        {
-          "factor": "The guard's threshold encoded a density assumption (single-digit percent) that was true when written and was never re-measured as the apps' comments grew past it.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Threshold replaced by a comparison against an independent comment count; probe arm for a comment-heavy file."
-        },
-        {
-          "factor": "M20 (b58) made the guard's verdict binding without re-checking whether the files it now refused were real runaways.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "b59 measured all 22 apps against the independent count before changing the rule."
-        }
-      ],
-      "recurrence_open": "Other tools copied the same size-guard idea (sairn_seam_check, sairn_stale_snapshot_scan, sairn_strict_args_check cite this tool's landmine); their thresholds were not re-measured."
-    },
-    {
       "commit": "19a9a84b8f66",
       "date": "2026-10-28",
       "subject": "fix(tools, cody b55): three of my own tools read a run that did not happen as a clean one",
@@ -39187,6 +39144,50 @@
       "recurrence_open": "The register is still rewritten in place per drug on both client and server (upsert by drug name); append-only is a separate change."
     },
     {
+      "commit": "4a60ab021f5f",
+      "date": "2026-10-28",
+      "subject": "fix(push_retry, hank b63): a REFUSED fast retry no longer logs, so the next rebase is not blocked",
+      "files": [
+        "docs/BYPASS-LOG.jsonl",
+        "tools/push_retry.py"
+      ],
+      "lines_added": 18,
+      "lines_removed": 4,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "live-verification",
+      "summary": "push_retry --loop's C1 fast path (b61) logged its BYPASS-LOG row even when the skipped push was refused; the tracked row dirtied the tree and the next attempt's rebase refused, so the loop stopped with exit 3 (fail-closed, HEAD intact). Seen on the hank b63 docs push. Fixed: log only a skip that landed. Selftest 58/0; log-always mutant red.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "fdb5ca7ee4d8",
+        "date": "2026-10-28",
+        "subject": "fix(push_retry, hank b61): a race lost after a gate PASS retries fast without re-paying the gate (C1)",
+        "lag_days": 0
+      },
+      "citation_note": "No standing rule says a retry loop must not write tracked files between attempts; C1 records it.",
+      "contributing_factors": [
+        {
+          "factor": "The fast-retry log call ran unconditionally after the push, so a refused skip wrote a tracked ledger row mid-loop",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "log only when prc == 0; selftest arm for the landed-skip log and the refused-skip no-log case"
+        },
+        {
+          "factor": "The b61 selftest stubbed _log_fast_retry and git, so it could not see the dirty-tree effect on the next rebase",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "an end-to-end arm that drives two fast retries against a real scratch repo"
+        }
+      ],
+      "recurrence_open": "Any other tracked write inside the loop (gate write-backs other than scrutiny rows) can block the rebase the same way."
+    },
+    {
       "commit": "56ec80530b50",
       "date": "2026-10-28",
       "subject": "fix(stonedesk b60): .sairn-fu-label / .shoff-label use var(--muted), not a dark-surface rgba",
@@ -39270,50 +39271,6 @@
         }
       ],
       "recurrence_open": "Any OTHER hook-spawned tool that runs git in a temp dir is covered only by the hook-level unset; a tool invoked by a different hook or wrapper that exports GIT_DIR is not."
-    },
-    {
-      "commit": "4a60ab021f5f",
-      "date": "2026-10-28",
-      "subject": "fix(push_retry, hank b63): a REFUSED fast retry no longer logs, so the next rebase is not blocked",
-      "files": [
-        "docs/BYPASS-LOG.jsonl",
-        "tools/push_retry.py"
-      ],
-      "lines_added": 18,
-      "lines_removed": 4,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "live-verification",
-      "summary": "push_retry --loop's C1 fast path (b61) logged its BYPASS-LOG row even when the skipped push was refused; the tracked row dirtied the tree and the next attempt's rebase refused, so the loop stopped with exit 3 (fail-closed, HEAD intact). Seen on the hank b63 docs push. Fixed: log only a skip that landed. Selftest 58/0; log-always mutant red.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "fdb5ca7ee4d8",
-        "date": "2026-10-28",
-        "subject": "fix(push_retry, hank b61): a race lost after a gate PASS retries fast without re-paying the gate (C1)",
-        "lag_days": 0
-      },
-      "citation_note": "No standing rule says a retry loop must not write tracked files between attempts; C1 records it.",
-      "contributing_factors": [
-        {
-          "factor": "The fast-retry log call ran unconditionally after the push, so a refused skip wrote a tracked ledger row mid-loop",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "log only when prc == 0; selftest arm for the landed-skip log and the refused-skip no-log case"
-        },
-        {
-          "factor": "The b61 selftest stubbed _log_fast_retry and git, so it could not see the dirty-tree effect on the next rebase",
-          "kind": "detection",
-          "action_status": "planned",
-          "action": "an end-to-end arm that drives two fast retries against a real scratch repo"
-        }
-      ],
-      "recurrence_open": "Any other tracked write inside the loop (gate write-backs other than scrutiny rows) can block the rebase the same way."
     },
     {
       "commit": "79c4f10cf665",
@@ -39585,6 +39542,49 @@
         }
       ],
       "recurrence_open": "Other checkers whose denominator is a filtered list rather than the targets were not swept for this shape."
+    },
+    {
+      "commit": "a6947c576b5e",
+      "date": "2026-10-28",
+      "subject": "fix(tools, cody b59): dead_function_sweep's runaway guard compares against an independent comment count, not a fixed 25%",
+      "files": [
+        "tests/run_sairn_dead_function_sweep_probe.py",
+        "tools/sairn_dead_function_sweep.py"
+      ],
+      "lines_added": 77,
+      "lines_removed": 14,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "sairn_dead_function_sweep refused three correct comment strips (sairnbiz 31.0%, sairncash 30.0%, sairnsenior 25.5% blanked) as runaway delimiters because its guard was a fixed 25% resting on a stale 'single-digit density' assumption; an independent comment-line count agreed within 0.5 points. Since M20 the default run exited 2. Guard now compares against comment_estimate() + 5 points; all 22 apps swept, exit 0.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The 25% constant predates 2026-09-04; the b58 M20 change made it binding."
+      },
+      "citation_note": "PR 1.11 in reverse: a could-not-run verdict that was not true -- the third state has to be earned as much as a pass.",
+      "contributing_factors": [
+        {
+          "factor": "The guard's threshold encoded a density assumption (single-digit percent) that was true when written and was never re-measured as the apps' comments grew past it.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Threshold replaced by a comparison against an independent comment count; probe arm for a comment-heavy file."
+        },
+        {
+          "factor": "M20 (b58) made the guard's verdict binding without re-checking whether the files it now refused were real runaways.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "b59 measured all 22 apps against the independent count before changing the rule."
+        }
+      ],
+      "recurrence_open": "Other tools copied the same size-guard idea (sairn_seam_check, sairn_stale_snapshot_scan, sairn_strict_args_check cite this tool's landmine); their thresholds were not re-measured."
     },
     {
       "commit": "b676e7e79a2d",
@@ -39953,6 +39953,94 @@
         }
       ],
       "recurrence_open": "A skipped push does not re-run whole-tree checks against the combined base; only gate duration or a merge queue closes that."
+    },
+    {
+      "commit": "6cbf84660780",
+      "date": "2026-10-29",
+      "subject": "fix(stale-snapshot-scan, hank b64): .js files are scanned, unread files are named, zero scanned exits 2",
+      "files": [
+        "docs/sairn-path-manifest.json",
+        "tools/sairn_stale_snapshot_scan.py"
+      ],
+      "lines_added": 21,
+      "lines_removed": 4,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "live-verification",
+      "summary": "tools/sairn_stale_snapshot_scan.py read <script> blocks only; every .js file returned None and was dropped from the results, so a run over api/*.js printed clean zeros for 191 files it never read (hank b62/b63). Fixed: .js read whole, unread files named, zero scanned exits 2.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "613b4e991bf2",
+        "date": "2026-09-11",
+        "subject": "fix(tools): four checkers answered about the current directory, not the repo",
+        "lag_days": 48
+      },
+      "citation_note": "PR 1.11 names could-not-run vs passed in general; no rule required this scanner to count unread files.",
+      "contributing_factors": [
+        {
+          "factor": "scan_file returned None for any file without script tags, and None was filtered out before counting",
+          "kind": "technical",
+          "action_status": "done",
+          "action": ".js read whole; unread named files listed; zero scanned exits 2"
+        },
+        {
+          "factor": "The summary printed hit counts without a could-not-run state, so 0 of 191 read as clean",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "exit 2 on zero scanned, per PR 1.11"
+        }
+      ],
+      "recurrence_open": "The stale-snapshot arm still targets the client store shape, so its zero on server code is not evidence (a planted server-side read-await-write was not detected)."
+    },
+    {
+      "commit": "a15568f21661",
+      "date": "2026-10-29",
+      "subject": "fix(sd-sub-data, hank b64): COI / licence expiry compared against the LOCAL day, not the UTC day",
+      "files": [
+        "api/b64-sub-compliance-local-day.test.js",
+        "api/sd-sub-data.js"
+      ],
+      "lines_added": 68,
+      "lines_removed": 3,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "static-checker",
+      "summary": "api/sd-sub-data.js complianceStatus compared COI and licence expiry against the UTC day, which turns at 7-8 p.m. Eastern, so a document on its last valid evening read expired and the sub-assignment check refused (409) for hours. Fixed with a local-day helper (America/New_York).",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/sairn_stale_snapshot_scan.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "aff235eee3c8",
+        "date": "2026-08-04",
+        "subject": "feat: Subcontractor Portal (Phase 1) -- roster, job assignment, pay tracking, separate sub login",
+        "lag_days": 86
+      },
+      "citation_note": "No standing rule names server-side calendar-day derivation; the client-side UTC-date sweep (2026-09-02) covered html only.",
+      "contributing_factors": [
+        {
+          "factor": "complianceStatus took today as the UTC date while expiry is a local calendar day",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "localTodayISO() in America/New_York at line 71 and both callers; 9/0 test on the shipped functions"
+        },
+        {
+          "factor": "The UTC-calendar scanner read only script tags, so it never saw this server file",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "stale-snapshot scan reads .js whole (6cbf84660)"
+        }
+      ],
+      "recurrence_open": "Other server files with calendar-day logic and no per-licence time zone; America/New_York is a platform-wide assumption, not a per-customer one."
     }
   ],
   "started": "2026-09-09",
