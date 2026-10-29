@@ -1417,6 +1417,17 @@
       "status": "released",
       "released_at": "2026-10-29T12:53:18Z",
       "files": null
+    },
+    {
+      "id": "hover-1793304154",
+      "session": "hover",
+      "subject": "hover",
+      "task": "hover_backup_mirror record-anchor mail evidence",
+      "claimed_at": "2026-10-29T20:02:34Z",
+      "claimed_at_epoch": 1793304154.554432,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
