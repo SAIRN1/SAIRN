@@ -40041,6 +40041,171 @@
         }
       ],
       "recurrence_open": "Other server files with calendar-day logic and no per-licence time zone; America/New_York is a platform-wide assumption, not a per-customer one."
+    },
+    {
+      "commit": "0d6e6a473e70",
+      "date": "2026-10-29",
+      "subject": "fix(sairnbuild, fourth b65): awardSubBid awards again -- 66cf7b930's honest-toast hunk deleted the one line that marked a bid awarded",
+      "files": [
+        "sairnbuild.html"
+      ],
+      "lines_added": 5,
+      "lines_removed": 0,
+      "app": "sairnbuild",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "sairnbuild awardSubBid stopped marking any bid awarded in 66cf7b930 (2026-08-09): the refactor hunk deleted the mutating line and the success toast kept firing. Found by the b64 worldwide audit.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "66cf7b930799",
+        "date": "2026-08-09",
+        "subject": "fix: SAIRNbuild -- close the 4 self-disclosed silent-failure gaps from 09b65a9",
+        "lag_days": 81
+      },
+      "citation_note": "No standing rule names this shape.",
+      "contributing_factors": [
+        {
+          "factor": "an honest-toast refactor hunk replaced st() with var saved=st() and deleted the preceding line that set awarded",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "line restored"
+        },
+        {
+          "factor": "the toast still said Awarded, so the no-op was invisible; no test read the awarded flag",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/fourth_b65_record_fixes.js build arms"
+        }
+      ],
+      "recurrence_open": "The award is still gated client-side only; nothing server-side checks eligibility."
+    },
+    {
+      "commit": "25df11ed8d15",
+      "date": "2026-10-29",
+      "subject": "fix(sairnmechanical, fourth b65): saveQuote stores the client the quote was generated for",
+      "files": [
+        "sairnmechanical.html"
+      ],
+      "lines_added": 1,
+      "lines_removed": 1,
+      "app": "sairnmechanical",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "sairnmechanical saveQuote stored {id,date,trade,text} and dropped the client the quote was generated for. Found by the b64 worldwide audit.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "not-bisected"
+      },
+      "citation_note": "No standing rule names this shape.",
+      "contributing_factors": [
+        {
+          "factor": "saveQuote built the record without the client field the form collects",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "client stored"
+        },
+        {
+          "factor": "no test read the saved quote record",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/fourth_b65_record_fixes.js mechanical arm"
+        }
+      ],
+      "recurrence_open": "Quotes created before this fix carry no client and cannot be backfilled."
+    },
+    {
+      "commit": "7b744bb14d27",
+      "date": "2026-10-29",
+      "subject": "fix(sairncash, fourth b65): the hidden AGI checkbox no longer manufactures a \"no\"; Solo 401(k) room is capped at earnings",
+      "files": [
+        "sairncash.html"
+      ],
+      "lines_added": 14,
+      "lines_removed": 3,
+      "app": "sairncash",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "sairncash saveProfile saved a hidden checkbox as a real 'no', suppressing the 'AGI not recorded, 110% may apply' warning, and calcRetirementEstimate showed Solo 401(k) room above what was earned. Found by the b64 worldwide audit.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "not-bisected"
+      },
+      "citation_note": "No standing rule names this shape.",
+      "contributing_factors": [
+        {
+          "factor": "a hidden legacy checkbox was saved unconditionally, manufacturing a false answer that suppressed the 110% warning; Solo 401k deferral was added without an earnings cap",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "legacy carried only if present; estimate capped at net SE earnings"
+        },
+        {
+          "factor": "the safe-harbor suite tests the calculation, not the profile save that feeds it",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/fourth_b65_record_fixes.js cash arms"
+        }
+      ],
+      "recurrence_open": "A typed 0 prior-year tax is still read as not provided, in both the save and the calculation."
+    },
+    {
+      "commit": "c741681e20e0",
+      "date": "2026-10-29",
+      "subject": "fix(sairngrounds, fourth b65): clearing a day's alcohol sale hours CLOSES it -- it saved the day open 00:00-23:59",
+      "files": [
+        "docs/sairn-path-manifest.json",
+        "sairngrounds.html",
+        "tests/fourth_b65_record_fixes.js"
+      ],
+      "lines_added": 142,
+      "lines_removed": 1,
+      "app": "sairngrounds",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "sairngrounds saveMsbHours turned a cleared day's start/end into 00:00/23:59, so closing a day to alcohol sales saved it open all day. Found by the b64 worldwide audit code read.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "not-bisected"
+      },
+      "citation_note": "No standing rule names this shape.",
+      "contributing_factors": [
+        {
+          "factor": "saveMsbHours defaulted empty start/end to 00:00/23:59, so a cleared day saved open all day",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "cleared day saved closed; one-sided entry refused; check refuses a closed day"
+        },
+        {
+          "factor": "nothing drove the clear-a-day path; the audit read found it",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/fourth_b65_record_fixes.js grounds arms"
+        }
+      ],
+      "recurrence_open": "A window still cannot cross midnight, and the server write does not validate the hours."
     }
   ],
   "started": "2026-09-09",
