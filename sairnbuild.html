@@ -4922,6 +4922,11 @@ function awardSubBid(id){
     toast('Cannot award to '+match.company+' -- not eligible to bid ('+why+'). Fix on the Subcontractors panel first.',5000);
     return;
   }
+  // THE AWARD ITSELF (restored, fourth b65). 66cf7b930's honest-toast pass
+  // replaced `st(...)` with `var saved=st(...)` and its hunk deleted the line
+  // above it -- the only one that marked a bid awarded -- so from 2026-08-09
+  // every award saved the list unchanged and still toasted "Awarded".
+  list.forEach(function(x){if(x.job_id===target.job_id&&x.cost_code===target.cost_code)x.awarded=(x.id===id);});
   var saved=st('bld_sub_bids',list);
   rSubBids();
   if(!saved){
