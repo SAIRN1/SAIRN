@@ -6486,6 +6486,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/stonedesk_presence_fixes_b69.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6398f7e48bb56db9ca463e532e8a23e4aabfe9db",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sairnbiz_benefits_and_overtime.js",
    "class": "test file",
    "level": "WEAKENING",
