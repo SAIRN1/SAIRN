@@ -4832,8 +4832,8 @@
       "task": "M5 law-trust-reconcile aged deposit in transit; J5 Vermont deadline seed",
       "claimed_at": "2026-10-29T20:07:28Z",
       "claimed_at_epoch": 1793304448.4962199,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-29T20:44:01Z",
       "files": null
     },
     {
