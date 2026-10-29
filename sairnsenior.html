@@ -4291,7 +4291,11 @@ function senVisitFlagsUnreviewed(v){
   return !(r&&JSON.stringify(r.flags)===JSON.stringify(f));
 }
 function senFlagText(f){
-  var h=(f&&typeof f.skew_ms==='number')?' ('+(Math.round(f.skew_ms/36e5*10)/10)+' h)':'';
+  // skew_ms is (claimed - received): NEGATIVE means the time arrived late
+  // (LATE_REPLAY), positive means it claims a time still to come (FUTURE).
+  // Shown as a direction and a size, never as "-240 h" (fourth b67).
+  var h='';
+  if(f&&typeof f.skew_ms==='number'){var hrs=Math.round(Math.abs(f.skew_ms)/36e5*10)/10;h=' ('+hrs+' h '+(f.skew_ms<0?'late':'ahead')+')';}
   return ((f&&f.code)||'?')+' on '+((f&&f.field)||'?')+h;
 }
 function renderClockFlags(){

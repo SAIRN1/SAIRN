@@ -125,6 +125,17 @@ function lift(file, decl) {
     check('mechanical: the saved quote names its client', !!q && q[0].client === 'Acme Dental, 12 Main St', JSON.stringify(q && q[0]));
   }
 
+  // ── senior card wording (fourth b67) ───────────────────────────────────
+  {
+    const sv = { Math };
+    vm.createContext(sv);
+    vm.runInContext(lift('sairnsenior.html', 'function senFlagText('), sv);
+    check('senior: a LATE_REPLAY skew reads "240 h late", never "-240 h"',
+          sv.senFlagText({ code: 'LATE_REPLAY', field: 'clock_in_at', skew_ms: -864000852 }) === 'LATE_REPLAY on clock_in_at (240 h late)');
+    check('senior: a FUTURE skew reads "ahead"',
+          sv.senFlagText({ code: 'FUTURE', field: 'clock_out_at', skew_ms: 300000 }) === 'FUTURE on clock_out_at (0.1 h ahead)');
+  }
+
   console.log('\n' + pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);
 })().catch((e) => { console.log('COULD NOT RUN: ' + e.message); process.exit(2); });
