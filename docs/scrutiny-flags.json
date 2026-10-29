@@ -15094,6 +15094,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/fourth_b65_record_fixes.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f5eeb39fff72d28770d2e9124d479e3b9109b9fa",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_pure_base_skip_probe.py",
    "class": "test file",
    "level": "WEAKENING",
