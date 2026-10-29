@@ -9,6 +9,6 @@ ITEM 4 -- 6 of 17 apps have no committed worldwide audit (care, dental, freedom,
 ITEM 5 -- fixture first for every fix in items 2-3.
 DECISION-NEEDED: none.
 UNVERIFIED: out-of-shape re-entry (grounds GPS waits, stonedesk 2.5 s POS window) is routed, not fixed.
-NEXT: cody -- out-of-shape re-entry; make the sweep scanner a standing check. cc -- Tier A review of the 35 resources.
+NEXT: STOPPED (Michael). 20 open items, each with owner + next step: handoff section STOP POINT. Handoff landed at 8ee053b9b == origin/main.
 EVIDENCE-path: SAIRN-handoff-cody-b64.md, SAIRN-report-cody-b64.txt
 CONTEXT 69.1% of 1,000,000 -- 691,129 tokens, measured.

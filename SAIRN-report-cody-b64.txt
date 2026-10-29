@@ -27,3 +27,13 @@ Handoff: SAIRN-handoff-cody-b64.md.
 6. PUSH: LANDED at a5ad5f7c9.
    - Register conflicts were merged by identity.
    - A Tier A obligation was opened for the 35 resources the guards touch, and assigned to cc.
+
+STOP POINT (Michael, 2026-10-29)
+1. Nothing was in flight. No new task or claim was started. Tree clean; no cody claim held.
+2. Everything is committed. The stop-point handoff section landed at
+   8ee053b9bbfba4aabde56428f4d889544adf5d7e. After a fetch, `git rev-parse HEAD` and
+   `git rev-parse origin/main` both printed that sha.
+3. This report and the updated digest are the final commit.
+   - A commit cannot carry its own sha, so the final sha was measured after this push by the same two commands.
+   - tools/sairn_done_line.py also verifies that all three deliverables are on origin/main byte for byte before it prints the done line.
+4. Every open item, with its owner and exact next step: SAIRN-handoff-cody-b64.md, section "STOP POINT", rows 1-20.
