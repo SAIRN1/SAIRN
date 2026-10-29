@@ -4500,6 +4500,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "cody-1793268309",
+      "session": "cody",
+      "subject": "PLATFORM",
+      "task": "cody b60 push b59 red triage dead_function_sweep guard write_re verbs js extractor",
+      "claimed_at": "2026-10-29T10:05:09Z",
+      "claimed_at_epoch": 1793268309.3556495,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
