@@ -2349,3 +2349,10 @@ Full account: `SAIRN-handoff-fourth-b66.md`.
 - Mechanical job/invoice/inspection records are built and tested in `c9fa25f2c`, on local branch `b67-mech`. They are not landed: cody's claim, plus a classifier-denied waiver.
 
 Full account: `SAIRN-handoff-fourth-b67.md`.
+
+## batch b67 wrap-up -- 2026-10-29 (Michael's stop order)
+
+- Mechanical records landed as `a4414c595b16` after cody released the claim. No new claim was taken.
+- **Final content commit `6a88c93ab85fd68ec0ba2cbaa5a01aa8aa2b0b73`** was measured EQUAL to origin/main's HEAD (`git rev-parse HEAD` == `git rev-parse origin/main`) after `git fetch`, with a clean tree.
+- The commit carrying this entry is its direct child, and is re-checked the same way after its own push.
+- 20 open items, each with its next step: `SAIRN-handoff-fourth-b67.md` §8.
