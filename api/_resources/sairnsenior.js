@@ -191,7 +191,10 @@ module.exports = {
     // re-clock is appended as a PENDING correction and effectiveClock() ignores
     // it, so this verb is the only thing that can make one effective, and it is
     // scheduler-tier only.
+    // 'review_clock_flags' DECLARED IN THE SAME EDIT as its handler (fourth
+    // b65): the EVV billing gate refuses a claim over an unreviewed clock flag,
+    // and this verb is the only way to record that review.
     sen_visits: ['readiness', 'payroll', 'propose_clock_correction',
-                 'approve_clock_correction'],
+                 'approve_clock_correction', 'review_clock_flags'],
   },
 };

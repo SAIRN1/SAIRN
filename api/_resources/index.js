@@ -203,6 +203,7 @@ const ACTION_CLASS = Object.freeze(Object.assign(Object.create(null), {
   propose_clock_correction: 'write-class',
   release: 'write-class',
   release_retainage: 'write-class',
+  review_clock_flags: 'write-class',
   reorder: 'write-class',
   reserve: 'write-class',
   set_status: 'write-class',

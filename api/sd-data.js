@@ -7770,6 +7770,44 @@ module.exports = async (req, res) => {
         corrections: corrected.clock_corrections.length });
       return;
     }
+    // ── EVV CLOCK FLAGS ARE REVIEWED, AND THE REVIEW IS A RECORD (fourth b65) ─
+    // The review stores the EXACT flags it looked at, so a flag that arrives
+    // later makes the visit unreviewed again instead of inheriting a sign-off
+    // for something nobody saw (the sen_claims gate compares the two).
+    // Management only; a note is required. clock_flags_review is in neither
+    // SEN_VISIT_*_FIELDS list, so the ordinary write can neither set nor clear it.
+    if (resource === 'sen_visits' && action === 'review_clock_flags') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!SEN_CLIENT_MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can review EVV clock flags.' } });
+        return;
+      }
+      if (!payload || !payload.id) { res.status(400).json({ error: { message: 'sen_visits payload.id is required' } }); return; }
+      const note = String(payload.note || '').trim();
+      if (!note) { res.status(400).json({ error: { code: 'NOTE_REQUIRED', message: 'Say what was checked. A review with no note is a click, not a review.' } }); return; }
+      const vr = await fetch(rest('sen_visits?license_hash=eq.' + enc(licHash) + '&visit_id=eq.' + enc(payload.id) + '&select=assigned_employee_id,data&limit=1'), { headers });
+      if (vr.status === 404 || vr.status === 400) return notProvisioned(res, vr, 'Visit/EVV tracking is not set up yet — run sql/sairnsenior_visits_schema.sql in Supabase first.');
+      const vrows = await vr.json();
+      if (!vr.ok) return upstream(res, vrows);
+      const vrow = Array.isArray(vrows) && vrows[0];
+      if (!vrow) { res.status(404).json({ error: { code: 'NO_SUCH_VISIT', message: 'No such visit.' } }); return; }
+      const vdata = Object.assign({}, vrow.data || {});
+      const flags = Array.isArray(vdata.clock_flags) ? vdata.clock_flags : [];
+      if (!flags.length) { res.status(400).json({ error: { code: 'NOTHING_TO_REVIEW', message: 'This visit carries no clock flags.' } }); return; }
+      vdata.clock_flags_review = { flags: flags, reviewed_by: session.employee_id, reviewed_role: session.role, reviewed_at: nowISO(), note: note.slice(0, 1000) };
+      const w = await fetch(rest('sen_visits?on_conflict=license_hash,visit_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnsenior', visit_id: String(payload.id),
+          assigned_employee_id: vrow.assigned_employee_id || null, data: vdata, updated_at: nowISO() })
+      });
+      const wrows = await w.json();
+      if (!w.ok) return upstream(res, wrows);
+      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id }, vdata) });
+      return;
+    }
+
     if (resource === 'sen_visits' && action === 'write') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
@@ -8178,6 +8216,37 @@ module.exports = async (req, res) => {
       // the same reason as the referral branch above: the read maps it to `id`
       // rather than returning it under its own name, so a payload `claim_id`
       // shadows nothing and stripping it would delete real data.
+      // ── NO CLAIM MOVES TO SUBMITTED OR PAID OVER AN UNREVIEWED EVV FLAG ────
+      // (fourth b65, Michael's decision). checkClockEvent() writes clock_flags
+      // (FUTURE / LATE_REPLAY skew, UNPARSEABLE) on a visit and nothing read
+      // them. Checked HERE, on the TRANSITION: a claim already at that status
+      // is not re-gated, so a paid claim recorded before this rule can still
+      // have its appeal fields edited. Every could-not-tell answer refuses: a
+      // gate on money that passes when it cannot read the visit is not a gate.
+      const SEN_EVV_GATED_STATUSES = { submitted: true, paid: true };
+      if (SEN_EVV_GATED_STATUSES[payload.status]) {
+        const cr = await fetch(rest('sen_claims?license_hash=eq.' + enc(licHash) + '&claim_id=eq.' + enc(payload.id) + '&select=data&limit=1'), { headers });
+        const crows = await cr.json().catch(() => null);
+        if (!cr.ok || !Array.isArray(crows)) { res.status(503).json({ error: { code: 'EVV_CHECK_FAILED', message: 'The claim\'s current status could not be read, so it was not moved. Nothing was saved.' } }); return; }
+        const priorData = (crows[0] && crows[0].data) || null;
+        if (!priorData || priorData.status !== payload.status) {
+          const visitId = payload.visit_id || (priorData && priorData.visit_id);
+          if (!visitId) { res.status(409).json({ error: { code: 'EVV_UNVERIFIABLE', message: 'This claim names no visit, so its EVV record cannot be checked. It was not moved to ' + payload.status + '.' } }); return; }
+          const vr = await fetch(rest('sen_visits?license_hash=eq.' + enc(licHash) + '&visit_id=eq.' + enc(visitId) + '&select=data&limit=1'), { headers });
+          const vrows = await vr.json().catch(() => null);
+          if (!vr.ok || !Array.isArray(vrows)) { res.status(503).json({ error: { code: 'EVV_CHECK_FAILED', message: 'The visit\'s EVV record could not be read, so the claim was not moved. Nothing was saved.' } }); return; }
+          if (!vrows[0]) { res.status(409).json({ error: { code: 'EVV_VISIT_MISSING', message: 'The visit this claim bills does not exist on the server, so its EVV record cannot be checked.' } }); return; }
+          const vd = vrows[0].data || {};
+          const vflags = Array.isArray(vd.clock_flags) ? vd.clock_flags : [];
+          const rev = vd.clock_flags_review;
+          if (vflags.length && !(rev && JSON.stringify(rev.flags) === JSON.stringify(vflags))) {
+            res.status(409).json({ error: { code: 'EVV_UNREVIEWED',
+              message: 'This visit carries ' + vflags.length + ' EVV clock flag(s) (' + vflags.map((f) => f.code + ' on ' + f.field).join(', ') + ') that nobody has reviewed. Review them on the EVV Clock Flags panel before moving this claim to ' + payload.status + '.',
+              flags: vflags } });
+            return;
+          }
+        }
+      }
       const claimData = storedBlob(payload, ['id']);
       // ── WHO WROTE THIS ROW (2026-10-07) ──────────────────────────────
       // This branch persisted sen_claims and recorded no acting employee: not a
