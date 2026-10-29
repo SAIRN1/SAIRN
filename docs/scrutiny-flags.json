@@ -1966,6 +1966,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairnbuild_cost_forecast_writer.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "17821dc5c4af3e2be20fd9dd90f48403249adb55",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/claims/run_matcher_probe.py",
    "class": "test file",
    "level": "CHANGE",
