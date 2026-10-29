@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# OWNER: hank
 """server_stale_snapshot_scan.py -- S2: the SERVER-SIDE read-await-write shape.
 
 hank b66. tools/sairn_stale_snapshot_scan.py finds the CLIENT shape (a
