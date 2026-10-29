@@ -1,0 +1,32 @@
+SAIRN report -- cc b70 -- 2026-10-29
+
+Landed through 25aff5d0, plus this handoff. No override, no skip, no --force.
+
+1 TIER A: cody b58 (10e914b1 + 4a8920f5) and cody b61 (7ae231b4) are both
+  discharged SOUND-WITH-GAPS (low).
+  - b58: no legitimate save returns [].
+  - b61: no ordinary path claims an unconfirmed backup.
+  - Tests are all exit 0; ablations ran; the gaps are routed to cody.
+
+2 O7: "the push script" is cody's scratchpad push_once.sh. It regenerates
+  derived docs only on the pure-base-skip path and never regenerates
+  TOOLING-INVENTORY.
+  The corrected block is in docs/2026-10-29-cc-b70-o7-push-script.md.
+  tools/push_retry.py already regenerates after every rebase (lines 1312 and
+  1391). cody's file was not edited.
+
+3 LIVE FIXTURES: GENUINELY MISSING.
+  - SD-AUDIT-2026 has only an owner credential; the rules need admin, sales
+    and install.
+  - There is no dental audit licence at all.
+  - Flagged to Michael. Nothing was written to the database.
+
+4 CRLF CROSS-CHECK: 256 hank/cody/fourth files scanned. No log writer has
+  the gap; the 4 hits are temp fixtures in test probes. Nothing to route.
+
+5 CAUSE TAGS: recurring-bug-classes-2 section C4, "remedy gated on an
+  unrelated condition" (construction -> automation script), with a table of
+  this batch's fixes.
+
+OPEN: cody to apply O7 or move to push_retry, and to close the b58/b61 test
+gaps; Michael to provide credentials for the three live blocks.

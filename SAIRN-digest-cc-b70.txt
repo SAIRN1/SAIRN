@@ -1,0 +1,19 @@
+DIGEST cc b70
+STATUS: all six items closed (item 3 flagged as genuinely missing); landed through 25aff5d0 (+ this handoff). No override/skip/--force.
+ITEM 1: Tier A discharged -- cody b58 (10e914b1+4a8920f5, mech WRITE_UNCONFIRMED) and cody b61 (7ae231b4, sf_server_confirmed), both
+  SOUND-WITH-GAPS (low); tests all exit 0, ablations run; gaps routed to cody (MECH_RECORDS shape untested; D4c regex-only, entries never expire).
+ITEM 2: O7 = cody's scratchpad push_once.sh: regen only on the pure-base path, never TOOLING-INVENTORY. Fixed block in
+  docs/2026-10-29-cc-b70-o7-push-script.md; push_retry.py already regenerates after every rebase. cody's file not edited.
+ITEM 3: GENUINELY MISSING -- SD-AUDIT-2026 has only an owner credential (rules need admin/sales/install); no dental audit licence exists.
+ITEM 4: CRLF cross-check, 256 hank/cody/fourth files: no log writer has the gap (4 hits = temp fixtures in probes). Nothing to route.
+ITEM 5: recurring-bug-classes-2 C4 "remedy gated on an unrelated condition" (construction -> automation script), with this batch's tag table.
+DECISION-NEEDED: Michael -- provision SD-AUDIT-2026 admin/sales/install and a dental audit licence (owner/frontdesk/provider) for the 3 live blocks.
+UNVERIFIED: the O7 block itself is not run (it is cody's script); push_retry.py's regen path is read, not re-driven.
+CHANGED: docs/{2026-10-29-cc-b70-o7-push-script.md,recurring-bug-classes-2.md,sairn-path-manifest.json,tier-a-reviews.json}.
+SQL: none.
+EVIDENCE-path: SAIRN-handoff-cc-b70.md, SAIRN-report-cc-b70.txt, docs/2026-10-29-cc-b70-o7-push-script.md
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\52164776-0b08-422d-94e1-7a56daf3eaaa.jsonl
+OPEN: cody -- O7 block or push_retry, b58/b61 test gaps; cc -- hover b92 once test_965 lands.
+NEXT: Michael's credential decision; cody applies O7.
+CONTEXT 71.4% of 1,000,000 -- 714,337 tokens, measured.
+END-OF-REPORT
