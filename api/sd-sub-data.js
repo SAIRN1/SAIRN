@@ -65,10 +65,23 @@ const EXPIRING_SOON_DAYS = 30;
 // shape this platform keeps getting bitten by, and it is the one that matters
 // here: a roster of green ticks that means "nobody filled this in" is worse
 // than no feature at all.
+// THE EXPIRY DATE IS A LOCAL CALENDAR DAY (hank b64). A certificate or licence
+// is good THROUGH its expiry date, and "today" was the UTC day, which ticks
+// over at 7-8 p.m. Eastern -- so on the last valid evening every US business
+// saw it 'expired' and was refused assignment (409) for hours. There is no
+// per-licence time zone server-side, so the day is taken in America/New_York:
+// the easternmost zone of the fifty states, which can never call a still-valid
+// document expired anywhere in them, and is hours closer than UTC for the rest.
+// Stated limit: Puerto Rico / USVI (Atlantic time) could read 'valid' for up
+// to one hour after their own midnight.
+function localTodayISO(now) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York',
+    year: 'numeric', month: '2-digit', day: '2-digit' }).format(now || new Date());
+}
 function complianceStatus(row, todayISO) {
   const out = { coi: 'untracked', licence: 'untracked', w9: !!(row && row.w9_on_file), blocking: [], expiring: [] };
   if (!row) return out;
-  const today = todayISO || new Date().toISOString().slice(0, 10);
+  const today = todayISO || localTodayISO();
   const soon = new Date(today + 'T00:00:00Z');
   soon.setUTCDate(soon.getUTCDate() + EXPIRING_SOON_DAYS);
   const soonISO = soon.toISOString().slice(0, 10);
@@ -220,7 +233,7 @@ module.exports = async (req, res) => {
       const rows = await r.json();
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false, compliance_provisioned: false }); return; }
       if (!r.ok) return upstream(res, rows);
-      const today = nowISO().slice(0, 10);
+      const today = localTodayISO();
       const withStatus = (rows || []).map(function (row) {
         return Object.assign({}, row, {
           compliance: complianceProvisioned ? complianceStatus(row, today) : null
@@ -386,7 +399,7 @@ module.exports = async (req, res) => {
           }
           const subRow = crows[0];
           if (subRow) {
-            const st = complianceStatus(subRow, nowISO().slice(0, 10));
+            const st = complianceStatus(subRow, localTodayISO());
             if (st.blocking.length) {
               const label = { coi: 'certificate of insurance', licence: 'licence' };
               res.status(409).json({
