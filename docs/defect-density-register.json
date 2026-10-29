@@ -40293,6 +40293,52 @@
         }
       ],
       "recurrence_open": "Other server files with calendar-day logic and no per-licence time zone; America/New_York is a platform-wide assumption, not a per-customer one."
+    },
+    {
+      "commit": "cf49bdc15ced",
+      "date": "2026-10-29",
+      "subject": "fix(tools, cody b62): run_semgrep scans the apps' inline JavaScript and states what it does not cover",
+      "files": [
+        "tests/run_semgrep_inline_probe.py",
+        "tools/run_semgrep.py"
+      ],
+      "lines_added": 227,
+      "lines_removed": 3,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/run_semgrep.py never scanned any app's JavaScript: the SAIRN rules target javascript/typescript, Semgrep only targets .js/.ts files, every app's code is inline <script> in .html (extract mode removed in Semgrep 1.65.0), and the wrapper treated a file as unscanned only if it appeared in errors -- so 24 apps were silently out of scope. Now inline scripts are scanned via line-preserving twins mapped back to the .html, Semgrep's paths.scanned is checked, and the 313 tracked .sql files are reported NOT COVERED.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "1853368a0623",
+        "date": "2026-09-10",
+        "subject": "feat(tools): run Semgrep with the flags that stop it reporting coverage it did not have",
+        "lag_days": 49
+      },
+      "citation_note": "PR 1.11: did-not-look is a third state; a never-targeted file was being reported as if looked at.",
+      "contributing_factors": [
+        {
+          "factor": "The wrapper judged coverage only from Semgrep's errors list, so a file Semgrep never targets -- every inline script in every app -- appeared in neither results nor errors and was silently out of scope.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Coverage read from Semgrep's own paths.scanned; apps scanned through line-preserving twins; probe with a live control."
+        },
+        {
+          "factor": "Semgrep's removal of extract mode (1.65.0) changed what the tool could see, and nothing re-checked the wrapper's coverage when the dependency moved.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The probe's live control asserts the rule finds nothing on raw .html, so a Semgrep change that alters this is visible."
+        }
+      ],
+      "recurrence_open": "No SQL rule exists, so the 313 tracked .sql files remain unscanned by Semgrep; only the disclosure is new. H2's tools-hover2 semgrep_risk_pack has the same .html gap and is H2's."
     }
   ],
   "started": "2026-09-09",
