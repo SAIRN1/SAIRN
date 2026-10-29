@@ -84,6 +84,44 @@ PUSHING_TOOLS = (
 _MENTION_ONLY = ('echo ', 'cat ', '#', 'grep ')
 
 
+def _segments(cmd):
+    """Split a shell command into the commands it RUNS: on `&&`, `||`, `;`,
+    `|` and newlines that sit OUTSIDE quotes, and drop `#` comments.
+
+    THE MENTION-ONLY FILTER USED TO READ WHOLE LINES (fourth b69, cc b74 F-1).
+    `echo start; git push origin main` is one line that starts with `echo `,
+    so the real push after the `;` was filed as a mention and the post-push
+    check was skipped in silence -- likewise after `&&` and after `grep ... ||`.
+    The filter is right about a SEGMENT and wrong about a line."""
+    segs, cur, q, i, n = [], [], None, 0, len(cmd)
+    while i < n:
+        ch = cmd[i]
+        if q:
+            cur.append(ch)
+            if ch == '\\' and q == '"' and i + 1 < n:
+                cur.append(cmd[i + 1])
+                i += 1
+            elif ch == q:
+                q = None
+        elif ch in '"\'':
+            q = ch
+            cur.append(ch)
+        elif ch == '#' and (not cur or cur[-1].isspace()):
+            j = cmd.find('\n', i)                        # a comment runs to end of line
+            i = n if j < 0 else j
+            continue
+        elif ch in ';|\n' or (ch == '&' and not (cur and cur[-1] == '>') and cmd[i + 1:i + 2] != '>'):
+            segs.append(''.join(cur))
+            cur = []
+            if ch in '&|' and cmd[i + 1:i + 2] == ch:    # `&&`, `||`
+                i += 1
+        else:
+            cur.append(ch)
+        i += 1
+    segs.append(''.join(cur))
+    return [x.strip() for x in segs if x.strip()]
+
+
 def classify_command(cmd):
     """'push' | 'not-a-push' | 'unsure' -- from what the command DOES.
 
@@ -109,19 +147,20 @@ def classify_command(cmd):
     # `git` and the subcommand are a flag OR a bare key=value, and the first
     # draft only allowed the flag. `git -c foo=bar push` scored UNSURE, which
     # is a safe answer and still the wrong one.
-    if re.search(r'(^|[;&|]\s*|\s)git\s+(?:-{1,2}[^\s]+\s+|[^\s]+=[^\s]+\s+)*push(\s|$)', low):
-        # ...unless every occurrence sits in something that only quotes it.
-        lines = [ln.strip() for ln in low.split('\n') if 'git' in ln and 'push' in ln]
-        if lines and all(any(ln.startswith(m) for m in _MENTION_ONLY) for ln in lines):
-            return 'not-a-push'
-        return 'push'
+    # Judged PER SEGMENT: a segment that only quotes a push (echo, cat, grep)
+    # is not one, and a real push in the NEXT segment still is.
+    runs = [seg for seg in _segments(low) if not any(seg.startswith(m) for m in _MENTION_ONLY)]
+    for seg in runs:
+        if re.search(r'(^|\s)git\s+(?:-{1,2}[^\s]+\s+|[^\s]+=[^\s]+\s+)*push(\s|$)', seg):
+            return 'push'
 
     for tool in PUSHING_TOOLS:
         if tool in low:
             return 'push'
 
-    # Push-shaped but unrecognised. NOT silently dropped.
-    if 'push' in low:
+    # Push-shaped but unrecognised. NOT silently dropped. Only segments that
+    # RUN count: a push that is only echoed, grepped or commented out is not one.
+    if any('push' in seg for seg in runs):
         return 'unsure'
     return 'not-a-push'
 

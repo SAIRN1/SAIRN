@@ -46,6 +46,13 @@ CASES = [
     ('PYTHONIOENCODING=utf-8 python tools/push_retry.py --loop --attempts 6', 'push'),
     ('python tools/sairn_claim.py claim app "x"',  'push'),
     ('python tools/register_freshness_propose.py', 'push'),
+    # A REAL PUSH AFTER A MENTION-ONLY COMMAND ON THE SAME LINE (cc b74 F-1,
+    # fixed fourth b69). The mention filter read whole lines, so all three
+    # were 'not-a-push' and the post-push check was skipped in silence.
+    ('echo "pushing now" && git push origin main', 'push'),
+    ('echo start; git push origin main',           'push'),
+    ('grep -n x f.txt || git push origin main',    'push'),
+    ('git push origin main 2>&1 | tail -3',        'push'),
 
     # --- must NOT be treated as a push -------------------------------------
     ('git status --short',                         'not-a-push'),
@@ -56,6 +63,10 @@ CASES = [
     # commit documenting this defect because its message body said "git push".
     ('echo "run git push later"',                  'not-a-push'),
     ('# git push goes here',                       'not-a-push'),
+    # ...and splitting on separators must not turn a QUOTED or COMMENTED-OUT
+    # push into a real one.
+    ('echo "a; git push"',                         'not-a-push'),
+    ('echo x # && git push',                       'not-a-push'),
 
     # --- must be UNSURE, not silently dropped ------------------------------
     ('python tools/some_new_pusher.py',            'unsure'),
