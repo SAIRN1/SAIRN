@@ -5040,6 +5040,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_semgrep_inline_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "sections A and B still run; only the live arm C is skipped, and says so)."
+    }
+   ],
+   "sha": "4dbfa7688f0fe080570ff7d908d6326fe719da61",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sairnfreedom_a11y_pass.js",
    "class": "test file",
    "level": "CHANGE",
@@ -14570,6 +14583,19 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "dd3c45f6e383c56bf4dfffb83b697cc699d44086",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_semgrep_inline_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "sections A and B still run; only the live arm C is skipped, and says so)."
+    }
+   ],
+   "sha": "de0bebf55643ae38bcf7e9e937494e8638cd05a7",
    "criteria_version": "2026-10-06.1"
   },
   {
