@@ -39955,6 +39955,47 @@
       "recurrence_open": "A skipped push does not re-run whole-tree checks against the combined base; only gate duration or a merge queue closes that."
     },
     {
+      "commit": "03ad3006bf6a",
+      "date": "2026-10-29",
+      "subject": "fix(stonedesk, cody b65): a POS sale with no slab holds until the form resets",
+      "files": [
+        "stonedesk.html",
+        "tests/stonedesk_save_reentry.js"
+      ],
+      "lines_added": 25,
+      "lines_removed": 9,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "stonedesk posCompleteSale with no slab attached awaited nothing but left the form filled for 2.5 s before posResetForm, so a second press recorded the same sale under a new invoice number. The sale now holds until the reset has run.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The 2.5 s reset dates from the Mobile POS panel (178dfccc3, 2026-07-26); whether a second press then reached the save path depended on later edits not traced here."
+      },
+      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b65 row 5.",
+      "contributing_factors": [
+        {
+          "factor": "The sale finished synchronously but left the form filled and the button live for the 2.5 s before the reset, so the existing hold (taken only around the slab reservation) did not cover the window.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "posSaleSaving stays held until the scheduled reset has run, released in finally."
+        },
+        {
+          "factor": "The re-entry suite carried the duplicate as its CONTROL arm (one invoice per press, exactly as before), so the shape was pinned as correct.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "S4 now requires one invoice and a reason; S4b requires the next sale after the reset."
+        }
+      ],
+      "recurrence_open": "Every handler that resets on a timer rather than at once has the same window; only posCompleteSale was checked."
+    },
+    {
       "commit": "046e3f4f71a2",
       "date": "2026-10-29",
       "subject": "fix(apps, cody b64): the other 41 re-entrant saves are guarded -- all 47 found by the sweep are now fixed, each fixture-first",
@@ -40756,50 +40797,6 @@
       "recurrence_open": "The app still has no countersign call, so a two-person licence cannot complete a controlled entry at all; that is a feature, not this fix."
     },
     {
-      "commit": "fac708f14ba0",
-      "date": "2026-10-29",
-      "subject": "fix(sairnsenior, fourth b67): H1 #1754 -- a could-not-tell answer keeps the claim draft instead of withdrawing it",
-      "files": [
-        "sairnsenior.html",
-        "tests/fourth_b65_record_fixes.js"
-      ],
-      "lines_added": 22,
-      "lines_removed": 1,
-      "app": "sairnsenior",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "independent-review",
-      "summary": "sairnsenior senWriteFail treated 502 ACTIVE_CHECK_FAILED/UNREADABLE (and the b65 503 EVV_CHECK_FAILED) as refusals, so senSweepLocalDrafts withdrew local claim drafts with a false toast during a transient outage. Hover H1 #1754.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "21ad938e1c6f",
-        "date": "2026-10-28",
-        "subject": "fix(sairnsenior b60): sweep local-only claim drafts the server refused before b59",
-        "lag_days": 1
-      },
-      "citation_note": "No standing rule names this shape.",
-      "contributing_factors": [
-        {
-          "factor": "the kept list in senWriteFail named transport failures but not the server could-not-tell codes",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "ACTIVE_CHECK_FAILED, ACTIVE_CHECK_UNREADABLE, EVV_CHECK_FAILED kept"
-        },
-        {
-          "factor": "S1-S8 drove only ROW_REFUSED and the no-code case",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "one arm per code plus a control"
-        }
-      ],
-      "recurrence_open": "Any other could-not-tell code added to the server later must be added to the kept list too; nothing enforces that."
-    },
-    {
       "commit": "f4d8c29fab23",
       "date": "2026-10-29",
       "subject": "fix(sairnfreedom, sairndental, cody b65): two routed review gaps, each fixture-first",
@@ -40892,6 +40889,94 @@
         }
       ],
       "recurrence_open": "Every b64 hold was released in a finally, but only the 47 b64 handlers were checked for code between the acquire and the try; a hand-written hold elsewhere can repeat it."
+    },
+    {
+      "commit": "f6a127280bc6",
+      "date": "2026-10-29",
+      "subject": "fix(sairngrounds, cody b65): the caddie GPS handlers hold while the fix is pending",
+      "files": [
+        "sairngrounds.html",
+        "tests/sairngrounds_save_reentry.js"
+      ],
+      "lines_added": 59,
+      "lines_removed": 2,
+      "app": "sairngrounds",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "sairngrounds gcdPlaceOrder and gcdMarkShotEnd awaited the GPS fix with the trigger live: a second press sent the Pro Shop a second, empty, zero-dollar cart order, and a second shot-end press threw a TypeError on the already-cleared shot start. Both now hold until the fix settles.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "0c7dc7da4108",
+        "date": "2026-09-02",
+        "subject": "feat(sairngrounds): the Golf Course Module's on-course layer -- the mapped points are finally read",
+        "lag_days": 57
+      },
+      "citation_note": "No PR rule id fits; C5-shape re-entry, cause-tagged in docs/recurring-bug-classes.md, cody b65 row 4.",
+      "contributing_factors": [
+        {
+          "factor": "The handler awaits the device GPS fix with the button live; the b64 sweep looked only for a server write, so a device wait was outside its shape.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A hold taken before the fix and released in finally, in gcdPlaceOrder and gcdMarkShotEnd."
+        },
+        {
+          "factor": "No arm drove a second press during a non-server wait.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Arms PO/MS 1-4 drive the real handlers with cmCaptureGps held."
+        }
+      ],
+      "recurrence_open": "Any handler awaiting a device API (camera, GPS, file picker) is outside the b64 sweep's server-write shape; only these two were checked."
+    },
+    {
+      "commit": "fac708f14ba0",
+      "date": "2026-10-29",
+      "subject": "fix(sairnsenior, fourth b67): H1 #1754 -- a could-not-tell answer keeps the claim draft instead of withdrawing it",
+      "files": [
+        "sairnsenior.html",
+        "tests/fourth_b65_record_fixes.js"
+      ],
+      "lines_added": 22,
+      "lines_removed": 1,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "sairnsenior senWriteFail treated 502 ACTIVE_CHECK_FAILED/UNREADABLE (and the b65 503 EVV_CHECK_FAILED) as refusals, so senSweepLocalDrafts withdrew local claim drafts with a false toast during a transient outage. Hover H1 #1754.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "21ad938e1c6f",
+        "date": "2026-10-28",
+        "subject": "fix(sairnsenior b60): sweep local-only claim drafts the server refused before b59",
+        "lag_days": 1
+      },
+      "citation_note": "No standing rule names this shape.",
+      "contributing_factors": [
+        {
+          "factor": "the kept list in senWriteFail named transport failures but not the server could-not-tell codes",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "ACTIVE_CHECK_FAILED, ACTIVE_CHECK_UNREADABLE, EVV_CHECK_FAILED kept"
+        },
+        {
+          "factor": "S1-S8 drove only ROW_REFUSED and the no-code case",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "one arm per code plus a control"
+        }
+      ],
+      "recurrence_open": "Any other could-not-tell code added to the server later must be added to the kept list too; nothing enforces that."
     }
   ],
   "started": "2026-09-09",

@@ -5752,12 +5752,12 @@
         "tools/exit_status_attributable.py"
       ],
       "what": "sb_ap: sbVendorPaidUndatedPriorYear() excluded only the CURRENT year, so a FUTURE-dated bill marked Paid with no paidDate fed the 1099 at-risk figure. Split into sbVendorPaidUndatedOtherYear() -> {prior, future}, three separate notes in rVends, and a new unlisted-payee note because the at-risk loop walks sb_vends and could never name a payee absent from it. The guard was NOT widened to `< year` on purpose -- that would have silently DROPPED the future rows. REVIEW THE DIRECTION OF EACH BUCKET: an over-reported orphan note is chosen deliberately (no vendor row means no YTD figure to threshold against), and an unreadable year is bucketed PRIOR rather than dropped, which over-reports toward the 1099 threshold. 11 arms, both ablations driven. quotes: tools/exit_status_attributable.py gains a --post observer and fixes two false positives; MY FIRST FIX FOR THE SECOND ONE WAS ITSELF THE DEFECT (it accepted a status read anywhere after the tool, blessing a read of tail's status) -- so the suppression logic in status_was_measured() is the part that most needs a second pair of eyes. 32 selftest arms, per-arm ablation of both new layers.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cody",
       "owner_assigned_at": "2026-10-06T06:18:11Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null,
+      "reviewer_session": "cody",
+      "reviewed_at": "2026-10-29T19:28:47Z",
+      "verdict": "SOUND-WITH-GAPS (low), cody b65 (2026-10-29). Reviewed at HEAD. Both files have moved since 3cf3d5ec3e2c; I read the current code. tests/sairnbiz_undated_payee_notes.js 11/0. tools/exit_status_attributable.py --selftest is green.\n\nsb_ap, THE BUCKET DIRECTIONS: SOUND on ISO dates. Driven through the exact expression: '2025-03-01' goes PRIOR, '2027-01-02' FUTURE, '' PRIOR, '12/05/2025' PRIOR, and the current year is skipped. Neither bucket drops a row, as the record intends. GAP (low, labelling): \"unreadable year -> PRIOR\" holds only for strings whose first four characters sort below the year. The comparison is a STRING compare, so 'Nov 3 2025' and a garbled '999-01-01' both land in FUTURE, contradicting the comment at sbVendorPaidUndatedOtherYear. Both still surface as a note, so nothing is lost; the note just names the wrong direction. Next step for cc: bucket PRIOR unless y matches /^\\d{4}$/ and y > year, and add the two strings above as arms.\n\nquotes, status_was_measured() SUPPRESSION (the part the record asks a second pair of eyes for): the \"nothing executes between the tool and $?\" rule is RIGHT, but it is decided per ELEMENT, and an element can execute something before its own $? expands. Measured in bash: `false; echo \"$(true) rc=$?\"` prints rc=0. So these are suppressed (no warning) while $? is NOT the tool's:\n  python tools/x.py > o 2>&1; echo \"$(tail -1 o) rc=$?\"; tail o   -> ''  (should warn: $? is tail's)\n  python tools/x.py > o 2>&1; echo $(tail -1 o) $?; tail o        -> ''  (same)\nThese are also suppressed although no status is read at all, because STATUS_READ runs on raw text:\n  ...; echo 'rc=$?'; tail o    (single quotes: a literal)\n  ...; echo \"rc=\\$?\"; tail o   (escaped)\n  ...; # $?<newline>tail o     (a comment)\nAll five fail in the SILENT direction, which is the direction this tool exists to remove. Severity is low because the hook is notify-only. Correct as the record claims: tail-after-the-tool still warns, `||` warns, and `&` (backgrounding) warns. Next step for cc: refuse the suppression when the next element holds $( or a backtick before the $?, and mask single quotes, backslash-escapes and comments for the STATUS_READ test only (double quotes must stay unmasked, per the docstring). Add the five commands as arms that are red first.",
       "opened_at_sha_was": "c0ef09bdad7ee27f509c49c6f0623b45abc9ec61",
       "opened_at_sha_reseated": true,
       "opened_at_sha_reseat_basis": "SUBJECT TWIN"
@@ -8976,6 +8976,31 @@
       "status": "open",
       "reviewer_owner": "cc",
       "owner_assigned_at": "2026-10-29T19:12:48Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-29T19:34:54Z",
+      "opened_at_sha": "03ad3006bf6ad9ccc9afcbb6c5144d7174468db5",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 1,
+      "resources": [
+        "grd_cart_orders",
+        "invoices",
+        "sd_invoices"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tests/sairngrounds_save_reentry.js",
+        "tests/stonedesk_save_reentry.js"
+      ],
+      "what": "cody b65, part 2: two re-entry cases outside the b64 shape, each fixture-first.\n(1) sairngrounds.html gcdPlaceOrder and gcdMarkShotEnd: holds gcdOrderPlacing and gcdShotEnding are taken before await cmCaptureGps() and released in finally. A second press during the fix is refused with a toast. grd_cart_orders: the old code's second order was empty and $0, because it was built after the first cleared gcdOrderLines. Arms PO/MS 1-4; PO1, PO4 and MS1 were RED first.\n(2) stonedesk.html posCompleteSale: after a sale is recorded, posSaleSaving stays held until the scheduled posResetForm has run, released in finally inside the timer callback. sd_invoices. Arm S4 used to assert the duplicate as its CONTROL; it now requires one invoice and a reason. S4b requires the sale after the reset to go through.\nWHAT TO ATTACK FIRST: (2) holds the POS for 2.5 s after EVERY sale, with or without a slab. Confirm that nothing else resets the form, or starts a sale, inside that window and would now be refused. posResetForm is called only from that timer at HEAD (grep). Confirm too that a posResetForm that throws still releases the hold: the finally sits inside the callback. SECOND: in (1), gcdMarkShotStart is NOT held, so a start pressed during an end's pending fix can still replace gcdShotStart before the end reads it. That is an interleaving, not a duplicate; it is noted rather than fixed. Judge whether it should share the hold.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-29T19:34:54Z",
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
