@@ -118,30 +118,6 @@
    "exit_code": 2
   },
   {
-   "file": "tests/defect_register_capa_control.py",
-   "kind": "py",
-   "tail": "SUITE-RESULT tests/defect_register_capa_control.py END",
-   "since": "2026-09-17",
-   "why": "NOT MINE AND NEW SINCE THE LAST MEASUREMENT. Three arms that drive `tools/defect_register.py --factors ...` and expect exit 0 now get exit 2. 378db57e (feat(register): refuse a defect record whose commit changed nothing but bookkeeping) added a refusal that fires on the control's synthetic record, whose commit touches only the register. The CONTROL is what went red, not the tool -- the refusal looks correct and the fixture is what has to move. Left for the author of 378db57e rather than fixed here: a control rewritten by somebody who did not add the rule is a control fitted to the behaviour it found.",
-   "owner": "cody",
-   "diagnosed": "2026-09-17",
-   "diagnosed_by": "cody",
-   "environment": {
-    "where": "live-clone",
-    "pinned": false,
-    "tool": "the suite itself, invoked directly, one process per suite",
-    "sha": "2156abb1",
-    "basis": "RE-MEASURED 2026-10-07 by fourth at HEAD 2156abb1, each suite driven ALONE in its own process in the live clone with a 300s ceiling. THE BOUNDARY WAS VERIFIED AFTER EVERY SUITE, not once at the end (convention 10): `git status --porcelain` digest, sha256 of `.git/config` (the confound that set core.bare = true three times on 2026-10-06), and `node --check api/sd-data.js`. All three unchanged by all ten, start digest == end digest. An earlier stamp of these same ten rows said sha f4514979 on a basis whose run output no longer exists; that stamp was RE-DRIVEN rather than trusted, and all ten exit codes agreed. EXIT CODE ONLY -- no `why` written, because an exit code is not a diagnosis."
-   },
-   "exit_code": 1,
-   "tail_verdict_2026_10_19": "UNPRODUCIBLE",
-   "observed_tail_2026_10_19": "  ok   malformed JSON is refused rather than stored as a string",
-   "tail_verdict_basis": "MEASURED by docs/b26-logs/known_red_tail_census.py at 81e6183d4, driven ALONE in a disposable worktree. The stored `tail` above is NOT the line tools/run_all_tests.py would print for this suite, so tools/known_red_check.py classifies this row CHANGED on every run -- which reads as \"a second defect is hiding inside an entry that says this file is expected to fail\" when THE ENTRY is the thing that is wrong (b22 item 4). **THE STORED `tail` IS DELIBERATELY NOT OVERWRITTEN.** Two reasons, both conventions rather than preferences: overwriting destroys the record of what this row used to claim, which the 2026-10-13 b8 scope statement names (\"No entry's `tail` overwritten\"); and a detector that applies its own repair is convention 11's human-gated auto-remediation rule read the wrong way. THE CORRECTION IS ROUTED. Whoever takes it should decide per row whether the right tail is the observed line or whether the SUITE should print a stable last line.",
-   "tail_before_b28": "3 failure(s)",
-   "tail_verdict_b28": "STABLE -- driven 2026-10-20, not read",
-   "exit_code_observed_b28": 1
-  },
-  {
    "file": "tests/hover_quotable_session_vocab_check.py",
    "kind": "py",
    "tail": "    have gone unnoticed. Add the name to QUOTABLE.",
@@ -2121,6 +2097,33 @@
    "recovered_by": "cody b31",
    "recovered_why": "RECOVERED cody b31, 2026-10-20: 41 passed / 7 failed -> 48 passed / 0 failed, driven alone, exit 0. The suite was STALE, not the code: Tier A sc_ resources grew to 24 and now grant 'tombstones' beside 'soft_delete' (5c781b990 and the tombstone work), sc_dme became Tier A so 'delete' on it is a correct 400, and two compute-only verbs ('therapy_accumulator', 'payroll') were documented in backticks where the suite requires quotes. Fixed in the test (derived hard-deletable subject, updated expected grants/messages) and two comment quotings.",
    "why": "Was RED 41/7 since 2026-10-19 (b26 differential); see recovered_why."
+  },
+  {
+   "file": "tests/defect_register_capa_control.py",
+   "kind": "py",
+   "tail": "0 failure(s)",
+   "since": "2026-09-17",
+   "why": "NOT MINE AND NEW SINCE THE LAST MEASUREMENT. Three arms that drive `tools/defect_register.py --factors ...` and expect exit 0 now get exit 2. 378db57e (feat(register): refuse a defect record whose commit changed nothing but bookkeeping) added a refusal that fires on the control's synthetic record, whose commit touches only the register. The CONTROL is what went red, not the tool -- the refusal looks correct and the fixture is what has to move. Left for the author of 378db57e rather than fixed here: a control rewritten by somebody who did not add the rule is a control fitted to the behaviour it found.",
+   "owner": "cody",
+   "diagnosed": "2026-09-17",
+   "diagnosed_by": "cody",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "2156abb1",
+    "basis": "RE-MEASURED 2026-10-07 by fourth at HEAD 2156abb1, each suite driven ALONE in its own process in the live clone with a 300s ceiling. THE BOUNDARY WAS VERIFIED AFTER EVERY SUITE, not once at the end (convention 10): `git status --porcelain` digest, sha256 of `.git/config` (the confound that set core.bare = true three times on 2026-10-06), and `node --check api/sd-data.js`. All three unchanged by all ten, start digest == end digest. An earlier stamp of these same ten rows said sha f4514979 on a basis whose run output no longer exists; that stamp was RE-DRIVEN rather than trusted, and all ten exit codes agreed. EXIT CODE ONLY -- no `why` written, because an exit code is not a diagnosis."
+   },
+   "exit_code": 0,
+   "tail_verdict_2026_10_19": "UNPRODUCIBLE",
+   "observed_tail_2026_10_19": "  ok   malformed JSON is refused rather than stored as a string",
+   "tail_verdict_basis": "MEASURED by docs/b26-logs/known_red_tail_census.py at 81e6183d4, driven ALONE in a disposable worktree. The stored `tail` above is NOT the line tools/run_all_tests.py would print for this suite, so tools/known_red_check.py classifies this row CHANGED on every run -- which reads as \"a second defect is hiding inside an entry that says this file is expected to fail\" when THE ENTRY is the thing that is wrong (b22 item 4). **THE STORED `tail` IS DELIBERATELY NOT OVERWRITTEN.** Two reasons, both conventions rather than preferences: overwriting destroys the record of what this row used to claim, which the 2026-10-13 b8 scope statement names (\"No entry's `tail` overwritten\"); and a detector that applies its own repair is convention 11's human-gated auto-remediation rule read the wrong way. THE CORRECTION IS ROUTED. Whoever takes it should decide per row whether the right tail is the observed line or whether the SUITE should print a stable last line.",
+   "tail_before_b28": "3 failure(s)",
+   "tail_verdict_b28": "STABLE -- driven 2026-10-20, not read",
+   "exit_code_observed_b28": 1,
+   "recovered": "2026-10-29",
+   "recovered_by": "fourth b66",
+   "recovered_why": "RECOVERED fourth b66, 2026-10-29: driven ALONE in the live clone, exit 0, \"0 failure(s)\", tree unchanged after. The row had been stale since cody b61 32b89a2c3 (fix(register): recurrence_open must name the residual), which edited this control in the same commit as the writer rule it exercises. The 2026-09-17 diagnosis (the 378db57e bookkeeping refusal firing on the synthetic record) no longer reproduces."
   }
  ],
  "_b5_addition_2026_10_12": "ELEVEN entries added by fourth, batch b5 item 2, and the brief asked for THIRTY. The 30 is hank's 2026-10-08 figure (\"101 red, registry records 75, 30 RED AND NOT RECORDED\") and it was re-derived rather than carried: the gap against this register at HEAD 327e9e80 is 23, not 30, because the register has absorbed some of them since and cody's later run moved others. Of those 23, driving each ALONE returned 11 RED, 7 GREEN, 2 exit-2 COULD NOT RUN, 2 exit-3 SKIPPED and 1 TIMEOUT at 180s. ONLY THE 11 ARE RED. The 7 GREEN are the finding that matters: a run log named them red and they are not, so the stale half of a census is a wrong answer in both directions. The 12 non-red are listed by name with their measured state in docs/2026-10-12-fourth-b5-routing.md -- they are NOT in this file, because an entry here is an exemption and an exemption over a suite that is green or that never ran would swallow its next real failure.",
