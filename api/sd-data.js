@@ -2298,7 +2298,11 @@ module.exports = async (req, res) => {
     // and the outcome is LOGGED so a run is visible rather than silent.
     const preToken = tokenFromRequest(req);
     if (preToken) {
-      const preSession = verifySessionToken(preToken, licHash);
+      // Deliberately app-agnostic -- "NO expectedApp, DELIBERATELY" above.
+      // Verified cody b63: the other 144 calls in this file all pass
+      // expectedApp, and this one grants nothing; the suppression is scoped to
+      // this one line and this one rule.
+      const preSession = verifySessionToken(preToken, licHash); // nosemgrep: verify-session-token-missing-expected-app
       if (preSession) {
         const preActive = await credentialStillActive(preSession, licHash, rest, headers);
         // ── AN EMPTY RESULT IS NOT ALWAYS A DEACTIVATION, AND THE FIRST DRAFT
