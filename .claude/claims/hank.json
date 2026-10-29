@@ -4791,6 +4791,17 @@
       "status": "released",
       "released_at": "2026-10-29T13:00:35Z",
       "files": null
+    },
+    {
+      "id": "hank-1793300265",
+      "session": "hank",
+      "subject": "sairnlegacy",
+      "task": "H1 1734 keepsake quantity escape, H1 1740 register PII cells, Tier A leg_cremations review",
+      "claimed_at": "2026-10-29T18:57:45Z",
+      "claimed_at_epoch": 1793300265.5581403,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
