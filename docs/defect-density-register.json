@@ -40010,7 +40010,7 @@
       "recurrence_open": "Out-of-shape re-entry remains open: grounds GPS waits (gcdPlaceOrder, gcdMarkShotEnd), stonedesk's 2.5 s no-slab POS reset window, and handlers that never reset their inputs; no standing checker for the shape yet."
     },
     {
-      "commit": "17821dc5c4af",
+      "commit": "519ca798b02d",
       "date": "2026-10-29",
       "subject": "fix(sairnbuild, fourth b68): the WIP forecast had no writer -- the cost modal now enters, edits and clears it",
       "files": [
