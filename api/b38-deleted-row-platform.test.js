@@ -19,7 +19,7 @@
 //   I  owner-app token, active:false  -> 403 CREDENTIAL_INACTIVE                  (every derived resource)
 //   C  owner-app token, active:true   -> NOT CREDENTIAL_INACTIVE                  (control, every derived resource)
 //   X  a token from ANOTHER app, no row -> NOT CREDENTIAL_INACTIVE (the branch gate answers the wrong app)
-//   S  a SHARED resource follows the caller's app_id, like memory
+//   S  a SHARED resource follows the SESSION's app, not the caller's app_id (cc b76)
 //   T  the employee lookup FAILS      -> not refused here (a transport failure is not a deactivation)
 //
 // Exit: 0 all arms passed - 1 an arm FAILED - 2 COULD NOT RUN (empty population)
@@ -124,13 +124,16 @@ async function call(tokenApp, resource, employee, appId) {
       'X[' + other + ' token at ' + r + '] no row -> refused, but NOT as CREDENTIAL_INACTIVE', x.statusCode + ' ' + code(x));
   }
 
-  console.log('\nS. a SHARED resource follows the caller\'s declared app_id');
+  console.log('\nS. a SHARED resource follows the session\'s app, not the declared app_id');
   const sd = await call('stonedesk', 'employees', null, 'stonedesk');
   is(sd.statusCode === 403 && code(sd) === 'CREDENTIAL_INACTIVE' && sd.dataCalls.length === 0,
     'S1 stonedesk token at shared employees, app_id stonedesk, row DELETED -> 403', sd.statusCode + ' ' + code(sd));
+  // cc b76: S2 used to assert the DEFECT -- a declared app_id that differs from
+  // the token's let a deleted row through. A shared resource now follows the
+  // SESSION's app, so the caller's app_id cannot opt out of the check.
   const sx = await call('stonedesk', 'employees', null, 'sairnbiz');
-  is(code(sx) !== 'CREDENTIAL_INACTIVE',
-    'S2 stonedesk token at shared employees but app_id sairnbiz -> not scoped, not called a deactivation', sx.statusCode + ' ' + code(sx));
+  is(sx.statusCode === 403 && code(sx) === 'CREDENTIAL_INACTIVE' && sx.dataCalls.length === 0,
+    'S2 stonedesk token at shared employees, app_id sairnbiz, row DELETED -> 403 (session app, not body app_id)', sx.statusCode + ' ' + code(sx));
 
   console.log('\nT. a failed lookup is not a deactivation');
   const t = await call('stonedesk', 'sd_quote_requests', { status: 500 }, 'stonedesk');

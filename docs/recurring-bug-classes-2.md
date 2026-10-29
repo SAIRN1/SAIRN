@@ -265,3 +265,32 @@ skip it.
 | sairnbuild: the WIP forecast had no writer (`519ca798b`; `17821dc5c` before the rebase) | requirement -> feature completeness / reader without writer -> **due to** `forecastFor()` and its "re-forecast" warning shipping with no input or save path, so every forecast was the budget | **class**, and a sibling of C2: a computed figure whose input can never be set reports its fallback as if it had been measured. Not swept |
 
 **Not tagged, because they are not fixes:** the bld_bids Tier A discharge (the review itself), and the live check of `sairnmechanical.html`.
+
+---
+
+## C7. AN AUTHORIZATION CHECK KEYED ON A CALLER-SUPPLIED IDENTIFIER (cc b76)
+
+**Phase / sub-phase / cause:** coding -> authorization / scope selection ->
+**due to** a check choosing WHAT to check from a field the caller writes
+(`body.app_id`), so the caller can steer the check to a place where it
+passes or does not apply.
+
+**This occurrence:** the b38 deleted-row pre-gate in `api/sd-data.js` scoped
+`shared` and `routes` resources to `memApp` (`body.app_id`, default
+`'stonedesk'`). A deleted employee with a valid token for app X sent another
+app_id, or none, and was read as "unscoped" and served 200 on employees
+read/write, render_usage, rt_routes, shared_knowledge and employee_profile.
+`sairngrounds.html` grdData() sent no app_id, so every grounds request took
+the default. **Fixed:** the check now takes the app from the verified session
+(`preSession.app`), and grdData sends `APP_ID`.
+Test: `api/b76-shared-deleted-row-session-app.test.js` (13 arms RED before
+the fix and RED again under ablation).
+
+**Earlier occurrences in the same file:** the employees write branch trusted
+`body.app_id==='sairnbiz'` (fixed 2026-08-03), and the envelope check moved
+to `lic.app_id` for the same reason (see its comment). **Class.** The rule is
+that the session or the licence picks the scope, and the body may only narrow
+data inside it. Other `body.app_id` / `p.app_id` reads were not swept: rt_routes'
+branch gate verifies the token against `p.app_id` (safe, because a mismatch
+fails verification) and memory's pre-gate still uses `memApp` (its branch
+gate uses the same value, so a mismatch is FORBIDDEN, not 200).

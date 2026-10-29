@@ -2346,9 +2346,25 @@ module.exports = async (req, res) => {
         // mismatches, is not scoped, and still reaches its branch's FORBIDDEN.
         // An UNREGISTERED resource stays unknown, as before.
         // api/b38-deleted-row-platform.test.js.
+        //
+        // ── cc b76: SHARED/ROUTES FOLLOW THE SESSION'S APP, NOT body.app_id ──
+        // b38 keyed these on memApp (caller-supplied body.app_id, default
+        // 'stonedesk'), so a deleted employee could send another app_id -- or
+        // none, which is what sairngrounds' grdData did -- and be read as
+        // "unscoped" and served 200. A shared resource serves every app, so
+        // the token's own app IS the scope, and credentialStillActive()
+        // already asks that app's table: a missing row there is a deletion.
+        // body.app_id still scopes the DATA in the branches; it no longer
+        // chooses which credential check applies. NO DEFAULT APP: preSession
+        // exists only if verifySessionToken() accepted the token, and it
+        // returns null for a token with no app or an unknown one -- that is
+        // the fail-closed point, and the b76 test pins it. A refusal added
+        // here would be dead code that also refuses unverified tokens on
+        // licence-only routes (api/sd-data-active-credential.test.js).
+        // api/b76-shared-deleted-row-session-app.test.js.
         const preOwner = Object.prototype.hasOwnProperty.call(OWNER_BY_RESOURCE, resource)
           ? OWNER_BY_RESOURCE[resource] : undefined;
-        const preRegistryApp = (preOwner === 'shared' || preOwner === 'routes') ? memApp : preOwner;
+        const preRegistryApp = (preOwner === 'shared' || preOwner === 'routes') ? preSession.app : preOwner;
         const preExpectedApp = (resource === 'memory') ? memApp
           : (preIsGated ? (SD_GATE_APP[resource] || 'stonedesk') : preRegistryApp);
         const preScoped = preExpectedApp !== undefined

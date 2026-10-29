@@ -9027,6 +9027,29 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-10-29T20:51:13Z",
+      "opened_at_sha": "5606a156aad4635d610809b5a83d6a3f21403023",
+      "opened_at_sha_basis": "head",
+      "opened_at_sha_extra_files": null,
+      "resources": [
+        "employees",
+        "rt_routes"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/b76-shared-deleted-row-session-app.test.js"
+      ],
+      "what": "cc b76: api/sd-data.js pre-gate, shared/routes resources (employees, render_usage, rt_routes, rt_stops, shared_knowledge, employee_profile) now pick the deleted-row check's app from the verified session (preSession.app), not caller body.app_id; sairngrounds grdData now sends app_id. ATTACK FIRST: (1) can any verified session reach that line without .app, or with an app whose employee table is not where its credential lives (stonedesk_sub, apps missing from AUTH_TABLE_BY_APP -> NO_ACTIVE_CHECK continues), (2) memory still keys the pre-gate on memApp - confirm its branch gate also uses memApp so a mismatch is FORBIDDEN not 200, (3) profile/slabs take the SD_SESSION_GATED path and are unchanged. Test: api/b76-shared-deleted-row-session-app.test.js (RED 13 arms before, ablation RED 13)",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-10-29T20:51:13Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
