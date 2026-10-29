@@ -1,0 +1,19 @@
+HANK b67 REPORT -- 2026-10-29
+
+1. S3 triage of the 41 S2 sites:
+   - 30 INSERT (append).
+   - 6 compare-and-set, guarded (S2 false positives).
+   - 2 cross-table, low. 1 per-user row, low. 1 terminal-status overwrite, low.
+   - 1 REAL candidate: api/agent/poll.js:112 marks a command delivered by id with no status=eq.pending, so a double
+     delivery is possible. Not fixed (next batch).
+   - S2 fixed to recognise a compare-and-set: 10/10 arms, mutant red, 41 -> 35 sites.
+2. VT: PRIMARY SOURCE FOUND.
+   - Where: the LCJR October 2017 materials on legislature.vermont.gov, which contain the Supreme Court's order
+     "prescribed and promulgated effective January 1, 2018" and RULE 6. TIME.
+   - Seed is next batch, after checking for later amendments.
+3. DC: HARD BLOCKER. Every dccourts.gov path returns 403, and no official alternate copy of the Superior Court civil
+   rules was found. Only D.C. Code 28-2701 is reachable.
+4. J4 / J5 / J6: stated verbatim in the digest itself.
+5. C1b discipline: BYPASS-LOG touched only via push_retry (union/LF). The register is JSON, so it is not
+   union-merged; the shrink check and re-seat guard it instead.
+Evidence: SAIRN-handoff-hank-b67.md

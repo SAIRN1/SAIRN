@@ -1,0 +1,22 @@
+HANK b67 DIGEST -- 2026-10-29 -- S3 triaged; VT source found; DC hard-blocked; J4/J5/J6 verbatim below
+CONTEXT 75.1% of 1,000,000 -- 751,002 tokens, measured.
+STATUS: pushed via push_retry --loop; claim sairnlaw is released after landing.
+1. S3: of 41 sites, 30 inserts, 6 CAS-guarded (S2 fixed; 35 left), 4 low, 1 REAL: api/agent/poll.js:112 double-delivery.
+2. VT: source FOUND (LCJR Oct-2017 materials on legislature.vermont.gov; order eff. 2018-01-01). Seed next batch.
+3. DC: HARD BLOCKER. dccourts.gov 403s on every path; no official alternate copy of the civil rules was found.
+J4 (verbatim) -- every one is encoded EARLY:
+(1) "Under Alaska Civil Rule 6(a), is Martin Luther King, Jr.'s Birthday a 'legal holiday' for computing a court deadline, given that AS 44.12.010(a)(2) lists it 'as provided in (b)' and AS 44.12.010(b) makes it a legal holiday 'for employment purposes' for state employees on collective-bargaining terms?"
+(2) "Does Alaska Civil Rule 6(c) add three days to the Civil Rule 59(b) period, and does Appellate Rule 502(c) add three days to the Appellate Rule 204(a)(1) period, when the judgment was distributed by non-electronic mail and the period runs 'from the date shown in the clerk's certificate of distribution'?"
+(3) "Does N.D.R.Civ.P. 6(e)(1) add three days to the Rule 59(c)(2) period when notice of entry of judgment was served by mail?"
+(4) "Is June 19 a 'legal holiday' under N.D.R.Civ.P. 6(a)(6), given that N.D.C.C. 1-03-01 does not list it and 1-03-01(12) reaches only days 'appointed by the President of the United States or by the governor of this state for a public holiday'?"
+(5) "Under SDCL 15-6-6(a) and (e), is the 'less than eleven days' threshold applied to the prescribed period before or after the three days added for service by mail?"
+(6) "Does SDCL 15-6-6(e) add three days to the SDCL 15-6-59(b) and 15-26A-6 periods when written notice of entry was given by mail?"
+(7) "For R.I. Super. R. Civ. P. 6(a), which days are 'legal holidays': (a) does R.I. Gen. Laws § 25-1-1 supply the list although it says 'holidays'; (b) is the Monday 'state employees will celebrate' after a holiday falling on a Saturday a legal holiday for court deadlines; (c) is general election day a holiday in a year with only legislative races; (d) does the clause 'any other days as … the president or the Congress of the United States shall appoint as holidays for any purpose' bring in every federal holiday?"
+J5 (verbatim): "VT source FOUND: https://legislature.vermont.gov/Documents/2018/WorkGroups/Judicial Rules/October 23, 2017 Meeting/W~Erik Fitzpatrick~Materials for Judicial Rules Meeting on October 24, 2017 ~10-23-2017.pdf -- 'prescribed and promulgated effective January 1, 2018'; RULE 6. TIME at extracted line 189. Next: read Rules 6/12/33/34/36/59, check vtcourts.gov for later amendments, seed by the ND pattern."
+J6 (verbatim): "DC HARD BLOCKER: dccourts.gov returns 403 to every automated request (root, rules pages, the Rule 6 PDFs); no official alternate copy found. Unblock: a human downloads the Superior Court Civil Rules 6/12/33/34/36/59 from dccourts.gov and commits them with the retrieval date."
+DECISION-NEEDED (Michael): J6 DC files; J4 answers.
+NEXT: S4 poll.js fix; J5 VT seed (hank).
+CHANGED: tools/server_stale_snapshot_scan.py, VT blocker doc, register, b67 docs.
+SQL-path: none new.
+EVIDENCE-path: SAIRN-handoff-hank-b67.md
+UNVERIFIED: the 35 remaining S2 sites beyond the triaged 11 are inserts (classified mechanically, not read one by one).
