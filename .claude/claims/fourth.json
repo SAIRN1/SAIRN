@@ -4951,6 +4951,20 @@
       "files": [
         "sairnvet.html"
       ]
+    },
+    {
+      "id": "fourth-1793300474",
+      "session": "fourth",
+      "subject": "sairnbuild",
+      "task": "tier A review bld_bids session flag arm tighten FILES: tests/sairnbuild_server_wins.js tests/run_sairnbuild_server_wins_sabotage_probe.py",
+      "claimed_at": "2026-10-29T19:01:14Z",
+      "claimed_at_epoch": 1793300474.8545449,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "tests/run_sairnbuild_server_wins_sabotage_probe.py",
+        "tests/sairnbuild_server_wins.js"
+      ]
     }
   ],
   "refusals": [
