@@ -4663,6 +4663,7 @@ function msbIsAlcoholSaleAllowedNow(){
   var now=new Date();
   var today=hours.find(function(h){return h.day===now.getDay();});
   if(!today)return{allowed:false,reason:'No sale-hours configured for today -- add one in Bar & Compliance'};
+  if(today.closed||!today.start||!today.end)return{allowed:false,reason:'Alcohol sales are closed today (Bar & Compliance sale hours)'};
   var cur=now.getHours()*60+now.getMinutes();
   var sp=today.start.split(':'),ep=today.end.split(':');
   var start=Number(sp[0])*60+Number(sp[1]),end=Number(ep[0])*60+Number(ep[1]);
@@ -5090,9 +5091,18 @@ function rMsbHours(){
   $('msb-hours-status').textContent='Right now: '+(gate.allowed?'alcohol sales ARE allowed under the configured hours.':('alcohol sales are BLOCKED -- '+gate.reason));
 }
 async function saveMsbHours(){
+  // A CLEARED DAY IS CLOSED (fourth b65). Empty start/end used to default to
+  // '00:00'/'23:59', so clearing Sunday to stop sales saved it OPEN ALL DAY.
+  // Both fields empty -> closed:true; exactly one empty is refused rather than
+  // guessed, because either guess can open a window nobody asked for.
+  var half=[];
   var hours=[0,1,2,3,4,5,6].map(function(d){
-    return{day:d,start:$('msbhour-'+d+'-start').value||'00:00',end:$('msbhour-'+d+'-end').value||'23:59'};
+    var s=$('msbhour-'+d+'-start').value, e=$('msbhour-'+d+'-end').value;
+    if(!s&&!e)return{day:d,closed:true,start:'',end:''};
+    if(!s||!e)half.push(MSB_DAY_LABELS[d]);
+    return{day:d,start:s,end:e};
   });
+  if(half.length){toast('Give both a start and an end, or clear both to close the day: '+half.join(', '),6000);return;}
   st('msb_sale_hours',hours);
   rMsbHours();
   var syncResult=await grdData('write','msb_sale_hours',hours);

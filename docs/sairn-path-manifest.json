@@ -126,6 +126,7 @@
       "tools/push_timeout_guard.py",
       "tools/claim_state_recheck.py",
       "tests/sairnvet_witness_token_client.js",
+      "tests/fourth_b65_record_fixes.js",
       "tests/sairnvet_seed_never_syncs.js",
       "tests/run_push_timeout_guard_probe.py",
       "tools/push_retry.py",
