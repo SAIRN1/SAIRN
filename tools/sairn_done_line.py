@@ -53,12 +53,13 @@ import glob
 import io
 import json
 import os
+import re
 import sqlite3
 import subprocess
 import sys
 import time
 
-CRITERIA_VERSION = '2026-10-28.b66.1'
+CRITERIA_VERSION = '2026-10-29.cody-b66.1'   # + the unrecorded done-line refusal
 DRIVE_FOLDER_ID = '14Xc5oT0xzSLa_rTSOSXWVK3Kko1Fbx09'     # = drive_upload_verify.DRIVE_FOLDER_ID
 DRIVEFS_DB_GLOB = os.path.join(os.environ.get('LOCALAPPDATA', ''), 'Google', 'DriveFS', '*',
                                'metadata_sqlite_db')
@@ -207,19 +208,50 @@ def iso_to_z(ts):
     return (ts or '')[:19] + 'Z' if ts else ''
 
 
+DONE_SHAPE = re.compile(r'^done\s+(b\d+)\s+\S+\s*$')
+
+
+def unrecorded(payload, ts_key, batch):
+    """A done-shaped final message that this tool did not produce this turn
+    (cody b66): refused, capped like the recorded case so it cannot loop. The
+    counter is keyed to the turn's human timestamp, so a new turn starts at 0."""
+    side = STATE + '.unrecorded'
+    try:
+        seen = json.loads(io.open(side, encoding='utf-8').read())
+    except (OSError, ValueError):
+        seen = {}
+    if seen.get('turn') != ts_key:
+        seen = {'turn': ts_key, 'refusals': 0}
+    seen['refusals'] += 1
+    io.open(side, 'w', encoding='utf-8', newline='\n').write(json.dumps(seen) + '\n')
+    if seen['refusals'] > MAX_STOP_REFUSALS:
+        return 0, ('sairn_done_line Stop hook: an unrecorded done line was refused %d times; letting the '
+                   'turn end so it cannot loop. Recorded in %s.' % (MAX_STOP_REFUSALS, side))
+    return 2, ('REFUSED by sairn_done_line: the final message is shaped like a done line, but this tool '
+               'did not produce one this turn, so its id was never checked against Drive. Run:\n'
+               '  python tools/sairn_done_line.py --batch %s\nand send the line it prints.' % batch)
+
+
 def stop_hook(payload):
     """-> (exit code, stderr text)."""
+    tp = (payload or {}).get('transcript_path')
     try:
         rec = json.loads(io.open(STATE, encoding='utf-8').read())
     except (OSError, ValueError):
-        return 0, ''                                    # no done line recorded: not a final step
-    tp = (payload or {}).get('transcript_path')
+        rec = None
+    if rec is None:
+        if not tp or not os.path.isfile(tp):
+            return 0, ''                                # no record and nothing to read: not a final step
+        human_ts, final = last_turn(tp)
+        m = DONE_SHAPE.match(final)
+        return unrecorded(payload, human_ts, m.group(1)) if m else (0, '')
     if not tp or not os.path.isfile(tp):
         return 2, ('sairn_done_line Stop hook: a done line is recorded but the transcript could not '
                    'be read, so the final message cannot be checked. Send exactly:\n%s' % rec['line'])
     human_ts, final = last_turn(tp)
     if iso_to_z(human_ts) > rec['ts']:
-        return 0, ''                                    # recorded in an earlier turn
+        m = DONE_SHAPE.match(final)                     # recorded in an earlier turn
+        return unrecorded(payload, human_ts, m.group(1)) if m else (0, '')
     if final == rec['line']:
         return 0, ''
     rec['refusals'] = rec.get('refusals', 0) + 1
@@ -296,6 +328,28 @@ def selftest():
             codes == [2] * MAX_STOP_REFUSALS + [0], codes)
         arm('an unreadable transcript with a record -> refused, never silently allowed',
             stop_hook({'transcript_path': os.path.join(t, 'absent.jsonl')})[0] == 2)
+        # A HAND-TYPED done line (cody b66). With no record this turn, a final
+        # message shaped like a done line was waved through: an id written from
+        # memory, or one copied from an earlier batch, ended the session as if
+        # the tool had checked it.
+        os.remove(STATE)
+        transcript(human('2026-10-28T23:00:00.000Z'), said('done b67 1FromMemory'))
+        rc, msg = stop_hook(pl)
+        arm('a done-shaped final message with NO record -> refused, and the refusal names the tool',
+            rc == 2 and 'sairn_done_line.py --batch b67' in msg, (rc, msg))
+        io.open(STATE, 'w').write(json.dumps({'line': line, 'ts': '2026-10-28T22:30:00Z', 'refusals': 0}))
+        transcript(human('2026-10-28T22:00:00.000Z'), said(line), human('2026-10-28T23:00:00.000Z', 'next batch'),
+                   said('done b67 1FromMemory'))
+        arm('a done-shaped final message whose only record is from an EARLIER turn -> refused',
+            stop_hook(pl)[0] == 2, stop_hook(pl))
+        os.remove(STATE)
+        transcript(human('2026-10-28T23:00:00.000Z'), said('Done with the review; b67 is next.'))
+        arm('ordinary prose that merely starts with "Done" -> not this hook\'s business', stop_hook(pl)[0] == 0)
+        transcript(human('2026-10-28T23:10:00.000Z'), said('done b67 1FromMemory'))
+        codes = [stop_hook(pl)[0] for _ in range(MAX_STOP_REFUSALS + 1)]
+        arm('the unrecorded refusal is capped too, so it cannot loop', codes == [2] * MAX_STOP_REFUSALS + [0], codes)
+        if os.path.exists(STATE + '.unrecorded'):
+            os.remove(STATE + '.unrecorded')
         # DRIVE ID, against a database built to DriveFS's own column names
         db = os.path.join(t, 'acct', 'metadata_sqlite_db')
         os.makedirs(os.path.dirname(db))
