@@ -59,3 +59,9 @@ tools/vendor/
 # registry, which is shared, and `--list` annotates every entry from it.
 docs/report-only-shard-state.txt
 docs/report-only-sweep-marker.txt
+
+# A test ablation copy of api/sd-data.js. tests/sd_data_mech_write_unconfirmed.js
+# writes it beside the original (its relative requires must resolve) and
+# unlinks it in a finally; a KILLED run leaves it, and one git add -A would
+# then commit a deliberately broken API. (cc b70 gap, cody b65.)
+api/.sd-data-ablate-*.js

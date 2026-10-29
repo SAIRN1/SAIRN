@@ -16,9 +16,16 @@
 // form on ok and mechPushOne() reports a backup -- the server-side half of the
 // premature "synced" ack fixed on the client in b57.
 //
-// ABLATION: the last section puts the pre-b58 success lines back into a copy of
+// ABLATION: section 3 puts the pre-b58 success lines back into a copy of
 // api/sd-data.js and requires the empty-echo arms to go red on it, so a fixture
 // that cannot tell the two apart is caught rather than trusted.
+//
+// RE-SAVE (cody b65, the gap cc b70 routed): sections 1-3 never looked at the
+// request's Prefer header, so a branch switched to ignore-duplicates would turn
+// every RE-save of an existing row into a false 502 with no arm going red.
+// Section 4 drives a re-save against a store that answers the way PostgREST
+// does for a row that already exists, and section 5 swaps merge-duplicates for
+// ignore-duplicates in a copy and requires section 4 to go red on it.
 
 'use strict';
 
@@ -60,7 +67,9 @@ const CASES = [
 ];
 
 // `echo` is what the store does when it saved the row; `[]` is an answer that
-// was read and holds no stored row.
+// was read and holds no stored row. `'existing'` is a store that already holds
+// the row: merge-duplicates updates and echoes it, ignore-duplicates skips it
+// and returns [], and a plain POST is a 409 unique violation.
 function loadHandler(file, echo) {
   delete require.cache[require.resolve(path.join(API, '_lib/license'))];
   require.cache[require.resolve(path.join(API, '_lib/license'))] = {
@@ -85,6 +94,15 @@ function loadHandler(file, echo) {
     }
     if (method === 'GET') return { ok: true, status: 200, json: async () => [] };
     const sent = JSON.parse(init.body);
+    if (echo === 'existing') {
+      const prefer = String((init.headers && init.headers.Prefer) || '');
+      if (!/resolution=(merge|ignore)-duplicates/.test(prefer)) {
+        return { ok: false, status: 409, text: async () => '{"code":"23505"}', json: async () => ({ code: '23505' }) };
+      }
+      const kept = /resolution=merge-duplicates/.test(prefer);
+      return { ok: true, status: kept ? 200 : 201, text: async () => init.body,
+               json: async () => (kept ? [Object.assign({}, sent, { data: sent.data || sent })] : []) };
+    }
     return { ok: true, status: 201, text: async () => init.body,
              json: async () => (echo ? [Object.assign({}, sent, { data: sent.data || sent })] : []) };
   };
@@ -157,6 +175,55 @@ async function main() {
       }
     } finally {
       try { fs.unlinkSync(ABL); } catch (e) {}
+    }
+  }
+
+  // mech_credentials is a plain POST by design (a duplicate is a 409, handled
+  // before the confirm check), so it has no re-save to drive here.
+  const UPSERTS = CASES.filter(([r]) => r !== 'mech_credentials');
+  console.log('\n4. a RE-save of a row the store already holds is ok, not a false 502');
+  for (const [resource, payload] of UPSERTS) {
+    await test(resource + ': re-save of an existing row -> 200 ok', async () => {
+      const res = await write(LIVE, resource, payload, 'existing');
+      assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
+      assert.ok(res.body && res.body.ok, JSON.stringify(res.body));
+    });
+  }
+
+  console.log('\n5. ABLATION: ignore-duplicates in place of merge-duplicates must make section 4 go red');
+  const MERGE = "Prefer: 'resolution=merge-duplicates,return=representation'";
+  const IGNORE = "Prefer: 'resolution=ignore-duplicates,return=representation'";
+  // The three upsert sites the mech branches use, each located by the
+  // on_conflict target it sends rather than by position, so a reorder of the
+  // file cannot move the cut onto some other branch's header.
+  const SITES = ["rest('mech_site_assets?on_conflict=", "rest('mech_insurance_policies?on_conflict=",
+                 "rest(resource + '?on_conflict=license_hash,' + mIdCol)"];
+  const live = fs.readFileSync(LIVE, 'utf8');
+  const cuts = SITES.map(anchor => {
+    const at = live.indexOf(anchor);
+    const next = at < 0 ? -1 : live.indexOf(MERGE, at);
+    return { anchor, at, next, ok: live.split(anchor).length === 2 && next >= 0 && next - at <= 400 };
+  });
+  await test('each upsert site is found exactly once, with its merge-duplicates header right after it', async () => {
+    const bad = cuts.filter(c => !c.ok);
+    assert.strictEqual(bad.length, 0, bad.map(c => c.anchor + ' at=' + c.at + ' next=' + c.next).join(' | '));
+  });
+  if (cuts.every(c => c.ok)) {
+    let abl = live;
+    for (const c of cuts.slice().sort((a, b) => b.next - a.next)) {
+      abl = abl.slice(0, c.next) + IGNORE + abl.slice(c.next + MERGE.length);
+    }
+    const ABL2 = path.join(API, '.sd-data-ablate-' + process.pid + '-prefer.js');
+    fs.writeFileSync(ABL2, abl);
+    try {
+      for (const [resource, payload] of UPSERTS) {
+        await test(resource + ': ignore-duplicates turns the re-save into a 502 (proves section 4 can fail)', async () => {
+          const res = await write(ABL2, resource, payload, 'existing');
+          assert.strictEqual(res.statusCode, 502, 'the ablated code did not refuse: ' + res.statusCode);
+        });
+      }
+    } finally {
+      try { fs.unlinkSync(ABL2); } catch (e) {}
     }
   }
 
