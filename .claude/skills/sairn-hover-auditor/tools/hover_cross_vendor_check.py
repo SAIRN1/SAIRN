@@ -1346,7 +1346,7 @@ def judge_finding(evidence_text, api_key, http_post=None, windows=None):
 
 
 def log_finding_review(seq, entry, verdict, adjudication, note,
-                        log_path_override=None, canonical=None, tier=None):
+                        log_path_override=None, canonical=None, tier=None, windows_chars=0):
     """Logs the cross-vendor verdict against one finding, with the three
     things b68 requires on the evidence trail: the PROVIDER by name, whether
     it AGREED with this role's own review, and this role's own ADJUDICATION
@@ -1386,11 +1386,19 @@ def log_finding_review(seq, entry, verdict, adjudication, note,
     lines.append('ADJUDICATION BY THIS ROLE: %s' % adjudication)
     lines.append('why: %s' % note)
     lines.append('')
-    lines.append('EVIDENCE-ONLY LIMIT, stated rather than implied: the '
-                 'reviewer saw this finding\'s summary and citations and no '
-                 'source code at all, so its verdict is about whether the '
-                 'ARGUMENT holds, never independent confirmation of the '
-                 'underlying facts.')
+    if windows_chars:
+        # b104: the b101 windows made the old sentence below false whenever they are sent.
+        lines.append('EVIDENCE LIMIT, stated rather than implied: the reviewer saw this '
+                     'finding\'s summary and citations plus %d characters of cited-line '
+                     'source windows (the cited line and 3 either side, at HEAD) and no other '
+                     'code, so its verdict is about whether the ARGUMENT holds against those '
+                     'lines, never independent confirmation of the underlying facts.' % windows_chars)
+    else:
+        lines.append('EVIDENCE-ONLY LIMIT, stated rather than implied: the '
+                     'reviewer saw this finding\'s summary and citations and no '
+                     'source code at all, so its verdict is about whether the '
+                     'ARGUMENT holds, never independent confirmation of the '
+                     'underlying facts.')
 
     # A disagreement is a finding in its own right; an agreement is a check.
     # The ADJUDICATION decides the entry type, not the vendor's verdict:
@@ -2047,6 +2055,16 @@ def run_fixtures():
         ck('FR14 the logged entry records the ADJUDICATION as its own stated '
            'line, not merged into the verdict',
            'ADJUDICATION BY THIS ROLE:' in rows_a[-1]['summary'])
+        ck('FR14b with no windows the entry keeps the evidence-only sentence (control)',
+           'no source code at all' in rows_a[-1]['summary'])
+        log_finding_review(10, got, {'agrees': True, 'confidence': 'high', 'reasoning': 'r',
+                                      'objection': '', 'quoted_evidence': 'q'},
+                           'AGREE -- same', 'n', log_path_override=rlog, windows_chars=1583)
+        rows_w = [json.loads(l) for l in open(rlog, encoding='utf-8') if l.strip()]
+        ck('FR14c b104: when windows were sent the entry says so with the character count and does NOT '
+           'claim the reviewer saw no source code',
+           '1583 characters of cited-line source windows' in rows_w[-1]['summary']
+           and 'no source code at all' not in rows_w[-1]['summary'])
 
         rc_d, _, _, et_d = log_finding_review(
             10, got, {'agrees': False, 'confidence': 'medium',
@@ -2613,7 +2631,8 @@ def main(argv):
         print('ADJUDICATION (countable): %s' % canon)
         rc, out, err, etype = log_finding_review(seq, entry, verdict,
                                                   adjudication, full_note,
-                                                  canonical=canon, tier=tier)
+                                                  canonical=canon, tier=tier,
+                                                  windows_chars=len(windows or ''))
         print()
         print('LOGGED as type=%s: %s' % (etype, (out or err).strip()))
         return 0 if verdict.get('agrees') else 1
