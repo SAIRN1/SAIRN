@@ -14122,6 +14122,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b69-sairnlegacy-inline-handler-args.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d28f34f5dfe9e0c5c17b6b66f6b7106629a97c05",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": ".claude/settings.json",
    "class": "CI / hook configuration",
    "level": "WEAKENING",
@@ -14585,6 +14593,14 @@
     }
    ],
    "sha": "d7e8f5d9ae05e74d5f7f6fa3819ecdc87ac17abb",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/law-trust-reconcile.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d816920ac6232ef5dc36cc352c1444f9328cc1f9",
    "criteria_version": "2026-10-06.1"
   },
   {
