@@ -1406,6 +1406,17 @@
       "status": "released",
       "released_at": "2026-10-29T12:07:40Z",
       "files": null
+    },
+    {
+      "id": "hover-1793278320",
+      "session": "hover",
+      "subject": "hover",
+      "task": "hover-tools b108 restore drill tip leg and coverage line",
+      "claimed_at": "2026-10-29T12:52:00Z",
+      "claimed_at_epoch": 1793278320.98838,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
