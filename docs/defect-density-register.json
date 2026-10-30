@@ -42127,6 +42127,43 @@
       ],
       "recurrence_open": "Apps outside hank's owned set (sairnlaw, sairnbuild, sairncare and others) were not swept; no server-side format check on record ids.",
       "single_factor_note": "one encoding-context gap repeated across sites"
+    },
+    {
+      "commit": "406d82fe8b4b",
+      "date": "2026-10-30",
+      "subject": "fix(sairnlegacy api, hank b72 #1734 server half): a leg write whose id holds a quote, backtick, <, >, &, backslash or control character, or exceeds 128, is refused 400 BAD_ID",
+      "files": [
+        "api/b72-leg-id-format.test.js",
+        "api/sd-data.js",
+        "docs/recurring-bug-classes.md"
+      ],
+      "lines_added": 152,
+      "lines_removed": 0,
+      "app": "sairnlegacy",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "The SAIRNlegacy write branch in api/sd-data.js required only that payload.id be non-empty, so a caller with a write grant could store an id holding a quote and markup (H1 #1734, server half; the client sinks were fixed in af2db16b3). It now refuses 400 BAD_ID an id with a quote, backtick, <, >, &, backslash or control character, or over 128 characters, after the aftercare key rewrite. api/b72-leg-id-format.test.js 7/7 with an ablation.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "the generic LEG_RESOURCES write branch has accepted any id since it was written; not traced to one commit"
+      },
+      "citation_note": "No standing rule requires the server to validate the format of a client-supplied record id; proposed: an id is an identifier at the boundary, refused if it can end a string or open markup.",
+      "contributing_factors": [
+        {
+          "factor": "The id was treated as opaque text at the server boundary and protected only by one client reader's escape",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "server refuses ids that can end a string or open markup"
+        }
+      ],
+      "recurrence_open": "Other apps write branches (law, vet, biz, code) were not given the same server-side id check; other free-text fields are still escaped only on the client.",
+      "single_factor_note": "one missing boundary check"
     }
   ],
   "started": "2026-09-09",
