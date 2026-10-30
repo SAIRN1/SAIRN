@@ -165,7 +165,7 @@ function world(reserve, slabId) {
   // its sync, and only marks the import done after the last one: a second
   // press during that loop imported every legacy slab again. Arms QS / LI 1-3,
   // meanings in tests/lib/save_reentry_harness.js.
-  console.log('4. saveQuote (slab attached) and the legacy slab import');
+  console.log('4. saveQuote (slab attached), the legacy slab import, intake accept, AI quote');
   const L = H.makeLift(html, FILE);
   for (const s of [
     {
@@ -196,6 +196,45 @@ function world(reserve, slabId) {
       rows: (box) => box.rows.length,
       press: (ctx) => ctx.sdSlabsImportLegacy(),
       ok: true, refused: false
+    },
+    // 5. TWO MORE (cody b69, reentry_hold_check criteria 2026-10-30.cody-b69.4).
+    // intakeAccept unshifts a NEW Job ('JOB'+Date.now(), no intakeId check)
+    // and then AWAITS the server status write, with the Accept button still
+    // rendered: a second press filed a second Job for the same intake (the
+    // customer is name-deduped, the job is not). Arms IA 1-3.
+    {
+      id: 'IA', name: 'intakeAccept',
+      src: H.optional(html, /var intakeAccepting\s*=\s*false;/) + '\n' + L('async function intakeAccept(id) {'),
+      given: (write, box) => ({
+        intakeSubmissions: [{ id: 'I1', client_name: 'Dana Whitfield', project_type: 'kitchen', shape: 'lshape', rough_run_a_ft: 12, notes: '' }],
+        sdCustomers: [], sdJobs: box.rows, intakeServerWrite: write, INTAKE_TABLE: 'sd_intake',
+        sdLocalToday: () => '2026-10-30'
+      }),
+      rows: (box) => box.rows.length,
+      press: (ctx) => ctx.intakeAccept('I1'),
+      ok: true, refused: false
+    },
+    // sdAIQGenerate AWAITS the extraction call to Claude with every field still
+    // filled and the Generate button live: a second press paid for a second
+    // pair of AI calls and recorded a second AI quote. `write` is the
+    // extraction call (max_tokens 300) only, so one generation is one write;
+    // the narrative call answers at once. Arms AQ 1-3.
+    {
+      id: 'AQ', name: 'sdAIQGenerate',
+      src: H.optional(html, /var sdAIQGenerating\s*=\s*false;/) + '\n' + L('window.sdAIQGenerate=async function(){'),
+      fields: { 'aiq-cust': 'Dana Whitfield', 'aiq-type': 'kitchen', 'aiq-desc': 'Granite kitchen, about 20 linear feet', 'aiq-tier': 'retail' },
+      given: (write, box) => ({
+        TIERS: { retail: {} }, PROJECTS: { kitchen: { name: 'Kitchen' } }, MATERIALS: { granite: { name: 'Granite' } },
+        currentTier: 'retail', lastCalc: { total: 5400 }, localStorage: { getItem: () => null, setItem() {} },
+        sdClaude: (sys, inp, n) => (n === 300 ? write(sys, inp, n) : Promise.resolve('Your quote')),
+        // aiqFmtDuration is called inside escHtml(...), which the harness's
+        // free-call scan does not see, so without this every completed press
+        // fell into the catch and recorded nothing.
+        load: () => box.rows, save() {}, aiqFmtDuration: () => '1 second'
+      }),
+      press: (ctx) => ctx.sdAIQGenerate(),
+      ok: '{"project_type":"kitchen","material":"granite","total_linear_feet":20}',
+      refused: 'not json'
     }
   ]) {
     await H.drive({ check, id: s.id, name: s.name, mk: H.mkFor(s), ok: s.ok, refused: s.refused });

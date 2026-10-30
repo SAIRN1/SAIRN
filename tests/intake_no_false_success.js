@@ -104,6 +104,8 @@ function makeCtx(opts) {
   const listEl = { innerHTML: '' };
   const ctx = {
     INTAKE_TABLE: 'intake_submissions',
+    // cody b70: intakeAccept now holds on its own flag, declared beside it.
+    intakeAccepting: false,
     INTAKE_FORM_LIVE: ('formLive' in opts) ? opts.formLive : false,
     intakeSubmissions: opts.submissions || [],
     intakeCurrentTab: 'pending',

@@ -33643,7 +33643,11 @@ document.addEventListener('DOMContentLoaded', function() {
   // calc()'s real pricing model (which is cost/tier-based, not
   // margin-target-based) -- not incorporated into the number, rather than
   // faking that it is honored.
+  var sdAIQGenerating=false;
   window.sdAIQGenerate=async function(){
+    if(sdAIQGenerating){showToast('Still generating this quote -- one moment');return;}
+    sdAIQGenerating=true;
+    try{
     var cust=(document.getElementById("aiq-cust").value||"").trim()||"Customer";
     var type=document.getElementById("aiq-type").value;
     var desc=document.getElementById("aiq-desc").value.trim();
@@ -33732,6 +33736,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }catch(e){
       out.innerHTML="<div style='color:#dc2626;padding:12px'>Something went wrong generating this quote. Please try again.</div>";
     }
+    }finally{sdAIQGenerating=false;}
   };
   // ── THE SPEED CLAIM IS A MEASUREMENT (2026-09-24) ──────────────────────
   // The brief asked for "3-minute AI quote" messaging. A 3 written into the
@@ -40792,7 +40797,11 @@ function intakeCardHtml(s) {
   '</div>';
 }
 
+var intakeAccepting = false;
 async function intakeAccept(id) {
+  if (intakeAccepting) { if (typeof showToast === 'function') showToast('Still creating the job from this intake -- one moment'); return; }
+  intakeAccepting = true;
+  try {
   var s = intakeSubmissions.find(function(x){ return x.id === id; });
   if (!s) return;
 
@@ -40844,6 +40853,7 @@ async function intakeAccept(id) {
       ? 'Customer + Job created from intake!'
       : 'Customer + Job created — but the server was NOT updated, so this intake stays pending elsewhere and may be worked twice.');
   }
+  } finally { intakeAccepting = false; }
 }
 
 async function intakeDismiss(id) {
