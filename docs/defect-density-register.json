@@ -41754,6 +41754,46 @@
       "single_factor_note": "one encoding-context gap repeated across sites"
     },
     {
+      "commit": "149c90b97029",
+      "date": "2026-10-30",
+      "subject": "fix(sd-sub-data, hank b71 #1817): the Eastern-day expiry comment no longer claims it can never be early; both windows pinned by a test",
+      "files": [
+        "api/b71-sub-expiry-eastern-day.test.js",
+        "api/sd-sub-data.js",
+        "docs/recurring-bug-classes.md"
+      ],
+      "lines_added": 79,
+      "lines_removed": 5,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": "api/sd-sub-data.js compared COI and licence expiry against the America/New_York day and its comment (and commit ca1cf0fca) claimed that zone can never call a still-valid document expired in the fifty states. Eastern rolls over FIRST, so for a western shop a document reads expired and the sub is refused (409) 1-6 hours early on its last valid day (H1 #1817). Behaviour kept (the safe direction for a compliance gate); the comment is corrected and api/b71-sub-expiry-eastern-day.test.js pins both windows.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "ca1cf0fcaab1",
+        "date": "2026-10-29",
+        "subject": "fix(sd-sub-data, hank b64): COI / licence expiry compared against the LOCAL day, not the UTC day",
+        "lag_days": 1
+      },
+      "citation_note": "No standing rule requires a stated time-zone invariant to be pinned by a test; proposed: a comment that states a direction of error carries a test of it.",
+      "contributing_factors": [
+        {
+          "factor": "The invariant was reasoned from which zone is easternmost rather than which date changes first, and no test exercised a western instant",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "comment corrected; a test pins the early-west and late-Atlantic windows"
+        }
+      ],
+      "recurrence_open": "There is no per-licence time zone, so the early window for western shops remains by design; any other server-side \"today\" on the platform that hard-codes a zone was not swept.",
+      "single_factor_note": "one wrong invariant"
+    },
+    {
       "commit": "3d4ff0400b32",
       "date": "2026-10-30",
       "subject": "fix(stonedesk, fourth b70): the Financial KPI row crashed on a numeric quote total (M3) and claimed 65% margin from a hardcoded ratio (M2)",
@@ -41885,46 +41925,6 @@
       "recurrence_open": "other request-field-conditioned branches outside body.app_id (e.g. payload.app_id) not swept"
     },
     {
-      "commit": "149c90b97029",
-      "date": "2026-10-30",
-      "subject": "fix(sd-sub-data, hank b71 #1817): the Eastern-day expiry comment no longer claims it can never be early; both windows pinned by a test",
-      "files": [
-        "api/b71-sub-expiry-eastern-day.test.js",
-        "api/sd-sub-data.js",
-        "docs/recurring-bug-classes.md"
-      ],
-      "lines_added": 79,
-      "lines_removed": 5,
-      "app": "stonedesk",
-      "layer": "product",
-      "severity": "low",
-      "detection_method": "hover-audit",
-      "summary": "api/sd-sub-data.js compared COI and licence expiry against the America/New_York day and its comment (and commit ca1cf0fca) claimed that zone can never call a still-valid document expired in the fifty states. Eastern rolls over FIRST, so for a western shop a document reads expired and the sub is refused (409) 1-6 hours early on its last valid day (H1 #1817). Behaviour kept (the safe direction for a compliance gate); the comment is corrected and api/b71-sub-expiry-eastern-day.test.js pins both windows.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover",
-      "injection": {
-        "commit": "ca1cf0fcaab1",
-        "date": "2026-10-29",
-        "subject": "fix(sd-sub-data, hank b64): COI / licence expiry compared against the LOCAL day, not the UTC day",
-        "lag_days": 1
-      },
-      "citation_note": "No standing rule requires a stated time-zone invariant to be pinned by a test; proposed: a comment that states a direction of error carries a test of it.",
-      "contributing_factors": [
-        {
-          "factor": "The invariant was reasoned from which zone is easternmost rather than which date changes first, and no test exercised a western instant",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "comment corrected; a test pins the early-west and late-Atlantic windows"
-        }
-      ],
-      "recurrence_open": "There is no per-licence time zone, so the early window for western shops remains by design; any other server-side \"today\" on the platform that hard-codes a zone was not swept.",
-      "single_factor_note": "one wrong invariant"
-    },
-    {
       "commit": "6c7a12bc4494",
       "date": "2026-10-30",
       "subject": "feat+fix(sairnlegacy, fourth b70): apprentice names the supervising director in the staged cremation; a blank GPL price is not $0; a negative line is refused",
@@ -41968,41 +41968,72 @@
       "recurrence_open": "Rows saved as 0 from a blank before this fix cannot be distinguished from a real 0; cc's L3a scenario stays FAIL by the C2 design decision."
     },
     {
-      "commit": "eed68c6a7bc6",
+      "commit": "958131e3a951",
       "date": "2026-10-30",
-      "subject": "fix(stonedesk, hank b71 H1y): the two saved-drawing handlers JS-escape the id before escHtml",
+      "subject": "fix(stonedesk, fourth b71): every fourth-owned presence FAIL closed -- M1, E1-E4, I1-I3, X1-X3 (cc b56 stress); F3 live-drive evidence",
       "files": [
-        "api/b70-inline-handler-args.test.js",
-        "docs/recurring-bug-classes.md",
-        "stonedesk.html"
+        "docs/live-residue/2026-10-30-fourth-b71-f3-live-drive.json",
+        "stonedesk.html",
+        "tests/stonedesk_presence_fixes_b69.js"
       ],
-      "lines_added": 5,
-      "lines_removed": 6,
+      "lines_added": 126,
+      "lines_removed": 13,
       "app": "stonedesk",
       "layer": "product",
-      "severity": "low",
-      "detection_method": "code-review",
-      "summary": "stonedesk.html sdDrawingsLoad / sdDrawingsDelete passed x.id as escHtml(String(x.id)) between quotes into inline handlers; escHtml alone is undone by the attribute decode, so an id holding a quote closed the JS string. Both now JS-escape backslash and quote before escHtml, the form sairnbiz uses (b70). api/b70-inline-handler-args.test.js covers stonedesk; arm X finds the shape at 8e481cea7.",
+      "severity": "high",
+      "detection_method": "probe-control",
+      "summary": "StoneDesk showed claims the record did not support (cc b56 presence stress): margin green with a blank slab cost (M1); Project Approved with no signature pad, a one-pixel signature, a stale price, or the first of two same-name customers (E1-E4); Paid on an overpayment, after a failed save, and on a deposit request (I1-I3); all-time sales tax as YTD, an 825% rate, and a literal 0 on the 1099 tile (X1-X3). Each refused or shown as not tracked.",
       "rules": [],
       "citation_confidence": "not-citable",
       "injection_phase": "coding",
-      "phase_confidence": "inferred",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/stonedesk_presence_stress.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "esigApprove, invSave, taxRender, finCalcMargin predate this batch; not traced."
+      },
+      "citation_note": "No standing rule says a displayed claim must be derived from the record rather than defaults or stale state.",
+      "contributing_factors": [
+        {
+          "factor": "Claims were computed from defaults and stale form state instead of from the record.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Each claim derived from the record or refused."
+        },
+        {
+          "factor": "No regression gate covered these scenarios because the stress tool exits 1 while hank T1 stands.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Arm 11 gates on the verdict list."
+        }
+      ],
+      "recurrence_open": "T1a/T1b/T1d (api, hank) still FAIL; other apps with similar approval/paid claims were not swept."
+    },
+    {
+      "commit": "c178ee514c1b",
+      "date": "2026-10-30",
+      "subject": "fix(sairngrounds, fourth b71): grdData sends app_id -- G-1, migrate decision \"yes\" applied; 0 rows needed moving",
+      "files": [
+        "sairngrounds.html"
+      ],
+      "lines_added": 6,
+      "lines_removed": 1,
+      "app": "sairngrounds",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "SAIRNgrounds grdData sent no app_id, so api/sd-data.js scoped every grounds request to a shared or routes resource (employees, rt_routes, shared knowledge, employee profile, render usage, memory) to stonedesk -- a data-scope error routed by cc b77 as G-1. Now sends app_id: APP_ID; a read-only measurement found 0 grounds rows under stonedesk, so no data migration was needed.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
       "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "unknown_reason": "app-wide pattern present across many commits; not traced to one"
+        "unknown_reason": "grdData predates the shared-resource app scoping; not traced."
       },
-      "citation_note": "No standing rule names inline-handler arguments as a separate encoding context; proposed: a value passed from an inline handler is JS-escaped, then HTML-escaped.",
-      "contributing_factors": [
-        {
-          "factor": "Inline handlers are an HTML-then-JS context and the value was escaped for neither or for HTML only",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "JS-escape then HTML-escape every stored value passed from an inline handler"
-        }
-      ],
-      "recurrence_open": "Apps outside hank's owned set (sairnlaw, sairnbuild, sairncare and others) were not swept; no server-side format check on record ids.",
-      "single_factor_note": "one encoding-context gap repeated across sites"
+      "citation_note": "No standing rule requires every app data helper to send app_id.",
+      "factors_unknown_reason": "single-line request contract fix; contributing factors were not separately analysed this batch"
     },
     {
       "commit": "e22c9cd0bf83",
@@ -42059,6 +42090,43 @@
         }
       ],
       "recurrence_open": "Any other client-side identity comparison against the licence key (e.g. per-licence cache keys) may share the case mismatch; not swept."
+    },
+    {
+      "commit": "eed68c6a7bc6",
+      "date": "2026-10-30",
+      "subject": "fix(stonedesk, hank b71 H1y): the two saved-drawing handlers JS-escape the id before escHtml",
+      "files": [
+        "api/b70-inline-handler-args.test.js",
+        "docs/recurring-bug-classes.md",
+        "stonedesk.html"
+      ],
+      "lines_added": 5,
+      "lines_removed": 6,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "stonedesk.html sdDrawingsLoad / sdDrawingsDelete passed x.id as escHtml(String(x.id)) between quotes into inline handlers; escHtml alone is undone by the attribute decode, so an id holding a quote closed the JS string. Both now JS-escape backslash and quote before escHtml, the form sairnbiz uses (b70). api/b70-inline-handler-args.test.js covers stonedesk; arm X finds the shape at 8e481cea7.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "app-wide pattern present across many commits; not traced to one"
+      },
+      "citation_note": "No standing rule names inline-handler arguments as a separate encoding context; proposed: a value passed from an inline handler is JS-escaped, then HTML-escaped.",
+      "contributing_factors": [
+        {
+          "factor": "Inline handlers are an HTML-then-JS context and the value was escaped for neither or for HTML only",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "JS-escape then HTML-escape every stored value passed from an inline handler"
+        }
+      ],
+      "recurrence_open": "Apps outside hank's owned set (sairnlaw, sairnbuild, sairncare and others) were not swept; no server-side format check on record ids.",
+      "single_factor_note": "one encoding-context gap repeated across sites"
     }
   ],
   "started": "2026-09-09",
