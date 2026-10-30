@@ -4925,8 +4925,8 @@
       "task": "cc b77 sweep body.app_id reads in api/sd-data.js; revert sairngrounds grdData; FILES: api/sd-data.js sairngrounds.html docs/sairn-path-manifest.json",
       "claimed_at": "2026-10-30T08:08:17Z",
       "claimed_at_epoch": 1793347697.7717519,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-30T08:33:51Z",
       "files": [
         "api/sd-data.js",
         "docs/sairn-path-manifest.json",
