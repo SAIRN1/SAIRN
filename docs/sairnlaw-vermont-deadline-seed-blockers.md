@@ -143,3 +143,25 @@ Michael's b70 instruction was to pull V.R.C.P. 6/12/33/34/36/59 directly from ve
 That window is the gap: no official page reaches it. The only official text of these rules is the 2018 order, which is LCJR material on legislature.vermont.gov (b67).
 
 **Not used, by instruction:** Lexis.
+
+## b71 (2026-10-30): retried on the Judiciary's own rules pages, not a sitemap crawl. Still NOT FOUND
+
+**Read directly on 2026-10-30.** The sha256 is of the page bytes as served; the pages are dynamic, so it pins what was read, not a permanent file.
+
+| page | bytes | sha256 |
+|---|---|---|
+| https://www.vermontjudiciary.org/attorneys/rules | 43211 | `6504b353e79e42893759549731e6ff83f516e2d5bd8f84fa923b43dbb2561c2f` |
+| https://www.vermontjudiciary.org/attorneys/rules/promulgated | 132853 | `94c972167105ea396c82f7f20f9b721bc31e7b422638897f00524df39b9cff91` |
+| https://www.vermontjudiciary.org/attorneys/rules/proposed | 40901 | `42d411b1ebea1d020618819abe0941fb20b075578fde6ad6cd3b393804dca56e` |
+
+**What the pages hold:**
+- **The rules page links only these:** LexisNexis (twice), "Proposed Amendments" and "Promulgated Rules Over the Last Two Years". It has no rule text and no current-through date.
+- **The promulgated page** has no order that amends V.R.C.P. 6, 12, 33, 34, 36 or 59.
+- **The proposed page** links only Lexis.
+- **The obvious rules paths all return 404:** /court-rules, /rules, /attorneys/court-rules, /attorneys/rules/court-rules, /civil/rules, /attorneys/rules/civil and /about-vermont-judiciary/rules.
+
+**EXACTLY WHAT WOULD UNBLOCK IT** (either is enough):
+1. **A Vermont Judiciary-issued copy of V.R.C.P. 6, 12, 33, 34, 36 and 59 with a stated "current through" or "as amended through" date.** The likely sources are a PDF from the Court Administrator's Office or the Civil Rules Advisory Committee, or a Judiciary email answer that carries that date.
+2. **The Vermont Supreme Court promulgation orders, dated 2018-01-01 to 2022-10, for any amendment to those six rules, plus a statement that there are no others.** The Court Administrator's Office holds them; the website lists only two years.
+
+Option 1 is the cleaner of the two. With either in hand, the ND pattern runs as for DC.
