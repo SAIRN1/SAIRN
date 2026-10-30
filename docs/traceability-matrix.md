@@ -258,6 +258,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **&#128308; NOTHING COUNTS *UNSCOPED* `verifySessionToken` CALLS &mdash; a branch gate that DROPPED its app scope entirely passes ALL FOURTEEN stubs on this platform, including the two that are the reference shape** <!-- CCBATCH2-2026-10-05 --> | **NEW 2026-10-05 (CC). Found while fixing the twelve suites `c8b5e5b1` turned red (`ac9c21df`, `395f7f2a`); carried in BOTH of today&rsquo;s register records&rsquo; recurrence notes** | `api/_lib/dnt-rollup-endpoint.test.js`, `api/_lib/law-trust-reconcile-endpoint.test.js` |
 | **&#9989; RULED: the criticality register tiers RESOURCES, not stored data &mdash; and the ruling is MECHANICAL, not a judgement** <!-- REGISTER-SCOPE-RULING-HANK-2026-09-30 --> | **SETTLED 2026-09-30 (hank) from `tools/criticality_tier_check.py`'s own arms, not from the header prose. Closes the unit-disagreement row opened 2026-09-29** | `tests/run_criticality_tier_probe.py` |
 | **&#128993; 43 test files where STRING CHECKS ARE AT LEAST HALF the classified assertions &mdash; a registered population, not a completed sweep** <!-- QUEUE25-ITEM9-11-HANK-2026-09-29 --> | **MEASURED 2026-09-29 (hank) by `tools/message_assertion_audit.py` (NEW, report-only). 589 files, 10,718 assertions: 1,464 string-only, 2,755 value, 6,499 UNCLASSIFIED. Full account in `docs/2026-09-2 | `tests/lib/strip_comments.test.js`, `tests/run_master_plan_probe.py`, `tests/sairndental_rollup_panel.js`, `tests/sairnscape_memory.js`, `tests/sairnvet_formulary_source_honesty.js` |
+| **&#128993; 14 save handlers can still be pressed twice while they wait: a new record per press with the trigger live (found by tools/reentry_hold_check.py)** <!-- B69-REENTRY-14-CODY-2026-10-30 --> | **FOUND 2026-10-30 (cody b69)** by `python tools/reentry_hold_check.py`, criteria `2026-10-30.cody-b69.4`, at HEAD `38b6cdfcf`: 20 RE-ENTRANT of 448 inline-wired async handlers, all 20 read by hand. * | `tests/lib/save_reentry_harness.js` |
 | **&#9989; TWO INDEPENDENT READS OF THE SAME EIGHT RESOURCES AGREE ON THE FACTS AND DISAGREE ON THE UNIT &mdash; `sen_evv_queue` and `law_strike_log` are A/A-class risks that the register&rsquo;s stated unit excludes** <!-- QUEUE25-ITEM3-HANK-2026-09-29 --> | **BOTH READS DONE 2026-09-29, INDEPENDENTLY AND WITHIN THE HOUR: hover log #718 (cold read, code only, H2&rsquo;s log not read) and hank&rsquo;s `docs/2026-09-29-register-cells-hank.md` item 2b (write | `tests/run_stored_data_criticality_probe.py` |
 | **&#9989; THREE probe arms read SILENT &mdash; and the diagnosis in this row was WRONG ABOUT TWO OF ITS THREE CLAIMS, which is why the old text is quoted below rather than replaced** | **FIXED 2026-09-28 (CC). All three arms now catch; the severity stated here was TOO HIGH and is corrected.** | `api/sd-data-active-credential.test.js` |
 | **&#128993; The role-gate screen&rsquo;s NOT-DRIVEN bucket over-reports by at least 31% &mdash; it cannot see a suite that drives through a TABLE** | **MEASURED 2026-09-28 (CC), and proven against the ablation on one of them** | `api/sd-data-alf-caregiver-scope.test.js` |
@@ -738,20 +739,20 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 304 test files are traced to no stated requirement
+### 303 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 797 of 1101 traced, 72.4%.
+For context and not as the headline: 798 of 1101 traced, 72.5%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 797 citations come from
+### Where the 798 citations come from
 
 | source | citations |
 |---|---|
 | `declared` | 360 |
-| `index` | 328 |
+| `index` | 329 |
 | `declared+index` | 72 |
 | `GUARD_TESTS` | 18 |
 | `GUARD_TESTS+declared` | 12 |
@@ -765,7 +766,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | kind | count | what it means | the fix |
 |---|---|---|---|
 | **bound to a subject, tied to no requirement** | 45 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 259 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **no subject binding either** | 258 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
 **These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 45 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
@@ -879,7 +880,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/lib/active_credential_stub.js`
 - `tests/lib/fn_span.js`
 - `tests/lib/fn_span.test.js`
-- `tests/lib/save_reentry_harness.js`
 - `tests/lib/strip_comments.js`
 - `tests/licence_rekey_isolation_probe.py`
 - `tests/mar_billing_grant.test.js`
@@ -1093,7 +1093,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                1101   tests/**, api/** (both walked)
-  open-work rows citing a test       398   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       399   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 37   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                78   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     82   report_only_checks.NOT_PROMOTED

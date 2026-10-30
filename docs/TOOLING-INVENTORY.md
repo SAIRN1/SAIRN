@@ -21,7 +21,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**383 files in `tools/`.** By what actually invokes them:
+**384 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -30,7 +30,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 5 | session-start or prompt hooks, informational |
 | **DECIDED** | 79 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 86 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 104 | nothing runs these at all |
+| **UNWIRED** | 105 | nothing runs these at all |
 
 **THE HOOK-DERIVED HALF OF THE TABLE ABOVE IS THE RECORDED WIRING, NOT THE LIVE ONE.** This clone's `.claude/settings.json` carries an EMPTY `hooks` object, committed on 2026-10-13 after Michael disabled every hook on 2026-10-11 because they were causing agent compaction. The 19 tool wirings behind BLOCKING / REPORT-ONLY / ADVISORY are read from `docs\hooks-disabled-2026-10-13.json`, which records all 23 commands verbatim. **A tool shown as ADVISORY here is wired as a SessionStart or prompt hook in that record and is NOT running in this clone today.** The alternative was believing the zero, and that is what the generator did until 2026-10-16: ADVISORY came out empty, the push gate itself came out SUITE-ONLY, and three arms of `tests/run_tooling_inventory_probe.py` were red against a `--check` that said the document matched the repo -- both ends of that comparison came from the same blind reader.
 
@@ -49,7 +49,7 @@ By what they are, independent of wiring:
 | PUSH-GATE | 1 |
 | REPORT | 1 |
 | REPORT-ONLY | 1 |
-| REPORTER | 9 |
+| REPORTER | 10 |
 | TOOL | 17 |
 | UNWIRED | 1 |
 
@@ -528,7 +528,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (104)
+## UNWIRED (105)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -605,6 +605,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `push_failure_reason.py` | TOOL | a push failure diagnosed from the LAST LINE instead of the whole output. The line `error: failed to push some refs` is the git epilogue and is present for EVERY failure -- a race, a gate refusal, a bad credential -- so matching it identifies nothing, while the push gate’s own `Blocked:` line names the cause forty lines above it. On 2026-10-05 a session piped a push through `tail -3`, grepped the epilogue, called it a lost race and RETRIED TEN TIMES; it was a missing `# OWNER:` line and then a missing tool-inventory entry, two one-line fixes sitting in plain text that nothing read. This classifies the FULL text and always lets a `Blocked:` line beat a race signature, because both can appear in one attempt and reporting the race sends the next reader at the wrong problem. Anything unrecognised is exit 2 COULD NOT CLASSIFY with the whole output printed -- never a guess. Held by 10 fixtures in both directions, including the incident reproduced verbatim, a case carrying both a refusal and a lock error, and a control asserting the fixture set reaches all four verdicts | &mdash; |
 | `push_gate_path_scope_sabotage_probe.py` | PROBE | CATCHES pre-push CHECK 5d (gate path-scope) having stopped refusing. Plants one out-of-scope path per build population plus one auditor path, each committed and driven through the REAL pre-push hook in a scratch worktree provisioned as that population, and requires the refusal to NAME the planted path and NAME the deciding rule -- a refusal nobody can attribute is not reviewable. Distinct from sairn_path_manifest.py --fixtures, which proves CLASSIFICATION and not REFUSAL. It exists as a file because b26 ran it from a scratchpad and that directory's cleanup destroyed twelve FMEA drafts; and it commits the plant with --no-verify because the plant is SETUP, so letting the pre-COMMIT hook adjudicate it makes this probe's coverage depend on rules it is not testing -- which is exactly how b26 came to report hank ALLOWED on a clean tree | &mdash; |
 | `red_suite_register_check.py` | CHECKER | a docs/known-red-suites.json entry that is no longer true -- a registered suite that now PASSES, which is the worse of the two failures: while a stale entry stands, it absorbs the next real failure of the one file somebody already decided not to look at, and known_red_check.py will call that failure KNOWN. Also catches a red suite no entry covers, when given a run log. NOT A DUPLICATE OF known_red_check.py and neither should be deleted believing it is the other: that one answers NEW / KNOWN / CHANGED / RECOVERED but needs a WHOLE-TREE run log (738 files) and never gates, so between full runs nobody runs it and the register rots. This one drives only the registered suites -- thirteen files -- prints each exit code on its own line, and EXITS NON-ZERO. Without a run log it reports COULD NOT RUN for the unregistered half rather than claiming none, because "no unregistered reds" from a population of zero is not a finding | &mdash; |
+| `reentry_hold_check.py` | REPORTER | a user-triggered save that can be pressed twice while it waits: an inline-wired async handler that creates a record or applies an amount, leaves its trigger live across an await and holds nothing -- the cody b64 duplicate-record shape. Criteria-locked by 20 fixtures; report only. | &mdash; |
 | `report_sha_check.py` | CHECKER | a per-batch report or digest whose own `SHA256 <hex>` line does not match the body it claims to cover -- the SHA written, then the body edited after it. Both halves of the pair happened in one batch on 2026-10-11: SAIRN-report-ted-b4.txt carried d2ee6a2d over a body that hashed to 2eb5a1ad, and SAIRN-digest-ted-b4.txt asserted in its own prose that "both carry a verifiable body hash" while carrying NO SHA LINE AT ALL. Both were reseated by hand, which is the mechanism that failed. NOT tamper-evidence and the entry says so rather than leaving somebody to overstate it: a hash a file carries about itself proves only that the line and the body were written at the same moment, and anybody editing the body can reseat the line. It catches the ACCIDENT -- an appended section, a late correction -- and the accident is what happened. Distinct from doc_sha_reseat.py, which reseats COMMIT-sha citations inside prose after a rebase and correctly reported "nothing to do" over this same defect because the per-batch report is not in its tracked set | &mdash; |
 | `reservation_lock_invariants.js` | CHECKER | a reservation compare-and-swap that has stopped being one -- item 78's second target. It enumerates EVERY interleaving of 2, 3 and 4 concurrent reservers against one leg_merch_units unit (6, 90 and 2520 orderings, no sampling) and asserts that at most one is ever told it succeeded, with the blind-upsert semantics every OTHER transition on that resource uses as the CONTROL -- if the control ever stops violating, the clean result is vacuous and the run says so. It also reads the real branch out of api/sd-data.js and exits 2 COULD NOT RUN, never 0, if the &data->>status=eq.Available precondition is no longer inside the guarded PATCH: a checker that keeps passing after the lock it models is replaced by an upsert is the defect, not the check. It does NOT prove Postgres atomicity -- that assumption is printed on every run rather than hidden | &mdash; |
 | `resource_reachability_check.py` | CHECKER | for every REGISTERED resource, does any client name it -- the question that finds a capability the platform describes as BUILT while no user can reach it. It exists because the narrower check it replaces could not have found the second instance: the SAIRNmechanical `eligibility` defect was caught by enumerating extraActions and asking whether each verb was sent, and SAIRNdental `dnt_rollup` needs no extra action -- it is a plain read, so that check never looked at it. A PANEL CENSUS CANNOT FIND EITHER: SAIRNdental was 22 panels / 22 nav targets / 22 sidebar ids, three identical sets, precisely because the roll-up was in none of the three. A FINDING IS "no client names this", never "delete it" -- a resource fed by a cron or read by another server endpoint is legitimately here and needs somebody to SAY so. IT CARRIES A CALIBRATION ARM, which is what makes its zeros mean anything: a substring search that finds nothing proves nothing, because a bad path produces the same output as a genuinely unreachable resource for every resource at once, so it reports how many of each app it DID find and an app below a stated floor is CANNOT TELL rather than N findings. ITS OWN FIRST RUN WAS WRONG AND SAYS SO: it read only <app>.html and reported StoneDesk sd_hr_certs (Tier A) as unreachable when stonedesk-hr.html names it, caught by hand-reading every finding before publishing the number. It CANNOT see a name built by concatenation, a caller behind a dead flag, or whether the panel works. | &mdash; |
@@ -673,7 +674,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      383   git ls-files tools/
+  tools on disk                      384   git ls-files tools/
   hook entries                        19   docs\hooks-disabled-2026-10-13.json (RECORDED wiring -- this clone's live hooks are the committed disarm, and the record is read rather than the zero being believed)
   push-gate invocations               22   tools\sairn_push_gate_hook.py
   report-only registry                78   report_only_checks.REGISTRY
