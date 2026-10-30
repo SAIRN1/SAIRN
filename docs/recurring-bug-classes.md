@@ -108,3 +108,15 @@ Every routed finding below names its source inline: session, commit and, for an 
 |---|---|---|---|---|---|
 | 1 | The b69 sairnlegacy inline-handler shape in four more owned apps: sairnvet 61 raw values plus an `&#39;+escHtml()+&#39;` builder, sairncode 32 raw, sairnbiz 5 HTML-only values plus 3 HTML-only builders, stonedesk 2 HTML-only (the rest of StoneDesk already used `escAttrJs`) | coding | output encoding | **due to** the same wrong-layer escape copied app to app; StoneDesk shows the right helper existed on the platform and did not propagate | this batch |
 | 2 | My first H1y fix (a new global `JA()` in sairnbiz/stonedesk) broke 5 of their suites: they load app functions by hand-kept lists, pin `fn('ID')` markup, and one string scanner treats a quote inside a regex literal as a string | coding | test coupling | **due to** a helper added without reading how each app's suites load it; caught by running all 62 suites against a base worktree, before commit | this batch |
+
+## 2026-10-30 — batch 68 (cody)
+
+Sources cited by record and commit. These are cc b76's verdicts on cody b65's Tier A records, in `docs/tier-a-reviews.json`; no line number stands alone.
+
+| # | Defect | Phase | Sub-phase | Cause | Commit |
+|---|---|---|---|---|---|
+| 1 | `sairngrounds.html` `gcdMarkShotEnd` measured a shot from a START pressed during its own pending GPS fix, then discarded that start (cc b76 F1, record 2026-10-29T19:34:54Z) | coding | concurrency | **due to** a module variable shared by two handlers, read AFTER an `await` by one and written by the other; b65's hold covered END against END only | `49b279213` |
+| 2 | All 13 licence guards compared keys case-sensitively; the server treats a case-only difference as the same licence (cc b76 F1, record 2026-10-29T19:12:48Z) | design | identity definition | **due to** the client's notion of "same licence" (exact string) never being checked against the server's (`api/_lib/license.js` upper-case retry); every b65/b66 fixture used one case | `b110c88f6` |
+| 3 | `stonedesk.html` POS hold release on a throwing reset was TRUE but UNGUARDED (cc b76 F2, record 2026-10-29T19:34:54Z) | coding | test coverage | **due to** a `finally` with no arm that throws through it; ablation left the suite green | `8aa4d7d6f` (test only) |
+
+**Two of the three were in my own b65/b66 work, and an independent reviewer found both.** Row 2 is the sharper lesson. The b66 fix copied one block into 13 files after checking only that each app has a single key writer that upper-cases, and sairnfreedom's does not.

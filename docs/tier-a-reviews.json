@@ -9119,6 +9119,29 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-30T09:00:48Z",
+      "opened_at_sha": "8aa4d7d6fe43446cc520360f12270c62531e8989",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 0,
+      "resources": [
+        "invoices",
+        "sd_invoices"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tests/stonedesk_save_reentry.js"
+      ],
+      "what": "cody b68: (1) all 13 licence guards (sairndental, senior, care, build, design, law, legacy, roofing, code, biz, grounds, scape, freedom): before asking, the guard compares the stored previous key to the one entered, trimmed and upper-cased. On a match it records the fingerprint and lets the licence in (cc b76 F1 on cody b65 record 2026-10-29T19:12:48Z). (2) sairngrounds gcdMarkShotEnd snapshots the start before the GPS wait, and clears it only if unchanged (cc b76 F1 on record 2026-10-29T19:34:54Z).\nWHAT TO ATTACK FIRST: (1) loosens a refusal. Confirm that NO two distinct licences can differ only in case. api/_lib/license.js retries upper-case only when the exact key misses, so if a lower-case key were ever issued as a DIFFERENT licence, this check would let it open the other licence's data. Check the licences table for any key whose upper-case form is another row's key. SECOND: the stored key is read raw (9 apps) or as JSON (sb_lic, grd_lic, scp_lic, sf_license_key). Confirm each read matches how its gate writes it: a JSON-quoted value read raw would never match, and the guard would fall back to asking, which is safe but noisy.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-30T09:00:48Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

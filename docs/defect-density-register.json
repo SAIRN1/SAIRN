@@ -41882,6 +41882,106 @@
         }
       ],
       "recurrence_open": "Other .replace calls on stored quote fields were not swept; M1 (blank slab cost read as 0) remains."
+    },
+    {
+      "commit": "49b27921363e",
+      "date": "2026-10-30",
+      "subject": "fix(sairngrounds, cody b68): a START during a pending shot END no longer corrupts the shot or loses the next start",
+      "files": [
+        "sairngrounds.html",
+        "tests/sairngrounds_save_reentry.js"
+      ],
+      "lines_added": 38,
+      "lines_removed": 4,
+      "app": "sairngrounds",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "independent-review",
+      "summary": "sairngrounds gcdMarkShotEnd read gcdShotStart after awaiting the GPS fix and then nulled it, so a START pressed for the next shot during the wait became the measured shot's start and was then discarded (cc b76 F1 on cody b65 record 2026-10-29T19:34:54Z). The start is now snapshotted before the wait and cleared only if unchanged.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "0c7dc7da4108",
+        "date": "2026-09-02",
+        "subject": "feat(sairngrounds): the Golf Course Module's on-course layer -- the mapped points are finally read",
+        "lag_days": 58
+      },
+      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b68 row 1.",
+      "contributing_factors": [
+        {
+          "factor": "Shared mutable state read after an await, by a handler whose sibling writes the same variable.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Snapshot before the await; conditional clear."
+        },
+        {
+          "factor": "The b65 hold covered END against END only; no arm interleaved START with END.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Arms GS1/GS2 drive both real handlers interleaved."
+        }
+      ],
+      "recurrence_open": "Any other handler pair sharing a module variable across an await (caddie, POS) can interleave the same way; only this pair was checked."
+    },
+    {
+      "commit": "b110c88f621b",
+      "date": "2026-10-30",
+      "subject": "fix(platform, cody b68): a licence key differing only in case is the same licence in all 13 guards",
+      "files": [
+        "sairnbiz.html",
+        "sairnbuild.html",
+        "sairncare.html",
+        "sairncode.html",
+        "sairndental.html",
+        "sairndesign.html",
+        "sairnfreedom.html",
+        "sairngrounds.html",
+        "sairnlaw.html",
+        "sairnlegacy.html",
+        "sairnroofing.html",
+        "sairnscape.html",
+        "sairnsenior.html",
+        "tests/licence_guard_legacy_device.js"
+      ],
+      "lines_added": 146,
+      "lines_removed": 0,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "independent-review",
+      "summary": "All 13 licence guards compared keys case-sensitively although api/_lib/license.js treats a case-only difference as the same licence, so re-entering the same licence in different case offered to wipe that licence's own local records -- reachable on every legacy device after b65/b66 (cc b76 F1 on cody b65 record 2026-10-29T19:12:48Z). Guards now compare the stored key normalised.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "343c5a3275b1",
+        "date": "2026-09-03",
+        "subject": "feat(platform): a licence change no longer hands the next customer the previous one's records",
+        "lag_days": 57
+      },
+      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b68 row 2.",
+      "contributing_factors": [
+        {
+          "factor": "Client identity (exact string) and server identity (case-insensitive retry) disagreed; the guard was written against the client notion.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Normalised same-key check before the ask, in all 13 guards."
+        },
+        {
+          "factor": "b65/b66 fixtures used one case throughout, so the mismatch had no arm.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "L5/L6 arms with a lower-case stored key."
+        }
+      ],
+      "recurrence_open": "Any other client-side identity comparison against the licence key (e.g. per-licence cache keys) may share the case mismatch; not swept."
     }
   ],
   "started": "2026-09-09",
