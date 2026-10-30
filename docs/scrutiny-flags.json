@@ -194,6 +194,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairnlegacy_countersign_ui.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "036accb62d2316fcb4a2eaec6b56198552fcabd8",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlegacy_supervisor_picker_b70.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "const h = harness('director', 'ignored');"
+    }
+   ],
+   "sha": "036accb62d2316fcb4a2eaec6b56198552fcabd8",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sairnfreedom_ai_disclosure.js",
    "class": "test file",
    "level": "CHANGE",
@@ -17271,6 +17292,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "fd11e9593e8ef13175a5ff53cfcc930520b5a475",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/stonedesk_presence_fixes_b69.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "fd2a7086633ee5b0bcdaab79f69d4b92702d3919",
    "criteria_version": "2026-10-06.1"
   },
   {
