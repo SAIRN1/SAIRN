@@ -165,3 +165,37 @@ That window is the gap: no official page reaches it. The only official text of t
 2. **The Vermont Supreme Court promulgation orders, dated 2018-01-01 to 2022-10, for any amendment to those six rules, plus a statement that there are no others.** The Court Administrator's Office holds them; the website lists only two years.
 
 Option 1 is the cleaner of the two. With either in hand, the ND pattern runs as for DC.
+
+## b72 (2026-10-30): retried against the MORE AUTHORITATIVE of the two sources, the Supreme Court's promulgation orders
+
+**Which source, and why.** Of the two sources b71 named, I used **(2), the promulgation orders.**
+- An order is the Vermont Supreme Court's own instrument. It *is* the amendment, so the rule text is whatever the orders make it.
+- A compiled copy carrying a current-through date (source 1) is derived from those orders. It is only as good as whoever compiled it, and the Judiciary itself defers compilation to Lexis.
+
+**Where the orders were found.** The Judiciary still hosts orders older than its two-year list at `vermontjudiciary.org/sites/default/files/documents/...`; they are no longer linked, but they are served. The Legislative Committee on Judicial Rules (LCJR, committee 34) receives promulgated rules and posts them. I enumerated **every** LCJR document page for the 2018, 2020, 2022 and 2024 bienniums: 440 documents, 0 unreadable pages.
+
+**Civil-procedure orders found for 2018-01-01 to 2022-12, each read and hashed:**
+
+| order | URL | sha256 | rules amended |
+|---|---|---|---|
+| OCTOBER TERM 2020 | https://legislature.vermont.gov/Documents/2020/WorkGroups/Judicial%20Rules/Documents%20and%20Testimony/W~Erik%20Fitzpatrick~PROMULGATED%20VRCP26_34~12-8-2020.pdf | `f44e68b0ae86e2b6818f21aad86c44eae74df7df07af82874ac444ec03fa6bd2` | 26(c), **34(b)** |
+| JUNE TERM 2021 | https://www.vermontjudiciary.org/sites/default/files/documents/PROMULGATED%20VRCP%207%20and%2056(c)(5)%20and%20Abrogating%2078.pdf | `9c4d317418ede8a9683447566bbf5492de02db4772e77b349f0533be034e1a1f` | 7, 56; abrogates 78 |
+| APRIL TERM 2022 | https://www.vermontjudiciary.org/sites/default/files/documents/PROMULGATEDVRCP68--STAMPED.pdf | `5389365905ba96077f1406df3dca5964a3632622e6bc0dc89646c0f9d9ac8d70` | 68 |
+| DECEMBER TERM 2022 (emergency) | https://www.vermontjudiciary.org/sites/default/files/documents/PROMULGATED-EmergencyOrderAmendingVRCP56(b)--STAMPED.pdf | `5d112cbd9c56959e865e1c629e0c8642b9d21f39065669edec79ca23295d8d5a` | 56(b) |
+
+**Named but not fetched:**
+- the LCJR 2021 posting "Promulgated VRCP 80.1(f) and 80.5(e)";
+- a December 2021 order amending 3.1, 4, 56 and 84, which the 2022 56(b) order cites.
+
+Neither touches the six rules this seed needs.
+
+**What this establishes:**
+- **Rule 34(b) WAS amended** (eff. 2020-12-07), but its periods were not. The amended text still reads: "a written response within 30 days after the service of the request, except that a defendant may serve a response within 42 days after service of the summons and complaint". That matches the 2018 text.
+- **No order found amends Rule 6, 12, 33, 36 or 59.**
+- **What it does NOT establish:** that no such order exists. Neither repository is an index; LCJR's list, for one, is missing orders the Judiciary still serves, such as Rule 68. That an order turns up in no listing is not proof that it was never made.
+
+**STILL NOT SEEDED.** The narrowed unblock, from a human:
+
+> the Vermont Judiciary's (or the Court Administrator's) confirmation that no order between 2018-01-01 and today amended V.R.C.P. 6, 12, 33, 36 or 59, or its chronological list of civil-rule promulgation orders for that window.
+
+With that, the 2018 text plus the 2020 Rule 34 order is the current text, and the ND pattern runs.
