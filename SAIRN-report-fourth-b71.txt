@@ -1,0 +1,43 @@
+SAIRN REPORT -- fourth b71 -- 2026-10-30
+
+Every fix is cited by commit hash. Each b71 commit carries its own
+`git merge-base --is-ancestor <sha> origin/main` result in handoff
+section 1 (origin/main f50758d13f5e; all exit 0). The handoff landed as
+ba2fd8e39530.
+
+1 F3 LIVE DRIVE, LEG-AUDIT-2026
+  P1 PASS   empty F3 -> 403 APPRENTICE_NOT_CLEARED, no token
+  P4 PASS   F3 cleared, no supervisor -> 403 SUPERVISOR_REQUIRED, no token
+  P8 PASS   F3 cleared, B71-DIR named -> 200, token minted
+  Teardown: F3 restored to [] and read back.
+  Evidence: docs/live-residue/2026-10-30-fourth-b71-f3-live-drive.json
+  (committed in 79aa5607a).
+  Before this batch only the owner existed on the licence (measured). I
+  added B71-DIR and B71-APP and left them active. Their PINs are in the
+  scratchpad only.
+
+2 STONEDESK PRESENCE -- 79aa5607a (958131e3a before the rebase)
+  M1, E1-E4, I1-I3 and X1-X3 went FAIL -> PASS in cc's stress tool, which
+  now reports 19 PASS and 7 CONTROL-OK. The only FAILs left are T1a/T1b/T1d
+  (hank's api).
+  tests/stonedesk_presence_fixes_b69.js: arm 11 gates on the verdict list,
+  11/0.
+  sd_tax_money_coercion: its single pre-existing failure only.
+
+3 G-1 -- 3d695069c (c178ee514 before the rebase)
+  grdData now sends app_id: APP_ID. Migration measured: 0 rows to move.
+  key_collision_check: identical output before and after (1 pre-existing
+  stonedesk collision).
+  field_scope: 38/38 before and after.
+  Grounds suites: exit 0.
+
+4 METHODOLOGY
+  Fixes are cited by commit hash, never by line number.
+
+5 L3a
+  Still FAIL by design after the b71 fixes. L3b and L3e PASS, the L3c
+  control holds, and declinability is 31/0.
+
+PUSH NOTES
+  push_retry re-seated the register citations across one rebase. No skip,
+  override or force was used.

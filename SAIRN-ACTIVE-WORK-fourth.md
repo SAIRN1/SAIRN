@@ -2393,3 +2393,13 @@ Full account: `SAIRN-handoff-fourth-b69.md`.
 - Every commit's ancestor check is in handoff section 1.
 
 Full account: `SAIRN-handoff-fourth-b70.md`.
+
+## batch b71 -- 2026-10-30, CLOSED
+
+- F3 live: P1, P4 and P8 PASS.
+- StoneDesk presence fixes: `79aa5607a`. Every fourth-owned scenario PASS.
+- G-1 grdData `app_id`: `3d695069c`. 0 rows to migrate.
+- L3a FAIL by design, as before.
+- Every commit's ancestor check is in handoff section 1.
+
+Full account: `SAIRN-handoff-fourth-b71.md`.

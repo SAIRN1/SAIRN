@@ -1,0 +1,18 @@
+SAIRN DIGEST -- fourth b71 -- 2026-10-30
+CONTEXT 66.3% of 1,000,000 -- 663,260 tokens, measured.
+STATUS: all five items done; every b71 ancestor check is exit 0 (handoff section 1); fixes are cited by hash.
+DECISION-NEEDED: move the LEG-AUDIT-2026 PINs (owner, B71-DIR, B71-APP) from the fourth scratchpad to the password manager.
+READ: SAIRN-handoff-fourth-b71.md (whole state). Detail: SAIRN-report-fourth-b71.txt.
+SQL: none.
+CHANGED:
+  79aa5607a  stonedesk: M1, E1-E4, I1-I3, X1-X3 closed (cc stress: 19 PASS, 7 controls OK; only hank's T1 left)
+  3d695069c  sairngrounds: grdData sends app_id (G-1); measured 0 rows to migrate
+1 F3 live on LEG-AUDIT-2026: P1 PASS, P4 PASS, P8 PASS (docs/live-residue/2026-10-30-fourth-b71-f3-live-drive.json)
+2 key_collision output identical before/after; field_scope 38/38 before/after
+3 L3a still FAILs by design (C2); L3b/L3e PASS; declinability 31/0
+NEXT, in order:
+  a. hank: StoneDesk T1a/T1b/T1d and SAIRNlegacy L1/L2 (api)
+  b. fourth: update the SDP/LGP index rows to cite 79aa5607a
+UNVERIFIED: none.
+EVIDENCE-path: tools/stonedesk_presence_stress.py; tests/stonedesk_presence_fixes_b69.js; docs/live-residue/2026-10-30-fourth-b71-f3-live-drive.json.
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\83c60d05-1589-4389-a5cf-cd99265bab76.jsonl
