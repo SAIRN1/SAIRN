@@ -5043,8 +5043,8 @@
       "task": "b71 G-1 grdData app_id FILES: sairngrounds.html",
       "claimed_at": "2026-10-30T23:08:49Z",
       "claimed_at_epoch": 1793401729.8336904,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-30T23:19:42Z",
       "files": [
         "sairngrounds.html"
       ]
