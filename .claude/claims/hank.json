@@ -4854,8 +4854,8 @@
       "task": "J6 DC probate deadline seed; M5 PARTIAL render check",
       "claimed_at": "2026-10-30T08:50:17Z",
       "claimed_at_epoch": 1793350217.9658914,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-30T09:10:02Z",
       "files": null
     }
   ],
