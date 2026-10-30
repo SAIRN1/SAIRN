@@ -1,0 +1,15 @@
+DIGEST -- cody b69, 2026-10-30. All 6 items DONE.
+STATUS: 1 NEW TOOL (report-only), REVIEWS, DOCS. No app code changed. NO SQL.
+CHANGED: tools/reentry_hold_check.py (new) + tooling_inventory entry + manifest; tier-a (1 discharged); index row B69-REENTRY-14 + shards.
+LANDED: full gate; handoff at f0c7ed23b == origin/main.
+ITEM 1 -- fourth b70 finUpdateKPIs SOUND (arms re-driven RED on 3d4ff0400^); none else assigned to cody.
+ITEM 2 -- re-entry checker 38b6cdfcf: 20 fixtures locked + ablated; 448 handlers -> 20 RE-ENTRANT, ~14 real (read), recall 40/47.
+ITEM 3 -- citation audit: 1 slip (e22c9cd0b license.js:189) re-anchored to code + blob c18628c4f574.
+ITEM 4 -- 7 rows spelled out in the report section 4 (id, blocker, next actor).
+ITEM 5 -- re-entry 448/448 classified, 20/20 read; licence 13/13 guards; mech/cash/vet have no guard (unverified need).
+ITEM 6 -- handoff before report; pushed and confirmed landed.
+DECISION-NEEDED: none.
+UNVERIFIED: whether sairnmechanical/sairncash/sairnvet need a licence re-key guard.
+NEXT: cody fixes B69-REENTRY-14 (msbCheckout, generateClaim, saveGfe first); cc/fourth/hank/hover2 rows per report section 4.
+EVIDENCE-path: SAIRN-handoff-cody-b69.md, SAIRN-report-cody-b69.txt
+CONTEXT 61.5% of 1,000,000 -- 614,934 tokens, measured.

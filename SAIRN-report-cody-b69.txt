@@ -1,0 +1,42 @@
+SAIRN REPORT -- cody b69 (2026-10-30)
+=====================================
+Handoff: SAIRN-handoff-cody-b69.md. Citations are by record opened_at, landed commit SHA, log hash, or quoted code plus a blob hash.
+
+1. REVIEW OBLIGATIONS: the one assigned to cody is discharged.
+   - fourth 2026-10-30T08:33:24Z, finUpdateKPIs, fix 3d4ff0400: SOUND.
+     - Arms 9-10 were re-driven RED on 3d4ff0400^ in a temp tree and pass at HEAD.
+     - No other raw string-method reader of a stored quote total.
+     - Nothing reads the removed margin.
+   - Commit bea669fd2. No other obligation is assigned to cody.
+
+2. BACKLOG, starting with the re-entry checker: tools/reentry_hold_check.py (38b6cdfcf), report-only.
+   - Criteria 2026-10-30.cody-b69.4, locked by 20 fixtures; each tool layer was ablated and its arm went red.
+   - The criteria moved .1 -> .4 against two judged samples, declared in the file. F4's expected verdict was corrected as WRONG, not fitted.
+   - The lock twice caught a literal backspace my own edit had written into a regex.
+   At HEAD: 448 inline-wired async handlers -> 44 HELD, 382 NOT-SUBJECT, 20 RE-ENTRANT.
+   - Precision, all 20 read: about 14 likely real, 6 false.
+   - Recall on b64's known fixes: 40 of 47. The other 7 are outside the declared universe.
+   - The 14 are routed to cody as B69-REENTRY-14-CODY-2026-10-30, by file + function.
+
+3. CITATION AUDIT, last 10 non-bookkeeping commits: ONE slip.
+   - e22c9cd0b cites api/_lib/license.js:189 bare. The anchor of record is the code "const upper = key.toUpperCase();", which is unique in the file, at blob c18628c4f574. Recorded in the handoff, since a pushed message cannot be amended.
+   - The other matches were timestamp minutes, or numbers already beside a blob hash and quoted code.
+   - This batch's own handoff had two pre-rebase SHAs; they were re-seated to the landed ones before this report.
+
+4. THE 7 HANDOFF-TABLE ROWS (row, id, what blocks it, next actor):
+   R1  Tier A review of cody b68 (record 2026-10-30T09:00:48Z)   blocked on: its assigned reviewer   next: cc
+   R2  Tier A review of cody b66 (record 2026-10-29T20:17:23Z)   blocked on: its assigned reviewer   next: fourth
+   R3  B67-SDN-WRITE-UNCONFIRMED-CODY-2026-10-30 (blob 881804937a60)   blocked on: hank's api/ code   next: hank
+   R4  deploy_verify $(...)/backtick silent skip (verdict on fourth 2026-10-29T21:30:59Z, c7d7e74d8)   blocked on: fourth's file, no fix since   next: fourth
+   R5  exit_status_attributable suppressions (verdict on cc 2026-10-06T06:18:11Z, 3cf3d5ec3e2c)   blocked on: cc's file, no commit since   next: cc
+   R6  standing re-entry checker   CLOSED (38b6cdfcf); its findings carry as B69-REENTRY-14   next: cody (the 14)
+   R7  H2 rows: seq 813 (hash ed20a6b9...) and the seq-1111 calibration list (hash 94e2e6b8...)   blocked on: the auditor log is builder-denied   next: hover2
+
+5. SWEEP COVERAGE.
+   - Re-entry: 448 of 448 handlers classified; 20 of 20 candidates read. .then, non-inline and timer shapes are NOT covered, and say so in the tool.
+   - Licence guards: 13 of 13 fingerprint-guard apps swept. stonedesk is the declared NO_GUARD case. sairnmechanical, sairncash and sairnvet have no re-key guard (0 each), so need is UNVERIFIED and routed to cody to check.
+   - No other sweep class of mine is open.
+
+6. PUSH: LANDED.
+   - Gate refusals cleared at their cause: a missing tooling-inventory entry, then a missing OWNER line.
+   - The handoff landed at f0c7ed23b7c7ea74defbd034a8027b460c346ace, measured as HEAD == origin/main after a fetch. This report and digest are the final commit.
