@@ -42,6 +42,11 @@ BLOCK LOG: ~/SAIRN-SESSION-LOCKS/deny-blocks.log, append-only, one tab-separated
 refusal: UTC timestamp, agent, path, call type, reason. Outside every clone and outside any
 settings.json. A failure to write it is reported on stderr and does NOT lift the refusal.
 """
+import sys
+_HOOK_DIR = __file__.replace('\\', '/').rsplit('/', 1)[0].lower()
+# b117 (H2 cold read b98, class shadow-import): the directory of this script is sys.path[0], so a json.py or os.py dropped beside the
+# hook would be IMPORTED by the hook. Nothing here imports from its own directory, so it is removed before any other import.
+sys.path[:] = [_p for _p in sys.path if _p and _p.replace('\\', '/').rstrip('/').lower() != _HOOK_DIR]
 import datetime
 import glob
 import json
@@ -818,11 +823,11 @@ def block_log(agent, path, call, reason):
             flags |= getattr(os, 'O_BINARY', 0)
         fd = os.open(BLOCK_LOG, flags)
         try:
-            os.write(fd, line.encode('utf-8'))
+            os.write(fd, line.encode('utf-8', 'backslashreplace'))
         finally:
             os.close(fd)
         return True
-    except OSError as e:
+    except Exception as e:     # b117: not only OSError -- a UnicodeEncodeError here used to lift the refusal (exit 1 is non-blocking)
         sys.stderr.write('NOTE: block log not written (%s); the refusal stands.\n' % e)
         return False
 
@@ -845,9 +850,16 @@ def main(argv):
     path, call, reason = verdict
     if isinstance(payload, dict) and payload.get('agent_type'):
         agent += '/' + str(payload['agent_type'])
-    block_log(agent, path, call, reason)
-    sys.stderr.write('REFUSED by the hover builder-path deny-list: %s [%s]. This role audits and flags; it does not build. '
-                     'Log it as a finding for the owning builder. Block recorded in %s.\n' % (reason, path, BLOCK_LOG))
+    try:
+        block_log(agent, path, call, reason)
+    except BaseException:       # b117: a refusal is never lifted by its own bookkeeping
+        pass
+    msg = ('REFUSED by the hover builder-path deny-list: %s [%s]. This role audits and flags; it does not build. '
+           'Log it as a finding for the owning builder. Block recorded in %s.\n' % (reason, path, BLOCK_LOG))
+    try:
+        sys.stderr.write(msg)
+    except BaseException:       # a lone surrogate in the path cannot be encoded by the console
+        sys.stderr.write(msg.encode('ascii', 'backslashreplace').decode('ascii'))
     return 2
 
 
@@ -1084,6 +1096,29 @@ def selftest():
         p = subprocess.run([sys.executable, os.path.join(root, 'no_such_hook.py')], capture_output=True, text=True)
         print('ENTRY missing script   -> exit %d %s' % (p.returncode, 'ok' if p.returncode == 2 else '<-- must be 2'))
         rc = rc or (0 if p.returncode == 2 else 1)
+        # b117 arms on the SCRIPT FILE ITSELF (a copy with its block log redirected, so the real log gains no row)
+        ent = os.path.join(root, 'entry_copy')
+        os.makedirs(ent)
+        src_text = open(os.path.abspath(__file__), encoding='utf-8').read()
+        marker_line = "BLOCK_LOG = os.path.join(LOCKS, 'deny-blocks.log')"
+        if marker_line not in src_text:
+            print('ENTRY b117 arms SKIPPED -- the BLOCK_LOG line moved <-- fix the selftest')
+            rc = rc or 1
+        else:
+            open(os.path.join(ent, 'hook.py'), 'w', encoding='utf-8').write(
+                src_text.replace(marker_line, 'BLOCK_LOG = %r' % os.path.join(root, 'entry_copy.log')))
+            lone = {'tool_name': 'Write', 'tool_input': {'file_path': cc + '/api/\ud800.js'}, 'cwd': own}
+            p = subprocess.run([sys.executable, os.path.join(ent, 'hook.py'), '--clone', own],
+                               input=json.dumps(lone, ensure_ascii=True).encode('ascii'), capture_output=True)
+            print('ENTRY lone-surrogate path -> exit %d %s' % (p.returncode, 'ok' if p.returncode == 2 else '<-- must be 2 (refusal lifted)'))
+            rc = rc or (0 if p.returncode == 2 else 1)
+            mark = os.path.join(root, 'shadow_marker.txt')
+            open(os.path.join(ent, 'json.py'), 'w').write('open(%r, "w").write("imported")\nraise ImportError("shadow")\n' % mark)
+            p = subprocess.run([sys.executable, os.path.join(ent, 'hook.py'), '--clone', own], input=b'not json', capture_output=True)
+            shadow = os.path.exists(mark)
+            print('ENTRY shadow json.py     -> exit %d, shadow module %s %s' % (p.returncode, 'IMPORTED' if shadow else 'not imported',
+                  'ok' if (p.returncode == 2 and not shadow) else '<-- must be exit 2 and not imported'))
+            rc = rc or (0 if (p.returncode == 2 and not shadow) else 1)
     finally:
         DEFECTS.clear()
         subprocess.run(['cmd', '/c', 'rmdir', os.path.join(root, 'junction')], capture_output=True)
@@ -1093,4 +1128,8 @@ def selftest():
 
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv[1:]))
+    try:
+        _rc = main(sys.argv[1:])
+    except BaseException:       # b117: any escape from main is a refusal, never exit 1 (non-blocking)
+        _rc = 2
+    sys.exit(_rc)

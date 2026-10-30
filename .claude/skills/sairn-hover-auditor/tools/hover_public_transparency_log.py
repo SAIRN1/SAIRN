@@ -301,10 +301,45 @@ def replay_proof(proof_bytes, start_digest):
     return attestations, None
 
 
-def verify_published(row, out_dir=HERE):
-    """(ok, detail) for one ledger row. Recomputes the digest from the row's
-    own (seq, hash, ts) -- NOT from the stored digest_hex, so a tampered
-    ledger row is caught -- then replays the saved proof from it."""
+def pin_values(proof_bytes, digest_bytes):
+    """What a proof must keep producing from THIS digest: its own sha256 and the
+    sorted commitment hexes of its attestations. An OTS operation chain does not
+    contain the digest it was issued for, so replay parses from ANY 32 bytes;
+    only a commitment recorded when the digest was known to be right can tell a
+    swapped row from the original (H2-b98-1, b117)."""
+    atts, _ = replay_proof(proof_bytes, digest_bytes)
+    return {'proof_sha256': hashlib.sha256(proof_bytes).hexdigest(),
+            'commitments': sorted(a['commitment'] for a in atts)}
+
+
+def pin_for(row, record_path=None):
+    """The pinned values for a ledger row: carried on the row itself (written at
+    publish time, b117 on) or, for older rows, the LATEST pin row appended by
+    --pin for the same seq. None when nothing pins it."""
+    if row.get('commitments') and row.get('proof_sha256'):
+        return {'proof_sha256': row['proof_sha256'], 'commitments': row['commitments'],
+                'basis': 'at issuance'}
+    path = record_path or RECORD_PATH
+    found = None
+    if os.path.isfile(path):
+        with open(path, encoding='utf-8') as f:
+            for line in f:
+                if line.strip():
+                    r = json.loads(line)
+                    if r.get('type') == 'pin' and str(r.get('seq')) == str(row.get('seq')):
+                        found = r
+    return found
+
+
+def verify_published(row, out_dir=HERE, record_path=None):
+    """(ok, detail) for one ledger row; ok is True, False, or None.
+    Recomputes the digest from the row's own (seq, hash, ts) and replays the
+    saved proof from it. A row edited INCONSISTENTLY (digest_hex no longer
+    matches its triple) is caught here. A row edited CONSISTENTLY -- another
+    finding hash with its matching digest_hex -- replays fine from any digest,
+    so replay alone cannot catch it; that is what the PIN is for: the proof's
+    sha256 and its commitments, recorded when the digest was known to be right.
+    ok is None (UNPINNED, cannot tell) when no pin exists -- never True."""
     expected = digest_for(row['seq'], row['finding_hash'], row['ts'])
     if expected.hex() != row.get('digest_hex'):
         return False, ('ledger row for seq=%s records digest %s but its own '
@@ -327,11 +362,25 @@ def verify_published(row, out_dir=HERE):
         return False, 'proof did not replay from this digest: %s' % e
     kinds = ', '.join('%s (%s)' % (a['kind'], a['detail']) for a in atts)
     confirmed = [a for a in atts if a['kind'] == 'bitcoin']
+    pin = pin_for(row, record_path)
+    if pin is None:
+        return None, ('UNPINNED -- the proof replays from the recomputed digest, but nothing '
+                       'records which digest it was issued for, and replay succeeds from ANY '
+                       'digest, so this row could have been swapped: cannot tell. Run --pin '
+                       'to pin it from the current row (a trust-on-first-use pin, labelled '
+                       'as such) -- %s' % kinds)
+    if hashlib.sha256(proof).hexdigest() != pin['proof_sha256']:
+        return False, 'the proof file is not the one pinned for this seq (sha256 differs)'
+    if sorted(a['commitment'] for a in atts) != sorted(pin['commitments']):
+        return False, ('the proof replayed from this row\'s digest gives different commitments than '
+                        'the pinned ones -- the row names a different digest than the proof was '
+                        'issued for')
+    basis = pin.get('basis') or 'at issuance'
     if confirmed:
-        return True, ('REPLAYED from the recomputed digest; BITCOIN-CONFIRMED '
-                       '-- %s' % kinds)
-    return True, ('REPLAYED from the recomputed digest; attestation(s) '
-                   'PENDING, not yet on-chain -- %s' % kinds)
+        return True, ('REPLAYED from the recomputed digest; PINNED (%s); BITCOIN-CONFIRMED '
+                       '-- %s' % (basis, kinds))
+    return True, ('REPLAYED from the recomputed digest; PINNED (%s); attestation(s) '
+                   'PENDING, not yet on-chain -- %s' % (basis, kinds))
 
 
 def try_upgrade(row, out_dir=HERE, http_get=None, timeout=20):
@@ -410,7 +459,8 @@ def save_proof(seq, proof_bytes, out_dir):
     return ots_path
 
 
-def record(seq, finding_hash, ts, digest_bytes, calendar_url, proof_path, record_path=RECORD_PATH):
+def record(seq, finding_hash, ts, digest_bytes, calendar_url, proof_path, record_path=RECORD_PATH,
+           proof_bytes=None):
     """Appends ONE row to the local side-ledger -- seq, hash, ts, digest
     hex, calendar URL, proof path. Never the summary. This ledger is NOT
     the public artifact (the .ots proof + Bitcoin blockchain are); it is
@@ -421,6 +471,11 @@ def record(seq, finding_hash, ts, digest_bytes, calendar_url, proof_path, record
            'digest_hex': digest_bytes.hex(), 'calendar_url': calendar_url,
            'proof_path': proof_path,
            'recorded_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}
+    if proof_bytes is not None:
+        try:
+            row.update(pin_values(proof_bytes, digest_bytes))   # pinned AT ISSUANCE (b117)
+        except CouldNotTell as e:
+            row['pin_error'] = str(e)[:120]                      # stays UNPINNED, and says why
     with open(record_path, 'a', encoding='utf-8') as f:
         f.write(json.dumps(row) + '\n')
     return row
@@ -447,7 +502,7 @@ def publish(seq, log_path=LOG_PATH, calendar_url=DEFAULT_CALENDAR, out_dir=HERE,
     proof_bytes = submit_digest(digest_bytes, calendar_url=calendar_url, http_post=http_post)
     proof_path = save_proof(seq, proof_bytes, out_dir)
     row = record(fields['seq'], fields['hash'], fields['ts'], digest_bytes,
-                  calendar_url, proof_path, record_path=record_path)
+                  calendar_url, proof_path, record_path=record_path, proof_bytes=proof_bytes)
     return row, proof_path
 
 
@@ -640,6 +695,43 @@ def run_fixtures():
             ck('V6 KNOWN-BAD CONTROL: altering the ts in a ledger row breaks '
                'verification -- the proof is bound to the exact (seq, hash, '
                'ts) triple, not merely to the seq', ok_t2 is False)
+
+            # H2-b98-1 (b117): the PIN. Built on the REAL proof, in a scratch copy, so the real ledger and proof
+            # stay untouched. A proof replays from ANY digest, so a CONSISTENTLY swapped row needs a pin.
+            ptmp = tempfile.mkdtemp(prefix='hover_ptl_pin_')
+            pproof = os.path.join(ptmp, 'finding-seq%s.ots' % row0['seq'])
+            with open(pproof, 'wb') as pf:
+                pf.write(real_proof)
+            prec = os.path.join(ptmp, 'ledger.jsonl')
+            rowp = dict(row0)
+            rowp['proof_path'] = pproof
+            rowp.update(pin_values(real_proof, good_digest))
+            ok_p, det_p = verify_published(rowp, record_path=prec)
+            ck('P1 a row carrying its pin verifies ok and says PINNED', ok_p is True and 'PINNED' in det_p)
+            swapped = dict(rowp)
+            swapped['finding_hash'] = 'a-different-finding-hash'
+            swapped['digest_hex'] = digest_for(swapped['seq'], swapped['finding_hash'], swapped['ts']).hex()
+            ok_s, det_s = verify_published(swapped, record_path=prec)
+            ck('P2 KNOWN-BAD CONTROL: a row swapped CONSISTENTLY (new hash, matching digest_hex, same proof) '
+               'FAILS on the pin, although replay alone accepts it',
+               ok_s is False and 'different commitments' in det_s)
+            bare = {k: v for k, v in rowp.items() if k not in ('commitments', 'proof_sha256')}
+            ok_u, det_u = verify_published(bare, record_path=prec)
+            ck('P3 an UNPINNED row is None (cannot tell), never True', ok_u is None and 'UNPINNED' in det_u)
+            with open(pproof, 'wb') as pf:
+                pf.write(real_proof[:-1] + bytes((real_proof[-1] ^ 1,)))
+            ok_f, _ = verify_published(rowp, record_path=prec)
+            ck('P4 KNOWN-BAD CONTROL: a proof file altered after pinning FAILS', ok_f is False)
+            with open(pproof, 'wb') as pf:
+                pf.write(real_proof)
+            pin_row = {'type': 'pin', 'seq': bare['seq'], 'basis': 'backfill (selftest)'}
+            pin_row.update(pin_values(real_proof, good_digest))
+            with open(prec, 'w', encoding='utf-8') as prf:
+                prf.write(json.dumps(pin_row) + '\n')
+            ok_b, det_b = verify_published(bare, record_path=prec)
+            ck('P5 a backfilled pin row makes an old unpinned row verifiable and its basis is shown',
+               ok_b is True and 'backfill' in det_b)
+            shutil.rmtree(ptmp, ignore_errors=True)
         else:
             ck('V0 verifier controls SKIPPED -- no real proof+ledger pair '
                'available (reported, never silently passed)', False)
@@ -678,6 +770,8 @@ def main(argv):
             for line in f:
                 if line.strip():
                     row = json.loads(line)
+                    if row.get('type') == 'pin':
+                        continue
                     print('seq=%(seq)s hash=%(finding_hash)s...%(ts)s -> %(proof_path)s'
                           % {'seq': row['seq'], 'finding_hash': row['finding_hash'][:12],
                              'ts': row['ts'], 'proof_path': row['proof_path']})
@@ -724,24 +818,30 @@ def main(argv):
         with open(RECORD_PATH, encoding='utf-8') as f:
             for line in f:
                 if line.strip():
-                    rows.append(json.loads(line))
+                    r0 = json.loads(line)
+                    if r0.get('type') != 'pin':
+                        rows.append(r0)
         if only is not None:
             rows = [r for r in rows if r.get('seq') == only]
             if not rows:
                 print('COULD NOT RUN: seq=%d is not in the ledger' % only)
                 return 2
         bad = 0
+        unpinned = 0
         seen = set()
         for row in rows:
             if row['seq'] in seen:
                 continue
             seen.add(row['seq'])
             ok, detail = verify_published(row)
-            print('%s seq=%-5s %s' % ('ok  ' if ok else 'FAIL', row['seq'], detail))
-            if not ok:
+            print('%s seq=%-5s %s' % ('ok  ' if ok else ('????' if ok is None else 'FAIL'), row['seq'], detail))
+            if ok is None:
+                unpinned += 1
+            elif not ok:
                 bad += 1
         print()
-        print('%d proof(s) checked, %d failed.' % (len(seen), bad))
+        print('%d proof(s) checked, %d failed, %d UNPINNED (cannot tell, counted as neither ok nor failed).'
+              % (len(seen), bad, unpinned))
         print('WHAT "ok" MEANS HERE, and the limit is sharper than it first '
               'looks. It means: (1) the ledger row is self-consistent -- its '
               'recorded digest matches a digest recomputed locally from its '
@@ -760,7 +860,58 @@ def main(argv):
               'the real block. Until then these are well-formed pending '
               'receipts, and saying more than that would be the overclaim '
               'this role exists to catch in other people\'s work.')
-        return 0 if bad == 0 else 1
+        print('UPDATE b117 (H2-b98-1): a row is now ok only if it is PINNED -- its proof sha256 and '
+              'commitments were recorded when the digest was known to be right, so a row swapped '
+              'CONSISTENTLY (another hash with its own digest_hex) no longer passes on replay alone. '
+              'UNPINNED rows exit 2 (cannot tell), never 0.')
+        return 1 if bad else (2 if unpinned else 0)
+
+    if '--pin' in argv:
+        # Trust-on-first-use pin for a row published before b117. It records what the CURRENT row and
+        # proof produce; it cannot prove the row was never swapped before today, and says so on the row.
+        if not os.path.isfile(RECORD_PATH):
+            print('COULD NOT RUN: no publications recorded at %s' % RECORD_PATH)
+            return 2
+        rows = []
+        with open(RECORD_PATH, encoding='utf-8') as f:
+            for line in f:
+                if line.strip():
+                    r0 = json.loads(line)
+                    if r0.get('type') != 'pin':
+                        rows.append(r0)
+        only = None
+        if '--seq' in argv and argv.index('--seq') + 1 < len(argv):
+            only = str(argv[argv.index('--seq') + 1])
+        done = 0
+        for row in rows:
+            if only is not None and str(row['seq']) != only:
+                continue
+            if pin_for(row) is not None:
+                print('already pinned: seq=%s' % row['seq'])
+                continue
+            digest = digest_for(row['seq'], row['finding_hash'], row['ts'])
+            path = row.get('proof_path') or os.path.join(HERE, 'finding-seq%s.ots' % row['seq'])
+            try:
+                with open(path, 'rb') as pf:
+                    proof = pf.read()
+                vals = pin_values(proof, digest)
+            except (OSError, CouldNotTell) as e:
+                print('COULD NOT PIN seq=%s: %s' % (row['seq'], e))
+                continue
+            if digest.hex() != row.get('digest_hex'):
+                print('REFUSED to pin seq=%s: the row is inconsistent with itself' % row['seq'])
+                continue
+            pin = {'type': 'pin', 'seq': row['seq'], 'digest_hex': digest.hex(), 'basis':
+                   'backfill b117: pinned from the row and proof as they are TODAY; not proof that they '
+                   'were never swapped before',
+                   'pinned_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}
+            pin.update(vals)
+            with open(RECORD_PATH, 'a', encoding='utf-8') as f:
+                f.write(json.dumps(pin) + '\n')
+            print('pinned seq=%s (%d commitment(s))' % (row['seq'], len(vals['commitments'])))
+            done += 1
+        print('%d row(s) pinned.' % done)
+        return 0
 
     if '--publish' in argv:
         def opt(name, default=None):

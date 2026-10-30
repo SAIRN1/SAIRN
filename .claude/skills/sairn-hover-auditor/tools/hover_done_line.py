@@ -246,6 +246,25 @@ def git_check(cfg):
         raise NotDone('%s commit(s) are not on origin/main: push first' % r.stdout.strip())
 
 
+def settings_check(cfg):
+    """b117 (finding 1825): a batch is NOT DONE while a Claude Code settings file in this clone or the home directory does not parse, or a hook names
+    a missing script -- a file that does not parse is skipped, and every hook in it is silently off. Fails closed: could-not-read is not a pass."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    sys.path.insert(0, here)
+    try:
+        import hover_settings_parse_check as sp
+    except ImportError as e:
+        raise NotDone('hover_settings_parse_check.py cannot be imported (%s), so the settings files are unchecked' % e)
+    finally:
+        sys.path.pop(0)
+    bad = []
+    for path, state, detail in sp.check(cfg['clone']):
+        if state in ('bad', 'unreadable'):
+            bad.append('%s: %s' % (path, detail[:160]))
+    if bad:
+        raise NotDone('a settings file is broken, so hooks may be silently off: ' + ' | '.join(bad))
+
+
 def produce(batch, cfg):
     if not (batch.startswith('b') and batch[1:].isdigit()):
         raise NotDone('--batch must look like b107, got %r' % batch)
@@ -257,6 +276,7 @@ def produce(batch, cfg):
         raise NotDone('the report was uploaded before the handoff (handoff file before report)')
     chain_checks(cfg)
     claims_check(cfg)
+    cfg.get('settings', settings_check)(cfg)
     cfg.get('git', git_check)(cfg)
     line ='done %s %s' % (batch, got[d][0])
     with io.open(cfg['state'], 'w', encoding='utf-8', newline='\n') as fh:
