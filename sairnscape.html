@@ -2603,6 +2603,16 @@ function scpLicenceGuard(k) {
   }
   if (!prev) { try { localStorage.setItem(SCP_LIC_FP, next); } catch (e) {} return true; }
   if (prev === next) return true;
+  // The server treats a key that differs only in case as the SAME licence
+  // (api/_lib/license.js retries upper-case), so a case-only difference is
+  // not a re-key and must not offer to wipe this licence's own records
+  // (cc b76 F1, cody b68). The stored key is still the previous one here.
+  var sameKey = null;
+  try { sameKey = JSON.parse(localStorage.getItem('scp_lic')); } catch (e) {}
+  if (typeof sameKey === 'string' && sameKey.trim().toUpperCase() === String(k).trim().toUpperCase()) {
+    try { localStorage.setItem(SCP_LIC_FP, next); } catch (e) {}
+    return true;
+  }
 
   var ls = [], ss = [];
   try { ls = Object.keys(localStorage).filter(scpIsOwnKey); } catch (e) {}

@@ -118,6 +118,22 @@ for (const [file, [fpVar, guard, keyName, json]] of Object.entries(APPS)) {
     check(file + ' L4: no fingerprint and no stored key -> adopted, as the design chose',
       r.ok === true && r.asked.length === 0 && r.ls.has(data), JSON.stringify({ ok: r.ok, asked: r.asked.length }));
   }
+  // CASE (cc b76 F1 on cody b65's 2026-10-29T19:12:48Z record): the server
+  // treats a key differing only in case as the SAME licence
+  // (api/_lib/license.js retries upper-case), so the guard must not offer to
+  // wipe a licence's own records over it.
+  const lower = A.toLowerCase();
+  {
+    const r = run(src, guard, { [keyName]: stored(lower), [data]: '[{"id":"R1"}]' }, A, false);
+    check(file + ' L5: no fingerprint, the same licence stored in lower case -> no question, nothing removed',
+      r.ok === true && r.asked.length === 0 && r.ls.has(data), JSON.stringify({ ok: r.ok, asked: r.asked.length }));
+  }
+  {
+    const fp = run(src, guard, {}, lower, false).ls.getItem(fpKey);   // the fingerprint a lower-case entry recorded
+    const r = run(src, guard, { [fpKey]: fp, [keyName]: stored(lower), [data]: '[{"id":"R1"}]' }, A, false);
+    check(file + ' L6: fingerprint of the lower-case key recorded, same licence re-entered in upper case -> no question',
+      !!fp && r.ok === true && r.asked.length === 0 && r.ls.has(data), JSON.stringify({ fp: !!fp, ok: r.ok, asked: r.asked.length }));
+  }
 }
 
 console.log('\n' + (fail || couldNot ? 'FAILED' : 'ok') + '  licence guard (legacy device), ' + Object.keys(APPS).length +
