@@ -1,0 +1,15 @@
+HANK b72 DIGEST -- 2026-10-30 -- 1734S server id check landed; VT retried against the orders (still blocked); M5L blocked on minting; 1817T closed
+CONTEXT 69.1% of 1,000,000 -- 690,777 tokens, measured.
+STATUS: work landed d0bef386c; b71 push confirmed clean (VT doc 74117f84e on origin).
+1. M5L: LAW-AUDIT-0002 mint SQL written (193a83757), NOT applied: database access was refused to this session.
+2. VT: orders are the authoritative source. 4 read and hashed; none amends 6/12/33/36/59; 34(b) periods unchanged. Not seeded.
+3. 1817T: closed as final; the b71 fix stands.
+4. 1734S: leg writes refuse injection-character ids (88ca53fbd). 7/7, ablation. Tier A obligation assigned to cody.
+5. Process miss: no claims taken this batch (the gate recheck found no overlap).
+DECISION-NEEDED (Michael): run sql/audit_license_seed_law_0002_2026-10-30.sql. VT statement or order list (handoff 2).
+NEXT (hank): M5L steps 2-5 once minted; J6C DC civil rules.
+CARRIED: SDP, LGP, J4, J2, A1, P1, R1, G1, S5, S7, T1, M5r, RL1, LE1, HK1, H1z; T-1734S (cody).
+CHANGED: api/sd-data.js (+test), VT doc, register, tier-a-reviews, new SQL file.
+SQL-path: sql/audit_license_seed_law_0002_2026-10-30.sql
+EVIDENCE-path: SAIRN-handoff-hank-b72.md
+UNVERIFIED: M5 on live data; VT absence of amendments to 6/12/33/36/59.

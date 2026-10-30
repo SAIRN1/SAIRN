@@ -1,0 +1,30 @@
+HANK b72 REPORT -- 2026-10-30
+
+1. M5L: BLOCKED.
+   - The scratch licence LAW-AUDIT-0002 is written as sql/audit_license_seed_law_0002_2026-10-30.sql (193a83757) but NOT minted.
+   - This session's database access (Supabase) was refused.
+   - LAW-AUDIT-2026 already has an owner whose PIN is not held.
+   - Next: Michael runs the SQL, then hank bootstraps, seeds the trust rows, and verifies the API and the panel.
+
+2. VT: retried against the promulgation orders (more authoritative: they ARE the amendments) (e207cd9bf).
+   - 4 orders read and hashed.
+   - 34(b) was amended in 2020, but its periods are unchanged.
+   - No order found amends 6/12/33/36/59.
+   - Absence is unprovable, so the rules are not seeded.
+   - The narrowed unblock is named in the handoff.
+
+3. 1817T: closed as final. The b71 fix (149c90b97) stands.
+
+4. 1734S: done (88ca53fbd).
+   - Leg writes now refuse ids with quote, backtick, <, >, &, backslash or control characters, or over 128 characters.
+   - Test 7/7 with an ablation. Suites as at base.
+   - A Tier A obligation is opened and assigned to cody.
+
+5. The b71 push was confirmed clean: every b71 commit, including the VT doc 74117f84e, is on origin/main.
+
+6. Process miss: no claims were taken this batch. The gate's recheck found no overlap.
+
+7. Landed: d0bef386c, plus this push.
+
+CONTEXT 69.1% of 1,000,000 -- 690,777 tokens, measured.
+Evidence: SAIRN-handoff-hank-b72.md
