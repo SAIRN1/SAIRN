@@ -4501,6 +4501,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/stonedesk_save_reentry.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "42b1050e1590830e330e3954a6034ccb201fe19e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/b51-countersign-lock-drift.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -5967,6 +5975,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "566de68fd4198a53aacf74664c322d49599d7110",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairngrounds_save_reentry.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "569ab9bc4c7c1c11a5e7ae61068a3a0d37f2345b",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -11787,6 +11803,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "aac69e6acf7db5f7e86f4f5fb0aef49c06609565",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/licence_guard_legacy_device.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "aadab627c8d051c654fbaeae04ce69b144ea3bf7",
    "criteria_version": "2026-10-06.1"
   },
   {
