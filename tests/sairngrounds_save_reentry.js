@@ -250,6 +250,47 @@ function world(push) {
     check('GS2 ...and the next shot\'s start, marked meanwhile, is kept, not thrown away',
       ctx.gcdShotStart === NEXT, JSON.stringify(ctx.gcdShotStart));
   }
+  // 6. TWO MORE (cody b69, tools/reentry_hold_check.py). sendDesignToQuote
+  // files a draft quote, then AWAITS its write -- rec.quote_id, the guard that
+  // refuses a re-send, is set only after it -- so a second press filed a second
+  // quote for the same design. grdUploadProgressPhoto waits on the AI call and
+  // then on the photo write, and clears grdPhotoB64 only at the end, so a second
+  // press during either wait filed a second photo record. Arms SQ / PA / PB 1-3.
+  console.log('6. the design-to-quote sender and the progress-photo upload');
+  const designSpec = {
+    id: 'SQ', name: 'sendDesignToQuote',
+    src: H.optional(html, /var grdDesignQuoting\s*=\s*false;/) + '\n' + L('async function sendDesignToQuote(){'),
+    given: (write, box) => Object.assign(quoteWorld(write, box), {
+      dwid: 'DW-1', DW_TYPE_LABELS: { bed: 'Bed' }, fdate: (d) => d,
+      // A fresh read each call, as ld('grd_designs') is: approved, not yet sent.
+      grdDesigns: () => [{ id: 'DW-1', property_id: 'P-1', approved: true, approved_by: 'Owner',
+        approved_at: '2026-10-29', quote_id: null, elements: [{ type: 'bed', label: 'Front bed' }] }],
+      saveDesignRecord: () => Promise.resolve(true)
+    }),
+    rows: (box) => box.rows.length, press: (ctx) => ctx.sendDesignToQuote(),
+    ok: { id: 'x' }, refused: null
+  };
+  const photoSpec = (id, leg) => ({
+    id, name: 'grdUploadProgressPhoto (' + leg + ' pending)',
+    src: H.optional(html, /var grdPhotoUploading\s*=\s*false;/) + '\n' + L('async function grdUploadProgressPhoto(){'),
+    given: (write, box) => ({
+      PROXY: '/api/claude', APP_ID: 'sairngrounds', grdPhotoScheduleId: 'S-1',
+      bldSched: () => [], bldGrdProgressPhotos: () => box.rows.slice(),
+      st: (k, list) => { if (k === 'grd_progress_photos') box.rows = list; return true; },
+      fetch: leg === 'AI call' ? write : () => Promise.resolve(AI_OK),
+      grdData: leg === 'AI call' ? () => Promise.resolve({ id: 'x' }) : write
+    }),
+    // The handler clears the photo when it finishes; a new press has a new one.
+    refill: (ctx) => { ctx.grdPhotoB64 = 'aGVsbG8='; },
+    // The record is filed after the AI answers: a row only measures the
+    // write-leg wait.
+    rows: leg === 'AI call' ? undefined : (box) => box.rows.length,
+    press: (ctx) => ctx.grdUploadProgressPhoto(),
+    ok: leg === 'AI call' ? AI_OK : { id: 'x' }, refused: leg === 'AI call' ? AI_REFUSED : null
+  });
+  for (const s of [designSpec, photoSpec('PA', 'AI call'), photoSpec('PB', 'photo write')]) {
+    await H.drive({ check, id: s.id, name: s.name, mk: H.mkFor(s), ok: s.ok, refused: s.refused });
+  }
   finished = true;
   console.log('\n' + (fail ? 'FAILED' : 'ok') + '  sairngrounds save re-entry: ' + pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);

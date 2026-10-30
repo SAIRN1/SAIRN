@@ -2554,7 +2554,11 @@ async function approveDesign(){
 // this app has no per-unit pricing data to draw from honestly, and the
 // existing Quote editor (openQuoteModal/saveQuote, unmodified) is exactly
 // where the office already prices every other quote.
+var grdDesignQuoting=false;
 async function sendDesignToQuote(){
+  if(grdDesignQuoting){toast('Still sending the last quote -- one moment');return;}
+  grdDesignQuoting=true;
+  try{
   var rec=dwid?grdDesigns().find(function(x){return x.id===dwid;}):null;
   if(!rec||!rec.approved){toast('Design must be approved first');return;}
   if(rec.quote_id){toast('Already sent to Quoting');return;}
@@ -2571,6 +2575,7 @@ async function sendDesignToQuote(){
   var bothSynced=quoteSyncResult&&designSyncResult;
   var whatFailed=quoteSyncResult?'the design record':(designSyncResult?'the quote':'the quote and the design record');
   toast(bothSynced?('Sent to Quoting as draft '+qrec.id+' -- pricing still needs to be filled in'):('Sent to Quoting as draft '+qrec.id+' locally -- server sync failed for '+whatFailed+', try again with a connection'),bothSynced?4000:7000);
+  }finally{grdDesignQuoting=false;}
 }
 // Informational only, mirrors sairnLoadWeather()'s go/no-go logic
 // (duplicated ~10 lines rather than refactored into a shared helper --
@@ -3661,7 +3666,11 @@ function grdPhotoFileChosen(input){
 // Real Claude vision call, same proven pattern as DreamClose/item 9's
 // bottle+food scanners -- describes what is actually visible, does not
 // fabricate a pass/fail scope judgment the model has no real basis for.
+var grdPhotoUploading=false;
 async function grdUploadProgressPhoto(){
+  if(grdPhotoUploading){toast('Still uploading the last photo -- one moment');return;}
+  grdPhotoUploading=true;
+  try{
   if(!grdPhotoB64){toast('Take a photo first');return;}
   var sched=bldSched().find(function(s){return s.id===grdPhotoScheduleId;});
   var isFinal=$('schedphoto-final').checked;
@@ -3719,6 +3728,7 @@ async function grdUploadProgressPhoto(){
   }
   rGrdScheduledPhotoList();rGrdQcQueue();
   grdPhotoB64=null;$('schedphoto-upload-btn').disabled=true;$('schedphoto-preview').style.display='none';
+  }finally{grdPhotoUploading=false;}
 }
 function rGrdScheduledPhotoList(){
   var el=$('schedphoto-list');if(!el)return;
