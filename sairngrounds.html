@@ -1781,7 +1781,12 @@ async function grdData(action, resource, payload) {
     var res = await fetch('https://sairn.vercel.app/api/sd-data', {
       signal: grdFetchTimeoutSignal(),
       method: 'POST', headers: headers,
-      body: JSON.stringify({ action: action, resource: resource, payload: payload })
+      // app_id: APP_ID (fourth b71, G-1, cc b77 routed): without it the server
+      // scoped every shared/routes request (employees, rt_routes, shared
+      // knowledge, employee_profile, render_usage) to 'stonedesk'. Access was
+      // already keyed on the session's app (cc b76); this is the DATA scope.
+      // Migration measured 2026-10-30: 0 grounds rows sit under 'stonedesk'.
+      body: JSON.stringify({ action: action, resource: resource, app_id: APP_ID, payload: payload })
     });
     if (!res.ok) return null;
     var j = await res.json();
