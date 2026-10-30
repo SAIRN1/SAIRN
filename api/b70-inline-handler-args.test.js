@@ -65,7 +65,7 @@ APPS.forEach((app) => {
   // sairnvet and sairncode carry JA(). sairnbiz and stonedesk write the
   // single-quoted form inline -- JS-escape, then their own HTML escape --
   // because their suites load app functions by hand-kept lists (a new global
-  // breaks them) and pin the fn('ID') markup.
+  // breaks them) and pin the single-quoted ID markup.
   const def = src.match(/^function JA\(s\)\{[^\n]*\}$/m);
   const escName = { 'sairnbiz.html': 'H', 'stonedesk.html': 'escHtml' }[app];
   const escDef = escName && src.match(new RegExp('^function ' + escName + '\\(s\\)\\{[^\\n]*\\}$', 'm'));
