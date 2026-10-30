@@ -1,0 +1,53 @@
+REPORT cc b79 -- 2026-10-30
+ITEM 1: manifest edits 0 (delta 0). Ledger edit diffed in scratch vs HEAD before writing: 11 diff lines, one record; note reword 2 lines vs working copy.
+ITEM 2: full text of each ask is in SAIRN-handoff-cc-b79.md section 3 (licensing plan section 7: 8 decisions; ctxmeter path; SD-AUDIT-2026 roles + dental audit licence; SEN-AUDIT-0002 caregiver credentials).
+ITEM 3: 580h quotes record CLOSED (cody discharge + fourth fix c7d7e74d). Literal output:
+$ python tools/builder_hook_presence.py
+BUILDER HOOK PRESENCE -- 4 of 4 builder clone(s) carry the deny hook unmodified (reference: origin/main in cc, hook blob 22b205e8ee6c)
+  cc      OK
+  cody    OK
+  fourth  OK
+  hank    OK
+  not on this machine: cloud
+EXIT=0
+
+$ python tools/tier_a_review_gate.py --list
+5 open Tier A review obligation(s):
+  hover    2026-10-28T21:14:26Z  sen_caregivers   ** OVERDUE 36h **
+           UNOWNED -- first-come. hover computed cc by the gate's least-loaded-then-alphabetical rule over the open records in this file (cc 5, cody 6, fourth 6, hank 5 at 2026-10-28); roster liveness not checked, so cc re-assigns with its own roster function if cc is not the right reviewer or is not live.
+           hover b92: a data-only test script for finding H1-965 (the sen_caregivers read branch of api/sd-data.js still 
+  cody     2026-10-29T20:17:23Z  sf_trustee_audits
+           ASSIGNED TO fourth  (held 13h)
+           ** COULD-NOT-TELL ** the recorded sha 0f8c36e107da does not resolve in this clone -- rebased away without a reseat, or never fetched. NOT fresh.
+           cody b66: (1) 12 licence guards. Each of sairndental, sairnsenior, sairncare, sairnbuild, sairndesign, sairnla
+  fourth   2026-10-29T21:38:43Z  law_trusttx, leg_cremations
+           ASSIGNED TO hank  (held 12h)
+           WIDER THAN THE OBLIGATION: the commit this is anchored to also changed 6 other file(s). `git show` on it shows more than you were asked to review.
+           fourth b69, a02ed68cf: leg_cremations F3 on the countersign route. api/_lib/countersign.js gains checkPreparer
+  fourth   2026-10-30T08:33:24Z  quotes, stonedesk_quote_history
+           ASSIGNED TO cody  (held 1h)
+           ** COULD-NOT-TELL ** the recorded sha 50e0df33bb96 does not resolve in this clone -- rebased away without a reseat, or never fetched. NOT fresh.
+           fourth b70: b0190f7dd stonedesk.html finUpdateKPIs reads stonedesk_quote_history quotes: String(q.total) befor
+  cody     2026-10-30T09:00:48Z  invoices, sd_invoices
+           ASSIGNED TO cc  (held 0h)
+           ** COULD-NOT-TELL ** the recorded sha 8aa4d7d6fe43 does not resolve in this clone -- rebased away without a reseat, or never fetched. NOT fresh.
+           cody b68: (1) all 13 licence guards (sairndental, senior, care, build, design, law, legacy, roofing, code, biz
+
+3 could not be compared at all (UNSTAMPED or COULD-NOT-TELL).
+That is NOT a clean bill: it is the absence of an answer, and
+every record opened before the sha stamp existed is in it.
+
+1 of them are past the 24h deadline. An obligation nobody closes
+is a queue people stop reading, which is the state this register was
+built to leave. Discharge them, or run --auto-discharge to close the
+ones a defect-register record already covers.
+EXIT=1
+
+  After the ledger release, the hover record line reads:
+  hover    2026-10-28T21:14:26Z  sen_caregivers   ** OVERDUE 36h **
+           UNOWNED -- first-come. AUDIT TRACK ONLY -- released by cc 2026-10-30 on Michael's standing ruling; builders are refused the hover path by builder_auditor_deny_hook, so no builder should pick this up. Earlier: hover computed cc by the gate's least-loaded-then-alphabetical rule over the open records in this file (cc 5, cody 6, fourth 6, hank 5 at 2026-10-28); roster liveness not checked, so cc re-assigns with its own roster function if cc is not the right reviewer or is not live.
+ITEM 4: handoff push measured after fetch: HEAD 436e566ac12fa7fe25910bd61a04e3b84b870de3, origin/main 436e566ac12fa7fe25910bd61a04e3b84b870de3, equal: yes.
+  b78 shared_knowledge C7 defect-register row: none needed (b78 made no fix). The b77 row exists: commit 52b9ca3a.
+ITEM 5: test_965 -- no sairn_claim existed; ledger reviewer_owner cc cleared to null with owner_released + AUDIT TRACK ONLY note. Validate:
+tier-a-reviews.json: 323 record(s), identities unique, statuses in vocabulary.
+CHANGED: SAIRN-handoff-cc-b79.md, docs/tier-a-reviews.json (1 record), report, digest.

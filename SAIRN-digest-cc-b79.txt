@@ -1,0 +1,14 @@
+DIGEST cc b79
+STATUS: closed.
+DONE: hover b92 test_965 released from cc to the audit track (ledger owner cleared, 11-line diff vs HEAD, validate OK).
+DONE: blocked asks stated in full in the handoff (licensing section 7, ctxmeter path, audit + caregiver credentials).
+DONE: hooks 4/4 exit 0; 580h quotes record closed; no b78 register row needed (b77 row 52b9ca3a exists).
+DECISION-NEEDED: Michael -- licensing section 7 (8 items); ctxmeter path; SD-AUDIT-2026 + dental audit credentials; SEN-AUDIT-0002 caregiver credentials.
+UNVERIFIED: none.
+CHANGED: handoff, docs/tier-a-reviews.json (1 record), report, digest.
+SQL: none.
+EVIDENCE-path: SAIRN-handoff-cc-b79.md, SAIRN-report-cc-b79.txt
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\a046cdf7-9eaf-4291-b1ac-b9b8bb34da67.jsonl
+NEXT: Tier A cody 2026-10-30T09:00:48Z (invoices, sd_invoices) is ASSIGNED TO cc.
+CONTEXT 29.8% of 1,000,000 -- 297,924 tokens, measured.
+END-OF-REPORT
