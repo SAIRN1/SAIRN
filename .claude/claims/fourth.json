@@ -5056,8 +5056,8 @@
       "task": "b71 presence FAILs M1 E I X FILES: stonedesk.html tests/stonedesk_presence_fixes_b69.js",
       "claimed_at": "2026-10-30T23:10:08Z",
       "claimed_at_epoch": 1793401808.4877243,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-30T23:18:51Z",
       "files": [
         "stonedesk.html",
         "tests/stonedesk_presence_fixes_b69.js"
