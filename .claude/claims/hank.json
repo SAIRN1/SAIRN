@@ -4865,8 +4865,8 @@
       "task": "H1y sdDrawingsLoad sdDrawingsDelete inline handler escape",
       "claimed_at": "2026-10-30T09:26:42Z",
       "claimed_at_epoch": 1793352402.5080626,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-30T09:41:40Z",
       "files": null
     },
     {
