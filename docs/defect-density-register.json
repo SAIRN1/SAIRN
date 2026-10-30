@@ -42129,7 +42129,7 @@
       "single_factor_note": "one encoding-context gap repeated across sites"
     },
     {
-      "commit": "406d82fe8b4b",
+      "commit": "88ca53fbd5f7",
       "date": "2026-10-30",
       "subject": "fix(sairnlegacy api, hank b72 #1734 server half): a leg write whose id holds a quote, backtick, <, >, &, backslash or control character, or exceeds 128, is refused 400 BAD_ID",
       "files": [
