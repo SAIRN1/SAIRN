@@ -5021,6 +5021,20 @@
         "sairnlegacy.html",
         "tests/sairnlegacy_supervisor_picker_b70.js"
       ]
+    },
+    {
+      "id": "fourth-1793348486",
+      "session": "fourth",
+      "subject": "stonedesk",
+      "task": "b70 M3 margin crash finUpdateKPIs FILES: stonedesk.html tests/stonedesk_presence_fixes_b69.js",
+      "claimed_at": "2026-10-30T08:21:26Z",
+      "claimed_at_epoch": 1793348486.3370688,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "stonedesk.html",
+        "tests/stonedesk_presence_fixes_b69.js"
+      ]
     }
   ],
   "refusals": [
