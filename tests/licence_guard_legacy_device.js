@@ -35,7 +35,10 @@ const APPS = {
   'sairnbiz.html':     ['SB_LIC_FP', 'sbLicenceGuard', 'sb_lic', true],
   'sairngrounds.html': ['GRD_LIC_FP', 'grdLicenceGuard', 'grd_lic', true],
   'sairnscape.html':   ['SCP_LIC_FP', 'scpLicenceGuard', 'scp_lic', true],
-  'sairnfreedom.html': ['SF_LIC_FP', 'sfLicenceGuard', 'sf_license_key', true]
+  'sairnfreedom.html': ['SF_LIC_FP', 'sfLicenceGuard', 'sf_license_key', true],
+  // cody b70: the two apps that stored a licence key beside local data with no guard
+  'sairnvet.html':     ['SV_LIC_FP', 'svLicenceGuard', 'sv_license', true],
+  'sairnmechanical.html': ['SAIRNMECHANICAL_LIC_FP', 'sairnmechanicalLicenceGuard', 'sairnmechanical_license_key', false]
 };
 
 let pass = 0, fail = 0, couldNot = 0;

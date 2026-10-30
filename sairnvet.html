@@ -3175,6 +3175,143 @@ function svGateMsg(text,isError){
 }
 
 /* Step 1: verify the licence server-side, then keep it. */
+// -- LICENCE RE-KEY ISOLATION (2026-09-03) ---------------------------------
+// PORTED 2026-10-30 (cody b70) from sairnbiz.html, with the cody b66
+// legacy-device and cody b68 same-licence-in-another-case checks. SAIRNvet
+// stores its licence key (sv_license) beside its own local data and had no
+// re-key guard, so a second licence entered on the same device opened the
+// first licence's local records. The original header follows.
+// docs/SAIRN-OPEN-WORK-INDEX.md: "No app clears local data on a license/device
+// re-key; storage keys are not license-scoped."
+//
+// THE HARM, concretely. Every SAIRN app keeps its working data in localStorage
+// under a fixed prefix that has nothing to do with WHICH LICENCE it belongs
+// to. Replace the key on a device -- a demo upgraded to a paid licence, a
+// contractor moving between two shops, a resold laptop, a support person
+// entering a different customer's key -- and the previous licence's jobs,
+// customers and records are still sitting there. The new licence opens the app
+// and sees them as its own. That is cross-tenant exposure inside the browser,
+// and no amount of server-side licence scoping prevents it, because the leak
+// never reaches a server.
+//
+// WHAT THIS DOES: remembers which licence the local data belongs to, and on a
+// CHANGE, stops and asks before letting the new licence in.
+//
+// WHAT IT DELIBERATELY DOES NOT DO:
+//   * It does NOT namespace every storage key by licence hash, which is what
+//     the open-work row proposed. That rewrites every read and write in the
+//     file and needs a migration for existing installs; getting it wrong
+//     orphans a customer's records. This closes the same exposure at one hook.
+//   * It does NOT wipe silently. A legitimate re-key (demo -> paid, same
+//     customer) would destroy real work, so it asks, and a refusal keeps the
+//     door shut rather than mixing two licences' data.
+//   * On FIRST RUN it ADOPTS whatever is already here rather than wiping. An
+//     existing install has no fingerprint and there is no way to know which
+//     licence its data belongs to; wiping on that guess would be the worse
+//     error by far.
+//
+// The fingerprint is a CHANGE DETECTOR, not a security primitive, and needs no
+// secrecy: these apps already store the licence key itself in plain
+// localStorage right beside it. It exists so a comparison does not require
+// keeping a second copy of the key.
+var SV_LIC_FP = 'sv_lic_fp';
+var SV_OWN_PREFIX = 'sv_';
+// Owned by no single app -- consent, install age, the cross-app learning store.
+// Reading another app's data has never made it yours to delete, and neither has
+// sharing an origin with it.
+var SV_SHARED_KEYS = ['sairn_created', 'sairn_privacy_accepted', 'sairn_learned_global',
+                    'sairn_tone_prefs', 's_attempts', 'sairn_audit'];
+// THE UNDERSCORE IN THE PREFIX IS LOAD-BEARING, and this is StoneDesk's lesson
+// applied rather than rediscovered: a prefix of 'sd' rather than 'sd_' matches
+// 'sdn_clients' and deletes a design studio's client list from inside another
+// app. Every SAIRN prefix is disjoint ONLY when the underscore is included.
+function svIsOwnKey(k) {
+  if (SV_SHARED_KEYS.indexOf(k) !== -1) return false;
+  if (k === SV_LIC_FP) return false;
+  return String(k).indexOf(SV_OWN_PREFIX) === 0;
+}
+// A live assertion, not a comment. If a future edit widens the prefix so
+// another app's keys start matching, this fires on load and the wipe refuses to
+// run rather than quietly eating somebody else's records.
+var SV_SCOPE_OK = ['sd_jobs', 'scp_jobs', 'sb_jobs'].every(function (k) { return svIsOwnKey(k) === false; })
+  && ['sv_license', 'sv_patients', 'sv_settings'].every(function (k) { return svIsOwnKey(k) === true; });
+
+// FNV-1a. Deliberately not a crypto hash: this only has to notice that two
+// strings differ, it runs synchronously in a gate handler, and crypto.subtle is
+// async. Said plainly so nobody later mistakes it for a security control.
+function svLicFingerprint(k) {
+  var h = 0x811c9dc5, s = String(k || '');
+  for (var i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+  }
+  return ('0000000' + h.toString(16)).slice(-8);
+}
+
+// Returns true if it is safe to proceed with this key. Call it BEFORE storing
+// the key -- the old key lives under this app's own prefix and is removed by
+// the wipe, so the caller writes the new one afterwards.
+function svLicenceGuard(k) {
+  var next = svLicFingerprint(k);
+  var prev = null;
+  try { prev = localStorage.getItem(SV_LIC_FP); } catch (e) { return true; }
+  // A device from before the fingerprint still has the key the gate stored
+  // under 'sv_license', beside the data, so it is NOT unknown whose data this is
+  // (cody b66, the sweep of the flaw b65 fixed in sairnfreedom). Only when no
+  // readable key is stored either is the adopt below a guess.
+  if (!prev) {
+    var oldKey = null;
+    try { oldKey = JSON.parse(localStorage.getItem('sv_license')); } catch (e) {}
+    if (typeof oldKey === 'string' && oldKey.trim()) prev = svLicFingerprint(oldKey.trim());
+    if (prev === next) { try { localStorage.setItem(SV_LIC_FP, next); } catch (e) {} return true; }
+  }
+  if (!prev) { try { localStorage.setItem(SV_LIC_FP, next); } catch (e) {} return true; }
+  if (prev === next) return true;
+  // The server treats a key that differs only in case as the SAME licence
+  // (api/_lib/license.js retries upper-case), so a case-only difference is
+  // not a re-key and must not offer to wipe this licence's own records
+  // (cc b76 F1, cody b68). The stored key is still the previous one here.
+  var sameKey = null;
+  try { sameKey = JSON.parse(localStorage.getItem('sv_license')); } catch (e) {}
+  if (typeof sameKey === 'string' && sameKey.trim().toUpperCase() === String(k).trim().toUpperCase()) {
+    try { localStorage.setItem(SV_LIC_FP, next); } catch (e) {}
+    return true;
+  }
+
+  var ls = [], ss = [];
+  try { ls = Object.keys(localStorage).filter(svIsOwnKey); } catch (e) {}
+  try { ss = Object.keys(sessionStorage).filter(svIsOwnKey); } catch (e) {}
+
+  if (!SV_SCOPE_OK) {
+    // Fail CLOSED. The scope check is the only thing standing between this
+    // wipe and another app's data, so a broken one means no wipe and no entry.
+    alert('This device holds SAIRNvet data for a different licence, and the ' +
+          'safety check that decides which data belongs to SAIRNvet has failed. ' +
+          'Nothing was deleted and the app will not open with this key. ' +
+          'Contact support rather than clearing your browser.');
+    return false;
+  }
+  if (!ls.length && !ss.length) {
+    // Different licence, nothing local to leak. Adopt and carry on.
+    try { localStorage.setItem(SV_LIC_FP, next); } catch (e) {}
+    return true;
+  }
+  if (!confirm('This device already holds SAIRNvet data belonging to a DIFFERENT licence.\n\n' +
+               'Continuing removes ' + ls.length + ' locally stored item' + (ls.length === 1 ? '' : 's') +
+               ' from this browser so the two licences cannot be mixed.\n\n' +
+               'Anything that licence has synced to the server is NOT affected -- server records are ' +
+               'stored per licence and stay where they are. Local-only records are gone for good.\n\n' +
+               'Continue with the new licence key?')) {
+    return false;
+  }
+  ls.forEach(function (key) { try { localStorage.removeItem(key); } catch (e) {} });
+  ss.forEach(function (key) { try { sessionStorage.removeItem(key); } catch (e) {} });
+  // Cookies are origin-wide, not per app, so a scoped clear must not touch
+  // them -- doing so would reach every other app while claiming not to.
+  try { localStorage.setItem(SV_LIC_FP, next); } catch (e) {}
+  return true;
+}
+
 function svGateLicence(){
   var el = document.getElementById('gateLicense');
   var license = el ? String(el.value||'').trim() : '';
@@ -3182,6 +3319,7 @@ function svGateLicence(){
   svGateMsg('Checking licence…',false);
   /* Stored BEFORE the call because svAuthCall reads it from storage, and
      removed again if the server rejects it -- so a bad key never sticks. */
+  if(!svLicenceGuard(license)){ svGateMsg('Cancelled -- this device still holds another licence’s data.',true); return; }
   var previous = svLoad('license','');
   svStore('license',license);
   svAuthCall('check_license',{},false).then(function(r){

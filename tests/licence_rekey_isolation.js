@@ -52,7 +52,10 @@ const APPS = {
   'sairnbiz.html': 'sb_',
   'sairngrounds.html': 'grd_',
   'sairnscape.html': 'scp_',
-  'sairnfreedom.html': 'sf_'
+  'sairnfreedom.html': 'sf_',
+  // cody b70: both stored a licence key beside local data and had no guard
+  'sairnvet.html': 'sv_',
+  'sairnmechanical.html': 'sairnmechanical_'
 };
 
 // Apps WITHOUT the guard, and why -- recorded as a failing-if-forgotten
@@ -179,6 +182,10 @@ test('it is called BEFORE the key is stored, not after', () => {
       "(setItem\\('" + APPS[f] + "lic(ense_key)?'"
       + "|st\\('" + APPS[f] + "lic'"
       + "|scpSt\\('" + APPS[f] + "lic'"
+      // cody b70: sairnvet stores through svStore('license'), and
+      // sairnmechanical through setItem(APP_ID+'_license_key').
+      + "|svStore\\('license'"
+      + "|setItem\\(APP_ID\\+'_license_key'"
       + "|st\\(K_LIC)");
     const m = storeRe.exec(src);
     assert.ok(m, f + ': could not find where the key is stored');
