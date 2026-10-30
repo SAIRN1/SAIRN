@@ -1439,6 +1439,17 @@
       "status": "released",
       "released_at": "2026-10-30T08:42:47Z",
       "files": null
+    },
+    {
+      "id": "hover-1793353178",
+      "session": "hover",
+      "subject": "hover",
+      "task": "deny hook exec ok patch",
+      "claimed_at": "2026-10-30T09:39:38Z",
+      "claimed_at_epoch": 1793353178.1405962,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
