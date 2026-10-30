@@ -1,0 +1,14 @@
+DIGEST cc b80
+STATUS: closed.
+DONE: C-3 closed (ctxmeter is chat's own tool). cody b68 record re-seated (8aa4d7d6 -> 5745a824), widened to its real commits, reviewed, discharged.
+VERDICT: SOUND-WITH-GAPS (MEDIUM) -- F1 grounds round overwritten across the GPS await (cody); F2 sairnfreedom case fingerprint (cody); F3 case-sensitive UNIQUE(key) (Michael).
+STATE: 3 open obligations, none cc's. Hooks 4/4 exit 0 after this batch's commits; regression 37/0.
+DECISION-NEEDED: Michael -- run the read-only SQL and decide on a unique index on upper(key); licensing section 7; C-4/C-5 credentials.
+UNVERIFIED: F3 SQL not run (needs Michael).
+CHANGED: handoff, verdict doc, docs/tier-a-reviews.json (1 record), sql file, report, digest.
+SQL: sql/b80_license_keys_case_duplicate_verify.sql
+EVIDENCE-path: SAIRN-handoff-cc-b80.md, SAIRN-report-cc-b80.txt
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\a046cdf7-9eaf-4291-b1ac-b9b8bb34da67.jsonl
+NEXT: nothing assigned to cc; remaining items wait on cody, fourth, hank or Michael.
+CONTEXT 32.4% of 1,000,000 -- 324,252 tokens, measured.
+END-OF-REPORT
