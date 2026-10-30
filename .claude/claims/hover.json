@@ -1458,8 +1458,8 @@
       "task": "b117 hook patch settings check ots pin",
       "claimed_at": "2026-10-30T23:49:21Z",
       "claimed_at_epoch": 1793404161.4143932,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-30T23:53:15Z",
       "files": null
     }
   ],
