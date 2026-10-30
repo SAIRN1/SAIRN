@@ -95,3 +95,12 @@ The rule's text:
 2. With the licence credentials, run `python tools/load_deadline_seed.py dc --dry-run`, then the real load. The load is an upsert.
 3. Verify a CHANGED result on identical inputs: a dc/probate compute goes from NOT_PROVISIONED to the dates in §6.
 4. Commit the three parked files and push.
+
+## 8. LOADED and live-verified (hank b71, 2026-10-30)
+- **Loaded with `python tools/load_deadline_seed.py dc`** on the LAW-PINNACLE-2026 licence, signed in as sairn-demo-owner (role: owner).
+  - Result: "All 6 calendars and 5 rules loaded."
+- **`tools/sairn_load_state_check.py --app sairnlaw` reports drift 0:** law_deadline_rules and law_holidays are both MISSING 0, STALE 0, EXTRA 0.
+- **Live compute on https://sairn.vercel.app/api/legal-deadlines: 7 of 7 dates match the §6 hand derivation**, including 2026-07-06, 2026-04-16 (EARLY), 2027-12-27 and 2028-01-03.
+  - **Control:** dc / civil-litigation (not loaded) still refuses with NOT_PROVISIONED.
+- **The three parked files are committed** in the seed push.
+

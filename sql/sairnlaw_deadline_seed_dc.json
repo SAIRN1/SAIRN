@@ -1,0 +1,129 @@
+{
+ "_readme": [
+  "SAIRNlaw deadline engine seed -- District of Columbia, Superior Court, Probate Division.",
+  "Gate: docs/2026-10-30-hank-b70-dc-probate-deadline-seed-gate.md (hank b70, 2026-10-30). Every value read verbatim from the dccourts.gov",
+  "compile effective 2022-08-22, retrieved 2026-10-30, and quoted in its row with its URL. Every open reading resolves EARLY."
+ ],
+ "rules": [
+  {
+   "rule_id": "dc-probate-r105c2-response-to-petition-or-objection",
+   "jurisdiction": "dc",
+   "domain": "probate",
+   "label": "Response to a petition or objection (D.C. Probate)",
+   "trigger_event": "filing_of_petition_or_objection",
+   "count": {
+    "value": 14,
+    "unit": "calendar_days",
+    "direction": "forward"
+   },
+   "computation": "dc_probate_r_128a",
+   "authority": {
+    "citation": "D.C. Super. Ct. Prob. R. 105(c)(2)",
+    "url": "https://www.dccourts.gov/sites/default/files/superior-rules/Superior-Court-Rules-of-the-Probate-Division-EFFECTIVE-8-22-2022.pdf",
+    "quote": "A response must be filed within 14 days after the petition or objection is filed.",
+    "note": "Runs from the FILING of the petition or objection, not from service, so Rule 128(d) (\"When a party may or must act within a specified time after being served ... 3 days are added\") does not reach it. effective_from is the effective date of the compiled Probate Division rules (2022-08-22); the official Rules and Promulgation Orders list shows no later order amending the Probate Division rules.",
+    "retrieved_at": "2026-10-30"
+   },
+   "effective_from": "2022-08-22",
+   "effective_to": null,
+   "version": 1,
+   "supersedes": null
+  },
+  {
+   "rule_id": "dc-probate-r112c1-inventory",
+   "jurisdiction": "dc",
+   "domain": "probate",
+   "label": "Inventory by a fiduciary (D.C. Probate)",
+   "trigger_event": "appointment_of_fiduciary",
+   "count": {
+    "value": 90,
+    "unit": "calendar_days",
+    "direction": "forward"
+   },
+   "computation": "dc_probate_r_128a",
+   "authority": {
+    "citation": "D.C. Super. Ct. Prob. R. 112(c)(1)",
+    "url": "https://www.dccourts.gov/sites/default/files/superior-rules/Superior-Court-Rules-of-the-Probate-Division-EFFECTIVE-8-22-2022.pdf",
+    "quote": "Except as provided in Rule 112(c)(2), a fiduciary must file an inventory within 90 days after the court appointing the fiduciary or the date of a court order providing for continuing supervision of the administration of the estate or trust.",
+    "note": "The trigger is the appointment (or the order for continuing supervision, whichever applies to the matter: enter that date). Runs from the appointment, not from service, so Rule 128(d) (\"When a party may or must act within a specified time after being served ... 3 days are added\") does not reach it. effective_from is the effective date of the compiled Probate Division rules (2022-08-22); the official Rules and Promulgation Orders list shows no later order amending the Probate Division rules.",
+    "retrieved_at": "2026-10-30"
+   },
+   "effective_from": "2022-08-22",
+   "effective_to": null,
+   "version": 1,
+   "supersedes": null
+  },
+  {
+   "rule_id": "dc-probate-r112c2-conservator-inventory",
+   "jurisdiction": "dc",
+   "domain": "probate",
+   "label": "Inventory by a conservator (D.C. Probate)",
+   "trigger_event": "appointment_of_conservator",
+   "count": {
+    "value": 60,
+    "unit": "calendar_days",
+    "direction": "forward"
+   },
+   "computation": "dc_probate_r_128a",
+   "authority": {
+    "citation": "D.C. Super. Ct. Prob. R. 112(c)(2)",
+    "url": "https://www.dccourts.gov/sites/default/files/superior-rules/Superior-Court-Rules-of-the-Probate-Division-EFFECTIVE-8-22-2022.pdf",
+    "quote": "A conservator must file an inventory within 60 days after the court appointing the conservator.",
+    "note": "Runs from the appointment, not from service, so Rule 128(d) (\"When a party may or must act within a specified time after being served ... 3 days are added\") does not reach it. effective_from is the effective date of the compiled Probate Division rules (2022-08-22); the official Rules and Promulgation Orders list shows no later order amending the Probate Division rules.",
+    "retrieved_at": "2026-10-30"
+   },
+   "effective_from": "2022-08-22",
+   "effective_to": null,
+   "version": 1,
+   "supersedes": null
+  },
+  {
+   "rule_id": "dc-probate-r113-demand-for-formal-audit",
+   "jurisdiction": "dc",
+   "domain": "probate",
+   "label": "Demand for a formal audit of a final account after a waiver (D.C. Probate)",
+   "trigger_event": "approval_of_final_account",
+   "count": {
+    "value": 20,
+    "unit": "calendar_days",
+    "direction": "forward"
+   },
+   "computation": "dc_probate_r_128a",
+   "authority": {
+    "citation": "D.C. Super. Ct. Prob. R. 113(e)(6)(B)",
+    "url": "https://www.dccourts.gov/sites/default/files/superior-rules/Superior-Court-Rules-of-the-Probate-Division-EFFECTIVE-8-22-2022.pdf",
+    "quote": "An heir or legatee who has signed a waiver of formal audit may require a formal audit by filing a written demand within 20 days after the approval of the supervised personal representative's final account.",
+    "note": "Rule 113(e) is WAIVER OF AUDIT OF ACCOUNT; (6)(B) is its decedent's-estate final-account paragraph. Runs from the approval of the final account, not from service, so Rule 128(d) (\"When a party may or must act within a specified time after being served ... 3 days are added\") does not reach it. effective_from is the effective date of the compiled Probate Division rules (2022-08-22); the official Rules and Promulgation Orders list shows no later order amending the Probate Division rules.",
+    "retrieved_at": "2026-10-30"
+   },
+   "effective_from": "2022-08-22",
+   "effective_to": null,
+   "version": 1,
+   "supersedes": null
+  },
+  {
+   "rule_id": "dc-probate-r125c2-reconsideration-after-final-account",
+   "jurisdiction": "dc",
+   "domain": "probate",
+   "label": "Motion for reconsideration of an order approving a final account that disposed of an objection (D.C. Probate)",
+   "trigger_event": "entry_of_order_approving_final_account",
+   "count": {
+    "value": 20,
+    "unit": "calendar_days",
+    "direction": "forward"
+   },
+   "computation": "dc_probate_r_128a",
+   "authority": {
+    "citation": "D.C. Super. Ct. Prob. R. 125(c)(2)",
+    "url": "https://www.dccourts.gov/sites/default/files/superior-rules/Superior-Court-Rules-of-the-Probate-Division-EFFECTIVE-8-22-2022.pdf",
+    "quote": "If the court disposes of an objection to a final account in a decedent's estate through an order approving the final account or an order entered contemporaneously with the court's approval of the account, a motion for reconsideration may be made no later than 20 days after the entry of the order approving the final account.",
+    "note": "Rule 125(c)(3): the court may not extend this time. Runs from ENTRY of the order, not from service, so Rule 128(d) (\"When a party may or must act within a specified time after being served ... 3 days are added\") does not reach it. effective_from is the effective date of the compiled Probate Division rules (2022-08-22); the official Rules and Promulgation Orders list shows no later order amending the Probate Division rules.",
+    "retrieved_at": "2026-10-30"
+   },
+   "effective_from": "2022-08-22",
+   "effective_to": null,
+   "version": 1,
+   "supersedes": null
+  }
+ ]
+}
