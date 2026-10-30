@@ -41884,7 +41884,7 @@
       "recurrence_open": "Other .replace calls on stored quote fields were not swept; M1 (blank slab cost read as 0) remains."
     },
     {
-      "commit": "569ab9bc4c7c",
+      "commit": "51d9b401dbe1",
       "date": "2026-10-30",
       "subject": "fix(sairngrounds, cody b68): a START during a pending shot END no longer corrupts the shot or loses the next start",
       "files": [
@@ -41928,7 +41928,7 @@
       "recurrence_open": "Any other handler pair sharing a module variable across an await (caddie, POS) can interleave the same way; only this pair was checked."
     },
     {
-      "commit": "aadab627c8d0",
+      "commit": "e22c9cd0bf83",
       "date": "2026-10-30",
       "subject": "fix(platform, cody b68): a licence key differing only in case is the same licence in all 13 guards",
       "files": [
