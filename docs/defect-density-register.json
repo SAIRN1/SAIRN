@@ -41800,7 +41800,7 @@
       "single_factor_note": "one encoding-context gap repeated across sites"
     },
     {
-      "commit": "c66d547cf3ee",
+      "commit": "036accb62d23",
       "date": "2026-10-30",
       "subject": "feat+fix(sairnlegacy, fourth b70): apprentice names the supervising director in the staged cremation; a blank GPL price is not $0; a negative line is refused",
       "files": [
@@ -41843,7 +41843,7 @@
       "recurrence_open": "Rows saved as 0 from a blank before this fix cannot be distinguished from a real 0; cc's L3a scenario stays FAIL by the C2 design decision."
     },
     {
-      "commit": "3d1e0636f57d",
+      "commit": "fd2a7086633e",
       "date": "2026-10-30",
       "subject": "fix(stonedesk, fourth b70): the Financial KPI row crashed on a numeric quote total (M3) and claimed 65% margin from a hardcoded ratio (M2)",
       "files": [
