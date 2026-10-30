@@ -41968,7 +41968,7 @@
       "recurrence_open": "Rows saved as 0 from a blank before this fix cannot be distinguished from a real 0; cc's L3a scenario stays FAIL by the C2 design decision."
     },
     {
-      "commit": "958131e3a951",
+      "commit": "79aa5607a407",
       "date": "2026-10-30",
       "subject": "fix(stonedesk, fourth b71): every fourth-owned presence FAIL closed -- M1, E1-E4, I1-I3, X1-X3 (cc b56 stress); F3 live-drive evidence",
       "files": [
@@ -42010,7 +42010,7 @@
       "recurrence_open": "T1a/T1b/T1d (api, hank) still FAIL; other apps with similar approval/paid claims were not swept."
     },
     {
-      "commit": "c178ee514c1b",
+      "commit": "3d695069c297",
       "date": "2026-10-30",
       "subject": "fix(sairngrounds, fourth b71): grdData sends app_id -- G-1, migrate decision \"yes\" applied; 0 rows needed moving",
       "files": [
