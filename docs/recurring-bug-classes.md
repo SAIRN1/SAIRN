@@ -120,3 +120,10 @@ Sources cited by record and commit. These are cc b76's verdicts on cody b65's Ti
 | 3 | `stonedesk.html` POS hold release on a throwing reset was TRUE but UNGUARDED (cc b76 F2, record 2026-10-29T19:34:54Z) | coding | test coverage | **due to** a `finally` with no arm that throws through it; ablation left the suite green | `42b1050e1` (test only) |
 
 **Two of the three were in my own b65/b66 work, and an independent reviewer found both.** Row 2 is the sharper lesson. The b66 fix copied one block into 13 files after checking only that each app has a single key writer that upper-cases, and sairnfreedom's does not.
+
+## 2026-10-30 — batch 71 (hank)
+
+| # | Defect | Phase | Sub-phase | Cause | Commit |
+|---|---|---|---|---|---|
+| 1 | `api/sd-sub-data.js` said the America/New_York day "can never call a still-valid document expired" in the fifty states; Eastern rolls over FIRST, so western shops see a document expire 1-6 hours early (H1 #1817) | design | stated invariant | **due to** reasoning about which zone is "easternmost" instead of which zone's date changes first; the claim went into the comment and the commit message unchecked by any test | this batch |
+

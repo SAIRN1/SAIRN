@@ -69,11 +69,19 @@ const EXPIRING_SOON_DAYS = 30;
 // is good THROUGH its expiry date, and "today" was the UTC day, which ticks
 // over at 7-8 p.m. Eastern -- so on the last valid evening every US business
 // saw it 'expired' and was refused assignment (409) for hours. There is no
-// per-licence time zone server-side, so the day is taken in America/New_York:
-// the easternmost zone of the fifty states, which can never call a still-valid
-// document expired anywhere in them, and is hours closer than UTC for the rest.
-// Stated limit: Puerto Rico / USVI (Atlantic time) could read 'valid' for up
-// to one hour after their own midnight.
+// per-licence time zone server-side, so the day is taken in America/New_York.
+// CORRECTED (hank b71, H1 #1817): an earlier version of this comment said
+// Eastern "can never call a still-valid document expired". That is backwards.
+// Eastern is the zone whose date rolls over FIRST, so for a shop west of it the
+// Eastern date is already tomorrow during the last hours of the document's last
+// valid day, and it reads 'expired' (refused, 409) early by 1 h (Central), 2 h
+// (Mountain), 3 h (Pacific), 4 h (Alaska) or 5-6 h (Hawaii). Eastern was kept
+// because that error is the SAFE direction for a compliance gate -- a valid
+// document is refused for a few hours, an expired one is never accepted -- and
+// it is 4-5 hours closer than the UTC day it replaced. The opposite error is
+// Puerto Rico / USVI (Atlantic time), which can read 'valid' for up to one
+// hour after their own midnight. The real fix is a per-licence time zone.
+// api/b71-sub-expiry-eastern-day.test.js pins both windows.
 function localTodayISO(now) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York',
     year: 'numeric', month: '2-digit', day: '2-digit' }).format(now || new Date());
