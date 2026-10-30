@@ -120,5 +120,23 @@ test('10. M2: with no cost read, no margin is claimed (was 65% from a hardcoded 
   assert.ok(!/%$/.test(r.margin), 'a margin was claimed with no cost basis: ' + r.margin);
 });
 
+// ── fourth b71: every StoneDesk presence scenario fourth owns stays PASS ──
+// cc's tools/stonedesk_presence_stress.py drives the real functions. It exits
+// 1 while hank's api-side T1a/T1b/T1d still fail, so it cannot gate on its own
+// exit code; this arm gates on its VERDICT LIST instead. Measured before the
+// b71 fixes: E1-E4, I1-I3, M1 and X1-X3 were FAIL. Skipped (not passed) when
+// a path argument points at another copy, because the tool reads the repo's.
+test('11. cc b56 stress: no FAIL outside hank\'s T1a/T1b/T1d, and every CONTROL holds', () => {
+  if (process.argv[2]) { console.log('       (skipped: the stress tool reads the repo copy, not ' + FILE + ')'); return; }
+  const out = require('child_process').spawnSync('python',
+    [path.resolve(__dirname, '..', 'tools', 'stonedesk_presence_stress.py')], { encoding: 'utf8' }).stdout || '';
+  const fails = (out.match(/^FAIL\s+(\S+)/gm) || []).map((l) => l.split(/\s+/)[1]);
+  const controlsBad = (out.match(/^CONTROL-FAIL\s+(\S+)/gm) || []);
+  assert.ok(/^(PASS|CONTROL-OK)\s/m.test(out), 'the stress tool produced no verdicts -- could not run');
+  assert.deepStrictEqual(fails.filter((id) => ['T1a', 'T1b', 'T1d'].indexOf(id) === -1), [],
+    'fourth-owned scenarios FAIL: ' + fails.join(', '));
+  assert.deepStrictEqual(controlsBad, [], 'a CONTROL failed: ' + controlsBad.join(', '));
+});
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

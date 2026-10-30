@@ -1,0 +1,37 @@
+{
+ "at": "2026-10-30T23:07:10.487653Z",
+ "licence": "LEG-AUDIT-2026",
+ "arms": [
+  {
+   "arm": "P1 EMPTY F3 -> 403, no token",
+   "http": 403,
+   "code": "APPRENTICE_NOT_CLEARED",
+   "token_minted": false,
+   "result": "PASS"
+  },
+  {
+   "arm": "P4 F3 clears it, NO supervisor -> 403 SUPERVISOR_REQUIRED",
+   "http": 403,
+   "code": "SUPERVISOR_REQUIRED",
+   "token_minted": false,
+   "result": "PASS"
+  },
+  {
+   "arm": "P8 F3 clears it + licensed director named -> 200 token",
+   "http": 200,
+   "code": "",
+   "token_minted": true,
+   "result": "PASS"
+  },
+  {
+   "teardown": "apprentice.countersign restored",
+   "read_back": []
+  }
+ ],
+ "residue": [
+  "one UNSPENT sairnlegacy_countersign_tokens row from P8 (expires 10 minutes after minting; never spent)",
+  "two credentials added to LEG-AUDIT-2026 and LEFT ACTIVE for future drives: B71-DIR (director) and B71-APP (apprentice); PINs are in the fourth scratchpad, not in the repo",
+  "sairnlegacy_settings.apprentice.countersign restored to [] and read back"
+ ],
+ "driver": "fourth b71 scratchpad f3_live_drive.py (audit-licence-only guard); owner login employee_id mikied68@gmail.com"
+}

@@ -12124,6 +12124,10 @@ function invSave() {
   var amt = parseFloat(document.getElementById('inv2-amount').value) || 0;
   if (!cust || !amt) { notify('Customer name and amount required', 'warn'); return false; }
   var dep = parseFloat(document.getElementById('inv2-deposit').value) || 0;
+  // AN OVERPAYMENT IS NOT A PAID INVOICE (fourth b71, cc b56 I1): a $6,000
+  // cheque on a $5,000 invoice saved as Paid, $0 balance, and the $1,000 the
+  // customer is owed was recorded nowhere. Refused until it is recorded.
+  if (dep > amt) { notify('The deposit received ($' + dep.toLocaleString() + ') is more than the invoice ($' + amt.toLocaleString() + '). Record the $' + (dep - amt).toLocaleString() + ' overpayment as a customer credit, then enter the deposit up to the invoice amount. Nothing was saved.', 'warn'); return false; }
   var inv = {
     id: 'INV-' + Date.now(),
     num: document.getElementById('inv2-num').value.trim() || invGenNum(),
@@ -12175,7 +12179,13 @@ function invMarkPaid(id) {
   inv.balance = 0;
   inv.payments = inv.payments || [];
   inv.payments.push({ amount: settled, date: sdLocalToday(), method: 'Manual', note: 'Marked paid' });
-  invSaveStore();
+  // THE SAVE IS ASKED, NOT ASSUMED (fourth b71, cc b56 I2): invSaveStore()
+  // returns whether the store took it, and "marked as Paid" was announced
+  // either way -- a Paid status that vanishes on reload.
+  if (!invSaveStore()) {
+    notify('Could not save -- the invoice is NOT marked paid on this device. Free some storage and try again.', 'warn');
+    return;
+  }
   document.getElementById('inv2-print-modal').style.display = 'none';
   notify('Invoice marked as Paid', '');
 }
@@ -28692,7 +28702,11 @@ function finAddJob(){var f=document.getElementById('fin-job-form');if(f)f.style.
 
 function finCalcMargin(){
   var quote=parseFloat((document.getElementById('fj-quote')||{}).value)||0;
-  var slab=parseFloat((document.getElementById('fj-slab')||{}).value)||0;
+  // A BLANK SLAB COST IS UNKNOWN, NOT $0 (fourth b71, cc b56 M1): the slab is
+  // the largest cost of the job, and `||0` turned "not entered" into free
+  // stone, so the margin showed green. Blank -> no margin is claimed.
+  var slabRaw=String((document.getElementById('fj-slab')||{}).value||'').trim();
+  var slab=parseFloat(slabRaw)||0;
   var hours=parseFloat((document.getElementById('fj-hours')||{}).value)||0;
   var rate=parseFloat((document.getElementById('fj-rate')||{}).value)||35;
   var consumables=parseFloat((document.getElementById('fj-consumables')||{}).value)||0;
@@ -28700,6 +28714,14 @@ function finCalcMargin(){
   var cogs=slab+(hours*rate)+consumables+install;
   var profit=quote-cogs;
   var margin=quote>0?Math.round(profit/quote*100):0;
+  if(slabRaw===''){
+    var el=document.getElementById('fj-live-margin');
+    if(el){el.textContent='-- (enter the slab cost)';el.style.color='#626875';}
+    var pe=document.getElementById('fj-live-profit');if(pe){pe.textContent='--';pe.style.color='#626875';}
+    var ce=document.getElementById('fj-live-cogs');if(ce)ce.textContent='--';
+    var re=document.getElementById('fj-live-revenue');if(re)re.textContent='$'+quote.toLocaleString();
+    return;
+  }
   var mc=margin>=40?'#16a34a':margin>=25?'#ca8a04':'#dc2626';
   function s(id,v,color){var el=document.getElementById(id);if(el){el.textContent=v;if(color)el.style.color=color;}}
   s('fj-live-revenue','$'+quote.toLocaleString());
@@ -38086,7 +38108,7 @@ document.addEventListener('DOMContentLoaded', function() {
   <div class="kpi"><div class="kpi-val" id="tax-ytd">$0</div><div class="kpi-label">YTD Tax Collected</div></div>
   <div class="kpi"><div class="kpi-val" id="tax-est">$0</div><div class="kpi-label">Est. Annual Tax</div></div>
   <div class="kpi"><div class="kpi-val" id="tax-due">—</div><div class="kpi-label">Next Filing Due</div></div>
-  <div class="kpi"><div class="kpi-val" id="tax-1099">0</div><div class="kpi-label">1099 Contractors</div></div>
+  <div class="kpi"><div class="kpi-val" id="tax-1099" title="1099 eligibility is not tracked in StoneDesk">--</div><div class="kpi-label">1099 Contractors</div></div>
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
   <div>
@@ -41819,13 +41841,16 @@ function esigApprove(){
   if(!name){showToast('Please enter client full name.');return;}
 
   // Verify signature drawn
+  // A SIGNATURE MUST EXIST AND BE INK (fourth b71, cc b56 E1/E2). With no pad
+  // on the page the check was skipped and an empty signature was stored; and
+  // ONE pixel at 1/255 alpha -- a stray touch -- counted as signed. Now: no
+  // pad refuses, and at least 3 pixels of real ink (alpha >= 64) are needed.
   var c=document.getElementById('esig-canvas');
-  if(c){
-    var px=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
-    var blank=true;
-    for(var i=3;i<px.length;i+=4){if(px[i]!==0){blank=false;break;}}
-    if(blank){showToast('Please draw your signature before approving.');return;}
-  }
+  if(!c){showToast('The signature pad is not available on this screen. Nothing was signed.','error',6000);return;}
+  var px=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+  var inked=0;
+  for(var i=3;i<px.length;i+=4){if(px[i]>=64)inked++;}
+  if(inked<3){showToast('Please draw your signature before approving.');return;}
 
   // Capture signature as data URL
   var sigDataUrl=c?c.toDataURL('image/png'):'';
@@ -41845,6 +41870,19 @@ function esigApprove(){
         var n=parseFloat(String(el?el.textContent:'').replace(/[^0-9.]/g,''));
         return isFinite(n) ? n : 0;
       })();
+  // THE SIGNED PRICE MUST BE THE ONE ON SCREEN (fourth b71, cc b56 E3): a
+  // stale lastCalc from another quote recorded Q-200 at $3,000 while the
+  // screen showed $9,800. When the screen shows a number and it disagrees,
+  // nothing is signed.
+  (function(){
+    var el=document.getElementById('est-total');
+    var shown=parseFloat(String(el?el.textContent:'').replace(/[^0-9.]/g,''));
+    if(isFinite(shown)&&shown>0&&Math.abs(shown-totalAmt)>=0.5)totalAmt=-1;
+  })();
+  if (totalAmt === -1) {
+    showToast('The total on screen does not match the calculated quote -- recalculate the quote, then sign. Nothing was recorded.','error',7000);
+    return;
+  }
   // Refuse rather than record. A signed approval with no price on it is not
   // evidence of anything, and it looks exactly like one that is.
   if (!(totalAmt > 0)) {
@@ -41905,8 +41943,13 @@ function esigApprove(){
 
   // Update matching customer record if exists
   if(typeof sdCustomers!=='undefined'){
-    var match=sdCustomers.find(function(cu){return cu.name&&cu.name.toLowerCase()===name.toLowerCase();});
-    if(match){match.status='approved';match.approvedAt=new Date().toISOString();if(typeof saveSD3Data==='function')saveSD3Data();}
+    // ONE NAME, ONE CUSTOMER, OR NONE (fourth b71, cc b56 E4): with two
+    // customers of the same name the FIRST was marked approved, unasked. The
+    // signed approval stands; the customer status is set only when the name
+    // is unambiguous, and otherwise the user is told to set it by hand.
+    var matches=sdCustomers.filter(function(cu){return cu.name&&cu.name.toLowerCase()===name.toLowerCase();});
+    if(matches.length===1){var match=matches[0];match.status='approved';match.approvedAt=new Date().toISOString();if(typeof saveSD3Data==='function')saveSD3Data();}
+    else if(matches.length>1){showToast(matches.length+' customers are named "'+name+'" -- open the right one and mark it approved. The signed approval is saved.','warn',8000);}
   }
 
   // Render success + deposit CTA
@@ -42066,6 +42109,10 @@ function esigCreateInvoice(clientName){
   if(dateEl&&!dateEl.value&&typeof sdLocalToday==='function')dateEl.value=sdLocalToday();
   cust.value=clientName||'';
   amt.value=depositAmt;
+  // A DEPOSIT REQUEST HAS NOT BEEN PAID (fourth b71, cc b56 I3): the form's
+  // deposit-received field kept whatever was last typed, so this request
+  // saved as Paid with a payment the customer never made. Cleared here.
+  var depEl=document.getElementById('inv2-deposit');if(depEl)depEl.value='';
   desc.value='50% Deposit — '+quoteNum;
   form.scrollIntoView({behavior:'smooth'});
   showToast(depositAmt>0
@@ -43445,6 +43492,9 @@ function taxAddEntry(){
   var taxable=parseFloat((document.getElementById('tax-taxable')||{}).value)||0;
   var rate=parseFloat((document.getElementById('tax-rate')||{}).value)||0;
   if(!taxable||!rate){showToast('Taxable sales and rate required');return;}
+  // A RATE IS A PERCENTAGE (fourth b71, cc b56 X2): 825 was logged as 825%
+  // ($8,250 on $1,000) -- a typo for 8.25. No US sales-tax rate is near 30%.
+  if(rate<0||rate>30){showToast('That rate is '+rate+'% -- enter it as a percentage, e.g. 8.25. Nothing was logged.');return;}
   taxEntries.push({id:'TX'+Date.now(),state:state,jurisdiction:juris,taxable:taxable,rate:rate,tax:taxable*(rate/100),date:sdLocalToday()});
   sdStore('sd_tax_entries',taxEntries);taxRender();
   ['tax-taxable','tax-rate'].forEach(function(i){var e=document.getElementById(i);if(e)e.value='';});
@@ -43460,10 +43510,18 @@ function taxRender(){
   // Legacy panel-tax header ids (tax-ytd/tax-est/tax-due/tax-1099/tax-table/
   // tax-1099-list) -- consolidated here 2026-07-26 so there's one real
   // computation instead of the fabricated one this used to run separately.
-  var salesTaxYTD=taxEntries.reduce(function(s,e){return s+(Number(e.tax)||0);},0);
+  // YEAR-TO-DATE MEANS THIS YEAR (fourth b71, cc b56 X1): it summed every
+  // entry ever logged. Entries carry `date` (YYYY-MM-DD, taxAddEntry).
+  // One fold on one line on purpose: tests/sd_tax_money_coercion.js lifts it by
+  // shape. An entry with no date (none written since taxAddEntry stamps one)
+  // still counts, rather than silently vanishing from the total.
+  var salesTaxYTD=taxEntries.reduce(function(s,e){return s+((!e.date||String(e.date).slice(0,4)===String(new Date().getFullYear()))?(Number(e.tax)||0):0);},0);
   sv('tax-ytd','$'+Math.round(salesTaxYTD).toLocaleString());
   sv('tax-est','$'+Math.round(taxEst).toLocaleString());
-  sv('tax-1099','0');
+  // NOT TRACKED, SAID SO (fourth b71, cc b56 X3): this was the literal '0'
+  // whatever the payables held. StoneDesk does not track 1099 eligibility
+  // (sdTaxAdd1099 sends you to your accountant), so the tile says '--'.
+  sv('tax-1099','--');
   var today=new Date();
   var deadlines=[[0,15,'Jan 15'],[3,15,'Apr 15'],[5,15,'Jun 15'],[8,15,'Sep 15']].map(function(d){
     var y=today.getMonth()>d[0]||(today.getMonth()===d[0]&&today.getDate()>d[1])?today.getFullYear()+(d[0]===0?1:0):today.getFullYear();
