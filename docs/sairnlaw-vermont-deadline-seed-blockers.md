@@ -125,3 +125,21 @@ The official page answers neither. Read at vermontjudiciary.org/attorneys/rules 
 **What would unblock it:** either of these from a human.
 - A Lexis printout of V.R.C.P. 6, 12, 33, 34, 36 and 59 that shows its "current through" line.
 - The Judiciary's own answer to two questions: were Rules 6/12/33/34/36/59 amended after 2018-01-01, and does 6(e) still add 3 days for e-service?
+
+## b70 (2026-10-30): BLOCKED. The exact missing source, named
+
+Michael's b70 instruction was to pull V.R.C.P. 6/12/33/34/36/59 directly from vermontjudiciary.org, not from Lexis, and to seed only if a current-through date is confirmed.
+
+**Measured this batch:**
+- **No V.R.C.P. rule text is hosted on vermontjudiciary.org.** I walked the site's own sitemap (https://www.vermontjudiciary.org/sitemap.xml, 9 pages). It lists 17,442 URLs, and none of them is a V.R.C.P. page or a VRCP promulgation order.
+- **The site search** (/search, /search/node) returns 404.
+- **The rules page** (https://www.vermontjudiciary.org/attorneys/rules) still says "All Vermont court rules are available through LexisNexis".
+- **The promulgated list** (https://www.vermontjudiciary.org/attorneys/rules/promulgated) still covers "the Last Two Years". It names no order touching 6, 12, 33, 34, 36 or 59 (b69, 14 orders read).
+
+**THE MISSING SOURCE:**
+- an official Vermont Judiciary copy of the Vermont Rules of Civil Procedure, Rules 6, 12, 33, 34, 36 and 59, that carries an "as amended through" or "current through" date; **or**
+- the Vermont Supreme Court promulgation orders for any amendment to those rules between **2018-01-01 and 2022-10**.
+
+That window is the gap: no official page reaches it. The only official text of these rules is the 2018 order, which is LCJR material on legislature.vermont.gov (b67).
+
+**Not used, by instruction:** Lexis.
