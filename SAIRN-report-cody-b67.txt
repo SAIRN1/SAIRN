@@ -1,0 +1,31 @@
+SAIRN REPORT -- cody b67 (2026-10-30)
+=====================================
+Handoff: SAIRN-handoff-cody-b67.md. Every prior finding cited below is quoted from its exact log line or record.
+
+1. "seq813/#1115 Semgrep calibration dispute": NO SUCH SINGLE ENTRY.
+   - The phrase merges two b62 findings and borrows "Semgrep" from a third. Neither seq is about Semgrep.
+   - The raw lines were recovered from this clone's own b62 transcript: session 05129111, subagent a8f9afb5444bed8ae, read 2026-10-29 at 11:16-11:20Z.
+   seq 813 IS REAL:
+   - H2 log, ts 2026-10-13T20:40:53Z, hash ed20a6b903c9f84f8bd3eb547a36e92ecb478542f971f52b6bc6a38b72c071a6.
+   - Verbatim: "batch b19 item 5: Michael retired the emailed-mirror-anchor requirement -- ... the email step is gone from this role's open items."
+   - Contradicted by seq 871 (hash 339f89625fbf...b8a9): "Michael's decision: the emailed-anchor path is dropped, not merely optional".
+   "1115" IS NOT A SEQ, AND IS DROPPED:
+   - It was a grep -n LINE NUMBER. Its record (hash 30a65b6f59fb...0be8) was cut before its seq field.
+   - The real list is H2's own seq 1111 (hash 94e2e6b8bce5...55c0): "OPEN CONFIDENCES, unresolved: seq1078 1079 1080 1082 1083 1084 1085 1091, and seq1109 at 0.8."
+   - Both index rows now carry the quotes and hashes; the calibration row says 9, not 10.
+
+2. R-11 (cc b73, 69c36d5ff): ALREADY FIXED in b65 (f4d8c29fa). At HEAD, sairndental.html:3118-3119 holds the render inside the try. CD4 is green, 20/0. No change.
+
+3. DONE-LINE HOOK, END TO END: the armed copy was driven with Stop payloads against this clone's REAL state file (the b66 record).
+   - Recorded line exact -> 0. Line plus a sentence -> 2. A new turn with a hand-typed done line -> 2. Prose -> 0. PASS.
+   - This session's real transcript -> 0 mid-turn.
+   - The state file is restored. Removing the .unrecorded sidecar was denied again; it is keyed to a synthetic turn, so it is harmless. The rm is left for Michael.
+
+4. OBLIGATIONS ASSIGNED TO CODY: both discharged.
+   - fourth deploy_verify_notify (c7d7e74d8): SOUND-WITH-GAPS (low). echo $(git push) went from unsure to not-a-push. Routed to fourth.
+   - cc b76 pre-gate: SOUND. The stonedesk_sub NO_ACTIVE_CHECK limit is named; it predates b76.
+   - hank's SDN write-unconfirmed gap is hank's (api/). It now has index row B67-SDN-WRITE-UNCONFIRMED-CODY-2026-10-30, quoting the b66 verdict, still open at :15876 and :6762.
+
+5. METHODOLOGY: quote the exact log line, with its hash, for any seq/id. Applied above and in both index rows, and saved as auto-memory quote-the-log-line-not-the-seq.
+
+6. PUSH: LANDED. The handoff is at 80db646f8e75730a6343b8832167fb59c130f813, measured as HEAD == origin/main after a fetch. This report and digest are the final commit.

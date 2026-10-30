@@ -1,0 +1,15 @@
+DIGEST -- cody b67, 2026-10-30. All 6 items DONE.
+STATUS: DOCS + REVIEWS ONLY. No app code changed (R-11 was already fixed in b65). NO SQL.
+CHANGED: open-work index (2 rows corrected, 1 new) + shards; tier-a-reviews (2 discharged); BYPASS-LOG; auto-memory (1 new).
+LANDED: full gate; handoff at 80db646f8 == origin/main.
+ITEM 1 -- seq813 real (H2 hash ed20a6b9...71a6, quoted); "1115" was a grep -n line number -> dropped; 9 seqs per H2 seq1111 (hash 94e2e6b8...). Nothing Semgrep.
+ITEM 2 -- R-11 already fixed in f4d8c29fa (b65); CD4 green at HEAD.
+ITEM 3 -- done-line hook e2e on live state: 4/4 cases PASS; state restored; sidecar rm denied (harmless).
+ITEM 4 -- fourth deploy_verify SOUND-WITH-GAPS (echo $(git push) silent); cc b76 SOUND; SDN gap -> hank row B67-SDN-WRITE-UNCONFIRMED.
+ITEM 5 -- exact log line + hash for every seq/id; saved as memory.
+ITEM 6 -- handoff before report; pushed and confirmed landed.
+DECISION-NEEDED: none. (Optional: ! rm .git/sairn-done-line.unrecorded)
+UNVERIFIED: whether H2's log still numbers seq 813 the same way -- search by hash.
+NEXT: hank SDN gap; fourth command-substitution arm; hover2 the two H2 rows. Handoff table, 6 rows.
+EVIDENCE-path: SAIRN-handoff-cody-b67.md, SAIRN-report-cody-b67.txt
+CONTEXT 46.9% of 1,000,000 -- 469,353 tokens, measured.
