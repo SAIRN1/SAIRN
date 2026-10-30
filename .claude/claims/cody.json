@@ -4643,6 +4643,17 @@
       "status": "released",
       "released_at": "2026-10-30T08:59:54Z",
       "files": null
+    },
+    {
+      "id": "cody-1793403921",
+      "session": "cody",
+      "subject": "platform",
+      "task": "B69-REENTRY-14 re-entrant save fixes six apps",
+      "claimed_at": "2026-10-30T23:45:21Z",
+      "claimed_at_epoch": 1793403921.0516868,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
