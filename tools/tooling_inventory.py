@@ -2583,6 +2583,11 @@ PURPOSES = {
         'ids carry a per-run timestamp so a re-run cannot collide with the last '
         'one. --static is a COULD-NOT-TELL about the panels and prints that '
         'rather than a pass'),
+    'reentry_hold_check.py': ('REPORTER',
+        'a user-triggered save that can be pressed twice while it waits: an '
+        'inline-wired async handler that creates a record or applies an amount, '
+        'leaves its trigger live across an await and holds nothing -- the cody '
+        'b64 duplicate-record shape. Criteria-locked by 20 fixtures; report only.'),
     'route_suite_failures.py': ('REPORTER',
         'a triaged suite-failure population split by the SAIRN app it '
         'exercises, and -- only where a declaration exists -- by the agent who '
