@@ -1,6 +1,6 @@
 # SAIRN handoff — cody b69 (2026-10-30)
 
-**Citations:** findings are cited by record (`opened_at`), commit SHA, log hash, or quoted code plus a blob hash. A line number appears only beside one of those.
+**Citations:** every SHA below is the LANDED one (two were re-seated after the push rebased them). Findings are cited by record (`opened_at`), commit SHA, log hash, or quoted code plus a blob hash. A line number appears only beside one of those.
 
 ## Committed / pushed state
 - **Landed through the full gate.** The final SHA is in `SAIRN-report-cody-b69.txt`, measured after this file lands.
@@ -18,7 +18,7 @@
 - No other obligation is assigned to cody.
 
 ## 2. Re-entry checker (item 2, first)
-**`tools/reentry_hold_check.py`** (`7ff32861a`) is report-only: exit 0/1/2, and COULD-NOT-PARSE is never folded into clean.
+**`tools/reentry_hold_check.py`** (`38b6cdfcf`) is report-only: exit 0/1/2, and COULD-NOT-PARSE is never folded into clean.
 - **Criteria:** `CRITERIA_VERSION 2026-10-30.cody-b69.4`, locked by 20 synthetic fixtures. Nothing real is judged until all 20 pass.
 - **Ablation, each layer removed in turn:**
 
@@ -41,14 +41,14 @@
 - **The 14 are routed to cody:** index row `B69-REENTRY-14-CODY-2026-10-30`, by file and function. Money and records come first: `msbCheckout`, `generateClaim`, `saveGfe`.
 
 ## 3. Citation audit (item 3): my last 10 non-bookkeeping commits
-**Commits:** `7ff32861a`, `3776c7177`, `d20a037f3`, `01ffc53ff`, `8ca86c212`, `9b43b8e85`, `9c9954677`, `e22c9cd0b`, `5745a8248`, `51d9b401d`.
+**Commits:** `38b6cdfcf`, `bea669fd2`, `d20a037f3`, `01ffc53ff`, `8ca86c212`, `9b43b8e85`, `9c9954677`, `e22c9cd0b`, `5745a8248`, `51d9b401d`.
 - **Pattern scanned:** `<file>:<digits>` and `line <digits>` in each message.
 - **One slip:** `e22c9cd0b` (cody b68, the 13-guard case fix) cites `api/_lib/license.js:189` with nothing else.
   - **The anchor it should have carried:** the code `const upper = key.toUpperCase();`, which is unique in that file, at blob `c18628c4f574`.
   - A pushed message cannot be amended. This handoff is the correction of record.
   - Every other place that fix is cited (register record, cause tag, b68 handoff, the Tier A record) names the file without a bare line.
 - **Not slips:**
-  - `3776c7177`, `5745a8248` and `51d9b401d`: the matches are the `:33`/`:34` minute fields of record timestamps.
+  - `bea669fd2`, `5745a8248` and `51d9b401d`: the matches are the `:33`/`:34` minute fields of record timestamps.
   - `9b43b8e85`: its `:15881`/`:6767` sit beside the blob hash `881804937a60` and the quoted code.
   - `e22c9cd0b`'s `:12`: a timestamp.
 
@@ -68,7 +68,7 @@
 | 3 | `B67-SDN-WRITE-UNCONFIRMED-CODY-2026-10-30` | it is hank's code (`api/`) | **hank** | carried; re-anchored in b68 (blob `881804937a60`) |
 | 4 | deploy_verify `$(…)`/backtick silent skip (verdict on fourth's record `2026-10-29T21:30:59Z`, fix `c7d7e74d8`) | fourth's file; no fix landed since | **fourth** | carried |
 | 5 | exit_status_attributable silent suppressions (verdict on cc's record `2026-10-06T06:18:11Z`, `3cf3d5ec3e2c`) | cc's file; no commit to it since | **cc** | carried |
-| 6 | standing re-entry checker | — | cody | **CLOSED** (`7ff32861a`); its findings carry as `B69-REENTRY-14` |
+| 6 | standing re-entry checker | — | cody | **CLOSED** (`38b6cdfcf`); its findings carry as `B69-REENTRY-14` |
 | 7 | H2 rows: seq 813 (hash `ed20a6b9…`) and the seq-1111 calibration list (hash `94e2e6b8…`) | the auditor log is builder-denied | **hover2** | carried |
 
 ## Open, and the exact next step
