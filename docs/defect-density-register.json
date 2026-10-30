@@ -41635,6 +41635,52 @@
         }
       ],
       "recurrence_open": "Any other could-not-tell code added to the server later must be added to the kept list too; nothing enforces that."
+    },
+    {
+      "commit": "27ce52825c1a",
+      "date": "2026-10-30",
+      "subject": "fix(api, cc b77): shared_knowledge legacy permission keys on lic.app_id, not caller body.app_id; revert b76 grdData line (routed to fourth)",
+      "files": [
+        "api/b77-legacy-shared-knowledge-app-id.test.js",
+        "api/sd-data.js",
+        "docs/2026-10-30-cc-b77-routed.md",
+        "docs/recurring-bug-classes-2.md",
+        "docs/sairn-path-manifest.json",
+        "sairngrounds.html"
+      ],
+      "lines_added": 199,
+      "lines_removed": 4,
+      "app": "sairnlegacy",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "api/sd-data.js shared_knowledge: the sairnlegacy staff shared_knowledge_access check ran only when caller body.app_id was sairnlegacy; omitting app_id served read/write 200 to staff without access",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the condition predates the files history reachable in this session; not traced"
+      },
+      "citation_note": "No PROCESS-RULES section names it; class is recurring-bug-classes-2 C7 (authorization check keyed on a caller-supplied identifier).",
+      "phase_note": "the permission branch was conditioned on a request field rather than the licence",
+      "contributing_factors": [
+        {
+          "factor": "permission branch conditioned on caller body.app_id",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "keyed on lic.app_id"
+        },
+        {
+          "factor": "no server test exercised legSharedKnowledgePermission",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/b77-legacy-shared-knowledge-app-id.test.js"
+        }
+      ],
+      "recurrence_open": "other request-field-conditioned branches outside body.app_id (e.g. payload.app_id) not swept"
     }
   ],
   "started": "2026-09-09",
