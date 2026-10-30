@@ -7914,6 +7914,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/stonedesk_presence_fixes_b69.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "if (process.argv[2]) { console.log('       (skipped: the stress tool reads the r"
+    }
+   ],
+   "sha": "79aa5607a4073771febcb281f289a91ed374d9eb",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_blob_coverage_scope_sabotage.py",
    "class": "test file",
    "level": "CHANGE",
