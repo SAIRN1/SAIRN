@@ -4621,6 +4621,17 @@
       "status": "released",
       "released_at": "2026-10-29T20:18:24Z",
       "files": null
+    },
+    {
+      "id": "cody-1793350609",
+      "session": "cody",
+      "subject": "sairngrounds",
+      "task": "shot start interleave cc b76 F1",
+      "claimed_at": "2026-10-30T08:56:49Z",
+      "claimed_at_epoch": 1793350609.5181363,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
