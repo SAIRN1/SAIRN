@@ -17817,6 +17817,19 @@ module.exports = async (req, res) => {
         // write look like a different record.
         payload.id = acKey;
       }
+      // ── THE ID IS AN IDENTIFIER, NOT TEXT (hank b72, H1 #1734 server half) ──
+      // Every SAIRNlegacy id is newId()-shaped (PREFIX-<ms>-<n>), a seed
+      // literal, or the AC-/ACX- aftercare key derived just above, which carries
+      // the case id verbatim (a space is legal there, so this is a DENYLIST of
+      // the characters that can end a string or open markup, not an alphabet).
+      // An id holding one of them has no legitimate source; it is the #1734 vector (a
+      // caller with a write grant stores it, and it runs when an owner opens
+      // the page). Checked AFTER the aftercare rewrite so a derived key is
+      // held to the same rule as a supplied one.
+      if (String(payload.id).length > 128 || /['"`<>&\\\u0000-\u001f]/.test(String(payload.id))) {
+        res.status(400).json({ error: { code: 'BAD_ID', message: resource + ' payload.id must be at most 128 characters with no quote, backtick, <, >, &, backslash or control character' } });
+        return;
+      }
       // Reservation-lock hard gate (2026-08-10): the one transition on this
       // resource that can't be a blind merge -- two staff on two devices,
       // each holding a stale local copy showing 'Available', could otherwise
