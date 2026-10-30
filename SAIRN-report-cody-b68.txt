@@ -1,0 +1,30 @@
+SAIRN REPORT -- cody b68 (2026-10-30)
+=====================================
+Handoff: SAIRN-handoff-cody-b68.md. Findings are cited by record opened_at, commit SHA or log hash. A line number appears only beside a quoted code anchor.
+
+1. DONE-LINE STOP HOOK: already built (cc b66 a367bd0c2; my b66 fix bea263709). Nothing new to build.
+   - Armed in all four builder clones from settings.local.json Stop. Every armed copy is identical: sha256 7aa02c754b5b, criteria 2026-10-29.cody-b66.1. Selftest 20/0.
+   - It has enforced my b65, b66 and b67 closes by code: one refusal in b65; refusals 0 on the b67 line.
+
+2. b66 CARRYOVER. Closed: cc b76's four findings on my b65 records (2026-10-29T19:12:48Z and 19:34:54Z).
+   - Case-sensitive licence fingerprint, 13 guards (aadab627c): L5/L6 RED in all 13 first, 78/78 now. license_keys checked read-only: 31 keys, no case collisions.
+   - gcdMarkShotStart interleave (569ab9bc4): GS1/GS2 RED first, 48/0 now.
+   - S4c throwing-reset arm (42b1050e1): RED with the finally removed, 18/0.
+   - R-12 record hygiene: the gate says no Tier A obligation is owed.
+   - b66 row 7 closed as a wrong premise: the scaffold skill has no guard text.
+   Not done, with the reason:
+   - Standing re-entry checker: it needs a criteria lock first; a batch of its own.
+   Other people's rows have their status in the handoff table: cc exit-status (no commit since my b65 verdict), fourth $(...) gap, hank SDN, hover2 rows.
+
+3. R-11 STABLE: sairndental.html:3118-3119 blame to f4d8c29fa (b65), untouched since. CD4 green 20/0. The live page is identical to HEAD.
+
+4. B67-SDN-WRITE-UNCONFIRMED is CURRENT: re-verified at HEAD 112b4120c, blob 881804937a60.
+   - Both sites are unchanged. They moved +5 (cc b77 52b9ca3a3).
+   - The row is re-anchored on the quoted code and the branch head instead of line numbers.
+
+5. METHODOLOGY: hash/SHA/record citations throughout; line numbers only beside a code anchor.
+
+6. PUSH: LANDED.
+   - One rebase stop: my own uncommitted index edit. Two ledger conflicts were merged by identity.
+   - The 13 guard apps plus mech are live and byte-identical to HEAD.
+   - The handoff landed at 01ffc53ff7f79c322dfa3fbae3716bd07452b8bf, measured as HEAD == origin/main after a fetch. This report and digest are the final commit.

@@ -1,0 +1,15 @@
+DIGEST -- cody b68, 2026-10-30. All 6 items DONE (item 2: closed what was actionable, reasons for the rest).
+STATUS: 14 APPS (13 licence guards + grounds shot-start), TESTS, DOCS. NO SQL. One read-only count query.
+CHANGED: 13 app .html; 3 test files; index row + shards; register; classes; tier-a; BYPASS-LOG.
+LANDED: full gate; handoff at 01ffc53ff == origin/main. 14 live pages byte-identical to HEAD.
+ITEM 1 -- hook already built and armed in all 4 clones (sha 7aa02c754b5b); enforced b65-b67 closes by code.
+ITEM 2 -- cc b76 findings closed: 13-guard case check (aadab627c), shot-start (569ab9bc4), S4c (42b1050e1); scaffold row was a wrong premise.
+ITEM 3 -- R-11 stable: blame f4d8c29fa, CD4 green.
+ITEM 4 -- SDN row current at blob 881804937a60; re-anchored on quoted code (+5 drift).
+ITEM 5 -- record/SHA/hash citations; line numbers only beside code anchors.
+ITEM 6 -- handoff before report; pushed and confirmed landed.
+DECISION-NEEDED: none.
+UNVERIFIED: none beyond the open reviews (cc b68, fourth b66).
+NEXT: cc reviews b68; fourth b66 + $(...) arm; hank SDN; cody re-entry checker (own batch). Handoff table, 7 rows.
+EVIDENCE-path: SAIRN-handoff-cody-b68.md, SAIRN-report-cody-b68.txt
+CONTEXT 51.7% of 1,000,000 -- 516,748 tokens, measured.
