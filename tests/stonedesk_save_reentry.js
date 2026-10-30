@@ -143,6 +143,20 @@ function world(reserve, slabId) {
     check('S4b ...and once the reset has run, the next sale is recorded',
       w.ctx.resets === 1 && w.ctx.sd_invoices.length === 2, JSON.stringify({ resets: w.ctx.resets, invoices: w.ctx.sd_invoices.length, err: w.err() }));
   }
+  {
+    // S4c (cc b76 F2 on cody b65's 2026-10-29T19:34:54Z record): the hold is
+    // released by a `finally` inside the reset timer, and no arm pinned it --
+    // removing the `finally` left this suite at 17/0. A reset that THROWS must
+    // still free the POS for the next sale.
+    const w = world(() => Promise.resolve({ ok: true }), null);
+    w.ctx.window.posResetForm = () => { w.ctx.resets++; throw new Error('reset failed'); };
+    await w.sale();
+    try { w.elapse(); } catch (e) { /* the timer's own throw; the hold is the question */ }
+    await w.sale();
+    check('S4c a reset that THROWS still releases the hold: the next sale is recorded',
+      w.ctx.resets === 1 && w.ctx.sd_invoices.length === 2 && !/Still completing/.test(w.err()),
+      JSON.stringify({ resets: w.ctx.resets, invoices: w.ctx.sd_invoices.length, err: w.err() }));
+  }
   // 4. TWO MORE (cody b65). saveQuote with a slab attached AWAITS the slab
   // reservation before it files the quote, with the slab still attached and
   // the quote number not yet advanced: a second press reserved again for the
