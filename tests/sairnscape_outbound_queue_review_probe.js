@@ -115,6 +115,8 @@ const UI_SRC = [
   grab('function scpSetSendBtn(mode, qid){', '\n}\n'),
   grab('function scpOpenDesignModal(id){', '\n}\n'),
   grab('function scpCloseDesignModal(){', '\n'),
+  // cody b70: the send now holds on its own flag, declared beside it.
+  'var scpDwQuoting=false;',
   grab('async function scpSendDesignToQuote(){', '\n}\n'),
 ].join('\n');
 

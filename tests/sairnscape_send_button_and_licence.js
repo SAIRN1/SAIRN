@@ -139,7 +139,9 @@ function harness(opts) {
     grab('function scpOpenDesignModal(id){', '\n}\n'),
     grab('async function scpApproveDesign(){', '\n}\n'),
     grab('async function scpSendDesignToQuote(){', '\n}\n'),
-    'var scpDwid=null;'
+    'var scpDwid=null;',
+    // cody b70: the send now holds on its own flag, declared beside it.
+    'var scpDwQuoting=false;'
   ].join('\n');
   vm.runInContext(src, ctx);
   return ctx;
