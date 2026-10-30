@@ -4887,8 +4887,8 @@
       "task": "1734 raw o.id sinks",
       "claimed_at": "2026-10-30T09:28:54Z",
       "claimed_at_epoch": 1793352534.0743408,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-30T09:41:35Z",
       "files": null
     }
   ],
