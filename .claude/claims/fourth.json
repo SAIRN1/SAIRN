@@ -5007,6 +5007,20 @@
         "tools/deploy_verify_notify.py",
         "tools/sairn_done_line.py"
       ]
+    },
+    {
+      "id": "fourth-1793348388",
+      "session": "fourth",
+      "subject": "sairnlegacy",
+      "task": "b70 apprentice supervisor picker and legComposeStatement L3 FILES: sairnlegacy.html tests/sairnlegacy_supervisor_picker_b70.js",
+      "claimed_at": "2026-10-30T08:19:48Z",
+      "claimed_at_epoch": 1793348388.4750254,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "sairnlegacy.html",
+        "tests/sairnlegacy_supervisor_picker_b70.js"
+      ]
     }
   ],
   "refusals": [
