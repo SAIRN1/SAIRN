@@ -2123,6 +2123,11 @@ function showToast(msg, type, dur) {
   t._to = setTimeout(function(){ t.classList.remove('show'); }, dur||3500);
 }
 
+// A record value passed as an argument from an inline handler: a JS string
+// literal, then HTML-escaped, because the attribute is HTML-decoded BEFORE the
+// JS runs -- so an HTML escape alone, or a raw value between ' quotes, lets a
+// stored id close the string (hank b70 H1y, the sairnlegacy b69 H1x shape).
+function JA(s){return JSON.stringify(String(s==null?'':s)).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function escHtml(s){
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
@@ -2819,7 +2824,7 @@ function svRenderAccess(){
         var active = e.active!==false;
         /* &#39; rather than a backslash-escaped quote: the browser decodes the
            entity before evaluating the attribute. */
-        var idArg = '&#39;'+escHtml(e.employee_id)+'&#39;';
+        var idArg = JA(e.employee_id);
         return '<tr><td>'+escHtml(e.employee_id)+(e.employee_id===me?' <b>(you)</b>':'')+'</td>'+
           '<td>'+escHtml(e.display_name||'--')+'</td><td>'+escHtml(e.role||'')+'</td>'+
           '<td>'+(active?'active':'<b>deactivated</b>')+'</td>'+
@@ -3338,9 +3343,9 @@ function openWhiteboardEdit(id){
     '<div><label style="display:block;margin-bottom:6px;">Doctor</label><input type="text" id="wb-edit-doctor" value="'+escHtml(p.doctor)+'" style="width:100%;"></div>'+
     '<div style="grid-column:1/-1;"><label style="display:block;margin-bottom:6px;">Notes</label><input type="text" id="wb-edit-notes" value="'+escHtml(p.notes)+'" style="width:100%;"></div>'+
     '</div>'+
-    '<button class="btn" onclick="saveWhiteboardEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn" onclick="saveWhiteboardEdit('+JA(id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelWhiteboardEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeWhiteboardPatient(\''+id+'\')">Discharge / Remove from Board</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeWhiteboardPatient('+JA(id)+')">Discharge / Remove from Board</button>'+
     '</div>';
   var existing = document.getElementById('wb-edit-card');
   if(existing) existing.remove();
@@ -3464,9 +3469,9 @@ function openScheduleEdit(id){
     '<div><label style="display:block;margin-bottom:6px;">Room</label><input type="text" id="sched-edit-room" value="'+escHtml(a.room)+'" style="width:100%;"></div>'+
     '<div><label style="display:block;margin-bottom:6px;">Status</label><select id="sched-edit-status" style="width:100%;">'+statusOptions+'</select></div>'+
     '</div>'+
-    '<button class="btn" onclick="saveScheduleEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn" onclick="saveScheduleEdit('+JA(id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelScheduleEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeScheduleAppt(\''+id+'\')">Remove Appointment</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeScheduleAppt('+JA(id)+')">Remove Appointment</button>'+
     '</div>';
   var existing = document.getElementById('sched-edit-card');
   if(existing) existing.remove();
@@ -3622,9 +3627,9 @@ function openVitalEdit(id){
     '<div><label style="display:block;margin-bottom:6px;">RR rpm</label><input type="number" id="vital-edit-rr" value="'+(typeof v.rr==='number'?v.rr:'')+'" style="width:100%;"></div>'+
     '<div><label style="display:block;margin-bottom:6px;">Weight</label><input type="text" id="vital-edit-weight" value="'+escHtml(v.weight||'')+'" style="width:100%;"></div>'+
     '</div>'+
-    '<button class="btn" onclick="saveVitalEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn" onclick="saveVitalEdit('+JA(id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelVitalEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeVital(\''+id+'\')">Remove Entry</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeVital('+JA(id)+')">Remove Entry</button>'+
     '</div>';
   var existing = document.getElementById('vital-edit-card');
   if(existing) existing.remove();
@@ -3782,9 +3787,9 @@ function openLabEdit(id){
     '<div><label style="display:flex;align-items:center;gap:6px;margin-top:24px;"><input type="checkbox" id="lab-edit-critical"'+(entry.critical?' checked':'')+'> Critical value</label></div>'+
     '<div style="grid-column:1/-1;"><label style="display:block;margin-bottom:6px;">Notes</label><input type="text" id="lab-edit-notes" value="'+escHtml(entry.notes||'')+'" style="width:100%;"></div>'+
     '</div>'+
-    '<button class="btn" onclick="saveLabEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn" onclick="saveLabEdit('+JA(id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelLabEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeLabResult(\''+id+'\')">Remove Result</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeLabResult('+JA(id)+')">Remove Result</button>'+
     '</div>';
   var existing = document.getElementById('lab-edit-card');
   if(existing) existing.remove();
@@ -3914,9 +3919,9 @@ function openImagingEdit(id){
     '<div><label style="display:block;margin-bottom:6px;">Status</label><select id="img-edit-status" style="width:100%;">'+statusOptions+'</select></div>'+
     '<div style="grid-column:1/-1;"><label style="display:block;margin-bottom:6px;">Findings (once reviewed)</label><input type="text" id="img-edit-findings" value="'+escHtml(s.findings||'')+'" style="width:100%;"></div>'+
     '</div>'+
-    '<button class="btn" onclick="saveImagingEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn" onclick="saveImagingEdit('+JA(id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelImagingEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeImagingStudy(\''+id+'\')">Remove Study</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeImagingStudy('+JA(id)+')">Remove Study</button>'+
     '</div>';
   var existing = document.getElementById('img-edit-card');
   if(existing) existing.remove();
@@ -4041,9 +4046,9 @@ function openSurgeryEdit(id){
     '<div><label style="display:flex;align-items:center;gap:6px;margin-top:24px;"><input type="checkbox" id="surg-edit-complication"'+(s.complication?' checked':'')+'> Complication occurred</label></div>'+
     '<div style="grid-column:1/-1;"><label style="display:block;margin-bottom:6px;">Complication Notes</label><input type="text" id="surg-edit-complication-note" value="'+escHtml(s.complicationNote||'')+'" style="width:100%;"></div>'+
     '</div>'+
-    '<button class="btn" onclick="saveSurgeryEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn" onclick="saveSurgeryEdit('+JA(id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelSurgeryEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeSurgery(\''+id+'\')">Remove</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeSurgery('+JA(id)+')">Remove</button>'+
     '</div>';
   var existing = document.getElementById('surg-edit-card');
   if(existing) existing.remove();
@@ -4189,9 +4194,9 @@ function openDentalEdit(id){
     '<div><label style="display:block;margin-bottom:6px;">Date</label><input type="date" id="dent-edit-date" value="'+escHtml(r.date)+'" style="width:100%;"></div>'+
     '<div><label style="display:block;margin-bottom:6px;">Duration (min)</label><input type="number" id="dent-edit-duration" value="'+(typeof r.duration==='number'?r.duration:'')+'" style="width:100%;"></div>'+
     '</div>'+
-    '<button class="btn" onclick="saveDentalEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn" onclick="saveDentalEdit('+JA(id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelDentalEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeDentalRecord(\''+id+'\')">Remove Record</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeDentalRecord('+JA(id)+')">Remove Record</button>'+
     '</div>';
   var existing = document.getElementById('dent-edit-card');
   if(existing) existing.remove();
@@ -4341,9 +4346,9 @@ function openExamRoomEdit(id){
     '<div><label style="display:block;margin-bottom:6px;">Patient</label><input type="text" id="exrm-edit-patient" value="'+escHtml(r.patient||'')+'" style="width:100%;"></div>'+
     '<div><label style="display:block;margin-bottom:6px;">Doctor</label><input type="text" id="exrm-edit-doctor" value="'+escHtml(r.doctor||'')+'" style="width:100%;"></div>'+
     '</div>'+
-    '<button class="btn" onclick="saveExamRoomEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn" onclick="saveExamRoomEdit('+JA(id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelExamRoomEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeExamRoom(\''+id+'\')">Remove Room</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeExamRoom('+JA(id)+')">Remove Room</button>'+
     '</div>';
   var existing = document.getElementById('exrm-edit-card');
   if(existing) existing.remove();
@@ -4474,9 +4479,9 @@ function openTeleconsultEdit(id){
     '<div><label style="display:block;margin-bottom:6px;">Time</label><input type="text" id="tc-edit-time" value="'+escHtml(c.time||'')+'" style="width:100%;"></div>'+
     '<div><label style="display:block;margin-bottom:6px;">Satisfaction (1-5, if completed)</label><input type="number" min="1" max="5" id="tc-edit-satisfaction" value="'+(typeof c.satisfaction==='number'?c.satisfaction:'')+'" style="width:100%;"></div>'+
     '</div>'+
-    '<button class="btn" onclick="saveTeleconsultEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn" onclick="saveTeleconsultEdit('+JA(id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelTeleconsultEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeTeleconsult(\''+id+'\')">Remove</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeTeleconsult('+JA(id)+')">Remove</button>'+
     '</div>';
   var existing = document.getElementById('tc-edit-card');
   if(existing) existing.remove();
@@ -4616,9 +4621,9 @@ function openLamenessEdit(id){
     '<div><label style="display:block;margin-bottom:6px;">Doctor</label><input type="text" id="lame-edit-doctor" value="'+escHtml(l.doctor)+'" style="width:100%;"></div>'+
     '<div><label style="display:flex;align-items:center;gap:6px;margin-top:24px;"><input type="checkbox" id="lame-edit-followup"'+(l.followUp?' checked':'')+'> Follow-up scheduled</label></div>'+
     '</div>'+
-    '<button class="btn" onclick="saveLamenessEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn" onclick="saveLamenessEdit('+JA(id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelLamenessEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeLamenessExam(\''+id+'\')">Remove</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeLamenessExam('+JA(id)+')">Remove</button>'+
     '</div>';
   var existing = document.getElementById('lame-edit-card');
   if(existing) existing.remove();
@@ -4744,9 +4749,9 @@ function openFarmCallEdit(id){
     '<div><label style="display:block;margin-bottom:6px;">Miles</label><input type="number" id="farm-edit-miles" value="'+(typeof f.miles==='number'?f.miles:'')+'" style="width:100%;"></div>'+
     '<div><label style="display:block;margin-bottom:6px;">Charge ($)</label><input type="number" id="farm-edit-charge" value="'+(typeof f.charge==='number'?f.charge:'')+'" style="width:100%;"></div>'+
     '</div>'+
-    '<button class="btn" onclick="saveFarmCallEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn" onclick="saveFarmCallEdit('+JA(id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelFarmCallEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeFarmCall(\''+id+'\')">Remove</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeFarmCall('+JA(id)+')">Remove</button>'+
     '</div>';
   var existing = document.getElementById('farm-edit-card');
   if(existing) existing.remove();
@@ -4875,9 +4880,9 @@ function openReproEdit(id){
     '<div><label style="display:block;margin-bottom:6px;">Notes</label><input type="text" id="repro-edit-notes" value="'+escHtml(r.notes||'')+'" style="width:100%;"></div>'+
     '<div><label style="display:block;margin-bottom:6px;">Date</label><input type="date" id="repro-edit-date" value="'+escHtml(r.date)+'" style="width:100%;"></div>'+
     '</div>'+
-    '<button class="btn" onclick="saveReproEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn" onclick="saveReproEdit('+JA(id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelReproEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeReproRecord(\''+id+'\')">Remove</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeReproRecord('+JA(id)+')">Remove</button>'+
     '</div>';
   var existing = document.getElementById('repro-edit-card');
   if(existing) existing.remove();
@@ -4998,9 +5003,9 @@ function openEquineDentalEdit(id){
     '<div><label style="display:block;margin-bottom:6px;">Date</label><input type="date" id="eqdent-edit-date" value="'+escHtml(r.date)+'" style="width:100%;"></div>'+
     '<div><label style="display:flex;align-items:center;gap:6px;margin-top:24px;"><input type="checkbox" id="eqdent-edit-sedated"'+(r.sedated?' checked':'')+'> Performed under sedation</label></div>'+
     '</div>'+
-    '<button class="btn" onclick="saveEquineDentalEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn" onclick="saveEquineDentalEdit('+JA(id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelEquineDentalEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeEquineDentalRecord(\''+id+'\')">Remove</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeEquineDentalRecord('+JA(id)+')">Remove</button>'+
     '</div>';
   var existing = document.getElementById('eqdent-edit-card');
   if(existing) existing.remove();
@@ -5130,9 +5135,9 @@ function openPPEEdit(id){
     '<div><label style="display:block;margin-bottom:6px;">Report Pages</label><input type="number" id="ppe-edit-pages" value="'+(typeof p.pages==='number'?p.pages:'')+'" style="width:100%;"></div>'+
     '<div><label style="display:flex;align-items:center;gap:6px;margin-top:24px;"><input type="checkbox" id="ppe-edit-radiographs"'+(p.radiographs?' checked':'')+'> Radiographs included</label></div>'+
     '</div>'+
-    '<button class="btn" onclick="savePPEEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn" onclick="savePPEEdit('+JA(id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelPPEEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removePPE(\''+id+'\')">Remove</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removePPE('+JA(id)+')">Remove</button>'+
     '</div>';
   var existing = document.getElementById('ppe-edit-card');
   if(existing) existing.remove();
@@ -5564,7 +5569,7 @@ function openSettingEdit(key){
     '<div class="card" style="border:2px solid var(--primary);">'+
     '<h3>Editing: '+escHtml(f.label)+'</h3>'+
     '<input type="text" id="sv-set-val" value="'+escHtml(cfg[key]||'')+'" style="width:100%;margin:12px 0;">'+
-    '<button class="btn" onclick="saveSettingEdit(\''+escHtml(key)+'\')">Save</button> '+
+    '<button class="btn" onclick="saveSettingEdit('+JA(key)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelSettingEdit()">Cancel</button>'+
     '</div>';
 }
@@ -5611,9 +5616,9 @@ function openPatientEdit(id){
     '<div><label style="display:block;margin-bottom:6px;">Last Visit</label><input type="date" id="pt-edit-visit" value="'+(p.lastVisit||'')+'" style="width:100%;"></div>'+
     '<div><label style="display:flex;align-items:center;gap:6px;margin-top:24px;"><input type="checkbox" id="pt-edit-chart"'+(p.chartComplete?' checked':'')+'> Chart complete</label></div>'+
     '</div>'+
-    '<button class="btn" onclick="savePatientEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn" onclick="savePatientEdit('+JA(id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelPatientEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removePatient(\''+id+'\')">Remove</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removePatient('+JA(id)+')">Remove</button>'+
     '</div>';
   var existing = document.getElementById('pt-edit-card');
   if(existing) existing.remove();
@@ -5705,7 +5710,7 @@ function renderDocuments(){
     list.forEach(function(d){
       var usedThisMonth = (d.usedDates||[]).filter(function(u){ return u.slice(0,7)===thisMonth; }).length;
       var tr = document.createElement('tr');
-      tr.innerHTML = '<td>'+escHtml(d.name)+'</td><td>'+escHtml(d.type)+'</td><td>'+escHtml(d.updated)+'</td><td>'+usedThisMonth+' <button class="btn btn-sm" onclick="logDocUse(\''+d.id+'\')">Log Use</button></td>';
+      tr.innerHTML = '<td>'+escHtml(d.name)+'</td><td>'+escHtml(d.type)+'</td><td>'+escHtml(d.updated)+'</td><td>'+usedThisMonth+' <button class="btn btn-sm" onclick="logDocUse('+JA(d.id)+')">Log Use</button></td>';
       tbody.appendChild(tr);
     });
   }
@@ -6202,9 +6207,9 @@ function openWellnessEdit(id){
     '<div><label style="display:block;margin-bottom:6px;">Status</label><select id="well-edit-status" style="width:100%;">'+opts+'</select></div>'+
     '</div>'+
     '<p style="font-size:0.85em;color:var(--text-muted,#666);margin:0 0 12px;">Anything other than Active removes this plan\'s $'+w.monthly.toFixed(2)+' from Monthly Recurring Revenue. The row stays in the table and in the CSV export.</p>'+
-    '<button class="btn" onclick="saveWellnessEdit(\''+w.id+'\')">Save</button> '+
+    '<button class="btn" onclick="saveWellnessEdit('+JA(w.id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelWellnessEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeWellnessPlan(\''+w.id+'\')">Remove Enrollment</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeWellnessPlan('+JA(w.id)+')">Remove Enrollment</button>'+
     '</div>';
   var existing = document.getElementById('well-edit-card');
   if(existing) existing.remove();
@@ -6310,9 +6315,9 @@ function openCogginsEdit(id){
     '<div><label style="display:block;margin-bottom:6px;">Lab Status</label><select id="cog-edit-status" style="width:100%;">'+statusOptions+'</select></div>'+
     '<div><label style="display:flex;align-items:center;gap:6px;margin-top:24px;"><input type="checkbox" id="cog-edit-issue"'+(c.certificate==='Issued'?' checked':'')+'> Issue certificate</label></div>'+
     '</div>'+
-    '<button class="btn" onclick="saveCogginsEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn" onclick="saveCogginsEdit('+JA(id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelCogginsEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeCogginsTest(\''+id+'\')">Remove</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeCogginsTest('+JA(id)+')">Remove</button>'+
     '</div>';
   var existing = document.getElementById('cog-edit-card');
   if(existing) existing.remove();
@@ -6434,9 +6439,9 @@ function openHerdEdit(id){
     '<div><label style="display:block;margin-bottom:6px;">Vaccination Compliance %</label><input type="number" min="0" max="100" id="herd-edit-compliance" value="'+(typeof h.vaccinationCompliance==='number'?h.vaccinationCompliance:'')+'" style="width:100%;"></div>'+
     '<div><label style="display:block;margin-bottom:6px;">Somatic Cell Count (thousands, dairy only)</label><input type="number" id="herd-edit-scc" value="'+(typeof h.scc==='number'?h.scc:'')+'" style="width:100%;"></div>'+
     '</div>'+
-    '<button class="btn" onclick="saveHerdEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn" onclick="saveHerdEdit('+JA(id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelHerdEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeHerd(\''+id+'\')">Remove Herd</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeHerd('+JA(id)+')">Remove Herd</button>'+
     '</div>';
   var existing = document.getElementById('herd-edit-card');
   if(existing) existing.remove();
@@ -6576,9 +6581,9 @@ function openWildlifeEdit(id){
     '<div><label style="display:block;margin-bottom:6px;">Release/Outcome Date</label><input type="date" id="wr-edit-releasedate" value="'+escHtml(w.releaseDate||'')+'" style="width:100%;"></div>'+
     '</div>'+
     '<p style="font-size:0.85em;color:var(--text-muted,#666);margin:0 0 12px;">Set the Release/Outcome date when marking a case Released, Deceased, Euthanized, or Transferred — this closes out the case and feeds Released YTD and Release Rate.</p>'+
-    '<button class="btn" onclick="saveWildlifeEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn" onclick="saveWildlifeEdit('+JA(id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelWildlifeEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeWildlifeCase(\''+id+'\')">Remove Case</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeWildlifeCase('+JA(id)+')">Remove Case</button>'+
     '</div>';
   var existing = document.getElementById('wildlife-edit-card');
   if(existing) existing.remove();
@@ -6705,9 +6710,9 @@ function openConservationEdit(id){
     '<div><label style="display:block;margin-bottom:6px;">Status</label><select id="cons-edit-status" style="width:100%;">'+statusOptions+'</select></div>'+
     '<div><label style="display:block;margin-bottom:6px;">Breeding Pairs</label><input type="number" id="cons-edit-pairs" value="'+(typeof c.pairs==='number'?c.pairs:'')+'" style="width:100%;"></div>'+
     '</div>'+
-    '<button class="btn" onclick="saveConservationEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn" onclick="saveConservationEdit('+JA(id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelConservationEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeConservationRecord(\''+id+'\')">Remove Record</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeConservationRecord('+JA(id)+')">Remove Record</button>'+
     '</div>';
   var existing = document.getElementById('conservation-edit-card');
   if(existing) existing.remove();
@@ -6838,9 +6843,9 @@ function openComplianceEdit(id){
     '<div><label style="display:block;margin-bottom:6px;">Due Date</label><input type="date" id="cmp-edit-due" value="'+escHtml(c.dueDate||'')+'" style="width:100%;"></div>'+
     '</div>'+
     '<p style="font-size:0.85em;color:var(--text-muted,#666);margin:0 0 12px;">Update the due date after renewal — status recalculates automatically.</p>'+
-    '<button class="btn" onclick="saveComplianceEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn" onclick="saveComplianceEdit('+JA(id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelComplianceEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeComplianceItem(\''+id+'\')">Remove Item</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeComplianceItem('+JA(id)+')">Remove Item</button>'+
     '</div>';
   var existing = document.getElementById('compliance-edit-card');
   if(existing) existing.remove();
@@ -6957,9 +6962,9 @@ function openClientEdit(id){
     '<div><label style="display:block;margin-bottom:6px;">Balance</label><input type="number" step="0.01" id="cli-edit-balance" value="'+(typeof c.balance==='number'?c.balance:'')+'" style="width:100%;"></div>'+
     '<div><label style="display:block;margin-bottom:6px;">Status</label><select id="cli-edit-status" style="width:100%;">'+statusOptions+'</select></div>'+
     '</div>'+
-    '<button class="btn" onclick="saveClientEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn" onclick="saveClientEdit('+JA(id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelClientEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeClient(\''+id+'\')">Remove Client</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeClient('+JA(id)+')">Remove Client</button>'+
     '</div>';
   var existing = document.getElementById('clients-edit-card');
   if(existing) existing.remove();
@@ -7083,9 +7088,9 @@ function openInvoiceEdit(id){
     '<div><label style="display:block;margin-bottom:6px;">Status</label><select id="inv-edit-status" style="width:100%;">'+statusOptions+'</select></div>'+
     '<div><label style="display:block;margin-bottom:6px;">Date</label><input type="date" id="inv-edit-date" value="'+escHtml(v.date||'')+'" style="width:100%;"></div>'+
     '</div>'+
-    '<button class="btn" onclick="saveInvoiceEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn" onclick="saveInvoiceEdit('+JA(id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelInvoiceEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeInvoice(\''+id+'\')">Remove Invoice</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeInvoice('+JA(id)+')">Remove Invoice</button>'+
     '</div>';
   var existing = document.getElementById('invoicing-edit-card');
   if(existing) existing.remove();
@@ -7207,9 +7212,9 @@ function openBillingEdit(id){
     '<div><label style="display:block;margin-bottom:6px;">Status</label><select id="bil-edit-status" style="width:100%;">'+statusOptions+'</select></div>'+
     '<div><label style="display:block;margin-bottom:6px;">Date</label><input type="date" id="bil-edit-date" value="'+escHtml(b.date||'')+'" style="width:100%;"></div>'+
     '</div>'+
-    '<button class="btn" onclick="saveBillingEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn" onclick="saveBillingEdit('+JA(id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelBillingEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeBillingTx(\''+id+'\')">Remove Transaction</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeBillingTx('+JA(id)+')">Remove Transaction</button>'+
     '</div>';
   var existing = document.getElementById('billing-edit-card');
   if(existing) existing.remove();
@@ -7337,9 +7342,9 @@ function openFinancialEdit(id){
     '<div><label style="display:block;margin-bottom:6px;">Actual</label><input type="number" step="0.01" id="fin-edit-actual" value="'+(typeof f.actual==='number'?f.actual:'')+'" style="width:100%;"></div>'+
     '</div>'+
     '<p style="font-size:0.85em;color:var(--text-muted,#666);margin:0 0 12px;">Variance recalculates automatically from Budget and Actual.</p>'+
-    '<button class="btn" onclick="saveFinancialEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn" onclick="saveFinancialEdit('+JA(id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelFinancialEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeFinancialLine(\''+id+'\')">Remove Category</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeFinancialLine('+JA(id)+')">Remove Category</button>'+
     '</div>';
   var existing = document.getElementById('financials-edit-card');
   if(existing) existing.remove();
@@ -7458,9 +7463,9 @@ function openReportEdit(id){
     '<div><label style="display:block;margin-bottom:6px;">Frequency</label><select id="rpt-edit-frequency" style="width:100%;">'+freqOptions+'</select></div>'+
     '<div><label style="display:block;margin-bottom:6px;">Last Run</label><input type="date" id="rpt-edit-lastrun" value="'+escHtml(r.lastRun||'')+'" style="width:100%;"></div>'+
     '</div>'+
-    '<button class="btn" onclick="saveReportEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn" onclick="saveReportEdit('+JA(id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelReportEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeReport(\''+id+'\')">Remove Report</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeReport('+JA(id)+')">Remove Report</button>'+
     '</div>';
   var existing = document.getElementById('reports-edit-card');
   if(existing) existing.remove();
@@ -7625,9 +7630,9 @@ function openStaffEdit(id){
     '<div><label style="display:block;margin-bottom:6px;">Credential Status</label><select id="stf-edit-credential" style="width:100%;">'+credOptions+'</select></div>'+
     '<div><label style="display:block;margin-bottom:6px;">Next Shift</label><input type="text" id="stf-edit-shift" value="'+escHtml(s.nextShift||'')+'" style="width:100%;"></div>'+
     '</div>'+
-    '<button class="btn" onclick="saveStaffEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn" onclick="saveStaffEdit('+JA(id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelStaffEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeStaff(\''+id+'\')">Remove Staff Member</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeStaff('+JA(id)+')">Remove Staff Member</button>'+
     '</div>';
   var existing = document.getElementById('staff-edit-card');
   if(existing) existing.remove();
@@ -7745,9 +7750,9 @@ function openLocationEdit(id){
     '<div><label style="display:block;margin-bottom:6px;">Patients Active</label><input type="number" id="ms-edit-patients" value="'+(typeof m.patients==='number'?m.patients:'')+'" style="width:100%;"></div>'+
     '<div><label style="display:block;margin-bottom:6px;">Status</label><select id="ms-edit-status" style="width:100%;">'+statusOptions+'</select></div>'+
     '</div>'+
-    '<button class="btn" onclick="saveLocationEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn" onclick="saveLocationEdit('+JA(id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelLocationEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeLocation(\''+id+'\')">Remove Location</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeLocation('+JA(id)+')">Remove Location</button>'+
     '</div>';
   var existing = document.getElementById('multisite-edit-card');
   if(existing) existing.remove();
@@ -9081,9 +9086,9 @@ function openSpeciesRefEdit(id){
     '<div><label style="display:block;margin-bottom:6px;">Normal RR</label><input type="text" id="sr-edit-rr" value="'+escHtml(s.rr||'')+'" style="width:100%;"></div>'+
     '<div><label style="display:block;margin-bottom:6px;">Notes</label><input type="text" id="sr-edit-notes" value="'+escHtml(s.notes||'')+'" style="width:100%;"></div>'+
     '</div>'+
-    '<button class="btn" onclick="saveSpeciesRefEdit(\''+id+'\')">Save</button> '+
+    '<button class="btn" onclick="saveSpeciesRefEdit('+JA(id)+')">Save</button> '+
     '<button class="btn btn-secondary" onclick="cancelSpeciesRefEdit()">Cancel</button> '+
-    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeSpeciesRef(\''+id+'\')">Remove Species</button>'+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeSpeciesRef('+JA(id)+')">Remove Species</button>'+
     '</div>';
   var existing = document.getElementById('speciesref-edit-card');
   if(existing) existing.remove();
@@ -9862,7 +9867,7 @@ function pcOpenDetail(id){
     : (c.status==='Resolved'
         ? '<p><strong>Response from '+escHtml(c.to)+':</strong></p><p style="white-space:pre-wrap;line-height:1.6;">'+escHtml(c.response||'')+'</p>'
         : '<textarea id="pc-response-text" placeholder="Your input for '+escHtml(c.from)+'..." style="min-height:90px;"></textarea>'
-          +'<button class="btn" style="margin-top:10px;" onclick="pcSubmitResponse(\''+id+'\')">Log Response</button>');
+          +'<button class="btn" style="margin-top:10px;" onclick="pcSubmitResponse('+JA(id)+')">Log Response</button>');
   var html =
     '<div class="card" id="pc-detail-card" style="border:2px solid var(--primary);">'
     +'<h3>Consult: '+escHtml(c.patient||c.species||'Untitled')+'</h3>'

@@ -3158,6 +3158,11 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
 // change riding along inside a security fix, and it turned three arms red in
 // sairndental before it was caught. The apostrophe is what makes the cell
 // safe; the quotes never had anything to do with it.
+// A record value passed as an argument from an inline handler: a JS string
+// literal, then HTML-escaped, because the attribute is HTML-decoded BEFORE the
+// JS runs -- so an HTML escape alone, or a raw value between ' quotes, lets a
+// stored id close the string (hank b70 H1y, the sairnlegacy b69 H1x shape).
+function JA(s){return JSON.stringify(String(s==null?'':s)).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function scCsvCell(v){var s=v==null?'':String(v);if(/^[=+\-@\t\r]/.test(s)&&!(s!==''&&isFinite(Number(s))))s="'"+s;return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
 
 // ── PROMPT FENCE: untrusted text is DATA, never instructions (2026-09-25) ──
@@ -3963,7 +3968,7 @@ How to answer:
             tbody.innerHTML = '';
             list.forEach(function(r){
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>'+escHtml(r.payer)+'</td><td>$'+r.charge.toFixed(2)+'</td><td>$'+r.collected.toFixed(2)+'</td><td>'+escHtml(r.date)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeRevenueEntry(\''+r.id+'\')">×</button></td>';
+                tr.innerHTML = '<td>'+escHtml(r.payer)+'</td><td>$'+r.charge.toFixed(2)+'</td><td>$'+r.collected.toFixed(2)+'</td><td>'+escHtml(r.date)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeRevenueEntry('+JA(r.id)+')">×</button></td>';
                 tbody.appendChild(tr);
             });
             var totalCharges = list.reduce(function(s,r){return s+r.charge;},0);
@@ -4056,7 +4061,7 @@ How to answer:
             tbody.innerHTML = '';
             list.forEach(function(d){
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>'+escHtml(d.code)+'</td><td>'+escHtml(d.cause)+'</td><td>'+d.count+'</td><td>$'+d.amount.toLocaleString()+'</td><td><span class="status-badge '+statusBadgeClass(d.status)+'">'+escHtml(d.status)+'</span></td><td><button class="btn" style="padding:2px 8px;" onclick="removeDenialEntry(\''+d.id+'\')">×</button></td>';
+                tr.innerHTML = '<td>'+escHtml(d.code)+'</td><td>'+escHtml(d.cause)+'</td><td>'+d.count+'</td><td>$'+d.amount.toLocaleString()+'</td><td><span class="status-badge '+statusBadgeClass(d.status)+'">'+escHtml(d.status)+'</span></td><td><button class="btn" style="padding:2px 8px;" onclick="removeDenialEntry('+JA(d.id)+')">×</button></td>';
                 tbody.appendChild(tr);
             });
             var totalDenials = list.reduce(function(s,d){return s+d.count;},0);
@@ -4168,7 +4173,7 @@ How to answer:
                 tbody.innerHTML = list.length ? '' : '<tr><td colspan="7" style="text-align:center;color:#666;padding:16px">No denial events logged yet.</td></tr>';
                 list.forEach(function(e){
                     var tr = document.createElement('tr');
-                    tr.innerHTML = '<td>'+escHtml(e.code)+'</td><td>'+escHtml(e.payer)+'</td><td>'+escHtml(e.reason)+'</td><td>'+escHtml(e.specialty||'—')+'</td><td>$'+(e.amount||0).toLocaleString()+'</td><td>'+escHtml(e.date||'—')+'</td><td><button class="btn" style="padding:2px 8px;" onclick="draftAppealLetter(\''+e.id+'\')">Draft Appeal</button> <button class="btn" style="padding:2px 8px;" onclick="removeDenialEventEntry(\''+e.id+'\')">×</button></td>';
+                    tr.innerHTML = '<td>'+escHtml(e.code)+'</td><td>'+escHtml(e.payer)+'</td><td>'+escHtml(e.reason)+'</td><td>'+escHtml(e.specialty||'—')+'</td><td>$'+(e.amount||0).toLocaleString()+'</td><td>'+escHtml(e.date||'—')+'</td><td><button class="btn" style="padding:2px 8px;" onclick="draftAppealLetter('+JA(e.id)+')">Draft Appeal</button> <button class="btn" style="padding:2px 8px;" onclick="removeDenialEventEntry('+JA(e.id)+')">×</button></td>';
                     tbody.appendChild(tr);
                 });
             }
@@ -4218,7 +4223,7 @@ How to answer:
             tbody.innerHTML = '';
             list.forEach(function(c){
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>'+escHtml(c.item)+'</td><td>'+escHtml(c.cat)+'</td><td>'+escHtml(c.status)+'</td><td>'+escHtml(c.date)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeComplianceItem(\''+c.id+'\')">×</button></td>';
+                tr.innerHTML = '<td>'+escHtml(c.item)+'</td><td>'+escHtml(c.cat)+'</td><td>'+escHtml(c.status)+'</td><td>'+escHtml(c.date)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeComplianceItem('+JA(c.id)+')">×</button></td>';
                 tbody.appendChild(tr);
             });
             var oig = list.filter(function(c){return c.cat==='OIG Focus Area';}).length;
@@ -4275,7 +4280,7 @@ How to answer:
             tbody.innerHTML = '';
             list.forEach(function(f){
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>'+escHtml(f.desc)+'</td><td>'+f.conf+'%</td><td>$'+f.amount.toLocaleString()+'</td><td>'+escHtml(f.status)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeFraudAlert(\''+f.id+'\')">×</button></td>';
+                tr.innerHTML = '<td>'+escHtml(f.desc)+'</td><td>'+f.conf+'%</td><td>$'+f.amount.toLocaleString()+'</td><td>'+escHtml(f.status)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeFraudAlert('+JA(f.id)+')">×</button></td>';
                 tbody.appendChild(tr);
             });
             var avgConf = list.length ? (list.reduce(function(s,f){return s+f.conf;},0)/list.length).toFixed(1)+'%' : '—';
@@ -4378,7 +4383,7 @@ How to answer:
             tbody.innerHTML = '';
             list.forEach(function(p){
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>'+escHtml(p.claim)+'</td><td>'+escHtml(p.error)+'</td><td>$'+p.value.toLocaleString()+'</td><td>'+p.time+' min</td><td>'+escHtml(p.status)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeScrubEntry(\''+p.id+'\')">×</button></td>';
+                tr.innerHTML = '<td>'+escHtml(p.claim)+'</td><td>'+escHtml(p.error)+'</td><td>$'+p.value.toLocaleString()+'</td><td>'+p.time+' min</td><td>'+escHtml(p.status)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeScrubEntry('+JA(p.id)+')">×</button></td>';
                 tbody.appendChild(tr);
             });
             var resolved = list.filter(function(p){return p.status==='Resolved';});
@@ -4443,7 +4448,7 @@ How to answer:
             tbody.innerHTML = list.length ? '' : '<tr><td colspan="6" style="text-align:center;color:#666;padding:16px">No rules added yet -- add ones you\'ve verified above, or rely on live web search for anything not yet in this table.</td></tr>';
             list.forEach(function(r){
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>'+escHtml(r.type)+'</td><td>'+escHtml(r.code1)+'</td><td>'+escHtml(r.code2)+'</td><td>'+escHtml(r.note)+'</td><td>'+escHtml(r.source)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeScrubRule(\''+r.id+'\')">×</button></td>';
+                tr.innerHTML = '<td>'+escHtml(r.type)+'</td><td>'+escHtml(r.code1)+'</td><td>'+escHtml(r.code2)+'</td><td>'+escHtml(r.note)+'</td><td>'+escHtml(r.source)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeScrubRule('+JA(r.id)+')">×</button></td>';
                 tbody.appendChild(tr);
             });
         }
@@ -4562,7 +4567,7 @@ How to answer:
             tbody.innerHTML = '';
             list.forEach(function(h){
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>'+escHtml(h.cat)+'</td><td>'+escHtml(h.patient)+'</td><td>$'+h.value.toLocaleString()+'</td><td>'+escHtml(h.status)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeHccEntry(\''+h.id+'\')">×</button></td>';
+                tr.innerHTML = '<td>'+escHtml(h.cat)+'</td><td>'+escHtml(h.patient)+'</td><td>$'+h.value.toLocaleString()+'</td><td>'+escHtml(h.status)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeHccEntry('+JA(h.id)+')">×</button></td>';
                 tbody.appendChild(tr);
             });
             var gaps = list.filter(function(h){return h.status==='Gap Identified';});
@@ -4630,7 +4635,7 @@ How to answer:
             tbody.innerHTML = '';
             list.forEach(function(d){
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>'+escHtml(d.code)+'</td><td>'+escHtml(d.patient)+'</td><td>'+escHtml(d.tier)+'</td><td>$'+d.payment.toLocaleString()+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeDrgEntry(\''+d.id+'\')">×</button></td>';
+                tr.innerHTML = '<td>'+escHtml(d.code)+'</td><td>'+escHtml(d.patient)+'</td><td>'+escHtml(d.tier)+'</td><td>$'+d.payment.toLocaleString()+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeDrgEntry('+JA(d.id)+')">×</button></td>';
                 tbody.appendChild(tr);
             });
             var base = list.filter(function(d){return d.tier==='Base';}).length;
@@ -4689,7 +4694,7 @@ How to answer:
             tbody.innerHTML = '';
             list.forEach(function(q){
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>'+escHtml(q.patient)+'</td><td>'+escHtml(q.physician)+'</td><td>'+escHtml(q.type)+'</td><td>$'+q.value.toLocaleString()+'</td><td>'+escHtml(q.status)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeQueryEntry(\''+q.id+'\')">×</button></td>';
+                tr.innerHTML = '<td>'+escHtml(q.patient)+'</td><td>'+escHtml(q.physician)+'</td><td>'+escHtml(q.type)+'</td><td>$'+q.value.toLocaleString()+'</td><td>'+escHtml(q.status)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeQueryEntry('+JA(q.id)+')">×</button></td>';
                 tbody.appendChild(tr);
             });
             var responded = list.filter(function(q){return q.status==='Responded';});
@@ -4759,7 +4764,7 @@ How to answer:
             tbody.innerHTML = '';
             list.forEach(function(c){
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>'+escHtml(c.code)+'</td><td>'+escHtml(c.type)+'</td><td>'+escHtml(c.desc)+'</td><td>'+escHtml(c.bundling||'—')+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeEncoderCode(\''+c.id+'\')">×</button></td>';
+                tr.innerHTML = '<td>'+escHtml(c.code)+'</td><td>'+escHtml(c.type)+'</td><td>'+escHtml(c.desc)+'</td><td>'+escHtml(c.bundling||'—')+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeEncoderCode('+JA(c.id)+')">×</button></td>';
                 tbody.appendChild(tr);
             });
             var icd = list.filter(function(c){return c.type==='ICD-10';}).length;
@@ -4868,7 +4873,7 @@ How to answer:
             tbody.innerHTML = '';
             list.forEach(function(r){
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>'+escHtml(r.ref)+'</td><td>$'+r.amount.toLocaleString()+'</td><td>'+escHtml(r.status)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeRacEntry(\''+r.id+'\')">×</button></td>';
+                tr.innerHTML = '<td>'+escHtml(r.ref)+'</td><td>$'+r.amount.toLocaleString()+'</td><td>'+escHtml(r.status)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeRacEntry('+JA(r.id)+')">×</button></td>';
                 tbody.appendChild(tr);
             });
             var active = list.filter(function(r){return r.status==='Active';});
@@ -4925,7 +4930,7 @@ How to answer:
             tbody.innerHTML = '';
             list.forEach(function(t){
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>'+escHtml(t.claim)+'</td><td>'+escHtml(t.pos)+'</td><td>'+escHtml(t.mod)+'</td><td>$'+t.value.toLocaleString()+'</td><td>'+escHtml(t.status)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeTelehealthEntry(\''+t.id+'\')">×</button></td>';
+                tr.innerHTML = '<td>'+escHtml(t.claim)+'</td><td>'+escHtml(t.pos)+'</td><td>'+escHtml(t.mod)+'</td><td>$'+t.value.toLocaleString()+'</td><td>'+escHtml(t.status)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeTelehealthEntry('+JA(t.id)+')">×</button></td>';
                 tbody.appendChild(tr);
             });
             var coded = list.filter(function(t){return t.status==='Coded';});
@@ -5007,7 +5012,7 @@ How to answer:
                     ? ('$'+dollarAmount.toFixed(2)+'<div style="font-size:10px;color:#666;">@ $'+resolvedCf.toFixed(4)+'/unit &middot; '+escHtml(a.qpStatus === 'manual' || !a.qpStatus ? 'entered factor' : scQpStatusLabel(a.qpStatus))+'</div>')
                     : '<span style="color:#92400e;font-weight:700;">Not determinable</span><div style="font-size:10px;color:#92400e;">QP status unset — CY2026 has two Medicare factors and this app will not pick one</div>';
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>'+escHtml(a.caseRef)+'</td><td>'+escHtml(a.cpt||'—')+'</td><td>'+a.base+'</td><td>'+a.minutes+'</td><td>'+timeUnits.toFixed(2)+'</td><td>'+escHtml(a.physicalStatus||'—')+'</td><td>'+escHtml(a.qc||'—')+'</td><td>'+totalUnits.toFixed(2)+'</td><td>'+amountCell+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeAnesthesiaEntry(\''+a.id+'\')">×</button></td>';
+                tr.innerHTML = '<td>'+escHtml(a.caseRef)+'</td><td>'+escHtml(a.cpt||'—')+'</td><td>'+a.base+'</td><td>'+a.minutes+'</td><td>'+timeUnits.toFixed(2)+'</td><td>'+escHtml(a.physicalStatus||'—')+'</td><td>'+escHtml(a.qc||'—')+'</td><td>'+totalUnits.toFixed(2)+'</td><td>'+amountCell+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeAnesthesiaEntry('+JA(a.id)+')">×</button></td>';
                 tbody.appendChild(tr);
             });
             var undeterminable = list.length - dollarCases;
@@ -5074,7 +5079,7 @@ How to answer:
             tbody.innerHTML = list.length ? '' : '<tr><td colspan="4" style="text-align:center;color:#666;padding:16px">No base-unit values added yet -- add ones you\'ve verified above.</td></tr>';
             list.forEach(function(r){
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>'+escHtml(r.cpt)+'</td><td>'+r.units+'</td><td>'+escHtml(r.source)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeAsaBaseUnit(\''+r.id+'\')">×</button></td>';
+                tr.innerHTML = '<td>'+escHtml(r.cpt)+'</td><td>'+r.units+'</td><td>'+escHtml(r.source)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeAsaBaseUnit('+JA(r.id)+')">×</button></td>';
                 tbody.appendChild(tr);
             });
         }
@@ -5180,7 +5185,7 @@ How to answer:
                 list.forEach(function(c){
                     var badgeClass = c.verdict === 'Pass' ? 'status-clean' : (c.verdict === 'Fail' ? 'status-denied' : 'status-pending');
                     var tr = document.createElement('tr');
-                    tr.innerHTML = '<td>'+escHtml(c.specialty)+'</td><td>'+escHtml(c.question)+'</td><td><span class="status-badge '+badgeClass+'">'+escHtml(c.verdict)+'</span></td><td>'+escHtml(c.notes||'—')+'</td><td>'+escHtml(c.checkedBy||'—')+'</td><td>'+escHtml(c.checkedAt||'—')+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeSpecialtyCheck(\''+c.id+'\')">×</button></td>';
+                    tr.innerHTML = '<td>'+escHtml(c.specialty)+'</td><td>'+escHtml(c.question)+'</td><td><span class="status-badge '+badgeClass+'">'+escHtml(c.verdict)+'</span></td><td>'+escHtml(c.notes||'—')+'</td><td>'+escHtml(c.checkedBy||'—')+'</td><td>'+escHtml(c.checkedAt||'—')+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeSpecialtyCheck('+JA(c.id)+')">×</button></td>';
                     tbody.appendChild(tr);
                 });
             }
@@ -5283,7 +5288,7 @@ How to answer:
             tbody.innerHTML = list.length ? '' : '<tr><td colspan="4" style="text-align:center;color:#666;padding:16px">No requirements added yet -- add ones you\'ve verified above.</td></tr>';
             list.forEach(function(r){
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>'+escHtml(r.specialty)+'</td><td>'+escHtml(r.item)+'</td><td>'+escHtml(r.source)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeSpecialtyChecklistItem(\''+r.id+'\')">×</button></td>';
+                tr.innerHTML = '<td>'+escHtml(r.specialty)+'</td><td>'+escHtml(r.item)+'</td><td>'+escHtml(r.source)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeSpecialtyChecklistItem('+JA(r.id)+')">×</button></td>';
                 tbody.appendChild(tr);
             });
         }
@@ -5348,7 +5353,7 @@ How to answer:
                 else expired++;
                 totalUnits += a.units;
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>'+escHtml(a.authId)+'</td><td>'+escHtml(a.proc)+'</td><td>'+escHtml(a.exp)+'</td><td>'+a.units+'</td><td><span class="status-badge '+authBadgeClass(status)+'">'+status+'</span></td><td><button class="btn" style="padding:2px 8px;" onclick="removeAuthEntry(\''+a.id+'\')">×</button></td>';
+                tr.innerHTML = '<td>'+escHtml(a.authId)+'</td><td>'+escHtml(a.proc)+'</td><td>'+escHtml(a.exp)+'</td><td>'+a.units+'</td><td><span class="status-badge '+authBadgeClass(status)+'">'+status+'</span></td><td><button class="btn" style="padding:2px 8px;" onclick="removeAuthEntry('+JA(a.id)+')">×</button></td>';
                 tbody.appendChild(tr);
             });
             var kpis = document.getElementById('auth-kpis');
@@ -5434,8 +5439,8 @@ How to answer:
                 tr.innerHTML = '<td>'+escHtml(r.payer)+'</td><td>'+escHtml(r.patientRef||'—')+'</td><td>'+escHtml(r.procedure)+'</td><td>'+escHtml(r.urgency)+'</td><td>'+escHtml(r.submittedVia||'—')+'</td>'
                     + '<td><span class="status-badge '+(r.status==='Approved'?'status-clean':r.status==='Denied'?'status-denied':'status-pending')+'">'+escHtml(r.status)+'</span></td>'
                     + '<td><span class="status-badge '+clock.cls+'">'+escHtml(clock.label)+'</span></td>'
-                    + '<td>'+(r.signedOffBy ? ('✓ '+escHtml(r.signedOffBy)) : '<button class="btn" style="padding:2px 8px;" onclick="signOffAuthRequest(\''+r.id+'\')">Sign Off</button>')+'</td>'
-                    + '<td><button class="btn" style="padding:2px 8px;" onclick="removeAuthRequestEntry(\''+r.id+'\')">×</button></td>';
+                    + '<td>'+(r.signedOffBy ? ('✓ '+escHtml(r.signedOffBy)) : '<button class="btn" style="padding:2px 8px;" onclick="signOffAuthRequest('+JA(r.id)+')">Sign Off</button>')+'</td>'
+                    + '<td><button class="btn" style="padding:2px 8px;" onclick="removeAuthRequestEntry('+JA(r.id)+')">×</button></td>';
                 tbody.appendChild(tr);
             });
         }
@@ -6366,7 +6371,7 @@ How to answer:
                 tbody.innerHTML = list.length ? '' : '<tr><td colspan="6" style="text-align:center;color:#666;padding:16px">No eligibility checks run yet.</td></tr>';
                 list.forEach(function(e){
                     var tr = document.createElement('tr');
-                    tr.innerHTML = '<td>'+escHtml(e.patient)+'</td><td>'+escHtml(e.payer)+'</td><td>'+escHtml(e.status)+'</td><td>'+escHtml(e.plan||'—')+'</td><td>'+escHtml(e.date||'—')+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeEligibilityEntry(\''+e.id+'\')">×</button></td>';
+                    tr.innerHTML = '<td>'+escHtml(e.patient)+'</td><td>'+escHtml(e.payer)+'</td><td>'+escHtml(e.status)+'</td><td>'+escHtml(e.plan||'—')+'</td><td>'+escHtml(e.date||'—')+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeEligibilityEntry('+JA(e.id)+')">×</button></td>';
                     tbody.appendChild(tr);
                 });
             }
@@ -6435,7 +6440,7 @@ How to answer:
                     else b3 += a.amount;
                 }
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>'+escHtml(a.patient)+'</td><td>$'+a.amount.toLocaleString()+'</td><td>'+a.days+'</td><td>'+bucket+'</td><td>'+escHtml(a.status)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeArEntry(\''+a.id+'\')">×</button></td>';
+                tr.innerHTML = '<td>'+escHtml(a.patient)+'</td><td>$'+a.amount.toLocaleString()+'</td><td>'+a.days+'</td><td>'+bucket+'</td><td>'+escHtml(a.status)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeArEntry('+JA(a.id)+')">×</button></td>';
                 tbody.appendChild(tr);
             });
             var kpis = document.getElementById('ar-kpis');
@@ -6608,7 +6613,7 @@ How to answer:
                 var qpCell = p.qpStatus
                     ? escHtml(scQpStatusLabel(p.qpStatus))
                     : '<span style="color:#92400e;font-weight:700;">Unknown — payment cannot be stated</span>';
-                tr.innerHTML = '<td>'+escHtml(p.name)+'</td><td>'+escHtml(p.specialty)+'</td><td>'+escHtml(p.license)+'</td><td>'+escHtml(p.cred)+'</td><td>'+qpCell+'</td><td>'+p.perf+'%</td><td><button class="btn" style="padding:2px 8px;" onclick="removeProviderEntry(\''+p.id+'\')">×</button></td>';
+                tr.innerHTML = '<td>'+escHtml(p.name)+'</td><td>'+escHtml(p.specialty)+'</td><td>'+escHtml(p.license)+'</td><td>'+escHtml(p.cred)+'</td><td>'+qpCell+'</td><td>'+p.perf+'%</td><td><button class="btn" style="padding:2px 8px;" onclick="removeProviderEntry('+JA(p.id)+')">×</button></td>';
                 tbody.appendChild(tr);
             });
             var qpUnknown = list.filter(function(p){ return !p.qpStatus; }).length;
@@ -6684,7 +6689,7 @@ How to answer:
             tbody.innerHTML = '';
             list.forEach(function(c){
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>'+escHtml(c.claimId)+'</td><td>'+escHtml(c.patient)+'</td><td>'+escHtml(c.payer)+'</td><td>$'+c.amount.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</td><td><span class="status-badge '+claimStatusBadgeClass(c.status)+'">'+escHtml(c.status)+'</span></td><td>'+escHtml(c.date)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="scRunClaimRiskCheck(\''+c.id+'\')">Risk Check</button> <button class="btn" style="padding:2px 8px;" onclick="removeClaimEntry(\''+c.id+'\')">×</button></td>';
+                tr.innerHTML = '<td>'+escHtml(c.claimId)+'</td><td>'+escHtml(c.patient)+'</td><td>'+escHtml(c.payer)+'</td><td>$'+c.amount.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</td><td><span class="status-badge '+claimStatusBadgeClass(c.status)+'">'+escHtml(c.status)+'</span></td><td>'+escHtml(c.date)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="scRunClaimRiskCheck('+JA(c.id)+')">Risk Check</button> <button class="btn" style="padding:2px 8px;" onclick="removeClaimEntry('+JA(c.id)+')">×</button></td>';
                 tbody.appendChild(tr);
             });
             var clean = list.filter(function(c){return c.status==='Clean';}).length;
@@ -7589,10 +7594,10 @@ How to answer:
                     : '';
                 var actions = '';
                 if (r.review_status === 'needs_human_review') {
-                    actions += '<button class="btn" style="padding:2px 8px;" onclick="reviewCodedItem(\''+r.id+'\',\'reviewed_accepted\')">Accept</button> '
-                             + '<button class="btn" style="padding:2px 8px;" onclick="reviewCodedItem(\''+r.id+'\',\'reviewed_rejected\')">Reject</button> ';
+                    actions += '<button class="btn" style="padding:2px 8px;" onclick="reviewCodedItem('+JA(r.id)+',\'reviewed_accepted\')">Accept</button> '
+                             + '<button class="btn" style="padding:2px 8px;" onclick="reviewCodedItem('+JA(r.id)+',\'reviewed_rejected\')">Reject</button> ';
                 }
-                actions += '<button class="btn" style="padding:2px 8px;" onclick="removeCodedItem(\''+r.id+'\')">×</button>';
+                actions += '<button class="btn" style="padding:2px 8px;" onclick="removeCodedItem('+JA(r.id)+')">×</button>';
                 var reviewedNote = r.reviewed_by
                     ? '<div style="font-size:11px;color:#666;">by '+escHtml(r.reviewed_by)+'</div>'
                     : '';
@@ -7703,7 +7708,7 @@ How to answer:
                 list.forEach(function(r){
                     var tr = document.createElement('tr');
                     tr.innerHTML = '<td>'+escHtml(r.provider_name || r.provider_id || '—')+'</td><td>'+escHtml(r.specialty || '—')+'</td><td><code>'+escHtml(r.scope)+'</code></td><td>'+escHtml(r.source)+'</td>'
-                        + '<td><button class="btn" style="padding:2px 8px;" onclick="removeCredentialScope(\''+r.id+'\')">×</button></td>';
+                        + '<td><button class="btn" style="padding:2px 8px;" onclick="removeCredentialScope('+JA(r.id)+')">×</button></td>';
                     tbody.appendChild(tr);
                 });
             }
@@ -11847,7 +11852,7 @@ How to answer:
             tbody.innerHTML = '';
             list.forEach(function(d){
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>'+escHtml(d.beneficiary)+'</td><td>'+escHtml(d.hcpcs)+'</td><td>'+escHtml(d.desc||'—')+'</td><td>'+escHtml(d.dos||'—')+'</td><td>'+escHtml(d.mode)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeDmeRecord(\''+d.id+'\')">×</button></td>';
+                tr.innerHTML = '<td>'+escHtml(d.beneficiary)+'</td><td>'+escHtml(d.hcpcs)+'</td><td>'+escHtml(d.desc||'—')+'</td><td>'+escHtml(d.dos||'—')+'</td><td>'+escHtml(d.mode)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeDmeRecord('+JA(d.id)+')">×</button></td>';
                 tbody.appendChild(tr);
             });
             var rentals = list.filter(function(d){ return d.mode === 'rental'; }).length;
@@ -12285,7 +12290,7 @@ How to answer:
                     ? '<span style="color:#166534;font-weight:700;">Yes — −26 / −TC</span>'
                     : (rec && rec.split === 'pc_only' ? '<span style="color:#1e40af;font-weight:700;">−26 only</span>' : '<span style="color:#92400e;font-weight:700;">No</span>');
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>'+escHtml(e.code)+'</td><td>'+escHtml(String(e.indicator))+'</td><td>'+allowed+'</td><td>'+escHtml(e.desc||'—')+'</td><td>'+escHtml(e.source)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removePcTcEntry(\''+e.id+'\')">×</button></td>';
+                tr.innerHTML = '<td>'+escHtml(e.code)+'</td><td>'+escHtml(String(e.indicator))+'</td><td>'+allowed+'</td><td>'+escHtml(e.desc||'—')+'</td><td>'+escHtml(e.source)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removePcTcEntry('+JA(e.id)+')">×</button></td>';
                 tbody.appendChild(tr);
             });
             var splittable = list.filter(function(e){ return pctcSplitAllowed(e.indicator); }).length;

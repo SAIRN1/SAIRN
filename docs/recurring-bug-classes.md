@@ -101,3 +101,10 @@ Every routed finding below names its source inline: session, commit and, for an 
 |---|---|---|---|---|---|
 | 1 | `api/_lib/law-trust-reconcile.js` counted any uncleared deposit as "in transit" with no age limit, so a trust shortfall carried as a 91-day-old deposit balanced the bank leg and read Reconciled (cc b55 stress M5) | design | domain model | **due to** the outstanding-items model (2026-09-18) encoding the timing difference without the property that makes it a timing difference: that it resolves within days | this batch |
 | 2 | `sairnlegacy.html` passed 33 stored record ids raw between `\'` quotes into inline handlers, and the employee-id argument as `&#39;+H(id)+&#39;`, so an id holding a quote closed the JS string (H1x, from H1 #1734) | coding | output encoding | **due to** escaping for the wrong layer: an inline handler is HTML-decoded and THEN parsed as JS, so neither a raw value nor H() alone is safe there; the server accepts any id format | this batch |
+
+## 2026-10-30 — batch 70 (hank)
+
+| # | Defect | Phase | Sub-phase | Cause | Commit |
+|---|---|---|---|---|---|
+| 1 | The b69 sairnlegacy inline-handler shape in four more owned apps: sairnvet 61 raw values plus an `&#39;+escHtml()+&#39;` builder, sairncode 32 raw, sairnbiz 5 HTML-only values plus 3 HTML-only builders, stonedesk 2 HTML-only (the rest of StoneDesk already used `escAttrJs`) | coding | output encoding | **due to** the same wrong-layer escape copied app to app; StoneDesk shows the right helper existed on the platform and did not propagate | this batch |
+| 2 | My first H1y fix (a new global `JA()` in sairnbiz/stonedesk) broke 5 of their suites: they load app functions by hand-kept lists, pin `fn('ID')` markup, and one string scanner treats a quote inside a regex literal as a string | coding | test coupling | **due to** a helper added without reading how each app's suites load it; caught by running all 62 suites against a base worktree, before commit | this batch |

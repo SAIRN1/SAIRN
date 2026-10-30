@@ -1294,6 +1294,10 @@ var eid=null,prole='',aiHist=[];
 var sbAiBusy=false;
 
 function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+// A record value passed as an argument from an inline handler is JS-escaped
+// (backslash and quote) BEFORE H(): the attribute is HTML-decoded first,
+// so H() alone turns &#39; back into a quote that closes the JS string
+// (hank b70 H1y, the sairnlegacy b69 H1x shape).
 // Keys whose save has already been reported as failed this session. A write
 // that fails on a RENDER path (sbNormalizeBills and sbNormalizeTrain both
 // persist from inside a render) would otherwise raise the same alarm on every
@@ -2444,7 +2448,7 @@ function rEmpTbl(emps){
   // The frequency column reads "default" for anyone with none recorded --
   // the point of making this a real field is that the assumption stops being
   // invisible. Every existing roster lands there until someone sets it.
-  tb.innerHTML=emps.map(function(e){var sc=e.status==='Active'?'bg':e.status==='On Leave'?'bw':'br';var fl=H(sbPayFreq(e))+(sbPayFreqIsDefault(e)?'<div style="font-size:11px;color:var(--muted)">default</div>':'');var u19=sbUnder19(e.dob)?' <span class="badge bw">under 19</span>':'';return'<tr><td><strong>'+H(e.fn+' '+e.ln)+'</strong>'+u19+'<div style="font-size:11px;color:var(--muted)">'+H(e.id||'')+'</div></td><td>'+H(e.role||'')+'</td><td>'+H(e.dept||'')+'</td><td>'+H(e.type||'')+'</td><td>'+fl+'</td><td><strong>$'+Number(e.rate||0).toFixed(2)+'</strong></td><td>'+fdate(e.start)+'</td><td><span class="badge '+sc+'">'+H(e.status||'')+'</span></td><td><button class="btn bo bs" onclick="editEmp(\''+H(e.id||'')+'\')">Edit</button></td></tr>';}).join('');
+  tb.innerHTML=emps.map(function(e){var sc=e.status==='Active'?'bg':e.status==='On Leave'?'bw':'br';var fl=H(sbPayFreq(e))+(sbPayFreqIsDefault(e)?'<div style="font-size:11px;color:var(--muted)">default</div>':'');var u19=sbUnder19(e.dob)?' <span class="badge bw">under 19</span>':'';return'<tr><td><strong>'+H(e.fn+' '+e.ln)+'</strong>'+u19+'<div style="font-size:11px;color:var(--muted)">'+H(e.id||'')+'</div></td><td>'+H(e.role||'')+'</td><td>'+H(e.dept||'')+'</td><td>'+H(e.type||'')+'</td><td>'+fl+'</td><td><strong>$'+Number(e.rate||0).toFixed(2)+'</strong></td><td>'+fdate(e.start)+'</td><td><span class="badge '+sc+'">'+H(e.status||'')+'</span></td><td><button class="btn bo bs" onclick="editEmp(\''+H(String(e.id).replace(/[\\\u0027]/g,'\\$&'))+'\')">Edit</button></td></tr>';}).join('');
 }
 function filterEmps(){
   var q=($('esrch').value||'').toLowerCase(),dept=$('edept').value;
@@ -2687,7 +2691,7 @@ function sbRenderAccess(){
         var active=e.active!==false;
         // &#39; rather than an escaped quote: the browser decodes the entity
         // before evaluating the attribute, so this needs no backslash.
-        var idArg='&#39;'+H(e.employee_id)+'&#39;';
+        var idArg='&#39;'+H(String(e.employee_id).replace(/[\\\u0027]/g,'\\$&'))+'&#39;';
         return '<tr><td>'+H(e.employee_id)+(e.employee_id===me?' <span class="badge bx">you</span>':'')+'</td>'+
           '<td>'+H(e.display_name||'--')+'</td><td>'+H(e.role||'')+'</td>'+
           '<td>'+(active?'<span class="badge bg">active</span>':'<span class="badge br">inactive</span>')+'</td>'+
@@ -3077,7 +3081,7 @@ function sbRenderPOs(){
       // &#39; rather than an escaped quote: the browser decodes the entity
       // before evaluating the attribute, so this needs no backslash. Same
       // shape as sbRenderAccess() above.
-      var keyArg='&#39;'+H(sbPOKey(p))+'&#39;';
+      var keyArg='&#39;'+H(String(sbPOKey(p)).replace(/[\\\u0027]/g,'\\$&'))+'&#39;';
       // The three figures side by side is the whole instrument. Two of them
       // were typed independently; a reader can see a difference without
       // anything having to decide what it means.
@@ -3097,7 +3101,7 @@ function sbRenderPOs(){
       // order. sbRecvLog() assigns a collision-checked id at creation, so the
       // id is always there; a row without one gets no button rather than a
       // button that would void the wrong thing.
-      var idArg=r.id?('&#39;'+H(String(r.id))+'&#39;'):null;
+      var idArg=r.id?('&#39;'+H(String(r.id).replace(/[\\\u0027]/g,'\\$&'))+'&#39;'):null;
       return '<tr'+(isVoid?' style="opacity:.55"':'')+'><td><strong>'+H(r.po_num)+'</strong></td><td>'+H(r.vendor||'')+'</td><td>'+fmt(r.val)+'</td><td>'+H(r.date)+'</td>'
         +'<td>'+(isVoid?sbVoidMark(r):'<span class="badge bb">Received</span>')+'</td>'
         +'<td>'+(isVoid||!canVoid||!idArg?'':'<button class="btn bo bs" onclick="sbRecvVoid('+idArg+')">Void</button>')+'</td></tr>';
@@ -3416,7 +3420,7 @@ function rTS(){
     var row=sbTsFor(e.id,week);
     var d=row&&row.hours;
     var label=r.correctionOnly?'Correct':(d?'Edit':'Enter');
-    var btn='<td style="text-align:center;"><button class="btn bo bs" onclick="openTsModal(\''+H(e.id)+'\')">'+label+'</button></td>';
+    var btn='<td style="text-align:center;"><button class="btn bo bs" onclick="openTsModal(\''+H(String(e.id).replace(/[\\\u0027]/g,'\\$&'))+'\')">'+label+'</button></td>';
     // THE STATUS IS ON THE ROW, not only in the note. A departed employee's
     // week sitting unmarked among current staff is its own quiet wrong number.
     var name='<strong>'+H(e.fn+' '+e.ln)+'</strong>'+
@@ -4218,7 +4222,7 @@ function rAP(){
     // it as well as in the title, because a title attribute is invisible on a
     // touch screen and this panel is used on tablets.
     var cell=act.paid?'<span class="kt">Paid '+fdate(b.paidDate)+'</span>'
-      :act.payable?'<button class="btn bo bs" onclick="sbPayBill(\''+H(b.id)+'\')">Pay</button>'
+      :act.payable?'<button class="btn bo bs" onclick="sbPayBill(\''+H(String(b.id).replace(/[\\\u0027]/g,'\\$&'))+'\')">Pay</button>'
       :'<button class="btn bo bs" disabled title="'+H(act.reason)+'" style="opacity:.5;cursor:not-allowed">Pay</button>'
         +'<div class="kt d" style="max-width:220px">'+H(act.reason)+'</div>';
     return'<tr><td><strong>'+H(b.vendor)+'</strong></td><td>'+H(b.inv)+'</td><td>'+fdate(b.date)+'</td><td>'+fdate(b.due)+'</td><td>'+fmt(b.amt)+'</td><td><strong>'+fmt(b.bal)+'</strong></td><td><span class="badge '+sc+'">'+H(b.status)+'</span></td><td>'+cell+'</td></tr>';}).join('');
@@ -4774,7 +4778,7 @@ function rBenTable(){
   function yn(v){ return v?'<span class="badge bg">Yes</span>':'<span class="badge bx">No</span>'; }
   el.innerHTML=emps.map(function(e){
     var b=e.ben||{};
-    return'<tr><td><strong>'+H(e.fn+' '+e.ln)+'</strong></td><td>'+H(e.role||'')+'</td><td>'+yn(b.health)+'</td><td>'+yn(b.dental)+'</td><td>'+yn(b.k401)+'</td><td>'+(b.cost?fmt(b.cost):'--')+'</td><td><button class="btn bo bs" onclick="openBenEnroll(\''+H(e.id)+'\')">Edit</button></td></tr>';
+    return'<tr><td><strong>'+H(e.fn+' '+e.ln)+'</strong></td><td>'+H(e.role||'')+'</td><td>'+yn(b.health)+'</td><td>'+yn(b.dental)+'</td><td>'+yn(b.k401)+'</td><td>'+(b.cost?fmt(b.cost):'--')+'</td><td><button class="btn bo bs" onclick="openBenEnroll(\''+H(String(e.id).replace(/[\\\u0027]/g,'\\$&'))+'\')">Edit</button></td></tr>';
   }).join('');
 }
 
@@ -5091,7 +5095,7 @@ function rTrain(){
     $('tr-safe-note').textContent='Not recorded here yet';
   }
   rIncidents(incidentList);
-  $('trtbody').innerHTML=tr.map(function(t){var stt=sbCertStatus(t);var sc={Active:'bg','Expiring Soon':'bw','No Expiry':'bx'}[stt]||'br';return'<tr><td>'+H(t.emp)+'</td><td><strong>'+H(t.cert)+'</strong></td><td>'+fdate(t.done)+'</td><td>'+fdate(t.exp)+'</td><td>'+H(t.prov)+'</td><td>'+(t.cost?fmt(t.cost):'Internal')+'</td><td><span class="badge '+sc+'">'+H(stt)+'</span></td><td><button class="btn bo bs" onclick="openCertRenew(\''+H(t.id)+'\')">Record Renewal</button></td></tr>';}).join('');
+  $('trtbody').innerHTML=tr.map(function(t){var stt=sbCertStatus(t);var sc={Active:'bg','Expiring Soon':'bw','No Expiry':'bx'}[stt]||'br';return'<tr><td>'+H(t.emp)+'</td><td><strong>'+H(t.cert)+'</strong></td><td>'+fdate(t.done)+'</td><td>'+fdate(t.exp)+'</td><td>'+H(t.prov)+'</td><td>'+(t.cost?fmt(t.cost):'Internal')+'</td><td><span class="badge '+sc+'">'+H(stt)+'</span></td><td><button class="btn bo bs" onclick="openCertRenew(\''+H(String(t.id).replace(/[\\\u0027]/g,'\\$&'))+'\')">Record Renewal</button></td></tr>';}).join('');
 }
 
 // The write path sb_train never had. It records the REAL transition a
