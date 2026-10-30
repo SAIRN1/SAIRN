@@ -9147,6 +9147,29 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-30T23:30:45Z",
+      "opened_at_sha": "88ca53fbd5f74d7cb6ecfb091749de731e52ebaf",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 2,
+      "resources": [
+        "leg_aftercare",
+        "leg_cremations"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/b72-leg-id-format.test.js"
+      ],
+      "what": "hank b72 (#1734 server half): api/sd-data.js SAIRNlegacy LEG_RESOURCES write branch now refuses 400 BAD_ID any payload.id over 128 characters or holding a quote, backtick, <, >, &, backslash or control character, checked AFTER the leg_aftercare key rewrite. api/b72-leg-id-format.test.js drives the real handler (35 resources x 7 hostile ids, 0 upstream writes; 75 real id shapes accepted; ablation). REVIEWER: attack (1) whether any legitimate stored id (seed data, imports, older clients) contains a refused character and would now be unwritable; (2) whether the leg_cremations countersign path or any other branch writes a payload.id before this check runs; (3) whether the denylist misses a character that can end a JS string inside an inline handler after HTML decoding.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-10-30T23:30:45Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
