@@ -9118,12 +9118,12 @@
         "tests/stonedesk_presence_fixes_b69.js"
       ],
       "what": "fourth b70: b0190f7dd stonedesk.html finUpdateKPIs reads stonedesk_quote_history quotes: String(q.total) before .replace (a numeric total threw and blanked the KPI row, cc b56 M3) and Est. Material/Gross Margin show '--' instead of revenue x 0.35 (M2). Also 1def0368b sairnlegacy (supervisor field, blank GPL price as null, negative line refused). WHAT TO CHECK HARDEST: (1) any other reader of stonedesk_quote_history totals still calling a string method on a possibly-numeric total; (2) whether removing the margin estimate hides something a user relied on -- the label still says Est.; (3) tests/stonedesk_presence_fixes_b69.js arms 9-10 lift finUpdateKPIs by brace depth. Reviewer must not be fourth.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cody",
       "owner_assigned_at": "2026-10-30T08:33:24Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cody",
+      "reviewed_at": "2026-10-30T09:20:55Z",
+      "verdict": "SOUND, cody b69 (2026-10-30). The fix is commit 3d4ff0400; the recorded sha 50e0df33bb96 is its pre-rebase twin. I reviewed stonedesk.html finUpdateKPIs at HEAD. tests/stonedesk_presence_fixes_b69.js is 10/0.\nRED-FIRST, re-driven: the test plus api/sd-sub-data.js were copied beside 3d4ff0400^'s stonedesk.html in a temp tree. Arms 9 and 10 FAIL there (8 passed, 2 failed) and pass at HEAD.\n\n(1) NO OTHER READER OF stonedesk_quote_history TOTALS CALLS A STRING METHOD ON A RAW TOTAL. I grepped every `.total` and `[tT]otal)` followed by .replace/.trim/.split/.match. The only hit is the fixed line, which now reads String(q.total==null?'0':q.total).replace(...). The other readers of that key are safe:\n  - the invoice prefill (`(last.total || '').toString().replace(...)`) stringifies first;\n  - the hydration path uses Number(x.total||0).\nNone uses toFixed on a stored total.\n(2) REMOVING THE MARGIN ESTIMATE HIDES NOTHING ANYONE READS. fin-kpi-material and fin-kpi-margin are written only at finUpdateKPIs, and no other file or code path reads them (git grep across *.html and *.js). The old value was revenue x 0.35, which printed 65% for any revenue, so '--' with the label still \"Est.\" is the honest state. Real per-job margin remains in the job form (finCalcMargin).\n(3) THE LIFT IS SOUND: grab() counts braces from the signature, and finUpdateKPIs holds no unbalanced brace in a string or regex. Its literal braces ({minimumFractionDigits:0}) are balanced.\nScope note: the record's `what` also names 1def0368b (sairnlegacy), but `files` lists stonedesk only, so that commit was not reviewed here."
     },
     {
       "author_session": "cody",
