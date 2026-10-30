@@ -4486,7 +4486,15 @@ function visitClockReversed(v){
   if(!isFinite(a)||!isFinite(b))return false;
   return b<a;
 }
+// Held for the whole call: the claim gets a NEW id per press, and the Ready
+// to bill row only disappears before the await when st() succeeds -- on a
+// full or blocked store the button stays live and a second press would send a
+// second claim for the same visit.
+var senClaimGenerating=false;
 async function generateClaim(visitId){
+  if(senClaimGenerating){toast('Still generating the last claim -- one moment');return;}
+  senClaimGenerating=true;
+  try{
   var v=visits().find(function(x){return x.id===visitId;});if(!v){toast('Visit not found');return;}
   var cl=clients().find(function(c){return c.id===v.client_id;});
   // ── A BACKWARDS CLOCK PAIR REFUSES RATHER THAN BILLING (2026-10-05) ─────
@@ -4581,6 +4589,7 @@ async function generateClaim(visitId){
   // and authorisation lines the biller needs either way.
   toast(saved?priced+authMsg:wf.text+(wf.kept?'':' The visit is back in Ready to bill.')+' -- '+priced+authMsg,
     saved&&rate.status==='applied'&&!authMsg?4000:9000);
+  }finally{senClaimGenerating=false;}
 }
 function renderClaimsTable(){
   var cl=claims().slice().sort(function(a,b){return (b.service_date||'').localeCompare(a.service_date||'');});

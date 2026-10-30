@@ -44,6 +44,8 @@ const SRC = [
   grab('function senWriteFail(resource){', true),
   grab('async function savePayerContract(){'),
   grab('async function saveAuthorization(){'),
+  // cody b70: generateClaim now holds on its own flag, declared beside it.
+  (html.match(/var senClaimGenerating\s*=\s*false;/) || [''])[0],
   grab('async function generateClaim(visitId){'),
   grab('function readyToBillVisits(){'),
   grab('var SEN_SWEEP_ROW_CAP=').split('\n')[0],

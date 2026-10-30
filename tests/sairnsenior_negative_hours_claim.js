@@ -108,6 +108,8 @@ function build(visitRows) {
     grab('function senEffClock(v,field){', '\n}'),
     grab('function visitHours(v){', '\n}'),
     grab('function visitClockReversed(v){', '\n}'),
+    // cody b70: generateClaim now holds on its own flag, declared beside it.
+    (html.match(/var senClaimGenerating\s*=\s*false;/) || [''])[0],
     grab('async function generateClaim(visitId){', '\n}')
   ].join('\n\n');
 
