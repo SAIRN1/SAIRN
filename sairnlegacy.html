@@ -715,6 +715,7 @@ label.chk input{width:auto;}
     <div class="fg"><label class="chk"><input type="checkbox" id="cridcheck"> Positive identification verified</label></div>
     <div class="fg"><label class="chk"><input type="checkbox" id="crwait"> Required state waiting period observed</label></div>
     <div class="fg"><label class="chk"><input type="checkbox" id="crwitness"> Witness present (if requested by family)</label></div>
+    <div class="fg" id="crsupervisorrow" style="display:none"><label for="crsupervisor">Supervising director (employee number)</label><input id="crsupervisor" autocomplete="off" placeholder="e.g. DIR-01"><div style="font-size:12px;color:var(--muted);margin-top:4px">An apprentice may stage a cremation record only with a licensed Owner or Director named here, and that person must countersign it. The server checks both.</div></div>
     <div class="fr"><div class="fg"><label>Disposition Type</label><select id="crdisposition"><option>Return to Family</option><option>Scatter</option><option>Inurnment</option><option>Other</option></select></div><div class="fg"><label>Disposition Details</label><input id="crdispositiondetails" placeholder="Optional"></div></div>
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
       <button class="btn bo" onclick="closeCremationModal()">Cancel</button>
@@ -3245,8 +3246,29 @@ function rCemetery(){
 }
 
 // ── CREMATION MANAGEMENT ──────────────────────────────────────────────────
+// ── THE SUPERVISOR AN APPRENTICE MUST NAME (fourth b70, Michael's b69/b70
+// item) ── api/leg-countersign.js refuses an apprentice prepare unless the
+// home's F3 clears it AND payload.authorized_by_supervisor names an active
+// licensed director, who must then be the countersigner. An apprentice cannot
+// read the roster (owner-only), so the director is named by EMPLOYEE NUMBER;
+// Michael: "employee-number entry plus an approval click satisfies this" --
+// the approval click is that director's countersignature. Shown to an
+// apprentice only; every other role prepares as before.
+function legCrSupervisorShow(cur){
+  var row=$('crsupervisorrow'),inp=$('crsupervisor');if(!row||!inp)return;
+  var appr=!!(legSession&&legSession.role==='apprentice');
+  row.style.display=appr?'':'none';inp.value=appr?(cur||''):'';
+}
+// -> {ok:true, sup} | {ok:false, msg}. A non-apprentice gets ok with no sup.
+function legCrSupervisorFor(role,value){
+  if(role!=='apprentice')return {ok:true,sup:null};
+  var v=String(value||'').trim();
+  if(!v)return {ok:false,msg:'Name the licensed director who is supervising this cremation (their employee number). They must countersign it. Nothing was staged.'};
+  if(legSession&&v===legSession.employee_id)return {ok:false,msg:'The supervising director must be someone other than you. Nothing was staged.'};
+  return {ok:true,sup:v};
+}
 function openCremationModal(){
-  ceid=null;fillCaseSelects();
+  ceid=null;fillCaseSelects();legCrSupervisorShow('');
   ['crname','crsched','crdispositiondetails'].forEach(function(f){$(f).value='';});
   $('crstatus').value='Scheduled';$('crdisposition').value='Return to Family';
   ['crauth','cridcheck','crwait','crwitness'].forEach(function(f){$(f).checked=false;});
@@ -3255,7 +3277,7 @@ function openCremationModal(){
 function closeCremationModal(){$('cremationmodal').classList.remove('on');}
 function editCremation(id){
   var c=cremations().find(function(x){return x.id===id;});if(!c)return;
-  ceid=id;fillCaseSelects();$('crcase').value=c.case_id;
+  ceid=id;fillCaseSelects();$('crcase').value=c.case_id;legCrSupervisorShow(c.authorized_by_supervisor||'');
   $('crname').value=c.crematory_name||'';$('crsched').value=c.scheduled_datetime?c.scheduled_datetime.slice(0,16):'';
   $('crstatus').value=c.status;$('crauth').checked=!!c.authorization_on_file;
   $('cridcheck').checked=!!c.id_verified;$('crwait').checked=!!c.waiting_period_observed;$('crwitness').checked=!!c.witness_present;
@@ -3275,6 +3297,9 @@ async function saveCremation(){
     disposition_type:$('crdisposition').value,disposition_details:$('crdispositiondetails').value.trim(),
     completed_datetime:(existing&&existing.completed_datetime)||'',created_at:legLocalToday()};
   if(rec.status==='Completed'&&!rec.completed_datetime)rec.completed_datetime=new Date().toISOString();
+  var sv=legCrSupervisorFor(legSession&&legSession.role,($('crsupervisor')||{}).value);
+  if(!sv.ok){toast(sv.msg,6000);return;}
+  if(sv.sup)rec.authorized_by_supervisor=sv.sup;
   // b56 F3: a cremation record is never written on one person's say-so (api/leg-countersign.js,
   // MODE_ALWAYS, owner included). It is STAGED: the server returns a one-time reference, a
   // different licensed director countersigns with it, and only then is this exact record filed.
@@ -3291,7 +3316,9 @@ async function saveCremation(){
   pend.push({token:r.data.token,expires_at:r.data.expires_at,rec:rec,staged_at:new Date().toISOString()});
   legCsSave(pend);
   closeCremationModal();rCremation();
-  toast('Staged, NOT filed yet. Give the reference shown under Countersignatures to another licensed director.',6000);
+  toast(rec.authorized_by_supervisor
+    ? 'Staged, NOT filed yet. '+rec.authorized_by_supervisor+' must countersign it with the reference shown under Countersignatures.'
+    : 'Staged, NOT filed yet. Give the reference shown under Countersignatures to another licensed director.',6000);
 }
 
 // ── F3 COUNTERSIGNATURE UI (b56) ───────────────────────────────────────────
@@ -3643,7 +3670,7 @@ async function confirmPayment(){
 function openGplModal(){
   var services=gplServices(),merch=merchCatalog();
   var html='<div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Service / Item</th><th>Category</th><th>Price</th></tr></thead><tbody>';
-  services.forEach(function(s){html+='<tr><td>'+H(s.category)+'</td><td>Service</td><td>'+fmt(s.price)+'</td></tr>';});
+  services.forEach(function(s){var pr=legPriceOf(s.price);html+='<tr><td>'+H(s.category)+'</td><td>Service</td><td>'+(pr===null?'Not priced':fmt(pr))+'</td></tr>';});
   merch.forEach(function(m){html+='<tr><td>'+H(m.model_name)+' ('+H(m.sku)+')</td><td>'+H(m.category)+'</td><td>'+fmt(m.retail)+'</td></tr>';});
   html+='</tbody></table></div><div style="color:var(--muted);font-size:12px;margin-top:12px">Prices shown are those currently on file in this system (General Price List Rates below, and the Merchandise catalog) -- generated live from those records, not a fixed document.</div>';
   $('gpl-preview').innerHTML=html;
@@ -3773,7 +3800,14 @@ function rItemPriceListStatus(){
 }
 async function saveGplServicePrice(id){
   var input=$('gplprice-'+id);if(!input)return;
-  var price=Number(input.value)||0;
+  // A BLANK BOX IS "NOT PRICED", NOT $0 (fourth b70, cc b58 L3a). `Number(v)||0`
+  // stored a blank as 0, and a 0 is a real price (tests/sairnlegacy_declinability
+  // C2), so the statement printed a never-entered price as $0. Blank is now null,
+  // which legComposeStatement refuses as PRICE_NOT_ON_FILE; a typed 0 stays 0.
+  var raw=String(input.value).trim(),num=Number(raw);
+  if(raw!==''&&!isFinite(num)){toast('That is not a price -- nothing was changed.');return;}
+  if(raw!==''&&num<0){toast('A price-list line cannot be negative -- nothing was changed.');return;}
+  var price=raw===''?null:num;
   var list=gplServices();
   var s=list.find(function(x){return x.id===id;});if(!s)return;
   s.price=price;st('leg_gplservices',list);
@@ -3890,6 +3924,13 @@ function legComposeStatement(input){
           '"'+o.label+'" is selected and has no price on file. It is not shown '
           +'at $0, because a zero on a signed statement reads as a price the '
           +'family agreed to.'));
+      } else if(price<0){
+        // A NEGATIVE LINE NETS OTHER LINES AWAY (cc b58 L3b): +$5,000 and
+        // -$5,000 printed a $0 total. A discount is not a priced service.
+        problems.push(legProblem('PRICE_NEGATIVE','refuse',
+          '"'+o.label+'" has a negative price ('+price+'). A price-list line '
+          +'cannot be negative: it nets other lines away and the statement '
+          +'total no longer shows what each item costs.'));
       }
     } else if(state===LEG_DECLINED){
       declined.push(row);
@@ -4196,7 +4237,7 @@ function rInvoicing(){
   }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No invoices yet</td></tr>';
   var gtb=$('gpltbody');
   gtb.innerHTML=gplServices().map(function(s){
-    return '<tr><td>'+H(s.category)+'</td><td><input id="gplprice-'+s.id+'" aria-label="Price for '+H(s.category)+'" type="number" value="'+s.price+'" style="width:110px" onchange="saveGplServicePrice('+JA(s.id)+')"></td>'+
+    return '<tr><td>'+H(s.category)+'</td><td><input id="gplprice-'+s.id+'" aria-label="Price for '+H(s.category)+'" type="number" value="'+(s.price===null||s.price===undefined?'':s.price)+'" style="width:110px" onchange="saveGplServicePrice('+JA(s.id)+')"></td>'+
       '<td><label class="chk" style="padding:0"><input type="checkbox" id="gplnd-'+s.id+'"'+(s.non_declinable===true?' checked':'')+
       ' onchange="saveGplNonDeclinable('+JA(s.id)+')"> <span style="font-size:12px;color:var(--muted)">cannot be declined</span></label></td></tr>';
   }).join('');

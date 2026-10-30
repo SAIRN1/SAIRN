@@ -43,6 +43,9 @@ function check(name, cond, detail) {
 // (no declaration, no reference) runs unchanged and section 5 measures the fix.
 const STAGE_HOLD = (html.match(/var legCremationStaging\s*=\s*false;/) || [''])[0];
 const SRC = [STAGE_HOLD, grab('function sdnData(action,resource,payload,withSession,extraBody){'),
+  // fourth b70: saveCremation now asks legCrSupervisorFor whether an apprentice
+  // named a supervising director; a non-apprentice caller is unaffected.
+  grab('function legCrSupervisorFor(role,value){'),
   grab('async function saveCremation(){'), grabLine("var LEG_CS_API="), grabLine("var LEG_CS_KEY="),
   grab('function legCs(action,payload){'), grabLine('function legCsPending(){'), grabLine('function legCsSave(v){'),
   grabLine('var LEG_CS_STAGE='), grab('function legCsRender(){'), grab('async function legCsFile(i){'),
@@ -76,7 +79,10 @@ function world(answers) {
       return Promise.resolve(reply(a));
     }
   };
-  ['crcase', 'crname', 'crsched', 'crstatus', 'crauth', 'cridcheck', 'crwait', 'crwitness', 'crdisposition', 'crdispositiondetails'].forEach(el);
+  // fourth b70: the caller is an APPRENTICE, so it names its supervising
+  // director (crsupervisor); without one saveCremation now stages nothing.
+  ['crcase', 'crname', 'crsched', 'crstatus', 'crauth', 'cridcheck', 'crwait', 'crwitness', 'crdisposition', 'crdispositiondetails', 'crsupervisor'].forEach(el);
+  els.crsupervisor.value = 'b56-dir';
   els.crcase.value = 'CASE-1'; els.crname.value = 'Valley Crematory'; els.crstatus.value = 'Scheduled'; els.crdisposition.value = 'Return to Family';
   vm.createContext(ctx); vm.runInContext(SRC, ctx);
   return ctx;
