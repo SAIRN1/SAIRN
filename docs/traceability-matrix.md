@@ -570,6 +570,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | Requirement | Status | Proved by |
 |---|---|---|
 | **&#9989; THE ONE GENERIC `SDN_RESOURCES` WRITE BRANCH STORED THE CALLER'S WHOLE PAYLOAD RAW &mdash; no `storedBlob()` &mdash; across all 18 resources, 12 of which carry client identity or money** <!-- HOVER-H2-529-538-ROUTED-HANK-2026-10-05 --> | **FIXED 2026-10-05 (hank), `57017e71`, same session that routed it.** `tests/sd_data_sdn_blob_scope.js` **10/0**, asserting on the BODY POSTED UPSTREAM rather than on the response. **ABLATION against  | `tests/sd_data_sdn_blob_scope.js` |
+| **&#128993; SAIRNdesign writes answer ok when the store returned no row: the b58 write-unconfirmed shape in the generic SDN_RESOURCES write and the bespoke sdn_clients write** <!-- B67-SDN-WRITE-UNCONFIRMED-CODY-2026-10-30 --> | **ROUTED 2026-10-30 (cody b67), read-only.** Source, quoted exactly from cody b66's Tier A verdict in `docs/tier-a-reviews.json` (record author hank, opened_at 2026-10-06T07:29:58Z, anchored `581e214f | `tests/sd_data_mech_write_unconfirmed.js` |
 | ~~**&#128308; ALL 18 SAIRNdesign resources are authorised by the LICENCE KEY ALONE &mdash; `SDN_RESOURCES` verifies NO SESSION on either leg, and FIVE of them are now Tier A**~~ | **&#9989; THE FIVE TIER A ROWS ARE GATED, 2026-09-23 (Hank).** `sdn_contracts`, `sdn_discounts`, `sdn_invoices`, `sdn_pos`, `sdn_referrals` are in `SD_SESSION_GATED` with matching `SD_GATE_APP` entrie | `api/sd-data-sdn-session-gate.test.js` |
 | **&#128308; EVERY INVOICE CREATED SINCE 2026-09-23 GOT 403 AND THE USER WAS TOLD IT WAS A CONNECTION PROBLEM &mdash; the session gate landed and one DIRECT FETCH bypassed the transport that carries the token** | **FOUND AND FIXED 2026-09-25 (CC)** while reviewing hank&rsquo;s gate (944f6685). `sairndesign.html`&rsquo;s invoice-create is a deliberate direct fetch &mdash; it needs the real 409 DUPLICATE_INVOICE | `tests/gated_resource_direct_fetch_header.js` |
 
@@ -748,9 +749,9 @@ An untraced test is not a bad test. It means no source in this repo states what 
 
 | source | citations |
 |---|---|
-| `declared` | 360 |
+| `declared` | 359 |
 | `index` | 327 |
-| `declared+index` | 71 |
+| `declared+index` | 72 |
 | `GUARD_TESTS` | 18 |
 | `GUARD_TESTS+declared` | 12 |
 | `GUARD_TESTS+index` | 6 |
@@ -1089,7 +1090,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                1097   tests/**, api/** (both walked)
-  open-work rows citing a test       396   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       397   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 37   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                78   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     82   report_only_checks.NOT_PROMOTED
