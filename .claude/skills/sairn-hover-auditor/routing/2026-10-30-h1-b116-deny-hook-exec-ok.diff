@@ -1,0 +1,61 @@
+--- /c/Users/marsh/AppData/Local/Temp/claude/C--Users-marsh-Documents-SAIRN-hover/a0bd7aef-c67b-4bd9-8ae5-ece60a321261/scratchpad/hookpatch_b116/hover_builder_path_deny.py.orig	2026-10-30 05:34:01.442454000 -0400
++++ /c/Users/marsh/AppData/Local/Temp/claude/C--Users-marsh-Documents-SAIRN-hover/a0bd7aef-c67b-4bd9-8ae5-ece60a321261/scratchpad/hookpatch_b116/hover_builder_path_deny.py	2026-10-30 05:34:37.975875900 -0400
+@@ -60,6 +60,9 @@
+ DELIVERABLE = re.compile(r'^sairn-(handoff|digest|report|latest)-h1[^/]*$')   # repo-root files, lower-cased
+ CARVEOUT = ('.claude/settings.json', 'docs/scrutiny-flags.json')              # foreign files the claim recipe stashes
+ CLAIM_OK = {'check', 'claim', 'release', 'own', 'list'}
++# Read-only checkers this clone's hover may RUN (Michael, b112 and b115): each reads a file or a git blob and writes nothing.
++# Matched on the REAL path of the script inside THIS clone's tools/, so a same-named script in a sibling clone stays refused.
++EXEC_OK_TOOLS = ('digest_lint.py', 'sql_placeholder_check.py')
+ 
+ FILE_TOOLS = ('Edit', 'Write', 'MultiEdit', 'NotebookEdit')
+ SHELL_TOOLS = ('Bash', 'PowerShell')
+@@ -109,6 +112,7 @@
+         self.locks = self.real(locks)
+         self.protected = {self.real(p) for p in protected}
+         self.claim = self.real(os.path.join(own, 'tools', 'sairn_claim.py'))
++        self.exec_ok = {self.real(os.path.join(own, 'tools', n)) for n in EXEC_OK_TOOLS}
+         self.topnames = set(n.lower() for n in os.listdir(own)) if os.path.isdir(own) else set()
+ 
+     @staticmethod
+@@ -522,6 +526,8 @@
+             return None
+         if rp == self.p.claim and rest and rest[0] in CLAIM_OK:
+             return None
++        if rp in self.p.exec_ok and 'no_exec_ok' not in DEFECTS:
++            return None
+         return self.bad(rp, 'executes builder code (no-builder-execution rule)')
+ 
+     def run(self, prog, args, seg):
+@@ -858,6 +864,9 @@
+     os.makedirs(os.path.join(own, '.claude', 'skills', 'sairn-hover-auditor', 'tools'), exist_ok=True)
+     os.makedirs(os.path.join(own, 'docs'), exist_ok=True)
+     open(os.path.join(own, 'tools', 'sairn_claim.py'), 'w').write('#')
++    for _n in EXEC_OK_TOOLS:
++        open(os.path.join(own, 'tools', _n), 'w').write('#')
++        open(os.path.join(cc, 'tools', _n), 'w').write('#')
+     open(os.path.join(own, 'docs', 'scrutiny-flags.json'), 'w').write('{}')
+     open(os.path.join(own, 'docs', 'p.patch'), 'w').write('--- a/api/x.js\n+++ b/api/x.js\n@@ -1 +1 @@\n-x\n+y\n')
+     open(os.path.join(own, 'docs', 'q.patch'), 'w').write('--- a/.claude/skills/sairn-hover-auditor/n.md\n+++ b/.claude/skills/sairn-hover-auditor/n.md\n')
+@@ -983,6 +992,12 @@
+         ('exec: sairn_claim claim', B('python tools/sairn_claim.py claim hover b98 task words'), A),
+         ('exec: sairn_claim release', B('python tools/sairn_claim.py release hover'), A),
+         ('exec: sairn_claim other subcommand', B('python tools/sairn_claim.py gc'), D),
++        ('exec: digest_lint on a digest (exempt checker)', B('python tools/digest_lint.py SAIRN-digest-H1-b9.txt'), A),
++        ('exec: sql_placeholder_check --fixtures (exempt checker)', B('python tools/sql_placeholder_check.py --fixtures'), A),
++        ('exec: sql_placeholder_check --all (exempt checker)', B('python tools/sql_placeholder_check.py --all'), A),
++        ('exec: exempt checker chained with a builder script', B('python tools/sql_placeholder_check.py --all && python tools/b.py'), D),
++        ('exec: same-named checker in a SIBLING clone stays refused', B('python %s' % os.path.join(cc, 'tools', 'sql_placeholder_check.py')), D),
++        ('exec: a different builder tool is still refused', B('python tools/tier_a_review_gate.py --list'), D),
+         ('exec: own skill tool', B('python .claude/skills/sairn-hover-auditor/tools/t.py --selftest'), A),
+         ('exec: scratch script', B('python %s/s.py' % scratch.replace('\\', '/')), A),
+         ('heredoc prose naming builder paths', B("cat > %s/n.md <<'EOF'\nwe ran sed -i on api/x.js and rm tools/b.py\nEOF" % scratch.replace('\\', '/')), A),
+@@ -1025,7 +1040,7 @@
+         for f in base:
+             print('  FAIL', f)
+         rc = 1 if base else 0
+-        for flag in ('no_realpath', 'no_cd_track', 'no_git', 'no_heredoc', 'no_exec', 'no_redirect', 'no_subst'):
++        for flag in ('no_realpath', 'no_cd_track', 'no_git', 'no_heredoc', 'no_exec', 'no_exec_ok', 'no_redirect', 'no_subst'):
+             fl = run({flag})
+             print('PLANTED %-12s -> %d arm(s) red%s' % (flag, len(fl), '' if fl else '   <-- UNGUARDED: nothing turned red'))
+             if not fl:
