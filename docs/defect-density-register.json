@@ -41798,6 +41798,90 @@
       ],
       "recurrence_open": "Apps outside hank's owned set (sairnlaw, sairnbuild, sairncare and others) were not swept; no server-side format check on record ids.",
       "single_factor_note": "one encoding-context gap repeated across sites"
+    },
+    {
+      "commit": "1def0368b751",
+      "date": "2026-10-30",
+      "subject": "feat+fix(sairnlegacy, fourth b70): apprentice names the supervising director in the staged cremation; a blank GPL price is not $0; a negative line is refused",
+      "files": [
+        "docs/sairn-path-manifest.json",
+        "sairnlegacy.html",
+        "tests/sairnlegacy_countersign_ui.js",
+        "tests/sairnlegacy_supervisor_picker_b70.js"
+      ],
+      "lines_added": 161,
+      "lines_removed": 8,
+      "app": "sairnlegacy",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "probe-control",
+      "summary": "SAIRNlegacy saved a blank GPL service price as 0 (Number(v)||0) so a never-entered price printed as $0 on the statement and GPL modal, and legComposeStatement accepted a negative line that netted a $5,000 casket to a $0 total (cc b58 L3a/L3b). Blank is now null (refused as PRICE_NOT_ON_FILE), the modal says Not priced, and a negative line is refused. Same commit: the apprentice supervisor field the a02ed68cf server rule requires.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/sairnlegacy_presence_stress.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "saveGplServicePrice's Number(v)||0 predates this batch; not traced."
+      },
+      "citation_note": "No standing rule names falsy coercion of a money input.",
+      "contributing_factors": [
+        {
+          "factor": "Number(v)||0 turned not-entered into a price.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Blank is null; a typed 0 kept; a negative refused at save."
+        },
+        {
+          "factor": "The statement checked only for a missing price, not a negative one.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "PRICE_NEGATIVE refusal."
+        }
+      ],
+      "recurrence_open": "Rows saved as 0 from a blank before this fix cannot be distinguished from a real 0; cc's L3a scenario stays FAIL by the C2 design decision."
+    },
+    {
+      "commit": "b0190f7dd1ed",
+      "date": "2026-10-30",
+      "subject": "fix(stonedesk, fourth b70): the Financial KPI row crashed on a numeric quote total (M3) and claimed 65% margin from a hardcoded ratio (M2)",
+      "files": [
+        "stonedesk.html",
+        "tests/stonedesk_presence_fixes_b69.js"
+      ],
+      "lines_added": 31,
+      "lines_removed": 7,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "probe-control",
+      "summary": "StoneDesk finUpdateKPIs threw a TypeError on (q.total||'0').replace when a saved quote's total was a number, so the Financial KPI row never rendered (cc b56 M3), and its Est. Gross Margin was revenue times a hardcoded 0.35 ratio, 65% for any revenue (M2). Total is String()-coerced; material and margin show -- since no cost is read.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/stonedesk_presence_stress.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "finUpdateKPIs predates this batch; not traced."
+      },
+      "citation_note": "No standing rule names a string method on a sometimes-numeric field.",
+      "contributing_factors": [
+        {
+          "factor": "A string method was called on a field that is sometimes numeric.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "String() first."
+        },
+        {
+          "factor": "A fixed material ratio shipped as if it were a measured margin.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "No margin claimed without costs."
+        }
+      ],
+      "recurrence_open": "Other .replace calls on stored quote fields were not swept; M1 (blank slab cost read as 0) remains."
     }
   ],
   "started": "2026-09-09",
