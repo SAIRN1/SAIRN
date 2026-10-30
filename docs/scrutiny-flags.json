@@ -5389,6 +5389,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/stonedesk_presence_fixes_b69.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "50e0df33bb9609770fcbeb59a6d4283c79c204b8",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/b34-accounting-revoke.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -16169,6 +16177,27 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "f2f9953b9e604791f3d2e5cf2c49563fe4701655",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlegacy_countersign_ui.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f4169ac81cf0244e48916fc0899910875d63afbc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlegacy_supervisor_picker_b70.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "const h = harness('director', 'ignored');"
+    }
+   ],
+   "sha": "f4169ac81cf0244e48916fc0899910875d63afbc",
    "criteria_version": "2026-10-06.1"
   },
   {

@@ -9095,6 +9095,30 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-10-30T08:33:24Z",
+      "opened_at_sha": "50e0df33bb9609770fcbeb59a6d4283c79c204b8",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 0,
+      "resources": [
+        "quotes",
+        "stonedesk_quote_history"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "stonedesk.html",
+        "tests/stonedesk_presence_fixes_b69.js"
+      ],
+      "what": "fourth b70: b0190f7dd stonedesk.html finUpdateKPIs reads stonedesk_quote_history quotes: String(q.total) before .replace (a numeric total threw and blanked the KPI row, cc b56 M3) and Est. Material/Gross Margin show '--' instead of revenue x 0.35 (M2). Also 1def0368b sairnlegacy (supervisor field, blank GPL price as null, negative line refused). WHAT TO CHECK HARDEST: (1) any other reader of stonedesk_quote_history totals still calling a string method on a possibly-numeric total; (2) whether removing the margin estimate hides something a user relied on -- the label still says Est.; (3) tests/stonedesk_presence_fixes_b69.js arms 9-10 lift finUpdateKPIs by brace depth. Reviewer must not be fourth.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-10-30T08:33:24Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
