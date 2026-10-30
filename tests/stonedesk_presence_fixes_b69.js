@@ -102,5 +102,23 @@ test('8. T4a: the OSHA 1926.1153 panel carries no literal exposure figures', () 
   assert.ok(/Not tracked/.test(block), 'the panel does not say the data is not tracked');
 });
 
+// ── fourth b70: cc b56 M3 and M2, finUpdateKPIs ──
+function kpis(quotes) {
+  const els = {};
+  const ctx = vm.createContext({ console, JSON, String, parseFloat, Math,
+    localStorage: { getItem: (k) => (k === 'stonedesk_quote_history' ? JSON.stringify(quotes) : null) },
+    document: { getElementById: (id) => (els[id] = els[id] || { textContent: '', value: '' }) } });
+  vm.runInContext(grab('function finUpdateKPIs(){') + '\nfinUpdateKPIs();', ctx);
+  return { margin: els['fin-kpi-margin'].textContent, revenue: els['fin-kpi-revenue'].textContent };
+}
+test('9. M3: a quote whose total is a NUMBER does not crash the KPI row, and revenue counts it', () => {
+  const r = kpis([{ total: 12400 }, { total: '$600' }]);
+  assert.strictEqual(r.revenue, '$13,000', JSON.stringify(r));
+});
+test('10. M2: with no cost read, no margin is claimed (was 65% from a hardcoded 0.35 ratio)', () => {
+  const r = kpis([{ total: '$10,000' }]);
+  assert.ok(!/%$/.test(r.margin), 'a margin was claimed with no cost basis: ' + r.margin);
+});
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

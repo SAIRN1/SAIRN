@@ -11480,8 +11480,8 @@ window.sdSafetyPrint=function(){
       <!-- Financial KPIs -->
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px">
         <div class="kpi"><div class="kpi-val" style="color:var(--brand2);font-size:16px" id="fin-kpi-revenue">$0</div><div class="kpi-label">Total Quoted Revenue</div></div>
-        <div class="kpi"><div class="kpi-val" style="color:#a16207;font-size:16px" id="fin-kpi-material">$0</div><div class="kpi-label">Est. Material Cost</div></div>
-        <div class="kpi"><div class="kpi-val" style="color:#15803d;font-size:16px" id="fin-kpi-margin">0%</div><div class="kpi-label">Est. Gross Margin</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:#a16207;font-size:16px" id="fin-kpi-material">--</div><div class="kpi-label">Est. Material Cost</div></div>
+        <div class="kpi"><div class="kpi-val" style="color:#15803d;font-size:16px" id="fin-kpi-margin">--</div><div class="kpi-label">Est. Gross Margin</div></div>
         <div class="kpi"><div class="kpi-val" style="color:#b91c1c;font-size:16px" id="fin-kpi-tariff">$0</div><div class="kpi-label">Tariff Impact/Mo</div></div>
         <div class="kpi"><div class="kpi-val" id="fin-kpi-jobs">0</div><div class="kpi-label">Jobs in Pipeline</div></div>
       </div>
@@ -28669,15 +28669,21 @@ function finSetTab(tab,btn){
 
 function finUpdateKPIs(){
   var quotes=JSON.parse(localStorage.getItem('stonedesk_quote_history')||'[]');
-  var revenue=quotes.reduce(function(s,q){return s+(parseFloat((q.total||'0').replace(/[^0-9.]/g,''))||0);},0);
-  var materialEst=revenue*0.35;
-  var margin=revenue>0?Math.round((revenue-materialEst)/revenue*100):0;
+  // String() FIRST (fourth b70, cc b56 M3): a saved quote may carry its total
+  // as a NUMBER, and `(12400).replace` threw, so the whole KPI row never
+  // rendered once one numeric total existed.
+  var revenue=quotes.reduce(function(s,q){return s+(parseFloat(String(q.total==null?'0':q.total).replace(/[^0-9.]/g,''))||0);},0);
+  // NO COST IS READ HERE, SO NO MARGIN IS CLAIMED (cc b56 M2). This was
+  // revenue x a hardcoded 0.35 "material" ratio, which printed 65% margin for
+  // any revenue at all. Per-job margin from real costs is in the job form
+  // below (finCalcMargin); the summary says it has no cost basis.
+  var materialEst=null,margin=null;
   var spend=parseFloat((document.getElementById('tariff-spend')||{}).value||0);
   var tariffImpact=spend*0.5*0.7; // estimate 70% from high-tariff sources
   function s(id,v){var el=document.getElementById(id);if(el)el.textContent=v;}
   s('fin-kpi-revenue','$'+revenue.toLocaleString('en-US',{minimumFractionDigits:0}));
-  s('fin-kpi-material','$'+materialEst.toLocaleString('en-US',{minimumFractionDigits:0}));
-  s('fin-kpi-margin',margin+'%');
+  s('fin-kpi-material',materialEst===null?'--':'$'+materialEst.toLocaleString('en-US',{minimumFractionDigits:0}));
+  s('fin-kpi-margin',margin===null?'--':margin+'%');
   s('fin-kpi-tariff','$'+tariffImpact.toFixed(0));
   s('fin-kpi-jobs',quotes.length);
 }
