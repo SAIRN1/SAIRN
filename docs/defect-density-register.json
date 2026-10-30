@@ -41637,52 +41637,6 @@
       "recurrence_open": "Any other could-not-tell code added to the server later must be added to the kept list too; nothing enforces that."
     },
     {
-      "commit": "52b9ca3a302b",
-      "date": "2026-10-30",
-      "subject": "fix(api, cc b77): shared_knowledge legacy permission keys on lic.app_id, not caller body.app_id; revert b76 grdData line (routed to fourth)",
-      "files": [
-        "api/b77-legacy-shared-knowledge-app-id.test.js",
-        "api/sd-data.js",
-        "docs/2026-10-30-cc-b77-routed.md",
-        "docs/recurring-bug-classes-2.md",
-        "docs/sairn-path-manifest.json",
-        "sairngrounds.html"
-      ],
-      "lines_added": 199,
-      "lines_removed": 4,
-      "app": "sairnlegacy",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "api/sd-data.js shared_knowledge: the sairnlegacy staff shared_knowledge_access check ran only when caller body.app_id was sairnlegacy; omitting app_id served read/write 200 to staff without access",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "the condition predates the files history reachable in this session; not traced"
-      },
-      "citation_note": "No PROCESS-RULES section names it; class is recurring-bug-classes-2 C7 (authorization check keyed on a caller-supplied identifier).",
-      "phase_note": "the permission branch was conditioned on a request field rather than the licence",
-      "contributing_factors": [
-        {
-          "factor": "permission branch conditioned on caller body.app_id",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "keyed on lic.app_id"
-        },
-        {
-          "factor": "no server test exercised legSharedKnowledgePermission",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "api/b77-legacy-shared-knowledge-app-id.test.js"
-        }
-      ],
-      "recurrence_open": "other request-field-conditioned branches outside body.app_id (e.g. payload.app_id) not swept"
-    },
-    {
       "commit": "1406e46f7c9f",
       "date": "2026-10-30",
       "subject": "fix(hank b70 H1y): stored values passed from inline handlers are JS-escaped before HTML-escaping in sairnvet, sairncode, sairnbiz",
@@ -41800,49 +41754,6 @@
       "single_factor_note": "one encoding-context gap repeated across sites"
     },
     {
-      "commit": "6c7a12bc4494",
-      "date": "2026-10-30",
-      "subject": "feat+fix(sairnlegacy, fourth b70): apprentice names the supervising director in the staged cremation; a blank GPL price is not $0; a negative line is refused",
-      "files": [
-        "docs/sairn-path-manifest.json",
-        "sairnlegacy.html",
-        "tests/sairnlegacy_countersign_ui.js",
-        "tests/sairnlegacy_supervisor_picker_b70.js"
-      ],
-      "lines_added": 161,
-      "lines_removed": 8,
-      "app": "sairnlegacy",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "probe-control",
-      "summary": "SAIRNlegacy saved a blank GPL service price as 0 (Number(v)||0) so a never-entered price printed as $0 on the statement and GPL modal, and legComposeStatement accepted a negative line that netted a $5,000 casket to a $0 total (cc b58 L3a/L3b). Blank is now null (refused as PRICE_NOT_ON_FILE), the modal says Not priced, and a negative line is refused. Same commit: the apprentice supervisor field the a02ed68cf server rule requires.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": "tools/sairnlegacy_presence_stress.py",
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "saveGplServicePrice's Number(v)||0 predates this batch; not traced."
-      },
-      "citation_note": "No standing rule names falsy coercion of a money input.",
-      "contributing_factors": [
-        {
-          "factor": "Number(v)||0 turned not-entered into a price.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Blank is null; a typed 0 kept; a negative refused at save."
-        },
-        {
-          "factor": "The statement checked only for a missing price, not a negative one.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "PRICE_NEGATIVE refusal."
-        }
-      ],
-      "recurrence_open": "Rows saved as 0 from a blank before this fix cannot be distinguished from a real 0; cc's L3a scenario stays FAIL by the C2 design decision."
-    },
-    {
       "commit": "3d4ff0400b32",
       "date": "2026-10-30",
       "subject": "fix(stonedesk, fourth b70): the Financial KPI row crashed on a numeric quote total (M3) and claimed 65% margin from a hardcoded ratio (M2)",
@@ -41926,6 +41837,135 @@
         }
       ],
       "recurrence_open": "Any other handler pair sharing a module variable across an await (caddie, POS) can interleave the same way; only this pair was checked."
+    },
+    {
+      "commit": "52b9ca3a302b",
+      "date": "2026-10-30",
+      "subject": "fix(api, cc b77): shared_knowledge legacy permission keys on lic.app_id, not caller body.app_id; revert b76 grdData line (routed to fourth)",
+      "files": [
+        "api/b77-legacy-shared-knowledge-app-id.test.js",
+        "api/sd-data.js",
+        "docs/2026-10-30-cc-b77-routed.md",
+        "docs/recurring-bug-classes-2.md",
+        "docs/sairn-path-manifest.json",
+        "sairngrounds.html"
+      ],
+      "lines_added": 199,
+      "lines_removed": 4,
+      "app": "sairnlegacy",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "api/sd-data.js shared_knowledge: the sairnlegacy staff shared_knowledge_access check ran only when caller body.app_id was sairnlegacy; omitting app_id served read/write 200 to staff without access",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the condition predates the files history reachable in this session; not traced"
+      },
+      "citation_note": "No PROCESS-RULES section names it; class is recurring-bug-classes-2 C7 (authorization check keyed on a caller-supplied identifier).",
+      "phase_note": "the permission branch was conditioned on a request field rather than the licence",
+      "contributing_factors": [
+        {
+          "factor": "permission branch conditioned on caller body.app_id",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "keyed on lic.app_id"
+        },
+        {
+          "factor": "no server test exercised legSharedKnowledgePermission",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/b77-legacy-shared-knowledge-app-id.test.js"
+        }
+      ],
+      "recurrence_open": "other request-field-conditioned branches outside body.app_id (e.g. payload.app_id) not swept"
+    },
+    {
+      "commit": "536c7b8ab691",
+      "date": "2026-10-30",
+      "subject": "fix(sd-sub-data, hank b71 #1817): the Eastern-day expiry comment no longer claims it can never be early; both windows pinned by a test",
+      "files": [
+        "api/b71-sub-expiry-eastern-day.test.js",
+        "api/sd-sub-data.js",
+        "docs/recurring-bug-classes.md"
+      ],
+      "lines_added": 79,
+      "lines_removed": 5,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": "api/sd-sub-data.js compared COI and licence expiry against the America/New_York day and its comment (and commit ca1cf0fca) claimed that zone can never call a still-valid document expired in the fifty states. Eastern rolls over FIRST, so for a western shop a document reads expired and the sub is refused (409) 1-6 hours early on its last valid day (H1 #1817). Behaviour kept (the safe direction for a compliance gate); the comment is corrected and api/b71-sub-expiry-eastern-day.test.js pins both windows.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "ca1cf0fcaab1",
+        "date": "2026-10-29",
+        "subject": "fix(sd-sub-data, hank b64): COI / licence expiry compared against the LOCAL day, not the UTC day",
+        "lag_days": 1
+      },
+      "citation_note": "No standing rule requires a stated time-zone invariant to be pinned by a test; proposed: a comment that states a direction of error carries a test of it.",
+      "contributing_factors": [
+        {
+          "factor": "The invariant was reasoned from which zone is easternmost rather than which date changes first, and no test exercised a western instant",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "comment corrected; a test pins the early-west and late-Atlantic windows"
+        }
+      ],
+      "recurrence_open": "There is no per-licence time zone, so the early window for western shops remains by design; any other server-side \"today\" on the platform that hard-codes a zone was not swept.",
+      "single_factor_note": "one wrong invariant"
+    },
+    {
+      "commit": "6c7a12bc4494",
+      "date": "2026-10-30",
+      "subject": "feat+fix(sairnlegacy, fourth b70): apprentice names the supervising director in the staged cremation; a blank GPL price is not $0; a negative line is refused",
+      "files": [
+        "docs/sairn-path-manifest.json",
+        "sairnlegacy.html",
+        "tests/sairnlegacy_countersign_ui.js",
+        "tests/sairnlegacy_supervisor_picker_b70.js"
+      ],
+      "lines_added": 161,
+      "lines_removed": 8,
+      "app": "sairnlegacy",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "probe-control",
+      "summary": "SAIRNlegacy saved a blank GPL service price as 0 (Number(v)||0) so a never-entered price printed as $0 on the statement and GPL modal, and legComposeStatement accepted a negative line that netted a $5,000 casket to a $0 total (cc b58 L3a/L3b). Blank is now null (refused as PRICE_NOT_ON_FILE), the modal says Not priced, and a negative line is refused. Same commit: the apprentice supervisor field the a02ed68cf server rule requires.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/sairnlegacy_presence_stress.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "saveGplServicePrice's Number(v)||0 predates this batch; not traced."
+      },
+      "citation_note": "No standing rule names falsy coercion of a money input.",
+      "contributing_factors": [
+        {
+          "factor": "Number(v)||0 turned not-entered into a price.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Blank is null; a typed 0 kept; a negative refused at save."
+        },
+        {
+          "factor": "The statement checked only for a missing price, not a negative one.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "PRICE_NEGATIVE refusal."
+        }
+      ],
+      "recurrence_open": "Rows saved as 0 from a blank before this fix cannot be distinguished from a real 0; cc's L3a scenario stays FAIL by the C2 design decision."
     },
     {
       "commit": "e22c9cd0bf83",
