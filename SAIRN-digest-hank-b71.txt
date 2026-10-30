@@ -1,0 +1,16 @@
+HANK b71 DIGEST -- 2026-10-30 -- DC loaded and live 7/7; StoneDesk H1y live; #1734 proven fixed by blob; #1817 corrected; M5 live not confirmed; VT blocked
+CONTEXT 61.5% of 1,000,000 -- 614,704 tokens, measured.
+STATUS: work landed 351c9e4db (VT doc + deliverables in the next push); Stop hook ARMED, identical, 20/20.
+1. DC Probate: loaded on LAW-PINNACLE-2026, drift 0, live 7/7, seed pushed 769ddce10.
+2. M5 live: NOT CONFIRMED. The licence has no bank statement, so the M5 leg is never compared.
+3. #1734: af2db16b3 already fixed all 3 (blob b6e9d79d raw 3 -> 35df42f5 raw 0). The server id check is still open.
+4. #1817: sd-sub-data comment corrected (Eastern is early in the West), behaviour kept, test 4/4 (149c90b97).
+5. StoneDesk H1y: claim released, fix applied eed68c6a7, 25/25, PRESENT live.
+6. VT: the official rules pages hold no V.R.C.P.; the two unblocking sources are named in handoff 2.
+DECISION-NEEDED (Michael): M5L -- OK to write a test bank statement + stale deposit on LAW-PINNACLE-2026 (or name a scratch licence)? VT source. 1817T per-licence time zone.
+NEXT (hank): J6C DC civil rules; 1734S server-side id format check, once decided.
+CARRIED: SDP, LGP, J4, J2, A1, P1, R1, G1, S5, S7, T1, M5r, RL1, LE1, HK1, H1z.
+CHANGED: api/sd-sub-data.js (+test), stonedesk.html, DC seed/calendar/test, VT doc, DC gate doc, register.
+SQL-path: none new.
+EVIDENCE-path: SAIRN-handoff-hank-b71.md
+UNVERIFIED: M5 on live data (needs trust rows).
