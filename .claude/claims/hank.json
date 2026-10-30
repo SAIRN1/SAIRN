@@ -4846,6 +4846,17 @@
       "status": "released",
       "released_at": "2026-10-29T20:44:06Z",
       "files": null
+    },
+    {
+      "id": "hank-1793350217",
+      "session": "hank",
+      "subject": "sairnlaw",
+      "task": "J6 DC probate deadline seed; M5 PARTIAL render check",
+      "claimed_at": "2026-10-30T08:50:17Z",
+      "claimed_at_epoch": 1793350217.9658914,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
