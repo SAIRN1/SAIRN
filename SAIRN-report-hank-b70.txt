@@ -1,0 +1,35 @@
+HANK b70 REPORT -- 2026-10-30
+
+1. VT (J5): BLOCKED (b777c4637). The exact missing source is named.
+   - The official sitemap (https://www.vermontjudiciary.org/sitemap.xml) lists 17,442 URLs, and none is V.R.C.P. text.
+   - The rules page defers current text to Lexis, and the promulgated list covers only two years.
+   - Missing: an official, dated copy of V.R.C.P. 6/12/33/34/36/59, or the 2018-01 to 2022-10 promulgation orders for them.
+
+2. DC (J6): Probate Division. The gate PASSED for 5 rows.
+   - Landed (ac060bedf): the engine standard dc_probate_r_128a, JURISDICTION_COVERAGE.dc, and the labels.
+   - Source, with its URL and sha256:
+     https://www.dccourts.gov/sites/default/files/superior-rules/Superior-Court-Rules-of-the-Probate-Division-EFFECTIVE-8-22-2022.pdf
+   - Current through Promulgation Order 26-04 (2026-09). There is no probate order after 2022.
+   - The seed, the calendar and the 21/21 test are PARKED:
+     - the seed gate requires the live load first;
+     - this session holds no SAIRNlaw credentials.
+
+3. M5: the 30-day cutoff is kept.
+   - Offline: the real rTrust() renders "Partly reconciled" plus the stale-deposit reason (ca9790795, 4/4 with a control).
+   - LIVE authenticated: NOT done, because no session credentials were available.
+
+4. H1y: fixed in sairnvet (62 sites), sairncode (32) and sairnbiz (8) (1406e46f7).
+   - Test: 19/19, with arm X.
+   - Live on sairn.vercel.app: PRESENT in all three.
+   - stonedesk (2 sites): PARKED, because fourth held an active stonedesk claim.
+
+5. Methodology: the gate doc cites a full primary-source URL and sha256 for every rule and statute used.
+
+6. Pre-existing failures, baselined and not mine:
+   - stonedesk_exec_msgs_gate.js
+   - tests/run_suite_lock_probe.py B1
+
+7. Landed: 76415046d. The handoff and report land in the next push.
+
+CONTEXT 56.6% of 1,000,000 -- 566,105 tokens, measured.
+Evidence: SAIRN-handoff-hank-b70.md

@@ -1,0 +1,15 @@
+HANK b70 DIGEST -- 2026-10-30 -- H1y fixed in 3 apps; DC Probate standard landed (seed parked for load); VT blocked; M5 render verified offline
+CONTEXT 56.6% of 1,000,000 -- 566,105 tokens, measured.
+STATUS: work landed 76415046d; live: H1y PRESENT in sairnvet/sairncode/sairnbiz on sairn.vercel.app.
+1. VT: blocked. Official sitemap: 17,442 URLs, 0 V.R.C.P. Missing: a dated official V.R.C.P. 6/12/33/34/36/59, or the 2018-22 orders.
+2. DC Probate: gate PASS, 5 rows. Standard + coverage landed (ac060bedf). Seed/calendar/test parked: load needs credentials.
+3. M5: 30 days kept. rTrust() renders "Partly reconciled" offline (4/4). The live authenticated check is NOT done.
+4. H1y: vet 62, code 32, biz 8 sites (1406e46f7). 19/19, arm X. stonedesk 2 sites parked behind fourth's claim.
+5. Every source in the DC gate cites its full URL and sha256.
+DECISION-NEEDED (Michael): SAIRNlaw licence key, employee and PIN (or run them yourself): load DC, then sign in to check M5 live. VT missing source (handoff 1).
+NEXT (hank): J6C DC civil rules (dccourts.gov now reachable); H1y-SD after fourth releases stonedesk.
+CARRIED: SDP, LGP, J4, J2, A1, P1, R1, G1, S5, S7, T1, M5r, RL1, LE1, HK1.
+CHANGED: sairnvet/sairncode/sairnbiz.html, api/_lib/deadline-engine.js, api/legal-deadlines.js, 16 deadline suites, 2 new api tests, gate doc, VT doc.
+SQL-path: none new (the DC seed JSON is parked, see handoff 2).
+EVIDENCE-path: SAIRN-handoff-hank-b70.md
+UNVERIFIED: M5 live render; the DC rows against the live engine (not loaded).
