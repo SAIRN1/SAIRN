@@ -90,12 +90,14 @@ const JURISDICTION_LABELS = {
   ak: 'Alaska',
   nd: 'North Dakota',
   sd: 'South Dakota',
+  dc: 'District of Columbia',
   ri: 'Rhode Island',
   wy: 'Wyoming'
 };
 const DOMAIN_LABELS = {
   'civil-litigation': 'Civil litigation',
-  appellate: 'Appellate'
+  appellate: 'Appellate',
+  probate: 'Probate'
 };
 function jurLabel(code) { return JURISDICTION_LABELS[code] || code; }
 function domLabel(code) { return DOMAIN_LABELS[code] || code; }

@@ -208,7 +208,7 @@ check('a 2032 trigger refuses -- the calendar stops at 2031',
 
 // ── Nothing else moved ────────────────────────────────────────────────────
 check('South Carolina declares NO coverage entry',
-  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['ak', 'al', 'ar', 'de', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'me', 'mn', 'mo', 'ms', 'mt', 'nd', 'ne', 'nh', 'nm', 'nv', 'pa', 'ri', 'sd', 'ut', 'va', 'wi', 'wy']);
+  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['ak', 'al', 'ar', 'dc', 'de', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'me', 'mn', 'mo', 'ms', 'mt', 'nd', 'ne', 'nh', 'nm', 'nv', 'pa', 'ri', 'sd', 'ut', 'va', 'wi', 'wy']);
 {
   // Three neighbours, three different mail amounts, one engine. If any two ever
   // converge, one of them took the other's number.

@@ -1506,6 +1506,17 @@ var COMPUTATION_STANDARDS = {
     short_period_exclusion_days: 11,
     base_period_suffix: '', months_years_suffix: '',
     rollover_suffix_forward: '', rollover_suffix_backward: '' },
+  // ── DISTRICT OF COLUMBIA, PROBATE DIVISION (hank b70): THE FEDERAL TEXT ──
+  // D.C. Super. Ct. Prob. R. 128(a)(1): "(A) exclude the day of the event that
+  // triggers the period; (B) count every day, including intermediate Saturdays,
+  // Sundays and legal holidays; and (C) include the last day of the period, but
+  // if the last day is a Saturday, Sunday, or a legal holiday, the period
+  // continues to run until the end of the next day that is not ..." -- and
+  // (a)(5) "next day" counts backward before an event. Read from the dccourts.gov
+  // compile effective 2022-08-22. docs/2026-10-30-hank-b70-dc-probate-deadline-seed-gate.md.
+  dc_probate_r_128a: { label: 'D.C. Super. Ct. Prob. R. 128(a)', impl: 'frcp_6a',
+    base_period_suffix: '(1)(A)-(B)', months_years_suffix: '(1)(C)',
+    rollover_suffix_forward: '(1)(C)', rollover_suffix_backward: '(5)' },
   // ── MINNESOTA: DAYS ARE DAYS, AND THE EXCLUSION IS OPT-IN PER RULE ───────
   // Minn. R. Civ. P. 6.01(a), verbatim on the parts that decide these fields:
   //
@@ -2538,6 +2549,12 @@ var JURISDICTION_COVERAGE = {
     direction: 'early',
     summary: 'Rhode Island\'s holiday list is a READING of R.I. Gen. Laws 25-1-1, which Super. R. Civ. P. 6(a) does not name, and every contested day is left out: the Monday state employees take for a Saturday holiday, legislative-only election years, and days the governor or General Assembly appoint. This date may be EARLIER than the true deadline, never later.',
     detail: 'The calendar encodes Saturdays, Sundays and the days 25-1-1 names directly -- including Rhode Island Independence Day (4 May), Victory Day (second Monday of August), Columbus Day and Juneteenth -- with the general Sunday-to-Monday shift ("when either of the above days falls on the first day of the week, then the day following it"), Thanksgiving (appointed by the President and by Congress, which 25-1-1 incorporates), and general election day in the years general state officers are elected (2026, 2030). Each omission can only make a date EARLIER: (1) the following Monday "state employees will celebrate" when a listed day falls on a SATURDAY, scoped to employees; (2) election day in a year with only legislative races (2028); (3) days the governor or General Assembly appoint; (4) no Rule 6(d) day on the answer to a complaint (process) or on post-judgment motions running from entry; (5) a defendant\'s 60-day production and 45-day admission floors. Rule 6(a) says "legal holiday" and names no statute, and no official Judiciary holiday list could be reached (docs/sairnlaw-rhodeisland-deadline-seed-blockers.md). Confirm any date falling on or just after a Saturday holiday, an election day, or Victory Day.'
+  },
+  dc: {
+    complete: false,
+    direction: 'early',
+    summary: 'District of Columbia days the calendar cannot see -- DC Emancipation Day, Inauguration Day, days the President or Congress declares, days the court observes, and an inaccessible clerk\'s office -- are NOT modelled. Each can only make this date EARLIER than the true deadline. Only Probate Division rules are loaded.',
+    detail: 'The calendar encodes Saturdays, Sundays and the eleven days D.C. Super. Ct. Prob. R. 128(a)(6)(A) names, each on the day set aside by statute for observing it (a Saturday holiday on the Friday before, a Sunday holiday on the Monday after, per D.C. Code 28-2701 and 5 U.S.C. 6103(b)). NOT ENCODED, ALL EARLY: (1) DC Emancipation Day (April 16) and Inauguration Day, which D.C. Code 28-2701 makes holidays "for all purposes" but Rule 128(a)(6)(A) does not name -- they count only if the court observes them under (a)(6)(B), and the court\'s observed list was not read; (2) any other day declared a holiday by the President or Congress, or observed by the court; (3) an inaccessible clerk\'s office under Rule 128(a)(3). No seeded row runs from service, so Rule 128(d)\'s three mail days never apply to a loaded rule. The Probate Division motion for reconsideration under Rule 125(c)(1) is NOT loaded: its 28 days also end at the entry of the order approving the final account, a second cut-off this engine cannot see, which would make the date it gave LATE.'
   },
   sd: {
     complete: false,

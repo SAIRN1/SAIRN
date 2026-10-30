@@ -247,7 +247,7 @@ check('the summary warns about the missing extension rather than leaving it to b
 // ── Nothing else moved ───────────────────────────────────────────────────
 check('the coverage table gained nh and nothing else',
   Object.keys(engine.JURISDICTION_COVERAGE).sort(),
-  ['ak', 'al', 'ar', 'de', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'me', 'mn', 'mo', 'ms', 'mt', 'nd', 'ne', 'nh', 'nm', 'nv', 'pa', 'ri', 'sd', 'ut', 'va', 'wi', 'wy']);
+  ['ak', 'al', 'ar', 'dc', 'de', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'me', 'mn', 'mo', 'ms', 'mt', 'nd', 'ne', 'nh', 'nm', 'nv', 'pa', 'ri', 'sd', 'ut', 'va', 'wi', 'wy']);
 check('New Hampshire adds no service-completion standard',
   Object.keys(engine.SERVICE_COMPLETION_STANDARDS), ['mo_rule_43_01_d']);
 check('and no other computation standard lost its short-period threshold',

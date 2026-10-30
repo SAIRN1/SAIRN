@@ -244,7 +244,7 @@ check('a year outside the loaded calendars refuses',
 
 // ── Blast radius ─────────────────────────────────────────────────────────
 check('four jurisdictions declare a coverage gap',
-  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['ak', 'al', 'ar', 'de', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'me', 'mn', 'mo', 'ms', 'mt', 'nd', 'ne', 'nh', 'nm', 'nv', 'pa', 'ri', 'sd', 'ut', 'va', 'wi', 'wy']);
+  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['ak', 'al', 'ar', 'dc', 'de', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'me', 'mn', 'mo', 'ms', 'mt', 'nd', 'ne', 'nh', 'nm', 'nv', 'pa', 'ri', 'sd', 'ut', 'va', 'wi', 'wy']);
 check('Missouri is still the only jurisdiction with a completion standard',
   Object.keys(engine.SERVICE_COMPLETION_STANDARDS), ['mo_rule_43_01_d']);
 // A pre-existing jurisdiction must be untouched by the new standards.
