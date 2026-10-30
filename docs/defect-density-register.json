@@ -41681,6 +41681,123 @@
         }
       ],
       "recurrence_open": "other request-field-conditioned branches outside body.app_id (e.g. payload.app_id) not swept"
+    },
+    {
+      "commit": "e589f6db6d92",
+      "date": "2026-10-30",
+      "subject": "fix(hank b70 H1y): stored values passed from inline handlers are JS-escaped before HTML-escaping in sairnvet, sairncode, sairnbiz",
+      "files": [
+        "api/b70-inline-handler-args.test.js",
+        "docs/recurring-bug-classes.md",
+        "sairnbiz.html",
+        "sairncode.html",
+        "sairnvet.html"
+      ],
+      "lines_added": 219,
+      "lines_removed": 100,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "sairnvet.html passed 61 stored values raw between quotes into inline handlers and built the employee-id argument as &#39;+escHtml(id)+&#39;, which the browser HTML-decodes before the JS runs, so a value holding a quote closed the string. All 62 now go through JA() (JSON string, then HTML escape). api/b70-inline-handler-args.test.js covers it; arm X finds the shape at 8e481cea7.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "app-wide pattern present across many commits; not traced to one"
+      },
+      "citation_note": "No standing rule names inline-handler arguments as a separate encoding context; proposed: a value passed from an inline handler is JS-escaped, then HTML-escaped.",
+      "contributing_factors": [
+        {
+          "factor": "Inline handlers are an HTML-then-JS context and the value was escaped for neither or for HTML only",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "JS-escape then HTML-escape every stored value passed from an inline handler"
+        }
+      ],
+      "recurrence_open": "Apps outside hank's owned set (sairnlaw, sairnbuild, sairncare and others) were not swept; no server-side format check on record ids.",
+      "single_factor_note": "one encoding-context gap repeated across sites"
+    },
+    {
+      "commit": "e589f6db6d92",
+      "date": "2026-10-30",
+      "subject": "fix(hank b70 H1y): stored values passed from inline handlers are JS-escaped before HTML-escaping in sairnvet, sairncode, sairnbiz",
+      "files": [
+        "api/b70-inline-handler-args.test.js",
+        "docs/recurring-bug-classes.md",
+        "sairnbiz.html",
+        "sairncode.html",
+        "sairnvet.html"
+      ],
+      "lines_added": 219,
+      "lines_removed": 100,
+      "app": "sairncode",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "sairncode.html passed 32 stored record ids raw between quotes into inline handlers; an id holding a quote closed the JS string. All 32 now go through JA(). api/b70-inline-handler-args.test.js covers it; arm X finds the shape at 8e481cea7.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "app-wide pattern present across many commits; not traced to one"
+      },
+      "citation_note": "No standing rule names inline-handler arguments as a separate encoding context; proposed: a value passed from an inline handler is JS-escaped, then HTML-escaped.",
+      "contributing_factors": [
+        {
+          "factor": "Inline handlers are an HTML-then-JS context and the value was escaped for neither or for HTML only",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "JS-escape then HTML-escape every stored value passed from an inline handler"
+        }
+      ],
+      "recurrence_open": "Apps outside hank's owned set (sairnlaw, sairnbuild, sairncare and others) were not swept; no server-side format check on record ids.",
+      "single_factor_note": "one encoding-context gap repeated across sites"
+    },
+    {
+      "commit": "e589f6db6d92",
+      "date": "2026-10-30",
+      "subject": "fix(hank b70 H1y): stored values passed from inline handlers are JS-escaped before HTML-escaping in sairnvet, sairncode, sairnbiz",
+      "files": [
+        "api/b70-inline-handler-args.test.js",
+        "docs/recurring-bug-classes.md",
+        "sairnbiz.html",
+        "sairncode.html",
+        "sairnvet.html"
+      ],
+      "lines_added": 219,
+      "lines_removed": 100,
+      "app": "sairnbiz",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "sairnbiz.html passed 5 stored ids as H(id) between quotes and built 3 arguments as &#39;+H(x)+&#39;; H() alone is undone by the attribute decode, so a value holding a quote closed the JS string. All 8 now JS-escape backslash and quote before H(), keeping the fn('ID') markup its suites pin. api/b70-inline-handler-args.test.js covers it.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "app-wide pattern present across many commits; not traced to one"
+      },
+      "citation_note": "No standing rule names inline-handler arguments as a separate encoding context; proposed: a value passed from an inline handler is JS-escaped, then HTML-escaped.",
+      "contributing_factors": [
+        {
+          "factor": "Inline handlers are an HTML-then-JS context and the value was escaped for neither or for HTML only",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "JS-escape then HTML-escape every stored value passed from an inline handler"
+        }
+      ],
+      "recurrence_open": "Apps outside hank's owned set (sairnlaw, sairnbuild, sairncare and others) were not swept; no server-side format check on record ids.",
+      "single_factor_note": "one encoding-context gap repeated across sites"
     }
   ],
   "started": "2026-09-09",
