@@ -10254,6 +10254,134 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/_lib/deadline-connecticut.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9bf1864e3e8e8beeb5f0e527c59fb2d258af4355",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-florida-coverage.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9bf1864e3e8e8beeb5f0e527c59fb2d258af4355",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-hawaii.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9bf1864e3e8e8beeb5f0e527c59fb2d258af4355",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-idaho.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9bf1864e3e8e8beeb5f0e527c59fb2d258af4355",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-massachusetts.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9bf1864e3e8e8beeb5f0e527c59fb2d258af4355",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-minnesota.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9bf1864e3e8e8beeb5f0e527c59fb2d258af4355",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-mississippi.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9bf1864e3e8e8beeb5f0e527c59fb2d258af4355",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-missouri.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9bf1864e3e8e8beeb5f0e527c59fb2d258af4355",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-nebraska.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9bf1864e3e8e8beeb5f0e527c59fb2d258af4355",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-nevada.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9bf1864e3e8e8beeb5f0e527c59fb2d258af4355",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-newhampshire.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9bf1864e3e8e8beeb5f0e527c59fb2d258af4355",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-newmexico.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9bf1864e3e8e8beeb5f0e527c59fb2d258af4355",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-oklahoma.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9bf1864e3e8e8beeb5f0e527c59fb2d258af4355",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-oregon.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9bf1864e3e8e8beeb5f0e527c59fb2d258af4355",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-southcarolina.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9bf1864e3e8e8beeb5f0e527c59fb2d258af4355",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-utah.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9bf1864e3e8e8beeb5f0e527c59fb2d258af4355",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/sairn_push_gate_hook.py",
    "class": "push-gate logic",
    "level": "CHANGE",
@@ -11989,6 +12117,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "ad128e5c1ee41ae24a66d8483637576d3ba68b06",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b70-m5-partial-render.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ad27db7427f7562a7d11b23d393965f915ce9ca1",
    "criteria_version": "2026-10-06.1"
   },
   {
