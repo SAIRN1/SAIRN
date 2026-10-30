@@ -41968,6 +41968,43 @@
       "recurrence_open": "Rows saved as 0 from a blank before this fix cannot be distinguished from a real 0; cc's L3a scenario stays FAIL by the C2 design decision."
     },
     {
+      "commit": "9cab8317d46d",
+      "date": "2026-10-30",
+      "subject": "fix(stonedesk, hank b71 H1y): the two saved-drawing handlers JS-escape the id before escHtml",
+      "files": [
+        "api/b70-inline-handler-args.test.js",
+        "docs/recurring-bug-classes.md",
+        "stonedesk.html"
+      ],
+      "lines_added": 5,
+      "lines_removed": 6,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "stonedesk.html sdDrawingsLoad / sdDrawingsDelete passed x.id as escHtml(String(x.id)) between quotes into inline handlers; escHtml alone is undone by the attribute decode, so an id holding a quote closed the JS string. Both now JS-escape backslash and quote before escHtml, the form sairnbiz uses (b70). api/b70-inline-handler-args.test.js covers stonedesk; arm X finds the shape at 8e481cea7.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "app-wide pattern present across many commits; not traced to one"
+      },
+      "citation_note": "No standing rule names inline-handler arguments as a separate encoding context; proposed: a value passed from an inline handler is JS-escaped, then HTML-escaped.",
+      "contributing_factors": [
+        {
+          "factor": "Inline handlers are an HTML-then-JS context and the value was escaped for neither or for HTML only",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "JS-escape then HTML-escape every stored value passed from an inline handler"
+        }
+      ],
+      "recurrence_open": "Apps outside hank's owned set (sairnlaw, sairnbuild, sairncare and others) were not swept; no server-side format check on record ids.",
+      "single_factor_note": "one encoding-context gap repeated across sites"
+    },
+    {
       "commit": "e22c9cd0bf83",
       "date": "2026-10-30",
       "subject": "fix(platform, cody b68): a licence key differing only in case is the same licence in all 13 guards",
