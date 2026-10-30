@@ -1,0 +1,14 @@
+DIGEST cc b77
+STATUS: closed. Window declared 1,000,000; measured line below.
+DONE: N-3 sweep -- shared_knowledge legacy permission now keyed on lic.app_id (was bypassable by omitting app_id); suite 18/0.
+DONE: b76 sairngrounds grdData line reverted, routed to fourth; server-side deleted-row fix kept (43/0).
+OPEN: cody b65's 3 LOW findings routed to cody (not cc-owned files); doc docs/2026-10-30-cc-b77-routed.md.
+DECISION-NEEDED: fourth/Michael -- whether grounds rows written under stonedesk scope need migrating once grdData sends app_id.
+UNVERIFIED: live check of the shared_knowledge fix on the deployed endpoint (needs a legacy staff token without access).
+CHANGED: api/sd-data.js, new api test, sairngrounds.html revert, manifest, ledgers, generated docs, routed doc, handoff.
+SQL: none.
+EVIDENCE-path: SAIRN-handoff-cc-b77.md, SAIRN-report-cc-b77.txt
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\a046cdf7-9eaf-4291-b1ac-b9b8bb34da67.jsonl
+NEXT: N-5 sweep payload.app_id and other request-field-conditioned branches in api/sd-data.js.
+CONTEXT 26.8% of 1,000,000 -- 267,914 tokens, measured.
+END-OF-REPORT

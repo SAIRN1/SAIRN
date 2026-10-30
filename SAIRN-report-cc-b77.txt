@@ -1,0 +1,26 @@
+REPORT cc b77 -- 2026-10-30
+ITEM 2 CONTEXT: declared window 1,000,000 (.git/sairn-context-window, session a046cdf7); measured CONTEXT 26.8% of 1,000,000 -- 267,914 tokens, measured.
+  The prior 200,000 declaration was contradicted by an observed 222,768-token prompt and refused by context_verify.
+ITEM 1: b76 sairngrounds grdData line reverted; git diff db0bc67a~1 -- sairngrounds.html is empty; routed to fourth (docs/2026-10-30-cc-b77-routed.md + status note).
+  Server-side deleted-row fix kept:
+$ node api/b76-shared-deleted-row-session-app.test.js
+PASSED -- 43 passed, 0 failed
+EXIT=0
+ITEM 3 (N-3): 10 body.app_id hits, 2 real reads. shared_knowledge legacy permission FIXED (keyed on lic.app_id). memApp safe (branch gate verifies token against it).
+$ node api/b77-legacy-shared-knowledge-app-id.test.js
+PASSED -- 18 passed, 0 failed
+EXIT=0
+  Before the fix: FAILED -- 14 passed, 4 failed (staff without access, app_id ABSENT/stonedesk, read and write -> 200).
+$ node api/b38-deleted-row-platform.test.js
+PASSED -- 1196 passed, 0 failed
+EXIT=0
+$ node api/sd-data-session-gate.test.js
+ALL 22 SESSION-GATE ASSERTIONS PASS
+EXIT=0
+$ node api/sd-data-active-credential.test.js
+13 passed
+EXIT=0
+ITEM 4: cody b65's 3 LOW findings stay OPEN, routed to cody -- each is in a file cc does not own (sairnfreedom.html cody override + 12 fourth *.html; sairngrounds.html app logic; tests/ is cody's). Exact fixes in docs/2026-10-30-cc-b77-routed.md.
+ITEM 5: every manifest edit built in scratch and diffed vs HEAD before writing: 5, 3, 3 changed lines, each matching the expected count.
+PUSH (measured after fetch): HEAD = origin/main = 0485ef8bebce5785946100eb07ece425b1e6067e
+CHANGED: api/sd-data.js, api/b77-legacy-shared-knowledge-app-id.test.js, sairngrounds.html (revert), docs/sairn-path-manifest.json, docs/2026-10-30-cc-b77-routed.md, docs/recurring-bug-classes-2.md, docs/defect-density-register.json, docs/MASTER-PLAN.md, docs/traceability-matrix.md, docs/scrutiny-flags.json, handoff.
