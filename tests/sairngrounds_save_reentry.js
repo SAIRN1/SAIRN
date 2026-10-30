@@ -220,6 +220,36 @@ function world(push) {
     check(s.id + '4 ' + s.name + ': two presses during one fix leave exactly ONE record',
       s.count(box.b) === 1, JSON.stringify({ records: s.count(box.b), fixes: w.writes() }));
   }
+  // 5. START DURING A PENDING END (cc b76 F1 on cody b65's 2026-10-29T19:34:54Z
+  // record). gcdMarkShotEnd read gcdShotStart AFTER its fix arrived and then
+  // nulled it, so a START pressed for the next shot while END's fix was
+  // pending became the measured shot's start (0 m), and was then thrown away.
+  console.log('5. a START pressed while END\'s fix is pending');
+  {
+    const TEE = { lat: 40.0, lng: -75.0, accuracy_m: 3 };
+    const LANDED = { lat: 40.002, lng: -75.0, accuracy_m: 4 };
+    const NEXT = { lat: 40.0021, lng: -75.0, accuracy_m: 3 };
+    const src = L('async function gcdMarkShotStart(){') + '\n' +
+      H.optional(html, /var gcdShotEnding\s*=\s*false;/) + '\n' + L('async function gcdMarkShotEnd(){');
+    const hole = { zone_id: 'Z-9', zone_name: 'Hole 9', shots: [] };
+    const pending = [];
+    const ctx = H.vmWorld(src, {
+      gcdShotStart: TEE, gcdActiveRound: () => ({ id: 'R-1' }), gcdCurrentHole: () => hole,
+      cmCaptureGps: () => new Promise((r) => pending.push(r)),
+      gcdHaversineM: (a, b) => Math.round(Math.abs(b.lat - a.lat) * 111000),
+      gcdSaveRound() {}, rCaddie() {}, gcdAccBadge: () => '', toast() {},
+      $: () => ({ innerHTML: '' })
+    });
+    const end = ctx.gcdMarkShotEnd(); await H.flush();          // END: fix pending
+    const start = ctx.gcdMarkShotStart(); await H.flush();      // START for the next shot
+    pending[1](NEXT); await start; await H.flush();             // START's fix lands first
+    pending[0](LANDED); await end; await H.settle();            // then END's
+    const shot = hole.shots[0] || {};
+    check('GS1 the shot is measured from the tee it was started at, not from the next start',
+      hole.shots.length === 1 && shot.from === TEE && shot.meters > 100, JSON.stringify({ n: hole.shots.length, meters: shot.meters }));
+    check('GS2 ...and the next shot\'s start, marked meanwhile, is kept, not thrown away',
+      ctx.gcdShotStart === NEXT, JSON.stringify(ctx.gcdShotStart));
+  }
   finished = true;
   console.log('\n' + (fail ? 'FAILED' : 'ok') + '  sairngrounds save re-entry: ' + pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);

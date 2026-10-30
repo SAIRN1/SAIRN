@@ -3087,14 +3087,18 @@ async function gcdMarkShotEnd(){
   if(!hole){toast('Arrive at a hole first');return;}
   if(!gcdShotStart){toast('Mark the ball position first -- a shot distance needs both ends');return;}
   toast('Getting GPS fix...');
+  // The start is taken BEFORE the wait (cc b76 F1): a START pressed for the
+  // next shot while this fix is pending must neither become this shot's start
+  // nor be thrown away when this one is recorded.
+  var start = gcdShotStart;
   var fix = null;
   gcdShotEnding = true;
   try{ fix = await cmCaptureGps(); }finally{ gcdShotEnding = false; }
   if(!fix){toast('Could not get a GPS fix -- check location permission and try again',5000);return;}
-  var band = gcdShotStart.accuracy_m + fix.accuracy_m;
-  var m = gcdHaversineM(gcdShotStart, fix);
-  hole.shots.push({from:gcdShotStart, to:fix, meters:m, band_meters:band, at:new Date().toISOString()});
-  gcdShotStart = null;
+  var band = start.accuracy_m + fix.accuracy_m;
+  var m = gcdHaversineM(start, fix);
+  hole.shots.push({from:start, to:fix, meters:m, band_meters:band, at:new Date().toISOString()});
+  if(gcdShotStart === start) gcdShotStart = null;
   gcdSaveRound(round);
   rCaddie();
   toast('Shot recorded');
