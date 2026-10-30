@@ -41637,7 +41637,7 @@
       "recurrence_open": "Any other could-not-tell code added to the server later must be added to the kept list too; nothing enforces that."
     },
     {
-      "commit": "27ce52825c1a",
+      "commit": "52b9ca3a302b",
       "date": "2026-10-30",
       "subject": "fix(api, cc b77): shared_knowledge legacy permission keys on lic.app_id, not caller body.app_id; revert b76 grdData line (routed to fourth)",
       "files": [

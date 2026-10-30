@@ -955,6 +955,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b77-legacy-shared-knowledge-app-id.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0eca34bc95fb8bd9118ede7ac1586f7340b9254d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/hook_integrity_check.py",
    "class": "push-gate logic",
    "level": "CHANGE",
@@ -2827,6 +2835,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "26f9666949a8d8b1c3795243223726bfc97a5e88",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b77-legacy-shared-knowledge-app-id.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "27ce52825c1abba2958d1af435f4f2b91945c4f0",
    "criteria_version": "2026-10-06.1"
   },
   {
