@@ -145,8 +145,14 @@ const CASES = [
   //                          CREATED the day); a `status_changed_by` column
   //                          would be cleaner and is a MIGRATION.
   { res: 'rf_claims', app: 'sairnroofing', role: 'owner', table: 'rf_claims' },
+  // COLUMNS, not a blob (cody b70). d7773533f (2026-10-13) took the cleaner
+  // route the note above names: set_status now PATCHes real columns
+  // status_changed_by / status_changed_by_role / status_changed_at, present
+  // in the live schema (db/schema_snapshot.json rf_schedule), and leaves
+  // `data` alone. Arms B, C and D3 judged it by the RETIRED blob form and
+  // went red on correct code; they now judge the PATCH it actually sends.
   { res: 'rf_schedule', app: 'sairnroofing', role: 'owner', table: 'rf_schedule',
-    action: 'set_status' },
+    action: 'set_status', columns: true },
 ];
 
 // One permissive payload. Branch preconditions differ; the fields they ask for
@@ -210,6 +216,9 @@ function payloadFor(res) {
   if (res === 'rf_schedule') {
     p.schedule_id = 'RFSCH-1';
     p.status = 'confirmed';
+    // hostile values for the COLUMN form of the stamp (arm C)
+    p.status_changed_by = 'SOMEONE-ELSE';
+    p.status_changed_by_role = 'owner';
   }
   return p;
 }
@@ -231,7 +240,8 @@ async function write(c) {
   await handler(req, res);
   const w = sent.filter((q) => (q.method === 'POST' || q.method === 'PATCH')
     && q.url.indexOf(c.table) !== -1);
-  return { res: res, posts: w, blob: w[0] && w[0].body && w[0].body.data };
+  return { res: res, posts: w, blob: w[0] && w[0].body && w[0].body.data,
+           body: w[0] && w[0].body };
 }
 
 let pass = 0, fail = 0;
@@ -268,6 +278,18 @@ function bad(l, why) {
   for (const c of CASES) {
     const r = await write(c);
     if (!r.posts.length) { bad('B. ' + c.res + ' did not reach its write', 'status=' + r.res.statusCode); continue; }
+    if (c.columns) {
+      const b = r.body || {};
+      if (b.status_changed_by === 'ACTOR-42' && b.status_changed_by_role === c.role
+          && typeof b.status_changed_at === 'string' && b.status_changed_at) {
+        ok('B. ' + c.res + ' stamps status_changed_by=ACTOR-42, status_changed_by_role='
+           + c.role + ' and status_changed_at, as COLUMNS on its PATCH');
+      } else {
+        bad('B. ' + c.res + ' must stamp the session employee in its status_changed_* columns',
+            'patch=' + JSON.stringify(b));
+      }
+      continue;
+    }
     if (r.blob && r.blob.updatedBy === 'ACTOR-42'
         && r.blob.updatedByRole === c.role) {
       ok('B. ' + c.res + ' stores updatedBy=ACTOR-42 and updatedByRole='
@@ -283,8 +305,9 @@ function bad(l, why) {
   const kept = [];
   for (const c of CASES) {
     const r = await write(c);
-    if (r.blob && r.blob.updatedBy === 'ACTOR-42') discarded++;
-    else kept.push(c.res + '=' + (r.blob && r.blob.updatedBy));
+    const actor = c.columns ? (r.body && r.body.status_changed_by) : (r.blob && r.blob.updatedBy);
+    if (actor === 'ACTOR-42') discarded++;
+    else kept.push(c.res + '=' + actor);
   }
   if (discarded === CASES.length) {
     ok('C1. all ' + CASES.length + ' discarded the payload\'s '
@@ -365,22 +388,23 @@ function bad(l, why) {
         + assignOk + ' of ' + ASSIGN_STAMPED.length, assignBad.join(' | '));
   }
 
-  // ── D3: rf_schedule/set_status PRESERVES THE BLOB IT MERGES INTO ─────
-  // The ONE path that could not take the one-line stamp. The hazard being
-  // guarded is not a missing field -- it is `data: { updatedBy }` REPLACING a
-  // blob that holds the window and notes. So the arm asserts the existing blob
-  // is spread FIRST and the stamp lands after it.
-  const merge = CODE.indexOf('const schedBlob = Object.assign({}, entry.data || {}');
-  const mergeStamp = CODE.indexOf(STAMP, merge === -1 ? 0 : merge);
-  if (merge !== -1 && mergeStamp > merge && CODE.indexOf('data: schedBlob') !== -1) {
-    ok('D3. rf_schedule/set_status spreads the STORED blob first, stamps after '
-       + 'it, and PATCHes the merged value. A bare `data: { updatedBy }` here '
-       + 'would pass every B and C arm above while destroying the window and '
-       + 'notes on every status change');
-  } else {
-    bad('D3. rf_schedule/set_status must merge onto the stored blob',
-        'merge=' + merge + ' stamp=' + mergeStamp
-        + ' patches=' + (CODE.indexOf('data: schedBlob') !== -1));
+  // ── D3: rf_schedule/set_status LEAVES THE BLOB ALONE ──────────────────
+  // The hazard this arm has always guarded is a status change REPLACING the
+  // blob that holds the window and notes. With the stamp in columns the safe
+  // shape is simpler: the PATCH must not carry `data` at all. DRIVEN, not read
+  // off the source -- the old arm matched a code string the fix removed.
+  {
+    const sc = CASES.find((c) => c.columns);
+    const r = await write(sc);
+    const b = r.body || {};
+    if (r.posts.length === 1 && r.posts[0].method === 'PATCH' && !('data' in b)
+        && b.status === 'confirmed') {
+      ok('D3. rf_schedule/set_status PATCHes status and its three stamp columns and '
+         + 'sends NO `data` key, so the window/notes blob cannot be replaced');
+    } else {
+      bad('D3. rf_schedule/set_status must PATCH without touching `data`',
+          'posts=' + r.posts.length + ' body=' + JSON.stringify(b));
+    }
   }
 
   console.log('\n' + pass + ' passed, ' + fail + ' failed');
