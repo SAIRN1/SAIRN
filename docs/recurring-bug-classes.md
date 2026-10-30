@@ -126,4 +126,4 @@ Sources cited by record and commit. These are cc b76's verdicts on cody b65's Ti
 | # | Defect | Phase | Sub-phase | Cause | Commit |
 |---|---|---|---|---|---|
 | 1 | `api/sd-sub-data.js` said the America/New_York day "can never call a still-valid document expired" in the fifty states; Eastern rolls over FIRST, so western shops see a document expire 1-6 hours early (H1 #1817) | design | stated invariant | **due to** reasoning about which zone is "easternmost" instead of which zone's date changes first; the claim went into the comment and the commit message unchecked by any test | this batch |
-
+| 2 | stonedesk.html `sdDrawingsLoad` / `sdDrawingsDelete` passed `x.id` as `escHtml(String(x.id))` between quotes (the H1y shape, parked in b70 behind fourth's claim) | coding | output encoding | **due to** the same HTML-only escape in a JS context as b70 row 1; the rest of StoneDesk already used `escAttrJs` | this batch |

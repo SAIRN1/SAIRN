@@ -14,9 +14,8 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
-// stonedesk.html is NOT here: fourth held an active stonedesk claim when this
-// landed, so its 2 sites are a parked patch (hank b70 handoff, item H1y-SD).
-const APPS = ['sairnvet.html', 'sairnbiz.html', 'sairncode.html'];
+// stonedesk.html joined in hank b71, once fourth's stonedesk claim was released.
+const APPS = ['sairnvet.html', 'sairnbiz.html', 'stonedesk.html', 'sairncode.html'];
 const BASE = '8e481cea7';
 // Not record values: loop indexes, a fixed status map, a selector constant,
 // and StoneDesk's escAttrJs(), which is already JS-escape-then-HTML-escape.

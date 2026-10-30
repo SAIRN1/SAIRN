@@ -5411,7 +5411,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
           (reloadable?'':'<div style="font-size:11px;color:var(--muted);margin-top:6px">Saved before drawings kept their measurements &mdash; this one can be viewed but not reloaded.</div>')+
         '</div>'+
         (reloadable
-          ? '<button class="sairn-btn sairn-btn-primary" style="flex-shrink:0" onclick="sdDrawingsLoad(\''+escHtml(String(x.id))+'\')">Load onto Canvas</button>'
+          ? '<button class="sairn-btn sairn-btn-primary" style="flex-shrink:0" onclick="sdDrawingsLoad(\''+escHtml(String(x.id).replace(/[\\\u0027]/g,'\\$&'))+'\')">Load onto Canvas</button>'
           : '<button class="sairn-btn" style="flex-shrink:0" disabled title="No measurements were stored with this drawing">Load onto Canvas</button>')+
         // DELETE, ADDED 2026-09-13. The list is capped at 20 by sdDrawSave(),
         // so before this the only way to lose a drawing was to push it off the
@@ -5419,7 +5419,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
         // not a way to remove something. A rep who saved the wrong canvas had
         // no way to get rid of it.
         '<button class="sairn-btn" style="flex-shrink:0;color:#dc2626;border-color:#dc2626" '+
-          'onclick="sdDrawingsDelete(\''+escHtml(String(x.id))+'\')">Delete</button>'+
+          'onclick="sdDrawingsDelete(\''+escHtml(String(x.id).replace(/[\\\u0027]/g,'\\$&'))+'\')">Delete</button>'+
         '</div>';
     }).join('');
   }
