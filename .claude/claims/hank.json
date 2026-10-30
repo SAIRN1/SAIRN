@@ -4868,6 +4868,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "hank-1793352473",
+      "session": "hank",
+      "subject": "sairnlaw",
+      "task": "DC probate seed load + M5 live check + 1817 NY timezone expiry",
+      "claimed_at": "2026-10-30T09:27:53Z",
+      "claimed_at_epoch": 1793352473.0917604,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
