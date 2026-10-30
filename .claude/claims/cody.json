@@ -4640,8 +4640,8 @@
       "task": "licence guard case-insensitive same-key cc b76 F1",
       "claimed_at": "2026-10-30T08:59:46Z",
       "claimed_at_epoch": 1793350786.0089092,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-30T08:59:54Z",
       "files": null
     }
   ],
