@@ -2381,3 +2381,15 @@ Full account: `SAIRN-handoff-fourth-b68.md`.
 - Open: sairnlegacy.html supervisor picker, after hank's claim.
 
 Full account: `SAIRN-handoff-fourth-b69.md`.
+
+## batch b70 -- 2026-10-30, CLOSED
+
+- Supervisor picker plus L3: `6c7a12bc4`.
+- StoneDesk M3 and M2: `3d4ff0400`.
+- Both pages live and byte-identical.
+- Live F3 drive BLOCKED: no SAIRNlegacy audit licence. The seed SQL is `4f2461389`.
+- known-red: nothing stale.
+- G1: clean.
+- Every commit's ancestor check is in handoff section 1.
+
+Full account: `SAIRN-handoff-fourth-b70.md`.

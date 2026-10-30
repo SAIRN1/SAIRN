@@ -1,0 +1,55 @@
+SAIRN REPORT -- fourth b70 -- 2026-10-30
+
+Each commit claimed landed carries its own literal
+`git merge-base --is-ancestor <sha> origin/main` result, run after
+`git fetch` against origin/main e3d617353285. All 15 are in handoff
+section 1, and every one is exit 0. The handoff itself landed as
+f20397b03565.
+
+1 SUPERVISOR PICKER -- 6c7a12bc4
+  - The cremation modal asks an apprentice for the supervising director's
+    employee number, and it is staged in the record as
+    authorized_by_supervisor.
+  - Nothing is staged when it is blank or is the apprentice's own number.
+  - The server (a02ed68cf) requires the field, and requires that director
+    to countersign.
+  - tests/sairnlegacy_supervisor_picker_b70.js: 5/6 RED before, 6/0 after.
+    sairnlegacy_countersign_ui: 19/0.
+  - Live page byte-identical; the marker is present.
+
+2 LIVE F3 DRIVE -- BLOCKED, measured
+  SAIRNlegacy has one licence (not an audit key) and 0 apprentice
+  credentials, so there is no audit licence to drive on. Michael runs
+  sql/sairnlegacy_audit_licence_seed_2026-10-30.sql (4f2461389, exit 0) and
+  then bootstraps the owner, a director and an apprentice. The exact drive
+  is in handoff section 3, item 1.
+
+3 STONEDESK M3 (+M2) -- 3d4ff0400; LGP L3 -- 6c7a12bc4
+  - M3: a numeric quote total no longer crashes the KPI row.
+  - M2: no 65% margin without costs.
+  - cc's tool: M2/M3 FAIL -> PASS. stonedesk_presence_fixes_b69: 10/0.
+  - L3: a blank GPL price is saved as null (refused on the statement);
+    the modal says "Not priced"; a negative line is refused. L3b
+    FAIL -> PASS. L3a stays FAIL by design (C2: a real 0 is a price).
+  - Both live pages byte-identical.
+
+4 KNOWN-RED -- nothing stale
+  capa: recovered in b66 (29da9532c, exit 0), reconfirmed in b68
+  (84131479e, exit 0). The b68 whole-register re-drive moved 3 more
+  (70484c239, exit 0). There has been no capa or defect_register commit
+  since 2026-10-29 12:00. No file change.
+
+5 G1 -- clean
+  - 217 commits created in this clone on 10-29/30, 99 of them on
+    origin/main, 0 with an fx identity.
+  - git var identity: Michael Dibert <mikied68@gmail.com>.
+  - committer_identity_check: CLEAN.
+
+PUSH NOTES
+  - Several rebase races. The derived-docs fold kept re-seating the
+    register, which the resolver refuses as a non-append. Each time I took
+    the rebased side and re-ran `defect_register.py --reseat`; --check
+    exits 0.
+  - One push was refused by push_timeout_guard because it ran under
+    `timeout`; it was re-run without it.
+  - No skip, override or force was used.
