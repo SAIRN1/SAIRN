@@ -41885,7 +41885,7 @@
       "recurrence_open": "other request-field-conditioned branches outside body.app_id (e.g. payload.app_id) not swept"
     },
     {
-      "commit": "536c7b8ab691",
+      "commit": "97a963c645cb",
       "date": "2026-10-30",
       "subject": "fix(sd-sub-data, hank b71 #1817): the Eastern-day expiry comment no longer claims it can never be early; both windows pinned by a test",
       "files": [
@@ -41968,7 +41968,7 @@
       "recurrence_open": "Rows saved as 0 from a blank before this fix cannot be distinguished from a real 0; cc's L3a scenario stays FAIL by the C2 design decision."
     },
     {
-      "commit": "9cab8317d46d",
+      "commit": "5d64c39212e3",
       "date": "2026-10-30",
       "subject": "fix(stonedesk, hank b71 H1y): the two saved-drawing handlers JS-escape the id before escHtml",
       "files": [
