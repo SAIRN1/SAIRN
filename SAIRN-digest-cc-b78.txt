@@ -1,0 +1,14 @@
+DIGEST cc b78
+STATUS: closed.
+DONE: N-5 payload.app_id sweep -- rt_routes p.app_id is token-bound (probe: mismatch 403, absent 400). No C7 bypass, no fix.
+DONE: cc done-line hook copy was stale (3/4); refreshed with --install --only cc -> 4/4, regression 37/0.
+CARRIED: F-1 done (fourth c7d7e74d); L-1 open; C-3/C-4/C-5 blocked on Michael. Register row for b77 fix confirmed (52b9ca3a).
+DECISION-NEEDED: Michael -- licensing plan section 7; ctxmeter path; audit + caregiver credentials; reassign hover b92 test_965 (still ASSIGNED TO cc in the ledger).
+UNVERIFIED: none new.
+CHANGED: handoff, rt_routes probe doc, report, digest.
+SQL: none.
+EVIDENCE-path: SAIRN-handoff-cc-b78.md, SAIRN-report-cc-b78.txt
+TRANSCRIPT: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\a046cdf7-9eaf-4291-b1ac-b9b8bb34da67.jsonl
+NEXT: nothing cc-actionable; all remaining items wait on Michael or other owners.
+CONTEXT 28.4% of 1,000,000 -- 283,794 tokens, measured.
+END-OF-REPORT
