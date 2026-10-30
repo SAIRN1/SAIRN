@@ -4077,6 +4077,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/stonedesk_presence_fixes_b69.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "3d4ff0400b32749437dc677e1dee075c51feb88f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/push_gate_path_scope_sabotage_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -7274,6 +7282,27 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "6b7c30d2dde6329b6900515eaeb19d9c272e23c4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlegacy_countersign_ui.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6c7a12bc4494cdcb6de1c3578b6408744acfafce",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlegacy_supervisor_picker_b70.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "const h = harness('director', 'ignored');"
+    }
+   ],
+   "sha": "6c7a12bc4494cdcb6de1c3578b6408744acfafce",
    "criteria_version": "2026-10-06.1"
   },
   {
