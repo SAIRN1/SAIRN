@@ -6606,7 +6606,12 @@ module.exports = async (req, res) => {
       if (row && row.shared_knowledge_access) return { ok: true };
       return { ok: false, status: 403, code: 'FORBIDDEN', message: 'This employee does not have shared-knowledge access — ask an Owner or Director to grant it' };
     }
-    if (resource === 'shared_knowledge' && (action === 'read' || action === 'write') && body.app_id === 'sairnlegacy') {
+    // cc b77: keyed on the LICENCE's app, not body.app_id. A legacy staff
+    // member without shared_knowledge_access omitted app_id (or sent another)
+    // and skipped this check. body.app_id is kept as an OR so a caller that
+    // declares legacy is still checked. api/b77-legacy-shared-knowledge-app-id.test.js.
+    if (resource === 'shared_knowledge' && (action === 'read' || action === 'write')
+        && (lic.app_id === 'sairnlegacy' || body.app_id === 'sairnlegacy')) {
       const perm = await legSharedKnowledgePermission();
       if (!perm.ok) { res.status(perm.status).json({ error: { code: perm.code, message: perm.message } }); return; }
     }

@@ -1781,7 +1781,7 @@ async function grdData(action, resource, payload) {
     var res = await fetch('https://sairn.vercel.app/api/sd-data', {
       signal: grdFetchTimeoutSignal(),
       method: 'POST', headers: headers,
-      body: JSON.stringify({ action: action, resource: resource, app_id: APP_ID, payload: payload })
+      body: JSON.stringify({ action: action, resource: resource, payload: payload })
     });
     if (!res.ok) return null;
     var j = await res.json();

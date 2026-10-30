@@ -294,3 +294,17 @@ data inside it. Other `body.app_id` / `p.app_id` reads were not swept: rt_routes
 branch gate verifies the token against `p.app_id` (safe, because a mismatch
 fails verification) and memory's pre-gate still uses `memApp` (its branch
 gate uses the same value, so a mismatch is FORBIDDEN, not 200).
+
+**C7 recurrence (cc b77, 2026-10-30).** The same class was found again by the
+N-3 sweep, on `api/sd-data.js` `shared_knowledge`.
+
+- **What went wrong:** the sairnlegacy staff-permission check ran only when
+  `body.app_id === 'sairnlegacy'`. A staff member without
+  `shared_knowledge_access` omitted `app_id` and was served 200 on read and
+  write.
+- **Fix:** the check now keys on `lic.app_id`, the licence's own app.
+- **Test:** `api/b77-legacy-shared-knowledge-app-id.test.js`. 4 arms were RED
+  before the fix; it is 18/0 after.
+- **The rest of the sweep:** the only other `body.app_id` read is `memApp`.
+  For `memory`, the branch gate verifies the token AGAINST `memApp`, so a
+  mismatch is refused 403. It is safe, so it was not changed.
