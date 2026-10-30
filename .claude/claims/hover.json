@@ -1436,8 +1436,8 @@
       "task": "test965 tier a verdict routing",
       "claimed_at": "2026-10-30T08:40:03Z",
       "claimed_at_epoch": 1793349603.5978034,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-30T08:42:47Z",
       "files": null
     }
   ],
