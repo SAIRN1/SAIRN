@@ -1,0 +1,21 @@
+// cc b78 N-5 probe: rt_routes gating on payload.app_id (p.app_id) -- does a caller-chosen app_id open data?
+process.env.SD_AUTH_SECRET='b78-rt'; process.env.SUPABASE_URL='https://test.supabase.co'; process.env.SUPABASE_SERVICE_ROLE_KEY='k';
+const path=require('path'); const API=path.resolve('api');
+const { signSessionToken } = require(API+'/_lib/auth');
+const HASH='b78-rt-hash';
+async function call(tokenApp, pApp){
+  require.cache[require.resolve(API+'/_lib/license')]={exports:{validateLicenseKey:async()=>({valid:true,active:true,license_hash:HASH,app_id:tokenApp,trial_ends_at:null,customer_email:'x@x.test',stripe_subscription_id:null})}};
+  const calls=[]; global.fetch=async(u,i)=>{u=String(u); const rep=(s,b)=>({ok:s<300,status:s,json:async()=>b,text:async()=>JSON.stringify(b)});
+    if(/_employee_auth\?/.test(u)) return rep(200,[{employee_id:'EMP-1',active:true}]); if(/rt_(routes|stops)/.test(u)) calls.push(u); return rep(200,[]);};
+  delete require.cache[require.resolve(API+'/sd-data.js')]; const h=require(API+'/sd-data.js');
+  const res={statusCode:null,body:null,status(c){this.statusCode=c;return this},json(b){this.body=b;return this},setHeader(){}};
+  const payload={assignee_id:'EMP-1',route_date:'2026-10-30'}; if(pApp!==undefined) payload.app_id=pApp;
+  const o=[console.log,console.warn,console.error]; console.log=console.warn=console.error=()=>{};
+  try{ await h({method:'POST',headers:{authorization:'Bearer K','x-sd-auth':signSessionToken({app:tokenApp,employee_id:'EMP-1',role:'owner',license_hash:HASH})},body:{action:'read',resource:'rt_routes',payload}},res);}
+  finally{[console.log,console.warn,console.error]=o;}
+  return res.statusCode+' '+((res.body&&res.body.error&&res.body.error.code)||'ok')+' rtCalls='+calls.length;
+}
+(async()=>{
+  for (const [t,p] of [['sairngrounds','sairngrounds'],['sairngrounds',undefined],['sairngrounds','stonedesk'],['stonedesk','sairngrounds']])
+    console.log('token '+t+', payload.app_id '+(p||'ABSENT')+' -> '+await call(t,p));
+})();
