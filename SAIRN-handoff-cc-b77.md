@@ -72,3 +72,16 @@ cc does not hold its file:
 | N-2 | Review of the b76 fix (Tier A) | cody | unchanged |
 | N-5 | `payload.app_id` and other request-field-conditioned branches not swept | cc | `grep -n "payload.app_id" api/sd-data.js`, then read each branch |
 | F-1, L-1, C-3..C-5 | carried over | see b74 and b75 | unchanged |
+
+## 3. Addendum at push time
+
+- **sairngrounds.html had to stay declared until its own revert landed.**
+  Removing the declaration in the same push as the revert made the revert
+  FOREIGN to cc, and the path-scope gate refused it.
+  - The revert landed with the declaration kept, at `d689dc59` on origin.
+  - This push then removes it. The manifest diff against HEAD was 3 lines,
+    measured before writing: note amended, entry removed.
+- **Generated docs regenerated with their own tools:** `docs/MASTER-PLAN.md`
+  and `docs/traceability-matrix.md`.
+- **Defect register:** the b77 record re-seats by subject. `defect_register.py
+  --check` reports OK for 807 records.

@@ -5540,6 +5540,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b77-legacy-shared-knowledge-app-id.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "52b9ca3a302b3fad729cbf415a66abad5fc6c050",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_push_timeout_guard_probe.py",
    "class": "test file",
    "level": "WEAKENING",
