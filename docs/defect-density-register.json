@@ -41683,7 +41683,7 @@
       "recurrence_open": "other request-field-conditioned branches outside body.app_id (e.g. payload.app_id) not swept"
     },
     {
-      "commit": "e589f6db6d92",
+      "commit": "cb0b6121029e",
       "date": "2026-10-30",
       "subject": "fix(hank b70 H1y): stored values passed from inline handlers are JS-escaped before HTML-escaping in sairnvet, sairncode, sairnbiz",
       "files": [
@@ -41722,7 +41722,7 @@
       "single_factor_note": "one encoding-context gap repeated across sites"
     },
     {
-      "commit": "e589f6db6d92",
+      "commit": "cb0b6121029e",
       "date": "2026-10-30",
       "subject": "fix(hank b70 H1y): stored values passed from inline handlers are JS-escaped before HTML-escaping in sairnvet, sairncode, sairnbiz",
       "files": [
@@ -41761,7 +41761,7 @@
       "single_factor_note": "one encoding-context gap repeated across sites"
     },
     {
-      "commit": "e589f6db6d92",
+      "commit": "cb0b6121029e",
       "date": "2026-10-30",
       "subject": "fix(hank b70 H1y): stored values passed from inline handlers are JS-escaped before HTML-escaping in sairnvet, sairncode, sairnbiz",
       "files": [
