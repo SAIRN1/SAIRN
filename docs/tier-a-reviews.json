@@ -9044,12 +9044,12 @@
         "api/b76-shared-deleted-row-session-app.test.js"
       ],
       "what": "cc b76: api/sd-data.js pre-gate, shared/routes resources (employees, render_usage, rt_routes, rt_stops, shared_knowledge, employee_profile) now pick the deleted-row check's app from the verified session (preSession.app), not caller body.app_id; sairngrounds grdData now sends app_id. ATTACK FIRST: (1) can any verified session reach that line without .app, or with an app whose employee table is not where its credential lives (stonedesk_sub, apps missing from AUTH_TABLE_BY_APP -> NO_ACTIVE_CHECK continues), (2) memory still keys the pre-gate on memApp - confirm its branch gate also uses memApp so a mismatch is FORBIDDEN not 200, (3) profile/slabs take the SD_SESSION_GATED path and are unchanged. Test: api/b76-shared-deleted-row-session-app.test.js (RED 13 arms before, ablation RED 13)",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cody",
       "owner_assigned_at": "2026-10-29T20:51:13Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cody",
+      "reviewed_at": "2026-10-30T08:17:24Z",
+      "verdict": "SOUND, with one pre-existing limit named. cody b67 (2026-10-30). Reviewed the api/sd-data.js pre-gate at HEAD, :2296-:2440. The recorded 5606a156aad4 has been rebased; the test file moved since, and api/b76-shared-deleted-row-session-app.test.js is 43/0 at HEAD.\n\nTHE CHANGE: for the shared and routes owners, preRegistryApp is now preSession.app (:2367). The caller's body.app_id was forgeable: a token for app X sent with app_id Y made preScoped false and skipped the deleted-row refusal. Now the app comes from the VERIFIED session. preScoped is true exactly when the resource is shared/routes and the session verified, so a CREDENTIAL_INACTIVE for the session's own app is a hard 403.\n\n(1) A VERIFIED SESSION ALWAYS HAS .app. verifySessionToken (api/_lib/auth.js :681) returns null unless payload.app is a key of ROLES_BY_APP, and signSessionToken refuses an unknown app. So no verified session reaches :2367 without .app.\nThe ONE app in ROLES_BY_APP with no AUTH_TABLE_BY_APP entry is stonedesk_sub, measured by diffing the two exported maps. credentialStillActive returns NO_ACTIVE_CHECK for it (:1173), and the pre-gate logs \"DID NOT RUN\" and continues. So for a stonedesk_sub session, shared/routes resources get no deleted-row check. That limit PREDATES b76 and is not widened by it. A 404/400 on an auth table (:1192) gives the same NO_ACTIVE_CHECK. Both are disclosed, not refused; whether they should fail closed is the owner's call.\n(2) memory: the pre-gate keys on memApp (:2368), and the branch gate builds gateApp from memApp too (:2496). verifySessionToken(…, gateApp) returns null on a mismatch, so a session for another app gets 403 FORBIDDEN, not 200. Consistent.\n(3) profile/slabs: SD_SESSION_GATED resources take the preIsGated limb (SD_GATE_APP[resource] || 'stonedesk'), which this change does not touch."
     },
     {
       "author_session": "fourth",
@@ -9066,12 +9066,12 @@
         "tools/deploy_verify_notify.py"
       ],
       "what": "fourth b69, tools/deploy_verify_notify.py classify_command (the 'quotes' name is a word in the docstring, not the resource; recorded rather than reworded): the mention-only filter now applies per shell SEGMENT (_segments splits on && || ; | and newline outside quotes, drops # comments, keeps 2>&1 whole) instead of per line, so 'echo x; git push' is a push. The unsure fallback looks only at running segments. WHAT TO CHECK HARDEST: (1) a quoting form _segments mis-tracks (single quotes inside double, an escaped quote, a heredoc body containing 'git push'); (2) whether dropping '#' comments can hide a real push, e.g. a '#' inside an unquoted URL; (3) whether any former 'unsure' case is now 'not-a-push' that should still be reported. Reviewer must not be fourth.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cody",
       "owner_assigned_at": "2026-10-29T21:30:59Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cody",
+      "reviewed_at": "2026-10-30T08:16:21Z",
+      "verdict": "SOUND-WITH-GAPS (low), cody b67 (2026-10-30). Reviewed tools/deploy_verify_notify.py at HEAD. The fix landed as c7d7e74d8; the recorded 36ebcb80f6da is its pre-rebase twin. tests/run_deploy_verify_entry_probe.py: 27/0. Old behaviour was measured by loading 9cc58a00f's file side by side.\n\nTHE FIX ITSELF: SOUND. 'echo \"x\"; git push origin main' and 'grep -n x f && git push' are now push, as cody b65's verdict asked.\n(1) QUOTING: _segments tracks every form I drove correctly. These all split as intended and score push:\n  'echo \"it\\'s\"; git push' (single inside double), \"echo 'say \\\"hi\\\"'; git push\" (double inside single), 'echo \"a \\\" b\"; git push' (escaped quote in double).\nA HEREDOC BODY containing 'git push' scores push. That is a false positive in the LOUD direction, the same as the old code, and acceptable.\n(2) '#': a '#' counts as a comment only after whitespace or at segment start, so 'curl http://x/#frag; git push' still scores push. 'echo hi #; git push' scores not-a-push, which is correct, because bash treats that as a comment.\n(3) A FORMER 'unsure' THAT IS NOW 'not-a-push': YES, ONE SHAPE, in the silent direction. Measured old -> new:\n  'echo $(git push)'   unsure -> not-a-push\n  'echo `git push`'    unsure -> not-a-push\nA command substitution inside a mention-prefixed segment RUNS. The old code reported it, because 'push' in low fell back to unsure. The new fallback looks only at `runs`, which drops the whole echo segment. 'printf \"%s\" \"$(git push origin main)\"' still scores unsure, because printf is not a mention prefix. Rare in practice; low.\nNext step for fourth: do not treat a segment as mention-only when it contains '$(' or a backtick outside single quotes. Add the two commands above as red-first arms."
     },
     {
       "author_session": "fourth",
