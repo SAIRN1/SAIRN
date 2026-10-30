@@ -4629,8 +4629,8 @@
       "task": "shot start interleave cc b76 F1",
       "claimed_at": "2026-10-30T08:56:49Z",
       "claimed_at_epoch": 1793350609.5181363,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-30T08:56:55Z",
       "files": null
     }
   ],
