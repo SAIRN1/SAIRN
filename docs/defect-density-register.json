@@ -42280,7 +42280,7 @@
       "recurrence_open": "Any new inline save written without a hold reintroduces it; the checker reports it but is not a gate."
     },
     {
-      "commit": "cd5b8307056a",
+      "commit": "1b61250b2e9d",
       "date": "2026-10-30",
       "subject": "fix(sairnlegacy api, hank b73 LGP L2a): an invoice is Paid only when its payments cover its line items",
       "files": [
