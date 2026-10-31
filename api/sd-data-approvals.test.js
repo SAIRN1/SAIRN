@@ -84,7 +84,9 @@ const GOOD = {
   signed_date: '2026-09-02',
   total_amount: 12400,
   deposit_amount: 6200,
-  signature_png: 'data:image/png;base64,AAAA'
+  // A real 1x1 PNG (hank b73). 'AAAA' was the fixture until the server began
+  // refusing a signature that is not a PNG -- the T1b defect, used as the GOOD row.
+  signature_png: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk'
 };
 
 async function main() {
@@ -105,6 +107,30 @@ async function main() {
     const res = mockRes();
     await handler(mockReq('read', {}), res);
     assert.strictEqual(res.statusCode, 403);
+  });
+
+  // -- a "Signed" row with no signature, or a "paid" one with no payment ----
+  // hank b73, cc b56 stress T1a/T1b/T1d: each of these was stored 200.
+  for (const [label, sig] of [['no signature at all', null], ['an empty string', ''],
+                              ['bytes that are not a PNG', 'data:image/png;base64,AAAA'],
+                              ['a JPEG data URL', 'data:image/jpeg;base64,/9j/4AAQ'],
+                              ['base64 with a stray character', 'data:image/png;base64,iVBOR*w0KGgo']]) {
+    await test('a signature that is ' + label + ' is refused NO_SIGNATURE, and nothing is written', async () => {
+      const { handler, calls } = loadHandler({});
+      const res = mockRes();
+      await handler(mockReq('write', Object.assign({}, GOOD, { signature_png: sig })), res);
+      assert.strictEqual(res.statusCode, 400);
+      assert.strictEqual(res.body.error.code, 'NO_SIGNATURE');
+      assert.strictEqual(calls.filter(c => c.method === 'POST').length, 0, 'it wrote anyway');
+    });
+  }
+  await test('a new approval sent as deposit_status "paid" is refused, and nothing is written', async () => {
+    const { handler, calls } = loadHandler({});
+    const res = mockRes();
+    await handler(mockReq('write', Object.assign({}, GOOD, { deposit_status: 'paid' })), res);
+    assert.strictEqual(res.statusCode, 400);
+    assert.strictEqual(res.body.error.code, 'BAD_DEPOSIT_STATUS');
+    assert.strictEqual(calls.filter(c => c.method === 'POST').length, 0, 'it wrote anyway');
   });
 
   // -- the $0 signature -----------------------------------------------------

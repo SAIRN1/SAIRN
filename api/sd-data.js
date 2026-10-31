@@ -3881,6 +3881,40 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: { code: 'BAD_DEPOSIT', message: 'deposit_amount must be between 0 and the total' } });
         return;
       }
+      // ── A SIGNED APPROVAL CARRIES A SIGNATURE (hank b73, cc b56 T1a/T1b) ──
+      // The approvals list shows every stored row as "Signed <date>". A row
+      // with no image, or with bytes that are not a PNG, was stored 200 and
+      // listed as signed. Required: a PNG data URL whose bytes decode and
+      // begin with the PNG signature and an IHDR of non-zero size. A BLANK
+      // canvas is still a valid PNG and is NOT caught here -- stated, not
+      // claimed.
+      const sig = p.signature_png == null ? '' : String(p.signature_png);
+      const SIG_PREFIX = 'data:image/png;base64,';
+      let sigOk = false;
+      if (sig.indexOf(SIG_PREFIX) === 0) {
+        const b64 = sig.slice(SIG_PREFIX.length);
+        if (/^[A-Za-z0-9+/]+={0,2}$/.test(b64)) {
+          const buf = Buffer.from(b64, 'base64');
+          sigOk = buf.length > 33
+            && buf.slice(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+            && buf.slice(12, 16).toString('latin1') === 'IHDR'
+            && buf.readUInt32BE(16) > 0 && buf.readUInt32BE(20) > 0;
+        }
+      }
+      if (!sigOk) {
+        res.status(400).json({ error: { code: 'NO_SIGNATURE', message: 'signature_png must be a PNG image of the customer\'s signature -- an approval with no signature is not a signed approval' } });
+        return;
+      }
+      // ── THE DEPOSIT IS PENDING WHEN THE CUSTOMER SIGNS (hank b73, T1d) ────
+      // deposit_status was taken verbatim from the body, so a client could
+      // file an approval as "paid" with no payment anywhere, and the list
+      // showed it. Nothing legitimate sends any other value on this create
+      // path (stonedesk.html sends 'pending'), so anything else is refused
+      // rather than silently rewritten.
+      if (p.deposit_status != null && p.deposit_status !== '' && String(p.deposit_status) !== 'pending') {
+        res.status(400).json({ error: { code: 'BAD_DEPOSIT_STATUS', message: 'a new approval\'s deposit_status is pending -- a payment is recorded by the payment, not by the approval' } });
+        return;
+      }
       // NO SEPARATE SIGNATURE SIZE CHECK HERE, DELIBERATELY. One was written
       // (200KB) and it was DEAD CODE: this handler already refuses any write
       // over the per-resource cap near the top of the file, which for

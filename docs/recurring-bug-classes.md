@@ -148,3 +148,9 @@ Sources: index row `B69-REENTRY-14-CODY-2026-10-30` (found by `tools/reentry_hol
 | 6 | `tests/sd_data_write_attribution_three_apps.js` red on correct code | coding | test currency | **due to** arms pinned to the RETIRED blob form after `d7773533f` moved the stamp to columns; a source-string arm (D3) outlived the code it matched | `e514c26af` |
 
 **5 of the 14 checker candidates were NOT re-entrant.** `addProcedureType`, `saveGfe`, `msbCheckout`, `generateAftercareSchedule` and `sdLocAdd` each empty their source, refuse an existing row, or prompt for input before the wait. **And the harness itself would have hidden that:** `H.drive` refills the form before every press, so it reports a duplicate a real double press cannot make. Every b70 fix was proven by a NO-REFILL double press, and scape and senior carry it as a permanent arm.
+
+## 2026-10-30 — batch 73 (hank)
+
+| # | Defect | Phase | Sub-phase | Cause | Commit |
+|---|---|---|---|---|---|
+| 1 | `api/sd-data.js` sd_approvals stored a "Signed" approval with no signature or a non-PNG one, and took `deposit_status` ("paid") from the body (cc b56 stress T1a/T1b/T1d) | requirement | evidence definition | **due to** the branch validating the price (NO_TOTAL) but not the two fields that make the row evidence: the signature and the payment state; the suite's own GOOD fixture was the undecodable `AAAA` | this batch |
