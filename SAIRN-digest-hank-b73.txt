@@ -1,0 +1,15 @@
+HANK b73 DIGEST -- 2026-10-30 -- M5 PASS live on LAW-AUDIT-0002 (API); SDP closed; LGP L2a fixed; DC civil blocked on Rule 6
+CONTEXT 76.4% of 1,000,000 -- 764,440 tokens, measured.
+STATUS: work landed 92adeaa97.
+1. M5L 2-4: LAW-AUDIT-0002 owner bootstrapped; trust rows written; reconcile PARTIAL with the 91-day stale deposit listed. PASS.
+2. M5L 5 (panel): NOT done. I will not enter a PIN into a production sign-in form. Michael signs in (handoff 1).
+3. J6C DC civil: orders hashed; Rule 6 amended in 2022 and 2024, so nothing seeded under "provably unamended". Doc self-named (classifier refused the named path).
+4. SDP: sd_approvals now requires a real PNG signature and a pending deposit (a7724adf5). 29/29; probe 22/0.
+5. LGP: L2a Paid needs payments >= line items (1b61250b2). L1 needs a decision; L3a not reached.
+DECISION-NEEDED (Michael): M5L-5 sign-in; move the PIN to a password manager; DC current Rule 6 as standard?; L1 which cremation checks gate Completed.
+NEXT (hank): L3a; then item 7 in priority order.
+CARRIED: J5, J4, J2, A1, P1, R1, G1, S5, S7, T1, M5r, RL1, LE1, HK1, H1z; T-1734S, T-L2a reviews.
+CHANGED: api/sd-data.js (+2 suites), DC blockers doc, register, tier-a-reviews, bug classes.
+SQL-path: none new.
+EVIDENCE-path: SAIRN-handoff-hank-b73.md
+UNVERIFIED: the live Trust Accounting render (needs Michael's sign-in).

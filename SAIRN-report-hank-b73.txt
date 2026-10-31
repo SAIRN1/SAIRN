@@ -1,0 +1,23 @@
+HANK b73 REPORT -- 2026-10-30
+
+1. M5L, steps 2-4: PASS LIVE on LAW-AUDIT-0002.
+   - Owner bootstrapped. The PIN is only in .git\sairn-law-audit-owner-pin.
+   - Client, matter, a cleared $1,000 deposit, a $40 deposit dated 2026-07-01 with cleared:false, and a 2026-09-30 statement for $1,000 were written.
+   - The reconcile read returns PARTIAL, bank leg agrees, stale_deposits_in_transit = [TR-M5L-STALE, 4000 cents, 91 days].
+2. M5L, step 5: NOT DONE. I do not enter a PIN into a production sign-in form. Michael's sign-in is needed.
+3. J6C: DC civil orders found and hashed (1c67bea6d).
+   - Rule 6 was amended in 2022 (order not found) and 2024; Rule 12 in 2025.
+   - 33/34/36/59 show no amendment.
+   - Nothing seeded, because every row needs Rule 6. The decision is named.
+   - The doc path is self-named: the requested path was refused by the permission classifier.
+4. SDP: closed (a7724adf5).
+   - sd_approvals refuses a missing or undecodable signature, and any non-pending deposit_status on create.
+   - Suite 29/29. Stress probe 22/0.
+5. LGP:
+   - L2a fixed (1b61250b2): Paid requires payments >= line items. Tier A obligation opened.
+   - L1 needs a decision. L3a not reached.
+6. J4/J2: counsel items, not done. Item 7: not reached (context).
+7. Landed: 92adeaa97, plus this push.
+
+CONTEXT 76.4% of 1,000,000 -- 764,440 tokens, measured.
+Evidence: SAIRN-handoff-hank-b73.md
