@@ -41637,43 +41637,6 @@
       "recurrence_open": "Any other could-not-tell code added to the server later must be added to the kept list too; nothing enforces that."
     },
     {
-      "commit": "a7724adf5785",
-      "date": "2026-10-30",
-      "subject": "fix(stonedesk api, hank b73 SDP): a signed approval must carry a PNG signature, and a new approval's deposit is pending",
-      "files": [
-        "api/sd-data-approvals.test.js",
-        "api/sd-data.js",
-        "docs/recurring-bug-classes.md"
-      ],
-      "lines_added": 67,
-      "lines_removed": 1,
-      "app": "stonedesk",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "probe-control",
-      "summary": "api/sd-data.js sd_approvals stored an approval with no signature_png, with an undecodable one (AAAA, which was also the suite GOOD fixture), or with deposit_status paid sent by the client and no payment anywhere; each was listed as Signed / paid (cc b56 stress T1a/T1b/T1d). Now 400 NO_SIGNATURE unless the signature decodes to a PNG with a non-zero IHDR, and 400 BAD_DEPOSIT_STATUS for any deposit_status other than pending on create. api/sd-data-approvals.test.js 29/29; stress probe 22 PASS / 0 FAIL.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": "tools/stonedesk_presence_stress.py",
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "the sd_approvals write branch has stored signature_png and deposit_status verbatim since it was written; not traced to one commit"
-      },
-      "citation_note": "No standing rule requires a record that is shown as evidence (Signed, paid) to carry the fields that make it evidence; proposed: validate the evidentiary fields, not only the price.",
-      "contributing_factors": [
-        {
-          "factor": "The branch validated the price but not the signature and payment state that make the row evidence",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "refuse an undecodable or missing signature and any non-pending deposit_status on create"
-        }
-      ],
-      "recurrence_open": "A blank-canvas PNG still passes; other apps approval/sign-off paths were not swept for the same shape.",
-      "single_factor_note": "one missing boundary check"
-    },
-    {
       "commit": "1406e46f7c9f",
       "date": "2026-10-30",
       "subject": "fix(hank b70 H1y): stored values passed from inline handlers are JS-escaped before HTML-escaping in sairnvet, sairncode, sairnbiz",
@@ -42238,6 +42201,43 @@
       "single_factor_note": "one missing boundary check"
     },
     {
+      "commit": "a7724adf5785",
+      "date": "2026-10-30",
+      "subject": "fix(stonedesk api, hank b73 SDP): a signed approval must carry a PNG signature, and a new approval's deposit is pending",
+      "files": [
+        "api/sd-data-approvals.test.js",
+        "api/sd-data.js",
+        "docs/recurring-bug-classes.md"
+      ],
+      "lines_added": 67,
+      "lines_removed": 1,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "probe-control",
+      "summary": "api/sd-data.js sd_approvals stored an approval with no signature_png, with an undecodable one (AAAA, which was also the suite GOOD fixture), or with deposit_status paid sent by the client and no payment anywhere; each was listed as Signed / paid (cc b56 stress T1a/T1b/T1d). Now 400 NO_SIGNATURE unless the signature decodes to a PNG with a non-zero IHDR, and 400 BAD_DEPOSIT_STATUS for any deposit_status other than pending on create. api/sd-data-approvals.test.js 29/29; stress probe 22 PASS / 0 FAIL.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/stonedesk_presence_stress.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the sd_approvals write branch has stored signature_png and deposit_status verbatim since it was written; not traced to one commit"
+      },
+      "citation_note": "No standing rule requires a record that is shown as evidence (Signed, paid) to carry the fields that make it evidence; proposed: validate the evidentiary fields, not only the price.",
+      "contributing_factors": [
+        {
+          "factor": "The branch validated the price but not the signature and payment state that make the row evidence",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "refuse an undecodable or missing signature and any non-pending deposit_status on create"
+        }
+      ],
+      "recurrence_open": "A blank-canvas PNG still passes; other apps approval/sign-off paths were not swept for the same shape.",
+      "single_factor_note": "one missing boundary check"
+    },
+    {
       "commit": "bb2a99a20d47",
       "date": "2026-10-30",
       "subject": "fix(stonedesk, cody b70): intakeAccept and sdAIQGenerate hold while they wait (B69-REENTRY-14)",
@@ -42278,6 +42278,44 @@
         }
       ],
       "recurrence_open": "Any new inline save written without a hold reintroduces it; the checker reports it but is not a gate."
+    },
+    {
+      "commit": "cd5b8307056a",
+      "date": "2026-10-30",
+      "subject": "fix(sairnlegacy api, hank b73 LGP L2a): an invoice is Paid only when its payments cover its line items",
+      "files": [
+        "api/b72-leg-id-format.test.js",
+        "api/sd-data.js",
+        "docs/recurring-bug-classes.md",
+        "docs/tier-a-reviews.json"
+      ],
+      "lines_added": 52,
+      "lines_removed": 0,
+      "app": "sairnlegacy",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "probe-control",
+      "summary": "api/sd-data.js stored a leg_invoices status as sent, so a $5,000 invoice with no payment was filed Paid, badged Paid and dropped from the open count (cc b58 stress L2a). The server now refuses 409 INVOICE_NOT_PAID when payments sum below line_items sum, the same two sums sairnlegacy.html invoiceTotal/invoicePaid use. Arms P1-P4; stress L2a PASS.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/sairnlegacy_presence_stress.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the generic LEG_RESOURCES write branch has stored every status as sent since it was written; not traced to one commit"
+      },
+      "citation_note": "No standing rule requires a server to re-derive a status the client derives; proposed: a status that is a function of stored sums is computed or checked at the boundary.",
+      "contributing_factors": [
+        {
+          "factor": "A client-derived status was accepted as a fact at the server boundary",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the server re-derives Paid from payments and line items"
+        }
+      ],
+      "recurrence_open": "Other client-derived statuses on generic write branches (other apps invoices, Partial on leg_invoices) are still stored as sent.",
+      "single_factor_note": "one missing boundary check"
     },
     {
       "commit": "e22c9cd0bf83",
