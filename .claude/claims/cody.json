@@ -4651,8 +4651,8 @@
       "task": "B69-REENTRY-14 re-entrant save fixes six apps",
       "claimed_at": "2026-10-30T23:45:21Z",
       "claimed_at_epoch": 1793403921.0516868,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-31T00:02:50Z",
       "files": null
     }
   ],
