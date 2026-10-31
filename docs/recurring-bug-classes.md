@@ -140,11 +140,11 @@ Sources: index row `B69-REENTRY-14-CODY-2026-10-30` (found by `tools/reentry_hol
 
 | # | Defect | Phase | Sub-phase | Cause | Commit |
 |---|---|---|---|---|---|
-| 1 | sairngrounds `sendDesignToQuote`, `grdUploadProgressPhoto` | coding | concurrency | **due to** a new record per press with the trigger live across the await (b64's shape) | `e66f76a4c` |
-| 2 | sairnscape `scpSendDesignToQuote`, `scpSendIrrZoneToQuote`, `scpSendWfToQuote`, `scpUploadProgressPhoto` | coding | concurrency | **due to** the same shape; these are the scape twins of the grounds handlers b64 fixed, and b64's fix never propagated | `d774f638e` |
-| 3 | sairnsenior `generateClaim` | coding | concurrency | **due to** no already-claimed refusal; the row's removal before the await was the only guard, and it fails when `st()` fails | `1fce1093b` |
-| 4 | stonedesk `intakeAccept`, `sdAIQGenerate` | coding | concurrency | **due to** the same shape | `8aa91198f` |
-| 5 | sairnvet and sairnmechanical had no licence re-key guard | process | sweep population | **due to** the 2026-09-03 sweep enumerating the apps that existed then; apps built later never joined its list | `a37421206` |
-| 6 | `tests/sd_data_write_attribution_three_apps.js` red on correct code | coding | test currency | **due to** arms pinned to the RETIRED blob form after `d7773533f` moved the stamp to columns; a source-string arm (D3) outlived the code it matched | `5fdb7c855` |
+| 1 | sairngrounds `sendDesignToQuote`, `grdUploadProgressPhoto` | coding | concurrency | **due to** a new record per press with the trigger live across the await (b64's shape) | `414794471` |
+| 2 | sairnscape `scpSendDesignToQuote`, `scpSendIrrZoneToQuote`, `scpSendWfToQuote`, `scpUploadProgressPhoto` | coding | concurrency | **due to** the same shape; these are the scape twins of the grounds handlers b64 fixed, and b64's fix never propagated | `3a133ef2f` |
+| 3 | sairnsenior `generateClaim` | coding | concurrency | **due to** no already-claimed refusal; the row's removal before the await was the only guard, and it fails when `st()` fails | `fb10f57f3` |
+| 4 | stonedesk `intakeAccept`, `sdAIQGenerate` | coding | concurrency | **due to** the same shape | `bb2a99a20` |
+| 5 | sairnvet and sairnmechanical had no licence re-key guard | process | sweep population | **due to** the 2026-09-03 sweep enumerating the apps that existed then; apps built later never joined its list | `3cbfa6d2d` |
+| 6 | `tests/sd_data_write_attribution_three_apps.js` red on correct code | coding | test currency | **due to** arms pinned to the RETIRED blob form after `d7773533f` moved the stamp to columns; a source-string arm (D3) outlived the code it matched | `e514c26af` |
 
 **5 of the 14 checker candidates were NOT re-entrant.** `addProcedureType`, `saveGfe`, `msbCheckout`, `generateAftercareSchedule` and `sdLocAdd` each empty their source, refuse an existing row, or prompt for input before the wait. **And the harness itself would have hidden that:** `H.drive` refills the form before every press, so it reports a duplicate a real double press cannot make. Every b70 fix was proven by a NO-REFILL double press, and scape and senior carry it as a permanent arm.

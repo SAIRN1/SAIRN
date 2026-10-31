@@ -3823,6 +3823,35 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairnscape_outbound_queue_review_probe.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "3a133ef2ff6644e793fc8a597b4706b85123f57d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnscape_save_reentry.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "const AI_REFUSED = { json: () => Promise.resolve({ error: { message: 'rate limit"
+    }
+   ],
+   "sha": "3a133ef2ff6644e793fc8a597b4706b85123f57d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnscape_send_button_and_licence.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "3a133ef2ff6644e793fc8a597b4706b85123f57d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_dup_dom_ids_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -3928,6 +3957,22 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "3c739d040165ea2f0cdc97257b2379550191d917",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/licence_guard_legacy_device.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "3cbfa6d2d82fb34f2412981578e92d10fea38cf3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/licence_rekey_isolation.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "3cbfa6d2d82fb34f2412981578e92d10fea38cf3",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -4412,6 +4457,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "41130c84682e72a6ab25266be7c7ff203b8b6dad",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairngrounds_save_reentry.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "41479447154a88be54c43cf104cf48434e57e7bf",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -12764,6 +12817,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/intake_no_false_success.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bb2a99a20d47a9c4c6a3ab0dc7ae99d24faacbfd",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/stonedesk_save_reentry.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bb2a99a20d47a9c4c6a3ab0dc7ae99d24faacbfd",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sairngrounds_save_reentry.js",
    "class": "test file",
    "level": "CHANGE",
@@ -15644,6 +15713,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sd_data_write_attribution_three_apps.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "e514c26afc990c00d5730064f48110c36cc7c9f0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/sairn_push_gate_hook.py",
    "class": "push-gate logic",
    "level": "WEAKENING",
@@ -17369,6 +17446,30 @@
     }
    ],
    "sha": "faf6fe26a3145beca9fd1807227103c331971d17",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnsenior_contract_auth_save.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "fb10f57f3653873e435970b1ed3308b30c4d5031",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnsenior_negative_hours_claim.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "fb10f57f3653873e435970b1ed3308b30c4d5031",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnsenior_save_reentry.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "fb10f57f3653873e435970b1ed3308b30c4d5031",
    "criteria_version": "2026-10-06.1"
   },
   {
