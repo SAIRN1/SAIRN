@@ -41637,7 +41637,7 @@
       "recurrence_open": "Any other could-not-tell code added to the server later must be added to the kept list too; nothing enforces that."
     },
     {
-      "commit": "107b3d113a33",
+      "commit": "a7724adf5785",
       "date": "2026-10-30",
       "subject": "fix(stonedesk api, hank b73 SDP): a signed approval must carry a PNG signature, and a new approval's deposit is pending",
       "files": [
