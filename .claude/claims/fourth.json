@@ -5062,6 +5062,19 @@
         "stonedesk.html",
         "tests/stonedesk_presence_fixes_b69.js"
       ]
+    },
+    {
+      "id": "fourth-1793405691",
+      "session": "fourth",
+      "subject": "sairnlegacy",
+      "task": "b72 L3 tier-a record and index rows FILES: docs/tier-a-reviews.json",
+      "claimed_at": "2026-10-31T00:14:51Z",
+      "claimed_at_epoch": 1793405691.0375977,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/tier-a-reviews.json"
+      ]
     }
   ],
   "refusals": [
