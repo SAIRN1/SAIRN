@@ -41794,7 +41794,7 @@
       "single_factor_note": "one wrong invariant"
     },
     {
-      "commit": "1fce1093bc80",
+      "commit": "fb10f57f3653",
       "date": "2026-10-30",
       "subject": "fix(sairnsenior, cody b70): generateClaim holds while its claim write is pending (B69-REENTRY-14)",
       "files": [
@@ -42116,7 +42116,7 @@
       "single_factor_note": "one missing boundary check"
     },
     {
-      "commit": "8aa91198f96d",
+      "commit": "bb2a99a20d47",
       "date": "2026-10-30",
       "subject": "fix(stonedesk, cody b70): intakeAccept and sdAIQGenerate hold while they wait (B69-REENTRY-14)",
       "files": [
@@ -42158,7 +42158,7 @@
       "recurrence_open": "Any new inline save written without a hold reintroduces it; the checker reports it but is not a gate."
     },
     {
-      "commit": "a37421206caf",
+      "commit": "3cbfa6d2d82f",
       "date": "2026-10-30",
       "subject": "feat(sairnvet, sairnmechanical, cody b70): the licence re-key guard, for the two apps that stored a licence key beside local data with none",
       "files": [
@@ -42202,7 +42202,7 @@
       "recurrence_open": "A new app that stores its key under a name the re-key suite's matcher does not know is invisible to the every-app-listed arm."
     },
     {
-      "commit": "d774f638ed30",
+      "commit": "3a133ef2ff66",
       "date": "2026-10-30",
       "subject": "fix(sairnscape, cody b70): four save handlers hold while they wait (B69-REENTRY-14)",
       "files": [
@@ -42301,7 +42301,7 @@
       "recurrence_open": "Any other client-side identity comparison against the licence key (e.g. per-licence cache keys) may share the case mismatch; not swept."
     },
     {
-      "commit": "e66f76a4c083",
+      "commit": "41479447154a",
       "date": "2026-10-30",
       "subject": "fix(sairngrounds, cody b70): sendDesignToQuote and grdUploadProgressPhoto hold while they wait (B69-REENTRY-14)",
       "files": [
