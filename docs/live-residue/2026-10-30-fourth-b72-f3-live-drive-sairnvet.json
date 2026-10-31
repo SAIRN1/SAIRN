@@ -1,0 +1,57 @@
+{
+ "at": "2026-10-31T00:16:46.122161+00:00",
+ "app": "sairnvet",
+ "licence": "SV-PINNACLE-2026",
+ "license_hash": "25413f81bcd80cce36e57a0d72c6547e5368a3f84a2aee2bf34bd90af533c740",
+ "own_app_login": {
+  "endpoint": "sv-auth",
+  "employee_id": "sairn-demo-owner",
+  "http": 200,
+  "code": "",
+  "session": true,
+  "role": "owner"
+ },
+ "arms": [
+  {
+   "arm": "P1 empty-F3 shape (supervisor named)",
+   "http": 401,
+   "code": "NO_SESSION",
+   "token_minted": false,
+   "result": "PASS (refused, nothing minted)"
+  },
+  {
+   "arm": "P4 no supervisor",
+   "http": 401,
+   "code": "NO_SESSION",
+   "token_minted": false,
+   "result": "PASS (refused, nothing minted)"
+  },
+  {
+   "arm": "P8 supervisor named (the shape that mints on SAIRNlegacy)",
+   "http": 401,
+   "code": "NO_SESSION",
+   "token_minted": false,
+   "result": "PASS (refused, nothing minted)"
+  }
+ ],
+ "what_this_is": "F3 (apprentice cremation countersign) exists ONLY on /api/leg-countersign for SAIRNlegacy. This is the P1/P4/P8 methodology driven CROSS-APP: the same three prepare calls sent with this app's licence and, where the given credential signed in, this app's own session. Every arm must be refused with nothing minted, and the SAIRNlegacy countersign/settings tables must hold nothing under this licence.",
+ "db_residue_after": {
+  "sairnlegacy_countersign_tokens": 0,
+  "live_unspent_tokens": 0,
+  "sairnlegacy_settings_rows": 0,
+  "sairnlegacy_employee_auth_rows": 0,
+  "measured": "read-only SQL, project ejrlrrkvhtllxbbypdjb, 2026-10-30, after the drive"
+ },
+ "declinability": {
+  "suite": "tests/sairnlegacy_declinability.js",
+  "result": "31 passed, 0 failed",
+  "applies_to_this_app": false,
+  "measured_constructs_in_sairnvet.html": {
+   "legComposeStatement": 0,
+   "nonDeclinable": 0,
+   "General Price List": 0,
+   "453\\.2": 0
+  },
+  "note": "The suite reads sairnlegacy.html only. This app has no GPL statement composer, so there is nothing app-by-app for it to run against; the measured construct counts above are the evidence."
+ }
+}

@@ -9251,6 +9251,29 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-10-31T00:16:00Z",
+      "opened_at_sha": "b9e85ee5777ad521057ff23b66163a577b5266d2",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 5,
+      "resources": [
+        "leg_gplservices",
+        "leg_invoices"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "docs/CRITICALITY-TIERS.md"
+      ],
+      "what": "fourth b72, Michael's b72 item 5 -- the L3 (cc b58 presence stress) STATUS on leg_gplservices / leg_invoices, recorded here rather than report-only. Change under review: 6c7a12bc4 (sairnlegacy.html: saveGplServicePrice stores a blank price as null; GPL modal 'Not priced'; legComposeStatement refuses a NEGATIVE selected line). MEASURED at HEAD 1af12510508c by python tools/sairnlegacy_presence_stress.py: L3a FAIL -- BY DESIGN (input is a literal stored 0; tests/sairnlegacy_declinability.js C2 protects a real 0 as a price; legacy rows saved as 0 from a blank cannot be told apart); L3b PASS (+5000/-5000 refused, PRICE_NEGATIVE); L3e PASS (blank price refused, PRICE_NOT_ON_FILE); L3c CONTROL-OK. tests/sairnlegacy_declinability.js 31/0. WHAT TO CHECK HARDEST: (1) whether C2's 'a real 0 is a price' should stand for a funeral GPL at all (FTC Funeral Rule) -- if not, L3a becomes a real FAIL; (2) the negative refusal blocks a legitimate discount line -- is there one in practice? Reviewer must not be fourth.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-31T00:16:00Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
