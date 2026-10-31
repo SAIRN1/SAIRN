@@ -18,8 +18,8 @@ the next handler written in the old shape is reported rather than rediscovered.
 
 -- THE PREDICATE, with its span (disciplines section 35) --------------------
 UNIVERSE: every function in a top-level *.html that an inline event attribute
-(on<event>="NAME(") in the same file calls, and that is declared as
-`async function NAME(` or `NAME = async function (`.
+(on<event>="NAME(") in the same file calls -- async or plain (.5: a plain
+function's wait is its first `.then(`).
 SPAN: the function body, from its `{` to the matching `}`, with braces inside
 strings, template literals and comments skipped.
   A = the first real `await` in the body (not one inside a string or comment).
@@ -38,7 +38,6 @@ VERDICT per function:
   COULD-NOT-PARSE  the body's braces do not balance   <- never folded into clean
 
 -- WHAT IT DOES NOT SEE, said so a clean run is not read as more ----------
-  * .then()-style handlers with no `await` (b64's .then saves were read by hand)
   * addEventListener / delegated handlers with no inline on<event> attribute
   * the TIMER-RESET shape (stonedesk posCompleteSale's 2.5 s window, b65): no
     await at all, so no predicate here can reach it
@@ -51,7 +50,7 @@ import os
 import re
 import sys
 
-CRITERIA_VERSION = '2026-10-30.cody-b69.4'   # .4: disabled-button hold, named dismissals, creation required
+CRITERIA_VERSION = '2026-10-30.cody-b70.5'   # .5: .then handlers, object-literal pushes, applied-amount assignment
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HOLD_HELPERS = ('scHoldWhile', 'scSaveBusy')
 WRITE_RE = re.compile(r"(?<![\w$])st\(|localStorage\.setItem\(|\.push\(|\.unshift\(")
@@ -61,12 +60,19 @@ DISMISS_RE = re.compile(r"[\w$]*(?:[cC]lose|[hH]ide)\w*\(|\.style\.display\s*=\s
 # A NEW record per press, or an amount applied per press. An update of an
 # existing row by its own id writes the same thing twice, which is not b64's
 # duplicate. (b64's real ones: newId()/Date.now() ids, amount_paid applied twice.)
-CREATES_RE = re.compile(r"newId\(|Date\.now\(\)|\+=\s*[\w$(]")
+# .5 (cody b70, from b64's recall misses): a new object pushed as a literal, and
+# an amount applied as x = (Number(x)||0) + a -- confirmPayment's amount_paid.
+CREATES_RE = re.compile(r"newId\(|Date\.now\(\)|\+=\s*[\w$(]|\.(?:push|unshift)\(\s*\{"
+                        r"|=\s*\(\s*(?:Number|parseFloat)\([^()]*\)\s*\|\|\s*0\s*\)\s*\+")
 DISABLED_RE = re.compile(r"\.disabled\s*=\s*true\b")
 DATA_WRITE_RE = re.compile(r"[A-Za-z]Data\(\s*['\"]write['\"]")
 INLINE_RE = re.compile(r"""\bon[a-z]+\s*=\s*["']\s*(?:return\s+)?(?:window\.)?([A-Za-z_$][\w$]*)\s*\(""")
 DECL_RES = (re.compile(r'async\s+function\s+([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*\{'),
-            re.compile(r'(?:window\.)?([A-Za-z_$][\w$]*)\s*=\s*async\s+function\s*[\w$]*\s*\([^)]*\)\s*\{'))
+            re.compile(r'(?:window\.)?([A-Za-z_$][\w$]*)\s*=\s*async\s+function\s*[\w$]*\s*\([^)]*\)\s*\{'),
+            # .5: a PLAIN function is in the universe too; with no `await` its
+            # wait is the first `.then(` (b64's mechCredAdd / alfFamilySave shape).
+            re.compile(r'(?<![\w$.])function\s+([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*\{'),
+            re.compile(r'(?:window\.)?([A-Za-z_$][\w$]*)\s*=\s*function\s*[\w$]*\s*\([^)]*\)\s*\{'))
 
 
 REGEX_PREV = set('(,=:[!&|?{};+-*%<>~^')
@@ -154,9 +160,9 @@ def classify(raw_body):
     m = mask(raw_body)
     if m is None or body_span(m, 0) is None or body_span(m, 0)[1] != len(m):
         return 'COULD-NOT-PARSE', ''
-    a = re.search(r'(?<![\w$])await\b', m)
+    a = re.search(r'(?<![\w$])await\b', m) or re.search(r'\.then\s*\(', m)
     if not a:
-        return 'NOT-SUBJECT', 'no await'
+        return 'NOT-SUBJECT', 'no await and no .then('
     w = WRITE_RE.search(m)
     token = m[w.start():w.end()] if w else ''
     if not w:
@@ -225,6 +231,12 @@ FIXTURES = [
     ('F18 a dismissal named inside an identifier', "{ list.push({id:'I-'+Date.now()}); st('k',list); scpCloseInvModal(); await w(); }", 'NOT-SUBJECT'),
     ('F19 an update of an existing row by its id', "{ var s=list.find(f); s.price=p; st('k',list); await xData('write','t',s); }", 'NOT-SUBJECT'),
     ('F20 an amount applied per press', "{ c.amount_paid += amt; st('k',list); await xData('write','t',c); toast('ok'); }", 'RE-ENTRANT'),
+    # .5, b64's recall misses:
+    ('F21 a .then handler with no hold', "{ var rec={id:newId('C')}; save(rec).then(function(r){ list.push(rec); st('k',list); }); }", 'RE-ENTRANT'),
+    ('F22 a .then handler with a hold', "{ if(busy){return;} busy=true; save(rec).then(function(r){ list.push({id:newId('C')}); }).finally(function(){busy=false;}); }", 'HELD'),
+    ('F23 a plain function with no wait', "{ list.push({id:newId('C')}); st('k',list); }", 'NOT-SUBJECT'),
+    ('F24 an object literal pushed as a new record', "{ var r = await save(x); thread.push({from:'staff', text:t}); st('k',l); }", 'RE-ENTRANT'),
+    ('F25 an amount applied by assignment', "{ plan.amount_paid=(Number(plan.amount_paid)||0)+a; st('k',l); await w(plan); }", 'RE-ENTRANT'),
     ('F13 division is not a regex', "{ var r = a / b; var q = c / d; await save(r); l.push({id:newId('A')}); st('k',l); }", 'RE-ENTRANT'),
 ]
 
