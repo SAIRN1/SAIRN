@@ -1469,8 +1469,8 @@
       "task": "hook allowlist design and b118 audit batch",
       "claimed_at": "2026-10-31T02:07:05Z",
       "claimed_at_epoch": 1793412425.0650802,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-31T02:09:31Z",
       "files": null
     }
   ],
