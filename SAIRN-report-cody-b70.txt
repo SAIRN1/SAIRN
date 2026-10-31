@@ -1,0 +1,48 @@
+SAIRN REPORT -- cody b70 (2026-10-30)
+=====================================
+Handoff: SAIRN-handoff-cody-b70.md. Every SHA here is the LANDED one.
+
+1+7. B69-REENTRY-14: 9 FIXED, 5 NOT RE-ENTRANT. Every candidate was decided by a NO-REFILL double press: fill once, press twice, the wait held. The harness refills before every press, which reports duplicates a real double press cannot make.
+   Fixed, each with a hold flag:
+   - sairngrounds sendDesignToQuote, grdUploadProgressPhoto (414794471)
+   - sairnscape scpSendDesignToQuote, scpSendIrrZoneToQuote, scpSendWfToQuote, scpUploadProgressPhoto (3a133ef2f)
+   - sairnsenior generateClaim (fb10f57f3)
+   - stonedesk intakeAccept, sdAIQGenerate (bb2a99a20)
+   Each fix has locked fixture arms, RED on HEAD's file, GREEN after, and RED again in a broken copy with only its guard line deleted.
+   - New suites: sairnscape 30/0 (with a permanent no-refill arm) and sairnsenior 5/0. grounds 63/0, stonedesk 28/0.
+   - Five existing tests that lift a fixed function alone gained its flag declaration; all are green.
+   Not re-entrant, unchanged:
+   - sairndental addProcedureType and saveGfe, and sairngrounds msbCheckout: each empties its source before the await.
+   - sairnlegacy generateAftercareSchedule: skips existing types, and its ids are fixed.
+   - stonedesk sdLocAdd: input comes from a modal prompt.
+
+2. CHECKER RECALL, root-caused, criteria cody-b70.5 (25 fixtures locked).
+   The 7 b64 misses:
+   - 3 were .then handlers outside the universe.
+   - 4 were async handlers ruled NOT-SUBJECT: an assignment-applied amount, two existing-id writes, and one false dismissal.
+   .5 adds:
+   - .then handlers: a plain function's wait is its first .then(.
+   - object-literal pushes and applied-amount assignment as creation shapes.
+   Results:
+   - Recall on b64's known fixes: 40/47 -> 44/47. Still missed: saveCsCount and respondToComplaint (existing-id writes) and dcCreateInvoiceAndSchedule (rDreamClose read as a dismissal).
+   - At HEAD: 2828 handlers, 49 RE-ENTRANT. Precision of the 29 new candidates is NOT yet measured.
+
+3. rf_schedule/set_status ATTRIBUTION (e514c26af).
+   - The cited sha b96d7ae684af resolves in no clone and appears in no tracked file, so the work was located by subject.
+   - The suite was red 17/3 on correct code: d7773533f had moved the stamp to the status_changed_by / _role / _at columns, which are present live.
+   - The arms now drive the real handler and its PATCH: the stamp comes from the session, a hostile actor is discarded, and the PATCH carries no data key. 20/0.
+   - Ablated copies of api/ turn B/C1 and D3 red.
+
+4. quotes/stonedesk_quote_history COULD-NOT-TELL: record 2026-10-30T08:33:24Z re-seated 50e0df33bb96 -> 3d4ff0400 (EXACT FILE SET). Its real review (SOUND, arms re-driven RED on the parent) was cody b69's, against that same commit.
+
+5. LICENCE RE-KEY GUARD NEED (3cbfa6d2d):
+   - sairnvet: YES, built. It keeps sv_license beside 51 sv_ keys.
+   - sairnmechanical: YES, built. Its key sits beside local data, and it has two entry paths, both guarded.
+   - sairncash: NO. No licence key is stored (Firebase customerId, single user).
+   Fixture first: both apps were added to the guard suites while red; now 90/90 and 78/78.
+
+6. CITATION AUDIT, the next 10 commits: 2 slips, both the SDN write sites cited by line alone (9e4993243, db0ea6f49). Both are superseded by the b68 re-anchor of row B67-SDN-WRITE-UNCONFIRMED (blob 881804937a60, quoted code).
+
+8. PUSH: LANDED.
+   - All six changed apps are served byte-identical to HEAD.
+   - The handoff landed at 10f8914934f2ff9faccee1a41656553a6691d235, measured as HEAD == origin/main after a fetch. This report and digest are the final commit.

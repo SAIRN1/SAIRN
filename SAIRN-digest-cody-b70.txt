@@ -1,0 +1,17 @@
+DIGEST -- cody b70, 2026-10-30. All 8 items DONE.
+STATUS: 6 APPS (grounds, scape, senior, stonedesk, vet, mechanical), 1 TOOL, TESTS, DOCS. NO SQL. NO LIVE DATA WRITES.
+CHANGED: 6 app .html; tools/reentry_hold_check.py; 2 new + 8 edited test files; manifest; register; classes; tier-a; index row.
+LANDED: full gate; handoff at 10f891493 == origin/main. 6 live pages byte-identical to HEAD.
+ITEM 1 -- B69-REENTRY-14: 9 fixed (414794471 3a133ef2f fb10f57f3 bb2a99a20), 5 ruled not re-entrant by no-refill double press.
+ITEM 2 -- checker .5 covers .then; b64 recall 40/47 -> 44/47; 3 misses named. 29 new candidates unread.
+ITEM 3 -- rf_schedule attribution test re-pinned to the column form (e514c26af), 20/0, both ablations red.
+ITEM 4 -- quotes record re-seated 50e0df33bb96 -> 3d4ff0400; reviewed in b69.
+ITEM 5 -- vet + mechanical guards built (3cbfa6d2d); sairncash needs none (no licence key).
+ITEM 6 -- next-10 citation audit: 2 line-only slips (SDN sites), superseded by the b68 re-anchor.
+ITEM 7 -- every fix: locked arms, RED on HEAD, GREEN after, RED on a guard-deleted copy.
+ITEM 8 -- handoff before report; pushed and confirmed landed.
+DECISION-NEEDED: none.
+UNVERIFIED: precision of the checker's 29 new .5 candidates; cited sha b96d7ae684af exists in no clone.
+NEXT: cc reviews b70 obligation; cody reads the 29 candidates and teaches the 4 missing shapes. Handoff table, 5 rows.
+EVIDENCE-path: SAIRN-handoff-cody-b70.md, SAIRN-report-cody-b70.txt
+CONTEXT 73.0% of 1,000,000 -- 729,813 tokens, measured.
