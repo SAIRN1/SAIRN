@@ -2403,3 +2403,13 @@ Full account: `SAIRN-handoff-fourth-b70.md`.
 - Every commit's ancestor check is in handoff section 1.
 
 Full account: `SAIRN-handoff-fourth-b71.md`.
+
+## batch b72 -- 2026-10-30, CLOSED
+
+- SDP/LGP rows updated.
+- L3 status recorded in the Tier A register.
+- F3 cross-app residue checked on SD, SB and SV: 9/9 refused, 0 residue.
+- Declinability scope measured.
+- 79aa5607a and 3d695069c re-read off origin/main.
+
+Full account: `SAIRN-handoff-fourth-b72.md`.

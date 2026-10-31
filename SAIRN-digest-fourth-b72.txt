@@ -1,0 +1,18 @@
+SAIRN DIGEST -- fourth b72 -- 2026-10-30
+CONTEXT 69.4% of 1,000,000 -- 693,886 tokens, measured.
+STATUS: all seven items done; every b72 ancestor check is exit 0 (handoff section 1).
+DECISION-NEEDED: the StoneDesk demo PIN for sairn-demo-owner was refused (401 INVALID_CREDENTIALS): confirm or reset it.
+READ: SAIRN-handoff-fourth-b72.md (whole state). Detail: SAIRN-report-fourth-b72.txt.
+SQL: none.
+CHANGED:
+  5f118d9e2  SDP row cites 79aa5607a; LGP row cites 6c7a12bc4; L3 status into the Tier A register; three F3 cross-app evidence files
+1 F3 cross-app: 9/9 arms refused, nothing minted; 0 SAIRNlegacy residue under the SD, SB and SV licences
+2 L3a FAIL by design, L3b/L3e PASS -- now a register record (assigned cc), not report-only
+3 declinability 31/0; it is SAIRNlegacy-only (0 constructs in the other three apps, measured)
+4 79aa5607a and 3d695069c: every line each added is still present byte for byte on origin/main
+NEXT, in order:
+  a. Michael: StoneDesk demo PIN; move the LEG-AUDIT-2026 PINs to the password manager
+  b. cc: discharge the L3 Tier A record
+UNVERIFIED: the StoneDesk own-session cross-app arm (credential refused).
+EVIDENCE-path: docs/live-residue/2026-10-30-fourth-b72-f3-live-drive.json (+ -sairnbiz, -sairnvet).
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\83c60d05-1589-4389-a5cf-cd99265bab76.jsonl

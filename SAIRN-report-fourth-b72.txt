@@ -1,0 +1,40 @@
+SAIRN REPORT -- fourth b72 -- 2026-10-30
+
+Every b72 commit carries its own `git merge-base --is-ancestor` result in
+handoff section 1, against origin/main 97d371043f4a; all are exit 0. The
+handoff landed as 7d7c59310e7d.
+
+1 SDP/LGP index rows -- 5f118d9e2
+  The SDP row cites closing commit 79aa5607a. The LGP row cites the L3 fix
+  6c7a12bc4 plus the re-measured status; 79aa5607a is a StoneDesk commit
+  and closed nothing in SAIRNlegacy.
+
+2-4 F3 cross-app residue -- 5f118d9e2
+  F3 exists only on /api/leg-countersign (SAIRNlegacy), so P1/P4/P8 were
+  driven cross-app with each licence and the app's own session.
+    StoneDesk  own login 401 INVALID_CREDENTIALS (given PIN refused).
+               P1/P4/P8 401, no token. DB residue 0.
+    SAIRNbiz   own login 200. P1/P4/P8 401 NO_SESSION, no token.
+               DB residue 0.
+    SAIRNvet   own login 200. P1/P4/P8 401 NO_SESSION, no token.
+               DB residue 0.
+  9/9 arms refused, nothing minted. Evidence:
+  docs/live-residue/2026-10-30-fourth-b72-f3-live-drive{,-sairnbiz,-sairnvet}.json
+
+5 L3 into the Tier A register -- 5f118d9e2
+  On leg_gplservices and leg_invoices, assigned to cc: L3a FAIL BY DESIGN,
+  L3b PASS, L3e PASS, L3c control OK.
+
+6 Declinability
+  31/0. The suite reads sairnlegacy.html only. StoneDesk, SAIRNbiz and
+  SAIRNvet contain 0 GPL/declinability constructs (measured), so there is
+  no app-by-app run to make. Recorded in each evidence file.
+
+7 Committed blobs, re-read off origin/main
+  79aa5607a:
+    - its test file and the b71 evidence file are blob-identical on
+      origin/main;
+    - stonedesk.html changed later (cody b70), but all 71 lines it added
+      are present byte for byte.
+  3d695069c: sairngrounds.html changed later (cody b70), but all 6 lines it
+    added are present byte for byte.
