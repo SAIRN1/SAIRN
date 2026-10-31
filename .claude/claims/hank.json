@@ -4901,6 +4901,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "hank-1793405849",
+      "session": "hank",
+      "subject": "stonedesk",
+      "task": "SDP presence fixes T4a T2a T2b",
+      "claimed_at": "2026-10-31T00:17:29Z",
+      "claimed_at_epoch": 1793405849.5217965,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
