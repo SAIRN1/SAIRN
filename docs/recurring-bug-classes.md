@@ -133,3 +133,18 @@ Sources cited by record and commit. These are cc b76's verdicts on cody b65's Ti
 | # | Defect | Phase | Sub-phase | Cause | Commit |
 |---|---|---|---|---|---|
 | 1 | The SAIRNlegacy write branch in `api/sd-data.js` required only a non-empty `payload.id`, so a quote or markup could be stored as an id (H1 #1734, server half) | design | input validation | **due to** an identifier treated as opaque text at the boundary; the client escape (af2db16b3) protected one reader, the server protected none | this batch |
+
+## 2026-10-30 — batch 70 (cody)
+
+Sources: index row `B69-REENTRY-14-CODY-2026-10-30` (found by `tools/reentry_hold_check.py`, criteria `cody-b69.4`) and Michael's b70 items.
+
+| # | Defect | Phase | Sub-phase | Cause | Commit |
+|---|---|---|---|---|---|
+| 1 | sairngrounds `sendDesignToQuote`, `grdUploadProgressPhoto` | coding | concurrency | **due to** a new record per press with the trigger live across the await (b64's shape) | `e66f76a4c` |
+| 2 | sairnscape `scpSendDesignToQuote`, `scpSendIrrZoneToQuote`, `scpSendWfToQuote`, `scpUploadProgressPhoto` | coding | concurrency | **due to** the same shape; these are the scape twins of the grounds handlers b64 fixed, and b64's fix never propagated | `d774f638e` |
+| 3 | sairnsenior `generateClaim` | coding | concurrency | **due to** no already-claimed refusal; the row's removal before the await was the only guard, and it fails when `st()` fails | `1fce1093b` |
+| 4 | stonedesk `intakeAccept`, `sdAIQGenerate` | coding | concurrency | **due to** the same shape | `8aa91198f` |
+| 5 | sairnvet and sairnmechanical had no licence re-key guard | process | sweep population | **due to** the 2026-09-03 sweep enumerating the apps that existed then; apps built later never joined its list | `a37421206` |
+| 6 | `tests/sd_data_write_attribution_three_apps.js` red on correct code | coding | test currency | **due to** arms pinned to the RETIRED blob form after `d7773533f` moved the stamp to columns; a source-string arm (D3) outlived the code it matched | `5fdb7c855` |
+
+**5 of the 14 checker candidates were NOT re-entrant.** `addProcedureType`, `saveGfe`, `msbCheckout`, `generateAftercareSchedule` and `sdLocAdd` each empty their source, refuse an existing row, or prompt for input before the wait. **And the harness itself would have hidden that:** `H.drive` refills the form before every press, so it reports a duplicate a real double press cannot make. Every b70 fix was proven by a NO-REFILL double press, and scape and senior carry it as a permanent arm.

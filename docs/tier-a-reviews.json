@@ -9223,6 +9223,34 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-31T00:02:30Z",
+      "opened_at_sha": "a37421206caf803030f2c8fbfcee30d2f756bb56",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 4,
+      "resources": [
+        "grd_progress_photos",
+        "scp_quotes",
+        "sen_claims",
+        "sv_patients"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "sairnvet.html",
+        "tests/sairngrounds_save_reentry.js",
+        "tests/sairnscape_save_reentry.js",
+        "tests/sairnsenior_save_reentry.js"
+      ],
+      "what": "cody b70: (1) re-entry holds: sairngrounds sendDesignToQuote, grdUploadProgressPhoto; sairnscape scpSendDesignToQuote, scpSendIrrZoneToQuote, scpSendWfToQuote, scpUploadProgressPhoto; sairnsenior generateClaim; stonedesk intakeAccept, sdAIQGenerate. Each is a flag checked first, set, and released in finally. (2) licence re-key guards ported to sairnvet and sairnmechanical, called before the key is stored.\nWHAT TO ATTACK FIRST: (2) can DELETE local records on a licence change, on a path that had no question before. Confirm that each app's own-prefix scope (sv_, sairnmechanical_) matches no other app's keys or the shared keys, and that the guard runs before the key is stored on EVERY entry path. sairnmechanical has two: doLogin and mechBootstrap. SECOND: in (1), the holds are per function, not per record, so a press on a DIFFERENT intake/visit while one is pending is told 'Still...'. Confirm that is acceptable for generateClaim and intakeAccept, the money and record paths.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-31T00:02:30Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

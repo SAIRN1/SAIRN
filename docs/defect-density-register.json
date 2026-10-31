@@ -41794,6 +41794,49 @@
       "single_factor_note": "one wrong invariant"
     },
     {
+      "commit": "1fce1093bc80",
+      "date": "2026-10-30",
+      "subject": "fix(sairnsenior, cody b70): generateClaim holds while its claim write is pending (B69-REENTRY-14)",
+      "files": [
+        "sairnsenior.html",
+        "tests/sairnsenior_contract_auth_save.js",
+        "tests/sairnsenior_negative_hours_claim.js",
+        "tests/sairnsenior_save_reentry.js"
+      ],
+      "lines_added": 93,
+      "lines_removed": 0,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "sairnsenior generateClaim never refused a visit that already had a claim; with st() failing, or a double-click landing on the next row, a second CLAIM was written while the first was pending (no-refill: writes=2 rows=2).",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/reentry_hold_check.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "generateClaim's await predates this batch; not traced."
+      },
+      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b70.",
+      "contributing_factors": [
+        {
+          "factor": "An inline-wired handler created a new record per press and awaited with its trigger live; no shared hold convention made the wait refuse a second press.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A per-function hold flag checked first, set, and released in finally."
+        },
+        {
+          "factor": "No standing check found this shape until tools/reentry_hold_check.py (cody b69).",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The checker now reports it; arms per handler with a no-refill double press."
+        }
+      ],
+      "recurrence_open": "Any new inline save written without a hold reintroduces it; the checker reports it but is not a gate."
+    },
+    {
       "commit": "3d4ff0400b32",
       "date": "2026-10-30",
       "subject": "fix(stonedesk, fourth b70): the Financial KPI row crashed on a numeric quote total (M3) and claimed 65% margin from a hardcoded ratio (M2)",
@@ -41833,6 +41876,32 @@
         }
       ],
       "recurrence_open": "Other .replace calls on stored quote fields were not swept; M1 (blank slab cost read as 0) remains."
+    },
+    {
+      "commit": "3d695069c297",
+      "date": "2026-10-30",
+      "subject": "fix(sairngrounds, fourth b71): grdData sends app_id -- G-1, migrate decision \"yes\" applied; 0 rows needed moving",
+      "files": [
+        "sairngrounds.html"
+      ],
+      "lines_added": 6,
+      "lines_removed": 1,
+      "app": "sairngrounds",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "SAIRNgrounds grdData sent no app_id, so api/sd-data.js scoped every grounds request to a shared or routes resource (employees, rt_routes, shared knowledge, employee profile, render usage, memory) to stonedesk -- a data-scope error routed by cc b77 as G-1. Now sends app_id: APP_ID; a read-only measurement found 0 grounds rows under stonedesk, so no data migration was needed.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "grdData predates the shared-resource app scoping; not traced."
+      },
+      "citation_note": "No standing rule requires every app data helper to send app_id.",
+      "factors_unknown_reason": "single-line request contract fix; contributing factors were not separately analysed this batch"
     },
     {
       "commit": "51d9b401dbe1",
@@ -42010,30 +42079,170 @@
       "recurrence_open": "T1a/T1b/T1d (api, hank) still FAIL; other apps with similar approval/paid claims were not swept."
     },
     {
-      "commit": "3d695069c297",
+      "commit": "88ca53fbd5f7",
       "date": "2026-10-30",
-      "subject": "fix(sairngrounds, fourth b71): grdData sends app_id -- G-1, migrate decision \"yes\" applied; 0 rows needed moving",
+      "subject": "fix(sairnlegacy api, hank b72 #1734 server half): a leg write whose id holds a quote, backtick, <, >, &, backslash or control character, or exceeds 128, is refused 400 BAD_ID",
       "files": [
-        "sairngrounds.html"
+        "api/b72-leg-id-format.test.js",
+        "api/sd-data.js",
+        "docs/recurring-bug-classes.md"
       ],
-      "lines_added": 6,
-      "lines_removed": 1,
-      "app": "sairngrounds",
+      "lines_added": 152,
+      "lines_removed": 0,
+      "app": "sairnlegacy",
       "layer": "product",
       "severity": "moderate",
-      "detection_method": "independent-review",
-      "summary": "SAIRNgrounds grdData sent no app_id, so api/sd-data.js scoped every grounds request to a shared or routes resource (employees, rt_routes, shared knowledge, employee profile, render usage, memory) to stonedesk -- a data-scope error routed by cc b77 as G-1. Now sends app_id: APP_ID; a read-only measurement found 0 grounds rows under stonedesk, so no data migration was needed.",
+      "detection_method": "hover-audit",
+      "summary": "The SAIRNlegacy write branch in api/sd-data.js required only that payload.id be non-empty, so a caller with a write grant could store an id holding a quote and markup (H1 #1734, server half; the client sinks were fixed in af2db16b3). It now refuses 400 BAD_ID an id with a quote, backtick, <, >, &, backslash or control character, or over 128 characters, after the aftercare key rewrite. api/b72-leg-id-format.test.js 7/7 with an ablation.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "the generic LEG_RESOURCES write branch has accepted any id since it was written; not traced to one commit"
+      },
+      "citation_note": "No standing rule requires the server to validate the format of a client-supplied record id; proposed: an id is an identifier at the boundary, refused if it can end a string or open markup.",
+      "contributing_factors": [
+        {
+          "factor": "The id was treated as opaque text at the server boundary and protected only by one client reader's escape",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "server refuses ids that can end a string or open markup"
+        }
+      ],
+      "recurrence_open": "Other apps write branches (law, vet, biz, code) were not given the same server-side id check; other free-text fields are still escaped only on the client.",
+      "single_factor_note": "one missing boundary check"
+    },
+    {
+      "commit": "8aa91198f96d",
+      "date": "2026-10-30",
+      "subject": "fix(stonedesk, cody b70): intakeAccept and sdAIQGenerate hold while they wait (B69-REENTRY-14)",
+      "files": [
+        "stonedesk.html",
+        "tests/intake_no_false_success.js",
+        "tests/stonedesk_save_reentry.js"
+      ],
+      "lines_added": 52,
+      "lines_removed": 1,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "stonedesk intakeAccept (a second job from one intake) and sdAIQGenerate (a second AI quote) created records per press while awaiting with the trigger live (no-refill: writes=2).",
       "rules": [],
       "citation_confidence": "not-citable",
       "injection_phase": "coding",
-      "phase_confidence": "stated",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/reentry_hold_check.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Each handler gained its await when wired to the server/AI; not traced."
+      },
+      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b70.",
+      "contributing_factors": [
+        {
+          "factor": "An inline-wired handler created a new record per press and awaited with its trigger live; no shared hold convention made the wait refuse a second press.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A per-function hold flag checked first, set, and released in finally."
+        },
+        {
+          "factor": "No standing check found this shape until tools/reentry_hold_check.py (cody b69).",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The checker now reports it; arms per handler with a no-refill double press."
+        }
+      ],
+      "recurrence_open": "Any new inline save written without a hold reintroduces it; the checker reports it but is not a gate."
+    },
+    {
+      "commit": "a37421206caf",
+      "date": "2026-10-30",
+      "subject": "feat(sairnvet, sairnmechanical, cody b70): the licence re-key guard, for the two apps that stored a licence key beside local data with none",
+      "files": [
+        "docs/sairn-path-manifest.json",
+        "sairnmechanical.html",
+        "sairnvet.html",
+        "tests/licence_guard_legacy_device.js",
+        "tests/licence_rekey_isolation.js"
+      ],
+      "lines_added": 292,
+      "lines_removed": 3,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "sairnvet and sairnmechanical stored a licence key beside their own local data with no re-key guard, so a second licence entered on the same device opened the first licence's local records. Guard ported (b66/b68 form), called before the key is stored.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
       "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "unknown_reason": "grdData predates the shared-resource app scoping; not traced."
+        "unknown_reason": "Both apps were built after the 2026-09-03 re-key sweep (343c5a327) and never joined its list."
       },
-      "citation_note": "No standing rule requires every app data helper to send app_id.",
-      "factors_unknown_reason": "single-line request contract fix; contributing factors were not separately analysed this batch"
+      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b70 row 5.",
+      "contributing_factors": [
+        {
+          "factor": "The 2026-09-03 re-key sweep enumerated the apps that existed then; later apps were never added to its list.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Both apps added to licence_rekey_isolation and licence_guard_legacy_device."
+        },
+        {
+          "factor": "No check asks whether an app that stores a licence key has a guard.",
+          "kind": "technical",
+          "action_status": "planned",
+          "action": "licence_rekey_isolation asserts every app that stores a key is in exactly one list; it passed while these two stored keys under names its matcher did not know."
+        }
+      ],
+      "recurrence_open": "A new app that stores its key under a name the re-key suite's matcher does not know is invisible to the every-app-listed arm."
+    },
+    {
+      "commit": "d774f638ed30",
+      "date": "2026-10-30",
+      "subject": "fix(sairnscape, cody b70): four save handlers hold while they wait (B69-REENTRY-14)",
+      "files": [
+        "sairnscape.html",
+        "tests/sairnscape_outbound_queue_review_probe.js",
+        "tests/sairnscape_save_reentry.js",
+        "tests/sairnscape_send_button_and_licence.js"
+      ],
+      "lines_added": 181,
+      "lines_removed": 1,
+      "app": "sairnscape",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "sairnscape scpSendDesignToQuote, scpSendIrrZoneToQuote, scpSendWfToQuote and scpUploadProgressPhoto created a new record per press and awaited with the trigger live, so a double press made two (no-refill: writes=2 rows=2 each).",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/reentry_hold_check.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Each handler gained its await when its resource was wired to the server; not traced per handler."
+      },
+      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b70.",
+      "contributing_factors": [
+        {
+          "factor": "An inline-wired handler created a new record per press and awaited with its trigger live; no shared hold convention made the wait refuse a second press.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A per-function hold flag checked first, set, and released in finally."
+        },
+        {
+          "factor": "No standing check found this shape until tools/reentry_hold_check.py (cody b69).",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The checker now reports it; arms per handler with a no-refill double press."
+        }
+      ],
+      "recurrence_open": "Any new inline save written without a hold reintroduces it; the checker reports it but is not a gate."
     },
     {
       "commit": "e22c9cd0bf83",
@@ -42092,6 +42301,47 @@
       "recurrence_open": "Any other client-side identity comparison against the licence key (e.g. per-licence cache keys) may share the case mismatch; not swept."
     },
     {
+      "commit": "e66f76a4c083",
+      "date": "2026-10-30",
+      "subject": "fix(sairngrounds, cody b70): sendDesignToQuote and grdUploadProgressPhoto hold while they wait (B69-REENTRY-14)",
+      "files": [
+        "sairngrounds.html",
+        "tests/sairngrounds_save_reentry.js"
+      ],
+      "lines_added": 51,
+      "lines_removed": 0,
+      "app": "sairngrounds",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "sairngrounds sendDesignToQuote and grdUploadProgressPhoto created a new quote / photo record per press and awaited with the trigger live, so a double press made two (proven without form refill: writes=2 rows=2).",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/reentry_hold_check.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Each handler gained its await when its resource was wired to the server; not traced per handler."
+      },
+      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b70.",
+      "contributing_factors": [
+        {
+          "factor": "An inline-wired handler created a new record per press and awaited with its trigger live; no shared hold convention made the wait refuse a second press.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A per-function hold flag checked first, set, and released in finally."
+        },
+        {
+          "factor": "No standing check found this shape until tools/reentry_hold_check.py (cody b69).",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The checker now reports it; arms per handler with a no-refill double press."
+        }
+      ],
+      "recurrence_open": "Any new inline save written without a hold reintroduces it; the checker reports it but is not a gate."
+    },
+    {
       "commit": "eed68c6a7bc6",
       "date": "2026-10-30",
       "subject": "fix(stonedesk, hank b71 H1y): the two saved-drawing handlers JS-escape the id before escHtml",
@@ -42127,43 +42377,6 @@
       ],
       "recurrence_open": "Apps outside hank's owned set (sairnlaw, sairnbuild, sairncare and others) were not swept; no server-side format check on record ids.",
       "single_factor_note": "one encoding-context gap repeated across sites"
-    },
-    {
-      "commit": "88ca53fbd5f7",
-      "date": "2026-10-30",
-      "subject": "fix(sairnlegacy api, hank b72 #1734 server half): a leg write whose id holds a quote, backtick, <, >, &, backslash or control character, or exceeds 128, is refused 400 BAD_ID",
-      "files": [
-        "api/b72-leg-id-format.test.js",
-        "api/sd-data.js",
-        "docs/recurring-bug-classes.md"
-      ],
-      "lines_added": 152,
-      "lines_removed": 0,
-      "app": "sairnlegacy",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "hover-audit",
-      "summary": "The SAIRNlegacy write branch in api/sd-data.js required only that payload.id be non-empty, so a caller with a write grant could store an id holding a quote and markup (H1 #1734, server half; the client sinks were fixed in af2db16b3). It now refuses 400 BAD_ID an id with a quote, backtick, <, >, &, backslash or control character, or over 128 characters, after the aftercare key rewrite. api/b72-leg-id-format.test.js 7/7 with an ablation.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover",
-      "injection": {
-        "unknown_reason": "the generic LEG_RESOURCES write branch has accepted any id since it was written; not traced to one commit"
-      },
-      "citation_note": "No standing rule requires the server to validate the format of a client-supplied record id; proposed: an id is an identifier at the boundary, refused if it can end a string or open markup.",
-      "contributing_factors": [
-        {
-          "factor": "The id was treated as opaque text at the server boundary and protected only by one client reader's escape",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "server refuses ids that can end a string or open markup"
-        }
-      ],
-      "recurrence_open": "Other apps write branches (law, vet, biz, code) were not given the same server-side id check; other free-text fields are still escaped only on the client.",
-      "single_factor_note": "one missing boundary check"
     }
   ],
   "started": "2026-09-09",
