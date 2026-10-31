@@ -41637,6 +41637,43 @@
       "recurrence_open": "Any other could-not-tell code added to the server later must be added to the kept list too; nothing enforces that."
     },
     {
+      "commit": "107b3d113a33",
+      "date": "2026-10-30",
+      "subject": "fix(stonedesk api, hank b73 SDP): a signed approval must carry a PNG signature, and a new approval's deposit is pending",
+      "files": [
+        "api/sd-data-approvals.test.js",
+        "api/sd-data.js",
+        "docs/recurring-bug-classes.md"
+      ],
+      "lines_added": 67,
+      "lines_removed": 1,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "probe-control",
+      "summary": "api/sd-data.js sd_approvals stored an approval with no signature_png, with an undecodable one (AAAA, which was also the suite GOOD fixture), or with deposit_status paid sent by the client and no payment anywhere; each was listed as Signed / paid (cc b56 stress T1a/T1b/T1d). Now 400 NO_SIGNATURE unless the signature decodes to a PNG with a non-zero IHDR, and 400 BAD_DEPOSIT_STATUS for any deposit_status other than pending on create. api/sd-data-approvals.test.js 29/29; stress probe 22 PASS / 0 FAIL.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/stonedesk_presence_stress.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the sd_approvals write branch has stored signature_png and deposit_status verbatim since it was written; not traced to one commit"
+      },
+      "citation_note": "No standing rule requires a record that is shown as evidence (Signed, paid) to carry the fields that make it evidence; proposed: validate the evidentiary fields, not only the price.",
+      "contributing_factors": [
+        {
+          "factor": "The branch validated the price but not the signature and payment state that make the row evidence",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "refuse an undecodable or missing signature and any non-pending deposit_status on create"
+        }
+      ],
+      "recurrence_open": "A blank-canvas PNG still passes; other apps approval/sign-off paths were not swept for the same shape.",
+      "single_factor_note": "one missing boundary check"
+    },
+    {
       "commit": "1406e46f7c9f",
       "date": "2026-10-30",
       "subject": "fix(hank b70 H1y): stored values passed from inline handlers are JS-escaped before HTML-escaping in sairnvet, sairncode, sairnbiz",
@@ -41794,22 +41831,22 @@
       "single_factor_note": "one wrong invariant"
     },
     {
-      "commit": "fb10f57f3653",
+      "commit": "3a133ef2ff66",
       "date": "2026-10-30",
-      "subject": "fix(sairnsenior, cody b70): generateClaim holds while its claim write is pending (B69-REENTRY-14)",
+      "subject": "fix(sairnscape, cody b70): four save handlers hold while they wait (B69-REENTRY-14)",
       "files": [
-        "sairnsenior.html",
-        "tests/sairnsenior_contract_auth_save.js",
-        "tests/sairnsenior_negative_hours_claim.js",
-        "tests/sairnsenior_save_reentry.js"
+        "sairnscape.html",
+        "tests/sairnscape_outbound_queue_review_probe.js",
+        "tests/sairnscape_save_reentry.js",
+        "tests/sairnscape_send_button_and_licence.js"
       ],
-      "lines_added": 93,
-      "lines_removed": 0,
-      "app": "sairnsenior",
+      "lines_added": 181,
+      "lines_removed": 1,
+      "app": "sairnscape",
       "layer": "product",
-      "severity": "high",
+      "severity": "moderate",
       "detection_method": "static-checker",
-      "summary": "sairnsenior generateClaim never refused a visit that already had a claim; with st() failing, or a double-click landing on the next row, a second CLAIM was written while the first was pending (no-refill: writes=2 rows=2).",
+      "summary": "sairnscape scpSendDesignToQuote, scpSendIrrZoneToQuote, scpSendWfToQuote and scpUploadProgressPhoto created a new record per press and awaited with the trigger live, so a double press made two (no-refill: writes=2 rows=2 each).",
       "rules": [],
       "citation_confidence": "not-citable",
       "injection_phase": "coding",
@@ -41817,7 +41854,7 @@
       "found_by_tool": "tools/reentry_hold_check.py",
       "found_by_session": null,
       "injection": {
-        "unknown_reason": "generateClaim's await predates this batch; not traced."
+        "unknown_reason": "Each handler gained its await when its resource was wired to the server; not traced per handler."
       },
       "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b70.",
       "contributing_factors": [
@@ -41835,6 +41872,50 @@
         }
       ],
       "recurrence_open": "Any new inline save written without a hold reintroduces it; the checker reports it but is not a gate."
+    },
+    {
+      "commit": "3cbfa6d2d82f",
+      "date": "2026-10-30",
+      "subject": "feat(sairnvet, sairnmechanical, cody b70): the licence re-key guard, for the two apps that stored a licence key beside local data with none",
+      "files": [
+        "docs/sairn-path-manifest.json",
+        "sairnmechanical.html",
+        "sairnvet.html",
+        "tests/licence_guard_legacy_device.js",
+        "tests/licence_rekey_isolation.js"
+      ],
+      "lines_added": 292,
+      "lines_removed": 3,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "sairnvet and sairnmechanical stored a licence key beside their own local data with no re-key guard, so a second licence entered on the same device opened the first licence's local records. Guard ported (b66/b68 form), called before the key is stored.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Both apps were built after the 2026-09-03 re-key sweep (343c5a327) and never joined its list."
+      },
+      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b70 row 5.",
+      "contributing_factors": [
+        {
+          "factor": "The 2026-09-03 re-key sweep enumerated the apps that existed then; later apps were never added to its list.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Both apps added to licence_rekey_isolation and licence_guard_legacy_device."
+        },
+        {
+          "factor": "No check asks whether an app that stores a licence key has a guard.",
+          "kind": "technical",
+          "action_status": "planned",
+          "action": "licence_rekey_isolation asserts every app that stores a key is in exactly one list; it passed while these two stored keys under names its matcher did not know."
+        }
+      ],
+      "recurrence_open": "A new app that stores its key under a name the re-key suite's matcher does not know is invisible to the every-app-listed arm."
     },
     {
       "commit": "3d4ff0400b32",
@@ -41902,6 +41983,47 @@
       },
       "citation_note": "No standing rule requires every app data helper to send app_id.",
       "factors_unknown_reason": "single-line request contract fix; contributing factors were not separately analysed this batch"
+    },
+    {
+      "commit": "41479447154a",
+      "date": "2026-10-30",
+      "subject": "fix(sairngrounds, cody b70): sendDesignToQuote and grdUploadProgressPhoto hold while they wait (B69-REENTRY-14)",
+      "files": [
+        "sairngrounds.html",
+        "tests/sairngrounds_save_reentry.js"
+      ],
+      "lines_added": 51,
+      "lines_removed": 0,
+      "app": "sairngrounds",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "sairngrounds sendDesignToQuote and grdUploadProgressPhoto created a new quote / photo record per press and awaited with the trigger live, so a double press made two (proven without form refill: writes=2 rows=2).",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/reentry_hold_check.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Each handler gained its await when its resource was wired to the server; not traced per handler."
+      },
+      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b70.",
+      "contributing_factors": [
+        {
+          "factor": "An inline-wired handler created a new record per press and awaited with its trigger live; no shared hold convention made the wait refuse a second press.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A per-function hold flag checked first, set, and released in finally."
+        },
+        {
+          "factor": "No standing check found this shape until tools/reentry_hold_check.py (cody b69).",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The checker now reports it; arms per handler with a no-refill double press."
+        }
+      ],
+      "recurrence_open": "Any new inline save written without a hold reintroduces it; the checker reports it but is not a gate."
     },
     {
       "commit": "51d9b401dbe1",
@@ -42158,93 +42280,6 @@
       "recurrence_open": "Any new inline save written without a hold reintroduces it; the checker reports it but is not a gate."
     },
     {
-      "commit": "3cbfa6d2d82f",
-      "date": "2026-10-30",
-      "subject": "feat(sairnvet, sairnmechanical, cody b70): the licence re-key guard, for the two apps that stored a licence key beside local data with none",
-      "files": [
-        "docs/sairn-path-manifest.json",
-        "sairnmechanical.html",
-        "sairnvet.html",
-        "tests/licence_guard_legacy_device.js",
-        "tests/licence_rekey_isolation.js"
-      ],
-      "lines_added": 292,
-      "lines_removed": 3,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "sairnvet and sairnmechanical stored a licence key beside their own local data with no re-key guard, so a second licence entered on the same device opened the first licence's local records. Guard ported (b66/b68 form), called before the key is stored.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "Both apps were built after the 2026-09-03 re-key sweep (343c5a327) and never joined its list."
-      },
-      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b70 row 5.",
-      "contributing_factors": [
-        {
-          "factor": "The 2026-09-03 re-key sweep enumerated the apps that existed then; later apps were never added to its list.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Both apps added to licence_rekey_isolation and licence_guard_legacy_device."
-        },
-        {
-          "factor": "No check asks whether an app that stores a licence key has a guard.",
-          "kind": "technical",
-          "action_status": "planned",
-          "action": "licence_rekey_isolation asserts every app that stores a key is in exactly one list; it passed while these two stored keys under names its matcher did not know."
-        }
-      ],
-      "recurrence_open": "A new app that stores its key under a name the re-key suite's matcher does not know is invisible to the every-app-listed arm."
-    },
-    {
-      "commit": "3a133ef2ff66",
-      "date": "2026-10-30",
-      "subject": "fix(sairnscape, cody b70): four save handlers hold while they wait (B69-REENTRY-14)",
-      "files": [
-        "sairnscape.html",
-        "tests/sairnscape_outbound_queue_review_probe.js",
-        "tests/sairnscape_save_reentry.js",
-        "tests/sairnscape_send_button_and_licence.js"
-      ],
-      "lines_added": 181,
-      "lines_removed": 1,
-      "app": "sairnscape",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "static-checker",
-      "summary": "sairnscape scpSendDesignToQuote, scpSendIrrZoneToQuote, scpSendWfToQuote and scpUploadProgressPhoto created a new record per press and awaited with the trigger live, so a double press made two (no-refill: writes=2 rows=2 each).",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": "tools/reentry_hold_check.py",
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "Each handler gained its await when its resource was wired to the server; not traced per handler."
-      },
-      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b70.",
-      "contributing_factors": [
-        {
-          "factor": "An inline-wired handler created a new record per press and awaited with its trigger live; no shared hold convention made the wait refuse a second press.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "A per-function hold flag checked first, set, and released in finally."
-        },
-        {
-          "factor": "No standing check found this shape until tools/reentry_hold_check.py (cody b69).",
-          "kind": "process",
-          "action_status": "done",
-          "action": "The checker now reports it; arms per handler with a no-refill double press."
-        }
-      ],
-      "recurrence_open": "Any new inline save written without a hold reintroduces it; the checker reports it but is not a gate."
-    },
-    {
       "commit": "e22c9cd0bf83",
       "date": "2026-10-30",
       "subject": "fix(platform, cody b68): a licence key differing only in case is the same licence in all 13 guards",
@@ -42301,47 +42336,6 @@
       "recurrence_open": "Any other client-side identity comparison against the licence key (e.g. per-licence cache keys) may share the case mismatch; not swept."
     },
     {
-      "commit": "41479447154a",
-      "date": "2026-10-30",
-      "subject": "fix(sairngrounds, cody b70): sendDesignToQuote and grdUploadProgressPhoto hold while they wait (B69-REENTRY-14)",
-      "files": [
-        "sairngrounds.html",
-        "tests/sairngrounds_save_reentry.js"
-      ],
-      "lines_added": 51,
-      "lines_removed": 0,
-      "app": "sairngrounds",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "static-checker",
-      "summary": "sairngrounds sendDesignToQuote and grdUploadProgressPhoto created a new quote / photo record per press and awaited with the trigger live, so a double press made two (proven without form refill: writes=2 rows=2).",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": "tools/reentry_hold_check.py",
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "Each handler gained its await when its resource was wired to the server; not traced per handler."
-      },
-      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b70.",
-      "contributing_factors": [
-        {
-          "factor": "An inline-wired handler created a new record per press and awaited with its trigger live; no shared hold convention made the wait refuse a second press.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "A per-function hold flag checked first, set, and released in finally."
-        },
-        {
-          "factor": "No standing check found this shape until tools/reentry_hold_check.py (cody b69).",
-          "kind": "process",
-          "action_status": "done",
-          "action": "The checker now reports it; arms per handler with a no-refill double press."
-        }
-      ],
-      "recurrence_open": "Any new inline save written without a hold reintroduces it; the checker reports it but is not a gate."
-    },
-    {
       "commit": "eed68c6a7bc6",
       "date": "2026-10-30",
       "subject": "fix(stonedesk, hank b71 H1y): the two saved-drawing handlers JS-escape the id before escHtml",
@@ -42377,6 +42371,49 @@
       ],
       "recurrence_open": "Apps outside hank's owned set (sairnlaw, sairnbuild, sairncare and others) were not swept; no server-side format check on record ids.",
       "single_factor_note": "one encoding-context gap repeated across sites"
+    },
+    {
+      "commit": "fb10f57f3653",
+      "date": "2026-10-30",
+      "subject": "fix(sairnsenior, cody b70): generateClaim holds while its claim write is pending (B69-REENTRY-14)",
+      "files": [
+        "sairnsenior.html",
+        "tests/sairnsenior_contract_auth_save.js",
+        "tests/sairnsenior_negative_hours_claim.js",
+        "tests/sairnsenior_save_reentry.js"
+      ],
+      "lines_added": 93,
+      "lines_removed": 0,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "sairnsenior generateClaim never refused a visit that already had a claim; with st() failing, or a double-click landing on the next row, a second CLAIM was written while the first was pending (no-refill: writes=2 rows=2).",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/reentry_hold_check.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "generateClaim's await predates this batch; not traced."
+      },
+      "citation_note": "No PR rule id fits; cause-tagged in docs/recurring-bug-classes.md, cody b70.",
+      "contributing_factors": [
+        {
+          "factor": "An inline-wired handler created a new record per press and awaited with its trigger live; no shared hold convention made the wait refuse a second press.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A per-function hold flag checked first, set, and released in finally."
+        },
+        {
+          "factor": "No standing check found this shape until tools/reentry_hold_check.py (cody b69).",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The checker now reports it; arms per handler with a no-refill double press."
+        }
+      ],
+      "recurrence_open": "Any new inline save written without a hold reintroduces it; the checker reports it but is not a gate."
     }
   ],
   "started": "2026-09-09",
