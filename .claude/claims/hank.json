@@ -4890,6 +4890,17 @@
       "status": "released",
       "released_at": "2026-10-30T09:41:35Z",
       "files": null
+    },
+    {
+      "id": "hank-1793405417",
+      "session": "hank",
+      "subject": "sairnlaw",
+      "task": "M5L live trust reconcile LAW-AUDIT-0002; J6C DC civil deadline seed",
+      "claimed_at": "2026-10-31T00:10:17Z",
+      "claimed_at_epoch": 1793405417.6720297,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
