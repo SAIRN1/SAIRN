@@ -154,3 +154,4 @@ Sources: index row `B69-REENTRY-14-CODY-2026-10-30` (found by `tools/reentry_hol
 | # | Defect | Phase | Sub-phase | Cause | Commit |
 |---|---|---|---|---|---|
 | 1 | `api/sd-data.js` sd_approvals stored a "Signed" approval with no signature or a non-PNG one, and took `deposit_status` ("paid") from the body (cc b56 stress T1a/T1b/T1d) | requirement | evidence definition | **due to** the branch validating the price (NO_TOTAL) but not the two fields that make the row evidence: the signature and the payment state; the suite's own GOOD fixture was the undecodable `AAAA` | this batch |
+| 2 | `api/sd-data.js` stored a SAIRNlegacy invoice's status as sent, so one with no payment was filed `Paid` (cc b58 stress L2a) | design | derived state | **due to** a status the client DERIVES from two sums being accepted from the client as a fact; the server never re-derived it | this batch |

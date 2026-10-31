@@ -9274,6 +9274,29 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-31T00:24:33Z",
+      "opened_at_sha": "a7724adf578558bfcdfefd15d3b544b127e8ff07",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 2,
+      "resources": [
+        "leg_invoices"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/b72-leg-id-format.test.js",
+        "api/sd-data.js"
+      ],
+      "what": "hank b73 (LGP, cc b58 stress L2a): api/sd-data.js SAIRNlegacy write branch refuses 409 INVOICE_NOT_PAID a leg_invoices write with status Paid whose payments sum (in cents) is below its line_items sum -- the same two sums the client's invoiceTotal/invoicePaid use. api/b72-leg-id-format.test.js arms P1-P4 (no payment, one cent short, paid across two payments, Partial not held). REVIEWER: attack (1) whether any legitimate invoice carries charges outside line_items (tax, discounts, GPL statement totals) so a truly paid invoice is now refused; (2) whether a refund or negative line can make paid >= total while money is owed; (3) whether any other path writes leg_invoices status Paid.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-10-31T00:24:33Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

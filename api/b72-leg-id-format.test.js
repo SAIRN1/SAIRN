@@ -120,6 +120,19 @@ const HOSTILE = ["KO-1');alert(1);//", 'KO-1"><img src=x onerror=alert(1)>', 'a`
   arm('B2. a normal aftercare check-in is not refused as BAD_ID', !(acGood.body && acGood.body.error && acGood.body.error.code === 'BAD_ID'),
     JSON.stringify(acGood.body).slice(0, 160));
 
+  // P (hank b73, cc b58 stress L2a): "Paid" is a fact about the payments.
+  const inv = (payments, status) => ({ id: 'IV-1730000000000-1', case_id: 'CS-1-1',
+    line_items: [{ label: 'Basic', amount: 5000 }], payments, status });
+  const p1 = await call(handler, 'leg_invoices', inv([], 'Paid'));
+  arm('P1. a $5,000 invoice filed Paid with NO payment: 409 INVOICE_NOT_PAID, 0 writes',
+    p1.code === 409 && p1.body.error.code === 'INVOICE_NOT_PAID' && p1.writes === 0, JSON.stringify([p1.code, p1.writes]));
+  const p2 = await call(handler, 'leg_invoices', inv([{ amount: 4999.99, source: 'Cash' }], 'Paid'));
+  arm('P2. one cent short is still not Paid', p2.code === 409 && p2.writes === 0, JSON.stringify([p2.code, p2.writes]));
+  const p3 = await call(handler, 'leg_invoices', inv([{ amount: 3000, source: 'Cash' }, { amount: 2000, source: 'Check' }], 'Paid'));
+  arm('P3. CONTROL: paid in full across two payments is accepted', p3.code === 200 && p3.writes > 0, JSON.stringify([p3.code, p3.writes]));
+  const p4 = await call(handler, 'leg_invoices', inv([{ amount: 1000, source: 'Cash' }], 'Partial'));
+  arm('P4. CONTROL: a Partial invoice is not held to the Paid rule', p4.code === 200 && p4.writes > 0, JSON.stringify([p4.code, p4.writes]));
+
   // X: the same hostile write against the handler with the check cut out.
   const src = fs.readFileSync(HANDLER, 'utf8');
   const cut = src.replace(/if \(String\(payload\.id\)\.length > 128 \|\|[^\n]*\{\n[^\n]*BAD_ID[^\n]*\n\s*return;\n\s*\}/, '');

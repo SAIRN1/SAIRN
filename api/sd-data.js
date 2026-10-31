@@ -17864,6 +17864,21 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: { code: 'BAD_ID', message: resource + ' payload.id must be at most 128 characters with no quote, backtick, <, >, &, backslash or control character' } });
         return;
       }
+      // ── "PAID" IS A FACT ABOUT THE PAYMENTS (hank b73, cc b58 stress L2a) ──
+      // The status was stored as sent, so an invoice with no payment could be
+      // filed 'Paid', badged Paid and dropped from the open count. The client
+      // derives the status from the same two sums (sairnlegacy.html
+      // invoiceTotal / invoicePaid); the server now holds it to that.
+      if (resource === 'leg_invoices' && String(payload.status || '') === 'Paid') {
+        const sumCents = (arr) => (Array.isArray(arr) ? arr : []).reduce(
+          (s, x) => s + Math.round((Number(x && x.amount) || 0) * 100), 0);
+        const totalCents = sumCents(payload.line_items);
+        const paidCents = sumCents(payload.payments);
+        if (paidCents < totalCents) {
+          res.status(409).json({ error: { code: 'INVOICE_NOT_PAID', message: 'leg_invoices status Paid needs payments of at least the invoice total -- recorded ' + (paidCents / 100).toFixed(2) + ' of ' + (totalCents / 100).toFixed(2) } });
+          return;
+        }
+      }
       // Reservation-lock hard gate (2026-08-10): the one transition on this
       // resource that can't be a blind merge -- two staff on two devices,
       // each holding a stale local copy showing 'Available', could otherwise
